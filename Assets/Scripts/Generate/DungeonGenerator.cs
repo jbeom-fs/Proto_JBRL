@@ -26,19 +26,28 @@ public struct DungeonSettings
     /// <summary>방과 BSP 경계 사이 최소 여백</summary>
     public int Padding;
 
-    /// <summary>
-    /// 2번째로 가까운 방에 추가 통로를 연결할 확률 (0.0 ~ 1.0)
-    /// 0.0 = 추가 연결 없음 / 1.0 = 항상 추가 연결
-    /// </summary>
+    /// <summary>2번째로 가까운 방에 추가 통로를 연결할 확률 (0.0 ~ 1.0)</summary>
     public float ExtraConnProb;
 
     /// <summary>
-    /// 랜덤 시드 — null 이면 실행마다 다른 결과
-    /// 재현이 필요할 때 임의의 정수를 지정하세요.
+    /// 던전 시드. null 이면 실행마다 다른 결과.
+    /// 정수 지정 시 → 같은 Seed + 같은 Floor = 항상 동일한 지형.
     /// </summary>
     public int? Seed;
 
-    // ─── 기본 설정값 ───────────────────────────────────────────
+    /// <summary>
+    /// 현재 층수 (1 ~ MaxFloor).
+    /// Seed와 함께 결정론적 난수 시드를 파생시켜 층마다 다른 지형을 보장합니다.
+    /// </summary>
+    public int Floor;
+
+    /// <summary>최대 층수 (기본 100)</summary>
+    public int MaxFloor;
+
+    /// <summary>방 테두리에서 통로 꺾임까지 최소 직선 거리 (스텁 길이)</summary>
+    public int MinStraight;
+
+    // ─── 기본 설정값 ─────────────────────────────────────────────
     public static DungeonSettings Default => new DungeonSettings
     {
         MapWidth      = 80,
@@ -49,7 +58,28 @@ public struct DungeonSettings
         Padding       = 2,
         ExtraConnProb = 0.5f,
         Seed          = null,
+        Floor         = 1,
+        MaxFloor      = 100,
+        MinStraight   = 2,
     };
+
+    /// <summary>
+    /// Seed + Floor 조합으로 결정론적 난수 시드를 계산합니다.
+    ///
+    /// 보장:
+    ///   같은 Seed + 같은 Floor  → 항상 동일한 값  (재현 가능)
+    ///   같은 Seed + 다른 Floor  → 다른 값          (층마다 다른 지형)
+    ///   다른 Seed + 같은 Floor  → 다른 값          (시드마다 다른 지형)
+    /// </summary>
+    public int DeriveSeed()
+    {
+        int s = Seed ?? 0;
+        unchecked
+        {
+            int mixed = (s ^ (Floor * (int)2654435761u)) * (int)2246822519u;
+            return mixed & 0x7FFFFFFF;
+        }
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -106,10 +136,13 @@ public static class DungeonGenerator
     /// </returns>
     public static int[,] GenerateDungeon(DungeonSettings settings)
     {
-        // 설정 유효성 검사
         ValidateSettings(ref settings);
 
-        var rng  = settings.Seed.HasValue ? new Random(settings.Seed.Value) : new Random();
+        // Seed가 있으면 Seed+Floor 조합으로 결정론적 RNG 생성
+        // Seed가 없으면 시스템 시간 기반 랜덤 RNG
+        var rng = settings.Seed.HasValue
+            ? new Random(settings.DeriveSeed())
+            : new Random();
         var grid = new int[settings.MapHeight, settings.MapWidth];
         var corridorTiles = new HashSet<(int x, int y)>();
         var rooms = new List<Room>();
@@ -237,9 +270,12 @@ public static class DungeonGenerator
         int n = rooms.Count;
         if (n < 2) return;
 
-        var connected = new HashSet<int> { 0 };
-        var remaining = new HashSet<int>();
+        var connected      = new HashSet<int> { 0 };
+        var remaining      = new HashSet<int>();
         for (int k = 1; k < n; k++) remaining.Add(k);
+
+        // 이미 직접 연결된 방 쌍 추적 — 중복/병렬 통로 방지
+        var connectedPairs = new HashSet<(int, int)>();
 
         while (remaining.Count > 0)
         {
@@ -255,19 +291,23 @@ public static class DungeonGenerator
                 }
 
             DrawLCorridor(grid, rooms[srcIdx], rooms[dstIdx], corridorTiles, s);
+            connectedPairs.Add((Math.Min(srcIdx, dstIdx), Math.Max(srcIdx, dstIdx)));
             connected.Add(dstIdx);
             remaining.Remove(dstIdx);
 
-            // ── 2nd: 추가 연결 — 같은 소스(srcIdx) 기준 2번째로 가까운 방 ──
-            // srcIdx → dstIdx (MST 연결) 이후,
-            // srcIdx → bestK  (추가 연결, ExtraConnProb 확률)
-            if (remaining.Count > 0 && rng.NextDouble() < s.ExtraConnProb)
+            // ── 2nd: 추가 연결 — srcIdx 기준 진짜 2번째로 가까운 방 ──
+            // 전체 방 탐색 (dstIdx 제외).
+            // 단, 이미 직접 연결된 쌍은 제외 → 중복/병렬 통로 방지
+            if (rng.NextDouble() < s.ExtraConnProb)
             {
                 double bestDist2 = double.MaxValue;
                 int bestK = -1;
 
-                foreach (int k in remaining)
+                for (int k = 0; k < n; k++)
                 {
+                    if (k == srcIdx || k == dstIdx) continue;
+                    var pair = (Math.Min(srcIdx, k), Math.Max(srcIdx, k));
+                    if (connectedPairs.Contains(pair)) continue; // 이미 직접 연결 → 스킵
                     double d = EuclideanDist(rooms[srcIdx], rooms[k]);
                     if (d < bestDist2) { bestDist2 = d; bestK = k; }
                 }
@@ -275,8 +315,12 @@ public static class DungeonGenerator
                 if (bestK >= 0)
                 {
                     DrawLCorridor(grid, rooms[srcIdx], rooms[bestK], corridorTiles, s);
-                    connected.Add(bestK);
-                    remaining.Remove(bestK);
+                    connectedPairs.Add((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
+                    if (remaining.Contains(bestK))
+                    {
+                        connected.Add(bestK);
+                        remaining.Remove(bestK);
+                    }
                 }
             }
         }
@@ -294,125 +338,105 @@ public static class DungeonGenerator
     // ══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// 방에서 목적지 방향 면의 출입구를 계산합니다.
+    /// 두 방을 L자형 통로로 연결합니다.
     ///
-    ///  outside: 방 테두리 바깥 바로 옆 타일 → 통로 시작/끝 좌표
-    ///  door   : 방 테두리 위의 문 타일    → corridorTiles에 등록해 보존
+    /// [스텁 보장 — 코너-벽 거리]
+    ///   코너는 각 방 벽에서 MinStraight 이상 떨어진 far_outside 에 위치
+    ///   → 수직/수평 팔이 방 끝에 붙는 현상 원천 차단
     ///
-    /// [기존 center→center 방식]  : 통로 일부가 방 내부를 통과
-    ///                              → L의 짧은 팔이 방 바깥 1칸에서 꺾임 (붙는 문제)
-    /// [출입구 기반 방식]         : 통로 전체가 방 밖 빈 공간에서 그려짐
-    ///                              → 방과 통로가 구조적으로 분리됨
-    /// </summary>
-    private static void GetExit(
-        Room room, Room toward,
-        out int outsideX, out int outsideY,
-        out int doorX,    out int doorY)
-    {
-        int dx = toward.Cx - room.Cx;
-        int dy = toward.Cy - room.Cy;
-
-        if (Math.Abs(dx) >= Math.Abs(dy))
-        {
-            if (dx >= 0)  // 오른쪽 면
-            {
-                outsideX = room.X + room.W;     outsideY = room.Cy;
-                doorX    = room.X + room.W - 1; doorY    = room.Cy;
-            }
-            else          // 왼쪽 면
-            {
-                outsideX = room.X - 1; outsideY = room.Cy;
-                doorX    = room.X;     doorY    = room.Cy;
-            }
-        }
-        else
-        {
-            if (dy >= 0)  // 아래쪽 면
-            {
-                outsideX = room.Cx; outsideY = room.Y + room.H;
-                doorX    = room.Cx; doorY    = room.Y + room.H - 1;
-            }
-            else          // 위쪽 면
-            {
-                outsideX = room.Cx; outsideY = room.Y - 1;
-                doorX    = room.Cx; doorY    = room.Y;
-            }
-        }
-    }
-
-    /// <summary>
-    /// 두 방을 방 바깥 출입구 기준 L자형 통로로 연결합니다.
-    ///
-    /// [출입구 기반]  outside_A → outside_B 사이만 통로를 그림
-    ///               → 방 내부를 통과하지 않음
-    ///
-    /// [최소 팔 보장] 두 outside 좌표 사이의 팔이 MIN(=2)칸 미만이면
-    ///               Z자형 우회로로 MIN칸을 강제 확보
-    ///               → 통로가 방에 바로 붙는 현상 방지
-    ///
-    ///  Z자형 예시 (수직 팔이 짧을 때):
-    ///    outside_A ─────── tx          ← 수평 절반
-    ///                      │ MIN칸     ← 수직 MIN 확보
-    ///    outside_B ─────── tx          ← 수평 복귀
+    /// [팔 길이 보장 — 두 방 공동 계산]
+    ///   두 far_outside 의 수직/수평 거리가 MinStraight 미만이면
+    ///   도어 y/x 위치를 방 벽 범위 안에서 조정
+    ///   → Z자형 우회 없이 깔끔한 L 2세그먼트로 완성
     /// </summary>
     private static void DrawLCorridor(
         int[,] grid, Room src, Room dst,
         HashSet<(int, int)> corridorTiles,
         DungeonSettings s)
     {
-        const int MIN = 2;
+        int MIN = s.MinStraight;
+        int dx = dst.Cx - src.Cx;
+        int dy = dst.Cy - src.Cy;
 
-        GetExit(src, dst, out int sx, out int sy, out int sdx, out int sdy);
-        GetExit(dst, src, out int ex, out int ey, out int edx, out int edy);
-
-        // 문 타일 등록 (방 테두리)
-        SetTile(grid, corridorTiles, sdx, sdy, s);
-        SetTile(grid, corridorTiles, edx, edy, s);
-
-        int adx    = Math.Abs(ex - sx);
-        int ady    = Math.Abs(ey - sy);
-        int syDir  = (ey >= sy) ? 1 : -1;
-        int sxDir  = (ex >= sx) ? 1 : -1;
-
-        if (adx >= ady)
+        if (Math.Abs(dx) >= Math.Abs(dy))
         {
-            // 수평 우선 — 짧은 팔은 수직(ady)
-            if (ady >= MIN)
+            // ── 수평 연결 ────────────────────────────────────────────
+            int doorSX, farSX, doorEX, farEX, stepS, stepE;
+            if (dx >= 0)   // src 우측 출구 → dst 좌측 출구
             {
-                // 정상 L자
-                DrawHLine(grid, corridorTiles, sx, ex, sy, s);
-                DrawVLine(grid, corridorTiles, sy, ey, ex, s);
+                doorSX = src.X + src.W - 1; farSX = src.X + src.W + MIN - 1;
+                doorEX = dst.X;             farEX = dst.X - MIN;
+                stepS = 1; stepE = -1;
             }
-            else
+            else           // src 좌측 출구 → dst 우측 출구
             {
-                // 수직 팔 부족 → Z자형으로 MIN칸 수직 확보
-                int tx   = sx + (ex - sx) / 2;
-                int midY = sy + syDir * MIN;
-                DrawHLine(grid, corridorTiles, sx, tx,  sy,   s);
-                DrawVLine(grid, corridorTiles, sy, midY, tx,   s);
-                DrawHLine(grid, corridorTiles, tx, ex,  midY,  s);
-                DrawVLine(grid, corridorTiles, midY, ey, ex,   s);
+                doorSX = src.X;             farSX = src.X - MIN;
+                doorEX = dst.X + dst.W - 1; farEX = dst.X + dst.W + MIN - 1;
+                stepS = -1; stepE = 1;
             }
+
+            // 수직 팔 길이 보장: |sy - ey| >= MIN
+            int sy = src.Cy, ey = dst.Cy;
+            if (Math.Abs(sy - ey) < MIN)
+            {
+                int eyDir = (ey >= sy) ? 1 : -1;
+                if (eyDir == 0) eyDir = 1;
+                ey = Math.Max(dst.Y, Math.Min(dst.Y + dst.H - 1, sy + eyDir * MIN));
+                if (Math.Abs(sy - ey) < MIN)
+                    sy = Math.Max(src.Y, Math.Min(src.Y + src.H - 1, ey - eyDir * MIN));
+            }
+
+            // 도어 타일 등록
+            SetTile(grid, corridorTiles, doorSX, sy, s);
+            SetTile(grid, corridorTiles, doorEX, ey, s);
+
+            // 스텁: door 다음 칸부터 far_outside 까지
+            DrawHLine(grid, corridorTiles, doorSX + stepS, farSX, sy, s);
+            DrawHLine(grid, corridorTiles, doorEX + stepE, farEX, ey, s);
+
+            // L자: H(farSX → farEX, y=sy) + V(sy → ey, x=farEX)
+            DrawHLine(grid, corridorTiles, farSX, farEX, sy, s);
+            DrawVLine(grid, corridorTiles, sy, ey, farEX, s);
         }
         else
         {
-            // 수직 우선 — 짧은 팔은 수평(adx)
-            if (adx >= MIN)
+            // ── 수직 연결 ────────────────────────────────────────────
+            int doorSY, farSY, doorEY, farEY, stepS, stepE;
+            if (dy >= 0)   // src 하단 출구 → dst 상단 출구
             {
-                // 정상 L자
-                DrawVLine(grid, corridorTiles, sy, ey, sx, s);
-                DrawHLine(grid, corridorTiles, sx, ex, ey, s);
+                doorSY = src.Y + src.H - 1; farSY = src.Y + src.H + MIN - 1;
+                doorEY = dst.Y;             farEY = dst.Y - MIN;
+                stepS = 1; stepE = -1;
             }
-            else
+            else           // src 상단 출구 → dst 하단 출구
             {
-                // 수평 팔 부족 → Z자형으로 MIN칸 수평 확보
-                int ty   = sy + (ey - sy) / 2;
-                int midX = sx + sxDir * MIN;
-                DrawVLine(grid, corridorTiles, sy, ty,  sx,   s);
-                DrawHLine(grid, corridorTiles, sx, midX, ty,   s);
-                DrawVLine(grid, corridorTiles, ty, ey,  midX,  s);
-                DrawHLine(grid, corridorTiles, midX, ex, ey,   s);
+                doorSY = src.Y;             farSY = src.Y - MIN;
+                doorEY = dst.Y + dst.H - 1; farEY = dst.Y + dst.H + MIN - 1;
+                stepS = -1; stepE = 1;
             }
+
+            // 수평 팔 길이 보장: |sx - ex| >= MIN
+            int sx = src.Cx, ex = dst.Cx;
+            if (Math.Abs(sx - ex) < MIN)
+            {
+                int exDir = (ex >= sx) ? 1 : -1;
+                if (exDir == 0) exDir = 1;
+                ex = Math.Max(dst.X, Math.Min(dst.X + dst.W - 1, sx + exDir * MIN));
+                if (Math.Abs(sx - ex) < MIN)
+                    sx = Math.Max(src.X, Math.Min(src.X + src.W - 1, ex - exDir * MIN));
+            }
+
+            // 도어 타일 등록
+            SetTile(grid, corridorTiles, sx, doorSY, s);
+            SetTile(grid, corridorTiles, ex, doorEY, s);
+
+            // 스텁: door 다음 칸부터 far_outside 까지
+            DrawVLine(grid, corridorTiles, doorSY + stepS, farSY, sx, s);
+            DrawVLine(grid, corridorTiles, doorEY + stepE, farEY, ex, s);
+
+            // L자: V(farSY → farEY, x=sx) + H(sx → ex, y=farEY)
+            DrawVLine(grid, corridorTiles, farSY, farEY, sx, s);
+            DrawHLine(grid, corridorTiles, sx, ex, farEY, s);
         }
     }
 
@@ -456,6 +480,10 @@ public static class DungeonGenerator
             throw new ArgumentException("MaxRoomSize must be >= MinRoomSize");
         if (s.BspDepth < 1)     throw new ArgumentException("BspDepth must be >= 1");
         if (s.Padding < 1)      throw new ArgumentException("Padding must be >= 1");
+        if (s.MinStraight < 1)  throw new ArgumentException("MinStraight must be >= 1");
+        if (s.MaxFloor < 1)     s.MaxFloor = 100;
+        s.Floor         = Math.Max(1, Math.Min(s.MaxFloor, s.Floor));
         s.ExtraConnProb = Math.Max(0f, Math.Min(1f, s.ExtraConnProb));
     }
 }
+
