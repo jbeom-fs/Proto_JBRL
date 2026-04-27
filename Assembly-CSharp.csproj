@@ -43,14 +43,64 @@
     <UnityVersion>6000.4.3f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
-    <Analyzer Include="C:\Users\MBC\.vscode\extensions\visualstudiotoolsforunity.vstuc-1.2.1\Analyzers\Microsoft.Unity.Analyzers.dll" />
+    <Analyzer Include="C:\Users\MBC\.vscode\extensions\visualstudiotoolsforunity.vstuc-1.2.2\Analyzers\Microsoft.Unity.Analyzers.dll" />
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.3f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.SourceGenerators.dll" />
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.3f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.Properties.SourceGenerator.dll" />
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.3f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MinifantasyCommon\Scripts\AnimatedObjectsGroup.cs" />
+    <Compile Include="Assets\2D Dungeon Tilemap\CoinSystem\Scripts\Coin.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Chair.cs" />
+    <Compile Include="Assets\2D Dungeon Tilemap\CoinSystem\Scripts\CoinDisplay.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Banner.cs" />
+    <Compile Include="Assets\Scripts\PlayerController.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
+    <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_LootSack.cs" />
+    <Compile Include="Assets\Scripts\Tool\LoadingScreenController.cs" />
+    <Compile Include="Assets\Scripts\DoorController.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_AnimatedCharacterSelection.cs" />
+    <Compile Include="Assets\2D Dungeon Tilemap\SceneScripts\CameraFollow2D.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
+    <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
+    <Compile Include="Assets\2D Dungeon Tilemap\CoinSystem\Scripts\CollectedCoin.cs" />
+    <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
+    <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
+    <Compile Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Statue.cs" />
+    <Compile Include="Assets\Scripts\DungeonManager.cs" />
+    <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
-    <Compile Include="Assets\Scripts\Test.cs" />
+    <Compile Include="Assets\2D Dungeon Tilemap\SceneScripts\PlayerMovement.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\KrishnaPalacio\MINIFANTASY - Dungeon\DUN Documentation.txt" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile-2-Pass.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\SDFFunctions.hlsl" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Custom-Atlas.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader" />
+    <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
+    <None Include="Assets\2D Dungeon Tilemap\Documentation\Third-Party Notices.txt" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
+    <None Include="Assets\TextMesh Pro\Resources\LineBreaking Following Characters.txt" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Masking.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
+    <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader" />
+    <None Include="Assets\TextMesh Pro\Shaders\TMP_Sprite.shader" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
