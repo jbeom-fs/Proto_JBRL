@@ -1,4 +1,4 @@
-# JBLogLike — 아키텍처 보고서
+# JBRogLike — 아키텍처 보고서
 
 > 작성 기준일: 2026-04-28  
 > 엔진: Unity 2D (Tilemap)  
@@ -26,7 +26,7 @@
 
 ## 1. 프로젝트 개요
 
-**JBLogLike**는 Unity 2D Tilemap 기반의 절차적 생성 로그라이크 게임입니다.
+**JBRogLike**는 Unity 2D Tilemap 기반의 절차적 생성 로그라이크 게임입니다.
 
 | 항목 | 내용 |
 |------|------|
