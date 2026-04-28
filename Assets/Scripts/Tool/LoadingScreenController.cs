@@ -1,75 +1,241 @@
-// ═══════════════════════════════════════════════════════════════════
-//  LoadingScreenController.cs
-//  Presentation Layer — 층 이동 시 로딩 이미지 표시
-//
-//  씬 설정:
-//    1. Canvas (Screen Space - Overlay) 생성
-//    2. Image 오브젝트 추가 (전체 화면 덮는 크기)
-//    3. 이 스크립트를 Canvas에 부착
-//    4. Inspector에서 loadingImage 슬롯에 Image 연결
-//    5. DungeonManager의 Loading Screen 슬롯에 이 오브젝트 연결
-// ═══════════════════════════════════════════════════════════════════
-
 using System.Collections;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class LoadingScreenController : MonoBehaviour
 {
-    [Header("UI")]
-    [Tooltip("화면을 덮는 로딩 이미지")]
-    public Image loadingImage;
+    private const float SLOW_FADE_FRAME_MS = 16f;
 
-    [Header("페이드 설정")]
-    [Tooltip("페이드 인/아웃 시간 (초)")]
+    [Header("UI")]
+    public Image backgroundImage;
+    public Image loadingImage;
+    public CanvasGroup canvasGroup;
+
+    [Header("Fade")]
     public float fadeDuration = 0.25f;
 
-    // ── 초기화 ─────────────────────────────────────────────────────
+    [Range(1f, 5f)]
+    public float bgFadeInSpeed = 2f;
+
+    [Range(0f, 1f)]
+    public float bgFadeOutDelay = 0.5f;
+
+    private bool SeparateMode => backgroundImage != null;
 
     private void Awake()
     {
-        // 시작 시 투명하게 숨김
-        if (loadingImage != null)
-            loadingImage.color = new Color(loadingImage.color.r,
-                                           loadingImage.color.g,
-                                           loadingImage.color.b, 0f);
-        loadingImage.gameObject.SetActive(false);
+        if (canvasGroup == null)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        if (SeparateMode)
+        {
+            SetImageAlpha(backgroundImage, 0f);
+            if (loadingImage != null) SetImageAlpha(loadingImage, 0f);
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 1f;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+        }
+        else
+        {
+            if (canvasGroup != null)
+            {
+                canvasGroup.alpha = 0f;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+            else if (loadingImage != null)
+            {
+                SetImageAlpha(loadingImage, 0f);
+            }
+        }
+
+        gameObject.SetActive(false);
     }
 
-    // ── 공개 API ─────────────────────────────────────────────────────
-
-    /// <summary>로딩 이미지를 페이드 인합니다.</summary>
     public IEnumerator Show()
     {
-        loadingImage.gameObject.SetActive(true);
-        yield return StartCoroutine(Fade(0f, 1f));
+        RuntimePerfLogger.MarkEvent("loading_show_begin",
+            "mode=" + (SeparateMode ? "separate" : "single") +
+            " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture));
+
+        double start = Time.realtimeSinceStartupAsDouble;
+        gameObject.SetActive(true);
+        if (canvasGroup != null)
+        {
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = true;
+        }
+
+        if (SeparateMode)
+            yield return StartCoroutine(ShowSeparate());
+        else
+            yield return StartCoroutine(FadeSingle(0f, 1f, "loading_show_single_frame"));
+
+        RuntimePerfLogger.MarkEvent("loading_show_end",
+            "elapsedMs=" + ElapsedMs(start) +
+            " dtMs=" + CurrentDtMs());
     }
 
-    /// <summary>로딩 이미지를 페이드 아웃 후 숨깁니다.</summary>
     public IEnumerator Hide()
     {
-        yield return StartCoroutine(Fade(1f, 0f));
-        loadingImage.gameObject.SetActive(false);
+        RuntimePerfLogger.MarkEvent("loading_hide_begin",
+            "mode=" + (SeparateMode ? "separate" : "single") +
+            " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture) +
+            " bgDelay=" + bgFadeOutDelay.ToString("F3", CultureInfo.InvariantCulture));
+
+        double start = Time.realtimeSinceStartupAsDouble;
+        if (SeparateMode)
+            yield return StartCoroutine(HideSeparate());
+        else
+            yield return StartCoroutine(FadeSingle(1f, 0f, "loading_hide_single_frame"));
+
+        if (canvasGroup != null)
+        {
+            canvasGroup.interactable = false;
+            canvasGroup.blocksRaycasts = false;
+        }
+
+        gameObject.SetActive(false);
+        RuntimePerfLogger.MarkEvent("loading_hide_end",
+            "elapsedMs=" + ElapsedMs(start) +
+            " dtMs=" + CurrentDtMs());
     }
 
-    // ── 내부 ─────────────────────────────────────────────────────────
-
-    private IEnumerator Fade(float from, float to)
+    private IEnumerator ShowSeparate()
     {
-        if (loadingImage == null) yield break;
+        SetImageAlpha(backgroundImage, 0f);
+        if (loadingImage != null) SetImageAlpha(loadingImage, 0f);
 
-        Color c       = loadingImage.color;
+        if (fadeDuration <= 0f)
+        {
+            SetImageAlpha(backgroundImage, 1f);
+            if (loadingImage != null) SetImageAlpha(loadingImage, 1f);
+            yield break;
+        }
+
+        float bgDuration = fadeDuration / Mathf.Max(1f, bgFadeInSpeed);
         float elapsed = 0f;
+        int frameIndex = 0;
 
         while (elapsed < fadeDuration)
         {
-            elapsed         += Time.unscaledDeltaTime;
-            c.a              = Mathf.Lerp(from, to, elapsed / fadeDuration);    
-            loadingImage.color = c;
+            elapsed += Time.unscaledDeltaTime;
+            LogSlowFadeFrame("loading_show_frame", frameIndex, elapsed);
+
+            SetImageAlpha(backgroundImage, Mathf.Clamp01(elapsed / bgDuration));
+            if (loadingImage != null)
+                SetImageAlpha(loadingImage, Mathf.Clamp01(elapsed / fadeDuration));
+
             yield return YieldCache.WaitForEndOfFrame;
+            frameIndex++;
         }
 
-        c.a                = to;
-        loadingImage.color = c;
+        SetImageAlpha(backgroundImage, 1f);
+        if (loadingImage != null) SetImageAlpha(loadingImage, 1f);
+    }
+
+    private IEnumerator HideSeparate()
+    {
+        if (fadeDuration <= 0f)
+        {
+            SetImageAlpha(backgroundImage, 0f);
+            if (loadingImage != null) SetImageAlpha(loadingImage, 0f);
+            yield break;
+        }
+
+        float bgDelay = fadeDuration * bgFadeOutDelay;
+        float totalTime = fadeDuration + bgDelay;
+        float elapsed = 0f;
+        int frameIndex = 0;
+
+        while (elapsed < totalTime)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            LogSlowFadeFrame("loading_hide_frame", frameIndex, elapsed);
+
+            if (loadingImage != null)
+                SetImageAlpha(loadingImage, 1f - Mathf.Clamp01(elapsed / fadeDuration));
+
+            float bgElapsed = elapsed - bgDelay;
+            if (bgElapsed > 0f)
+                SetImageAlpha(backgroundImage, 1f - Mathf.Clamp01(bgElapsed / fadeDuration));
+
+            yield return YieldCache.WaitForEndOfFrame;
+            frameIndex++;
+        }
+
+        SetImageAlpha(backgroundImage, 0f);
+        if (loadingImage != null) SetImageAlpha(loadingImage, 0f);
+    }
+
+    private IEnumerator FadeSingle(float from, float to, string slowFrameEvent)
+    {
+        if (canvasGroup == null && loadingImage == null) yield break;
+
+        if (fadeDuration <= 0f)
+        {
+            SetAlpha(to);
+            yield break;
+        }
+
+        float elapsed = 0f;
+        int frameIndex = 0;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            LogSlowFadeFrame(slowFrameEvent, frameIndex, elapsed);
+            SetAlpha(Mathf.Lerp(from, to, Mathf.Clamp01(elapsed / fadeDuration)));
+
+            yield return YieldCache.WaitForEndOfFrame;
+            frameIndex++;
+        }
+
+        SetAlpha(to);
+    }
+
+    private void SetAlpha(float alpha)
+    {
+        if (canvasGroup != null)
+        {
+            canvasGroup.alpha = alpha;
+            return;
+        }
+
+        if (loadingImage != null)
+            SetImageAlpha(loadingImage, alpha);
+    }
+
+    private static void SetImageAlpha(Image image, float alpha)
+    {
+        if (image == null) return;
+        var c = image.color;
+        c.a = alpha;
+        image.color = c;
+    }
+
+    private static void LogSlowFadeFrame(string eventName, int frameIndex, float elapsed)
+    {
+        float dtMs = Time.unscaledDeltaTime * 1000f;
+        if (dtMs < SLOW_FADE_FRAME_MS) return;
+
+        RuntimePerfLogger.MarkEvent(eventName,
+            "index=" + frameIndex +
+            " elapsed=" + elapsed.ToString("F3", CultureInfo.InvariantCulture) +
+            " dtMs=" + dtMs.ToString("F3", CultureInfo.InvariantCulture));
+    }
+
+    private static string CurrentDtMs()
+    {
+        return (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture);
+    }
+
+    private static string ElapsedMs(double startTime)
+    {
+        return ((Time.realtimeSinceStartupAsDouble - startTime) * 1000.0)
+            .ToString("F3", CultureInfo.InvariantCulture);
     }
 }

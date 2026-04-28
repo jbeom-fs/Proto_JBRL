@@ -4,14 +4,17 @@
 //
 //  문 레이어 구조:
 //    [Layer 0] tilemap (메인)   — 바닥/통로/계단/벽 항상 표시
-//    [Layer 1] doorTilemap (상위) — 문 타일만, SetColor로 on/off
+//    [Layer 1] doorTilemap (상위) — 닫힐 때만 문 타일 배치, 열리면 제거
 //
-//  문 닫기: doorTilemap에서 SetColor(OPAQUE)  → 문이 보임
-//  문 열기: doorTilemap에서 SetColor(TRANSPARENT) → 문이 안 보임
-//           메인 tilemap의 통로 타일은 항상 유지 → 비어보이지 않음
+//  성능 설계:
+//    SetTiles(TileChangeData[], ignoreLockFlags: true) 를 배치 호출로 사용
+//    → N번 SetColor 개별 호출 대신 1번 배치 호출 → interop N→1
+//    → CloseDoorsForRoom 람다 제거 → delegate heap 할당 없음 → GC 간헐적 드랍 제거
 // ═══════════════════════════════════════════════════════════════════
 
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -23,8 +26,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
     public Tilemap tilemap;
 
     [Header("Tilemap — 문 레이어 (메인 위에 배치)")]
-    [Tooltip("Grid 하위에 Tilemap을 하나 더 만들어 연결하세요.\n" +
-             "Order in Layer를 메인보다 높게 설정하세요.")]
+    [Tooltip("Grid 하위에 Tilemap을 하나 더 만들어 연결하세요.")]
     public Tilemap doorTilemap;
 
     [Header("Tiles")]
@@ -37,108 +39,311 @@ public class DungeonTilemapRenderer : MonoBehaviour
     [Tooltip("올라가는 계단 (STAIR_UP = 3). null 이면 floorTile 사용.")]
     public TileBase stairUpTile;
 
-    [Tooltip("닫힌 문 타일. 문 레이어에 투명으로 미리 배치됩니다.")]
+    [Tooltip("닫힌 문 타일. doorTilemap에 사전 배치 후 색상으로 on/off됩니다.")]
     public TileBase doorTile;
 
     [Tooltip("벽 / 빈 공간 (EMPTY = 0). null 이면 빈 칸.")]
     public TileBase wallTile;
 
     // ── 상수 ────────────────────────────────────────────────────────
-    private static readonly Color TRANSPARENT = new Color(1f, 1f, 1f, 0f);
     private static readonly Color OPAQUE      = Color.white;
 
     // ── 캐시 ────────────────────────────────────────────────────────
-    private DungeonData _data;
+    private DungeonData     _data;
+    private TilemapRenderer _doorTilemapRenderer;
 
-    /// <summary>
-    /// 문 후보 위치 — key: Tilemap 좌표, value: 그리드 좌표
-    /// 생성 시 계산, 런타임엔 SetColor만 호출
-    /// </summary>
     private readonly Dictionary<Vector3Int, Vector2Int> _doorPositions
         = new Dictionary<Vector3Int, Vector2Int>();
 
-    /// <summary>현재 닫혀 있는 문의 Tilemap 좌표만 추적합니다.</summary>
     private readonly HashSet<Vector3Int> _closedDoorPositions
         = new HashSet<Vector3Int>();
 
+    private readonly List<Vector3Int> _renderedDoorPositions
+        = new List<Vector3Int>(16);
+
+    // SetTiles 배치 호출에 재사용할 버퍼 — 매 호출마다 List/Array 할당 방지
+    private readonly List<TileChangeData> _doorChangeBuffer
+        = new List<TileChangeData>(32);
+
+    private readonly Dictionary<int, TileChangeData[]> _doorChangeArraysBySize
+        = new Dictionary<int, TileChangeData[]>();
+
+    private TileBase[] _mainTileBuffer;
+    private TileBase[] _chunkTileBuffer;
+
     // ── 공개 API ─────────────────────────────────────────────────────
 
-    /// <summary>
-    /// DungeonData 전체를 메인 Tilemap에 배치합니다.
-    /// 이후 문 후보 위치를 doorTilemap에 투명으로 미리 배치합니다.
-    /// 로딩 화면 중 호출되어야 합니다.
-    /// </summary>
     public void PlaceTiles(DungeonData data)
     {
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_begin",
+                "size=" + data.MapWidth + "x" + data.MapHeight + " rooms=" + data.RoomCount);
+
+        double stageStart = Time.realtimeSinceStartupAsDouble;
         _data = data;
         _doorPositions.Clear();
         _closedDoorPositions.Clear();
+        _renderedDoorPositions.Clear();
 
+        if (doorTilemap != null)
+        {
+            if (_doorTilemapRenderer == null)
+                _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
+            EnsureDoorTilemapActive();
+            SyncDoorTilemapPresentation();
+            _doorTilemapRenderer.enabled = false;
+        }
+
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_prepare",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " hasDoorTilemap=" + (doorTilemap != null));
+
+        stageStart = Time.realtimeSinceStartupAsDouble;
         tilemap.ClearAllTiles();
         if (doorTilemap != null) doorTilemap.ClearAllTiles();
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_clear",
+                "elapsedMs=" + ElapsedMs(stageStart));
 
-        // ── 1. 메인 타일 일괄 배치 (문 포함 모든 walkable 타일) ────
-        int total   = data.MapWidth * data.MapHeight;
-        var changes = new TileChangeData[total];
-        int idx     = 0;
+        // ── 1. 메인 타일 일괄 배치 ────────────────────────────────
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        int total = data.MapWidth * data.MapHeight;
+        var tiles = GetMainTileBuffer(total);
+        int visibleTileCount = 0;
 
-        data.ForEachTile((col, row, tileType) =>
+        for (int row = 0; row < data.MapHeight; row++)
         {
-            changes[idx++] = new TileChangeData
+            int yOffset = data.MapHeight - 1 - row;
+            int dstRow = yOffset * data.MapWidth;
+
+            for (int col = 0; col < data.MapWidth; col++)
             {
-                position  = new Vector3Int(col, -row, 0),
-                tile      = ResolveTile(tileType),
-                color     = OPAQUE,
-                transform = Matrix4x4.identity,
-            };
-        });
+                TileBase tile = ResolveTile(data.GetTileTypeUnchecked(col, row));
+                if (tile != null) visibleTileCount++;
+                tiles[col + dstRow] = tile;
+            }
+        }
 
-        tilemap.SetTiles(changes, false);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_build_changes",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " total=" + total +
+                " visible=" + visibleTileCount);
 
-        // ── 2. 문 레이어에 doorTile 투명으로 미리 배치 ─────────────
-        if (doorTilemap != null && doorTile != null)
-            PreplaceDoorTiles(data);
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        var bounds = new BoundsInt(0, 1 - data.MapHeight, 0, data.MapWidth, data.MapHeight, 1);
+        tilemap.SetTilesBlock(bounds, tiles);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_set_tiles",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " tileCount=" + tiles.Length +
+                " method=SetTilesBlock");
+
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        CacheDoorPositions(data);
+        if (RuntimePerfLogger.IsActive)
+        {
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_cache_doors",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " doorCandidates=" + _doorPositions.Count);
+            RuntimePerfLogger.MarkEvent("place_tiles_end", "doorCandidates=" + _doorPositions.Count);
+        }
+    }
+
+    public IEnumerator PlaceTilesChunked(DungeonData data, int chunkRows)
+    {
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_begin",
+                "size=" + data.MapWidth + "x" + data.MapHeight +
+                " rooms=" + data.RoomCount +
+                " chunkRows=" + chunkRows);
+
+        double stageStart = Time.realtimeSinceStartupAsDouble;
+        _data = data;
+        _doorPositions.Clear();
+        _closedDoorPositions.Clear();
+        _renderedDoorPositions.Clear();
+
+        if (doorTilemap != null)
+        {
+            if (_doorTilemapRenderer == null)
+                _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
+            EnsureDoorTilemapActive();
+            SyncDoorTilemapPresentation();
+            _doorTilemapRenderer.enabled = false;
+        }
+
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_prepare",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " hasDoorTilemap=" + (doorTilemap != null));
+
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        tilemap.ClearAllTiles();
+        if (doorTilemap != null) doorTilemap.ClearAllTiles();
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_clear",
+                "elapsedMs=" + ElapsedMs(stageStart));
+
+        chunkRows = Mathf.Clamp(chunkRows, 1, data.MapHeight);
+
+        int total = data.MapWidth * data.MapHeight;
+        int visibleTileCount = 0;
+        double totalSetTilesMs = 0.0;
+        int chunkIndex = 0;
+
+        for (int rowStart = 0; rowStart < data.MapHeight; rowStart += chunkRows)
+        {
+            int rowEnd = Mathf.Min(rowStart + chunkRows, data.MapHeight);
+            int currentChunkRows = rowEnd - rowStart;
+            var tiles = GetChunkTileBuffer(data.MapWidth * currentChunkRows);
+
+            stageStart = Time.realtimeSinceStartupAsDouble;
+            int chunkVisible = 0;
+            for (int row = rowStart; row < rowEnd; row++)
+            {
+                int localY = rowEnd - 1 - row;
+                int dstRow = localY * data.MapWidth;
+
+                for (int col = 0; col < data.MapWidth; col++)
+                {
+                    TileBase tile = ResolveTile(data.GetTileTypeUnchecked(col, row));
+                    if (tile != null) chunkVisible++;
+                    tiles[col + dstRow] = tile;
+                }
+            }
+            visibleTileCount += chunkVisible;
+
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("place_tiles_stage_build_chunk",
+                    "index=" + chunkIndex +
+                    " rows=" + rowStart + ":" + rowEnd +
+                    " elapsedMs=" + ElapsedMs(stageStart) +
+                    " visible=" + chunkVisible);
+
+            stageStart = Time.realtimeSinceStartupAsDouble;
+            var bounds = new BoundsInt(0, 1 - rowEnd, 0, data.MapWidth, currentChunkRows, 1);
+            tilemap.SetTilesBlock(bounds, tiles);
+            double setTilesMs = (Time.realtimeSinceStartupAsDouble - stageStart) * 1000.0;
+            totalSetTilesMs += setTilesMs;
+
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("place_tiles_stage_set_tiles_chunk",
+                    "index=" + chunkIndex +
+                    " rows=" + rowStart + ":" + rowEnd +
+                    " elapsedMs=" + setTilesMs.ToString("F3", CultureInfo.InvariantCulture) +
+                    " tileCount=" + tiles.Length);
+
+            chunkIndex++;
+            yield return null;
+        }
+
+        if (RuntimePerfLogger.IsActive)
+        {
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_build_changes",
+                "elapsedMs=chunked total=" + total +
+                " visible=" + visibleTileCount +
+                " chunks=" + chunkIndex);
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_set_tiles",
+                "elapsedMs=" + totalSetTilesMs.ToString("F3", CultureInfo.InvariantCulture) +
+                " tileCount=" + total +
+                " method=SetTilesBlockChunked" +
+                " chunks=" + chunkIndex);
+        }
+
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        CacheDoorPositions(data);
+        if (RuntimePerfLogger.IsActive)
+        {
+            RuntimePerfLogger.MarkEvent("place_tiles_stage_cache_doors",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " doorCandidates=" + _doorPositions.Count);
+            RuntimePerfLogger.MarkEvent("place_tiles_end", "doorCandidates=" + _doorPositions.Count);
+        }
     }
 
     /// <summary>
     /// 방의 문을 닫습니다.
-    /// doorTilemap에서 SetColor(OPAQUE) → 메시 리빌드 없음.
-    /// 메인 Tilemap의 바닥 타일은 그대로 유지됩니다.
+    /// 람다 없이 루프를 직접 순회 — delegate 할당 없음.
+    /// 변경 사항을 배치로 모아 SetTiles 1회 호출 — interop N→1.
     /// </summary>
     public void CloseDoorsForRoom(RoomInfo room)
     {
-        if (_data == null || doorTilemap == null) return;
+        if (_data == null || doorTilemap == null || doorTile == null) return;
 
-        IterateRoomExterior(room, (col, row) =>
+        double start = Time.realtimeSinceStartupAsDouble;
+
+        _doorChangeBuffer.Clear();
+
+        for (int i = 0; i < _renderedDoorPositions.Count; i++)
         {
-            if (_data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
+            _doorChangeBuffer.Add(new TileChangeData
+            {
+                position  = _renderedDoorPositions[i],
+                tile      = null,
+                color     = OPAQUE,
+                transform = Matrix4x4.identity,
+            });
+        }
 
-            var tilemapPos = new Vector3Int(col, -row, 0);
-            if (!_doorPositions.ContainsKey(tilemapPos)) return;
+        _renderedDoorPositions.Clear();
+        _closedDoorPositions.Clear();
 
-            _data.SetTileValue(col, row, DungeonGenerator.DOOR_CLOSED);
-            _closedDoorPositions.Add(tilemapPos);   // 닫힌 문 추적
-            doorTilemap.SetColor(tilemapPos, OPAQUE);
-        });
+        // ── 4방향 테두리 직접 순회 (람다/delegate 할당 없음) ────
+        for (int col = room.X; col < room.Right; col++)
+        {
+            TryAddDoorClose(col, room.Y - 1);
+            TryAddDoorClose(col, room.Bottom);
+        }
+        for (int row = room.Y; row < room.Bottom; row++)
+        {
+            TryAddDoorClose(room.X - 1, row);
+            TryAddDoorClose(room.Right,  row);
+        }
+
+        FlushDoorChanges();
+        SetDoorVisible(_renderedDoorPositions.Count > 0);
+
+        double elapsedMs = (Time.realtimeSinceStartupAsDouble - start) * 1000.0;
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("close_doors",
+                "room=" + room.X + ":" + room.Y +
+                " closed=" + _closedDoorPositions.Count +
+                " rendered=" + _renderedDoorPositions.Count +
+                " elapsedMs=" + elapsedMs.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
     }
 
     /// <summary>
     /// 모든 닫힌 문을 엽니다.
-    /// _closedDoorPositions만 순회 — 전체 문 후보 탐색 없음.
+    /// N번 SetColor 개별 호출 대신 SetTiles 1회 배치 호출.
     /// </summary>
-    public void OpenAllDoors()
+    public bool OpenAllDoors()
     {
         if (_data == null || doorTilemap == null || _closedDoorPositions.Count == 0)
-            return;
+            return false;
+
+        double start = Time.realtimeSinceStartupAsDouble;
+        int openedCount = _closedDoorPositions.Count;
 
         foreach (var tilemapPos in _closedDoorPositions)
         {
             var gridPos = _doorPositions[tilemapPos];
             _data.SetTileValue(gridPos.x, gridPos.y, DungeonGenerator.CORRIDOR);
-            doorTilemap.SetColor(tilemapPos, TRANSPARENT);
         }
 
         _closedDoorPositions.Clear();
+        SetDoorVisible(false);
+
+        double elapsedMs = (Time.realtimeSinceStartupAsDouble - start) * 1000.0;
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("open_all_doors",
+                "opened=" + openedCount +
+                " rendered=" + _renderedDoorPositions.Count +
+                " visible=false" +
+                " elapsedMs=" + elapsedMs.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
+
+        return true;
     }
 
     // ── 좌표 변환 ────────────────────────────────────────────────────
@@ -154,61 +359,164 @@ public class DungeonTilemapRenderer : MonoBehaviour
 
     // ── 내부 메서드 ──────────────────────────────────────────────────
 
-    /// <summary>
-    /// 모든 방의 문 후보 위치에 doorTile을 투명으로 사전 배치합니다.
-    /// SetTiles는 로딩 화면 중 1회만 호출됩니다.
-    /// </summary>
-    private void PreplaceDoorTiles(DungeonData data)
+    private void CacheDoorPositions(DungeonData data)
     {
-        var doorChanges = new List<TileChangeData>();
+        _doorPositions.Clear();
 
-        data.ForEachRoom(room =>
+        for (int i = 0; i < data.RoomCount; i++)
         {
-            IterateRoomExterior(room, (col, row) =>
+            var room = data.GetRoom(i);
+
+            for (int col = room.X; col < room.Right; col++)
             {
-                if (!data.InBounds(col, row)) return;
-                if (data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
-
-                var tilemapPos = new Vector3Int(col, -row, 0);
-                if (_doorPositions.ContainsKey(tilemapPos)) return;
-
-                _doorPositions[tilemapPos] = new Vector2Int(col, row);
-                doorChanges.Add(new TileChangeData
-                {
-                    position  = tilemapPos,
-                    tile      = doorTile,
-                    color     = TRANSPARENT,   // 처음엔 투명 (문 열림 상태)
-                    transform = Matrix4x4.identity,
-                });
-            });
-        });
-
-        if (doorChanges.Count == 0) return;
-
-        // doorTilemap에 일괄 배치 (메인 Tilemap 불변)
-        doorTilemap.SetTiles(doorChanges.ToArray(), false);
-
-        // 색상 오버라이드 허용 후 투명 재적용
-        foreach (var kv in _doorPositions)
-        {
-            doorTilemap.SetTileFlags(kv.Key, TileFlags.None);
-            doorTilemap.SetColor(kv.Key, TRANSPARENT);
+                TryCacheDoorPosition(data, col, room.Y - 1);
+                TryCacheDoorPosition(data, col, room.Bottom);
+            }
+            for (int row = room.Y; row < room.Bottom; row++)
+            {
+                TryCacheDoorPosition(data, room.X - 1, row);
+                TryCacheDoorPosition(data, room.Right,  row);
+            }
         }
     }
 
-    /// <summary>방 테두리 바깥 1칸(4방향)을 순회합니다.</summary>
-    private static void IterateRoomExterior(RoomInfo room, System.Action<int, int> action)
+    private void TryCacheDoorPosition(DungeonData data, int col, int row)
     {
-        for (int col = room.X; col < room.Right; col++)
+        if (!data.InBounds(col, row)) return;
+        if (data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
+
+        var tilemapPos = new Vector3Int(col, -row, 0);
+        if (_doorPositions.ContainsKey(tilemapPos)) return;
+
+        _doorPositions[tilemapPos] = new Vector2Int(col, row);
+    }
+
+    private void TryAddDoorClose(int col, int row)
+    {
+        if (_data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
+
+        var tilemapPos = new Vector3Int(col, -row, 0);
+        if (!_doorPositions.ContainsKey(tilemapPos)) return;
+        if (_closedDoorPositions.Contains(tilemapPos)) return;
+
+        _data.SetTileValue(col, row, DungeonGenerator.DOOR_CLOSED);
+        _closedDoorPositions.Add(tilemapPos);
+        _renderedDoorPositions.Add(tilemapPos);
+        _doorChangeBuffer.Add(new TileChangeData
         {
-            action(col, room.Y - 1);
-            action(col, room.Bottom);
-        }
-        for (int row = room.Y; row < room.Bottom; row++)
+            position  = tilemapPos,
+            tile      = doorTile,
+            color     = OPAQUE,
+            transform = Matrix4x4.identity,
+        });
+    }
+
+    private void EnsureDoorTilemapActive()
+    {
+        if (!doorTilemap.gameObject.activeInHierarchy)
+            doorTilemap.gameObject.SetActive(true);
+
+        if (_doorTilemapRenderer == null)
+            _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
+
+        if (_doorTilemapRenderer != null && !_doorTilemapRenderer.enabled)
+            _doorTilemapRenderer.enabled = true;
+
+        if (_doorTilemapRenderer != null && tilemap != null)
         {
-            action(room.X - 1, row);
-            action(room.Right,  row);
+            var mainRenderer = tilemap.GetComponent<TilemapRenderer>();
+            if (mainRenderer != null)
+            {
+                if (_doorTilemapRenderer.sortingLayerID != mainRenderer.sortingLayerID)
+                    _doorTilemapRenderer.sortingLayerID = mainRenderer.sortingLayerID;
+                if (_doorTilemapRenderer.sortingOrder <= mainRenderer.sortingOrder)
+                    _doorTilemapRenderer.sortingOrder = mainRenderer.sortingOrder + 1;
+
+                if (_doorTilemapRenderer.sharedMaterial != mainRenderer.sharedMaterial)
+                    _doorTilemapRenderer.sharedMaterial = mainRenderer.sharedMaterial;
+
+                if (_doorTilemapRenderer.maskInteraction != mainRenderer.maskInteraction)
+                    _doorTilemapRenderer.maskInteraction = mainRenderer.maskInteraction;
+            }
         }
+
+        if (doorTilemap.color != OPAQUE)
+            doorTilemap.color = OPAQUE;
+    }
+
+    private void SetDoorVisible(bool visible)
+    {
+        if (doorTilemap == null) return;
+
+        EnsureDoorTilemapActive();
+
+        if (_doorTilemapRenderer == null)
+            _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
+
+        if (_doorTilemapRenderer != null)
+            _doorTilemapRenderer.enabled = visible;
+    }
+
+    private void SyncDoorTilemapPresentation()
+    {
+        if (doorTilemap == null || tilemap == null) return;
+
+        if (doorTilemap.tileAnchor != tilemap.tileAnchor)
+            doorTilemap.tileAnchor = tilemap.tileAnchor;
+
+        if (doorTilemap.orientation != tilemap.orientation)
+            doorTilemap.orientation = tilemap.orientation;
+
+        if (doorTilemap.orientationMatrix != tilemap.orientationMatrix)
+            doorTilemap.orientationMatrix = tilemap.orientationMatrix;
+    }
+
+    private void FlushDoorChanges()
+    {
+        int count = _doorChangeBuffer.Count;
+        if (count == 0 || doorTilemap == null) return;
+
+        EnsureDoorTilemapActive();
+        SyncDoorTilemapPresentation();
+        var changes = GetDoorChangeArray(count);
+
+        for (int i = 0; i < count; i++)
+            changes[i] = _doorChangeBuffer[i];
+
+        doorTilemap.SetTiles(changes, true);
+    }
+
+    private TileChangeData[] GetDoorChangeArray(int count)
+    {
+        if (!_doorChangeArraysBySize.TryGetValue(count, out var changes))
+        {
+            changes = new TileChangeData[count];
+            _doorChangeArraysBySize.Add(count, changes);
+        }
+
+        return changes;
+    }
+
+    private TileBase[] GetMainTileBuffer(int count)
+    {
+        if (_mainTileBuffer == null || _mainTileBuffer.Length != count)
+            _mainTileBuffer = new TileBase[count];
+
+        return _mainTileBuffer;
+    }
+
+    private TileBase[] GetChunkTileBuffer(int count)
+    {
+        if (_chunkTileBuffer == null || _chunkTileBuffer.Length != count)
+            _chunkTileBuffer = new TileBase[count];
+
+        return _chunkTileBuffer;
+    }
+
+    private static string ElapsedMs(double startTime)
+    {
+        return ((Time.realtimeSinceStartupAsDouble - startTime) * 1000.0)
+            .ToString("F3", CultureInfo.InvariantCulture);
     }
 
     private TileBase ResolveTile(int tileType)

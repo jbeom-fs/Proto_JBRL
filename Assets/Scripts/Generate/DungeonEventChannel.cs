@@ -19,6 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 using System;
+using System.Globalization;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Dungeon/Event Channel", fileName = "DungeonEventChannel")]
@@ -96,7 +97,19 @@ public class DungeonEventChannel : ScriptableObject
 #if UNITY_EDITOR
         Debug.Log($"[Event] OnFloorChanged — {prevFloor}F → {newFloor}F");
 #endif
+        double start = Time.realtimeSinceStartupAsDouble;
+        int listenerCount = OnFloorChanged != null ? OnFloorChanged.GetInvocationList().Length : 0;
+        RuntimePerfLogger.MarkEvent("event_channel_floor_changed_begin",
+            "prev=" + prevFloor +
+            " current=" + newFloor +
+            " listeners=" + listenerCount);
         OnFloorChanged?.Invoke(prevFloor, newFloor);
+        RuntimePerfLogger.MarkEvent("event_channel_floor_changed_end",
+            "prev=" + prevFloor +
+            " current=" + newFloor +
+            " listeners=" + listenerCount +
+            " elapsedMs=" + ((Time.realtimeSinceStartupAsDouble - start) * 1000.0).ToString("F3", CultureInfo.InvariantCulture) +
+            " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
     }
 
     // ── ScriptableObject 생명주기 ────────────────────────────────────

@@ -36,8 +36,9 @@ public class RoomRegistry
         _closedRooms.Clear();
         _spawnRoomKey = null;
 
-        data.ForEachRoom(room =>
+        for (int i = 0; i < data.RoomCount; i++)
         {
+            var room = data.GetRoom(i);
             var key  = Key(room);
             var type = RoomType.Normal;
 
@@ -48,7 +49,7 @@ public class RoomRegistry
                         type = RoomType.Stair;
 
             _types[key] = type;
-        });
+        }
     }
 
     // ── 타입 조회·변경 ──────────────────────────────────────────────

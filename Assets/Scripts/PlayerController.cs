@@ -45,6 +45,9 @@ public class PlayerController : MonoBehaviour
     private float      _stairCooldown;
     private const float STAIR_COOLDOWN = 0.5f;
 
+    /// <summary>마지막 이동 입력 방향 (그리드 단위). PlayerCombatController가 공격 방향으로 사용.</summary>
+    public Vector2Int FacingDirection { get; private set; } = Vector2Int.down;
+
     private RoomInfo? _currentRoom;
 
     private readonly HashSet<(int x, int y)> _visitedRooms
@@ -73,7 +76,7 @@ public class PlayerController : MonoBehaviour
         if (dungeonManager.Data == null)
             dungeonManager.Generate();
 
-        _tileSize = dungeonManager.renderer.tilemap.cellSize.x;
+        _tileSize = dungeonManager.dungeonRenderer.tilemap.cellSize.x;
 
         // 층 변경 완료(던전 생성 후) 시 스폰 → 이벤트로 타이밍 보장
         eventChannel.OnFloorChanged += OnFloorChangedHandler;
@@ -95,6 +98,11 @@ public class PlayerController : MonoBehaviour
     private void OnFloorChangedHandler(int prevFloor, int newFloor)
     {
         SpawnAtStart();
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("player_spawned",
+                "prevFloor=" + prevFloor + " newFloor=" + newFloor +
+                " position=" + transform.position.x.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) +
+                ":" + transform.position.y.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
 #if UNITY_EDITOR
         Debug.Log($"[Player] {prevFloor}층 → {newFloor}층, 스폰 완료");
 #endif
@@ -123,6 +131,9 @@ public class PlayerController : MonoBehaviour
     {
         _stairCooldown -= Time.deltaTime;
 
+        if (dungeonManager != null && dungeonManager.IsTransitioning)
+            return;
+
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
 
@@ -142,6 +153,11 @@ public class PlayerController : MonoBehaviour
         Vector2 input = ReadMovementInput(keyboard);
         if (input != Vector2.zero)
         {
+            // 대각선 입력 시 X 축 우선으로 facing 결정
+            FacingDirection = input.x != 0f
+                ? new Vector2Int((int)Mathf.Sign(input.x), 0)
+                : new Vector2Int(0, (int)Mathf.Sign(input.y));
+
             if (input.x != 0f && input.y != 0f)
                 input = input.normalized;
             MoveWithCollision(input);
@@ -209,7 +225,7 @@ public class PlayerController : MonoBehaviour
         // 같은 타일에 머무는 동안은 방 상태가 절대 변하지 않으므로 스킵
         
         var gridPos = dungeonManager.WorldToGrid(transform.position);
-        if (dungeonManager.IsCorr(gridPos.y, gridPos.x))
+        if (dungeonManager.IsCorr(gridPos.x, gridPos.y))
         {
             return;
         }
@@ -251,6 +267,12 @@ public class PlayerController : MonoBehaviour
         if (isFirstVisit && room.Value.Type == RoomType.Normal)
             _visitedRooms.Add(key);
 
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("room_entered",
+                "room=" + room.Value.X + ":" + room.Value.Y +
+                " type=" + room.Value.Type +
+                " firstVisit=" + isFirstVisit +
+                " grid=" + gridPos.x + ":" + gridPos.y);
         eventChannel.RaiseRoomEntered(room.Value, isFirstVisit);
         
     }
@@ -261,11 +283,18 @@ public class PlayerController : MonoBehaviour
 
     private void TryInteractStair()
     {
+        if (dungeonManager.IsTransitioning)
+            return;
+
         var gridPos  = dungeonManager.WorldToGrid(transform.position);
         int tileType = dungeonManager.GetTileType(gridPos.x, gridPos.y);
 
         if (tileType == DungeonGenerator.STAIR_UP)
         {
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("stair_used",
+                    "fromFloor=" + dungeonManager.floor +
+                    " grid=" + gridPos.x + ":" + gridPos.y);
             // NextFloor()는 코루틴 → 완료 후 OnFloorChanged 발행
             // → OnFloorChangedHandler에서 SpawnAtStart() 호출
             // → 새 던전 생성 완료 후 스폰이 보장됨
