@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 989
   m_ShowMode: 4
-  m_Title: Hierarchy
+  m_Title: Project
   m_RootView: {fileID: 11}
   m_MinSize: {x: 875, y: 338}
   m_MaxSize: {x: 10000, y: 10000}
@@ -251,8 +251,8 @@ MonoBehaviour:
     y: 0
     width: 489
     height: 528
-  m_MinSize: {x: 275, y: 50}
-  m_MaxSize: {x: 4000, y: 4000}
+  m_MinSize: {x: 276, y: 76}
+  m_MaxSize: {x: 4001, y: 4026}
   m_ActualView: {fileID: 19}
   m_Panes:
   - {fileID: 19}
@@ -788,7 +788,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Perfabs/Scriptable/Enemy
+    - Assets/Scripts
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -798,26 +798,20 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Perfabs/Scriptable/Enemy
+  - Assets/Scripts
   m_LastFoldersGridSize: -1
-  m_LastProjectPath: D:\JBUnityProject\Projects\JBLogLike
+  m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 0}
+    scrollPos: {x: 0, y: 120}
     m_SelectedIDs:
-    - m_Data: 54214
+    - m_Data: 54238
     m_LastClickedID:
-      m_Data: 54214
+      m_Data: 54238
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 53876
-    - m_Data: 53878
-    - m_Data: 53880
-    - m_Data: 53882
-    - m_Data: 53884
-    - m_Data: 53886
     - m_Data: 53888
     - m_Data: 53890
     - m_Data: 53892
@@ -825,6 +819,12 @@ MonoBehaviour:
     - m_Data: 53896
     - m_Data: 53898
     - m_Data: 53900
+    - m_Data: 53902
+    - m_Data: 53904
+    - m_Data: 53906
+    - m_Data: 53908
+    - m_Data: 53910
+    - m_Data: 53912
     - m_Data: 1000000000
     - m_Data: 2147483647
     m_RenameOverlay:
@@ -860,12 +860,6 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 53876
-    - m_Data: 53878
-    - m_Data: 53880
-    - m_Data: 53882
-    - m_Data: 53884
-    - m_Data: 53886
     - m_Data: 53888
     - m_Data: 53890
     - m_Data: 53892
@@ -873,6 +867,12 @@ MonoBehaviour:
     - m_Data: 53896
     - m_Data: 53898
     - m_Data: 53900
+    - m_Data: 53902
+    - m_Data: 53904
+    - m_Data: 53906
+    - m_Data: 53908
+    - m_Data: 53910
+    - m_Data: 53912
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -901,9 +901,9 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 52494
+    - m_Data: 43970
     m_LastClickedEntityId:
-      m_Data: 52494
+      m_Data: 43970
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 52286
@@ -1038,15 +1038,11 @@ MonoBehaviour:
     m_TreeViewState:
       scrollPos: {x: 0, y: 0}
       m_SelectedIDs:
-      - m_Data: 52494
+      - m_Data: 43970
       m_LastClickedID:
-        m_Data: 52494
+        m_Data: 0
       m_ExpandedIDs:
       - m_Data: -1382
-      - m_Data: 52478
-      - m_Data: 52494
-      - m_Data: 52520
-      - m_Data: 52552
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1570,9 +1566,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 37.511993, y: -24.786858, z: -0.15072171}
+    m_Target: {x: 38.112335, y: -22.607, z: -0.15656053}
     speed: 2
-    m_Value: {x: 37.511993, y: -24.786858, z: -0.15072171}
+    m_Value: {x: 38.112335, y: -22.607, z: -0.15656053}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1623,9 +1619,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 20.72986
+    m_Target: 21.313717
     speed: 2
-    m_Value: 20.72986
+    m_Value: 21.313717
   m_Ortho:
     m_Target: 1
     speed: 2
