@@ -38,7 +38,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     [SerializeField] private float hitRadius = 0.3f;
 
     // NonAlloc 버퍼 — 광역 스킬 후보를 한 번에 담기 위해 넉넉하게 잡고 프레임 간 재사용합니다.
-    private static readonly Collider2D[] s_HitBuffer = new Collider2D[128];
+    private static readonly Collider2D[]    s_HitBuffer = new Collider2D[128];
+    // Physics2D.OverlapCircle(contactFilter) 오버로드용 — 레이어/트리거 필터 없이 전체 수집
+    private static readonly ContactFilter2D s_NoFilter  = ContactFilter2D.noFilter;
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
@@ -248,7 +250,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_targetGridSet.Count == 0) return;
 
         // 기존처럼 타일마다 물리 쿼리를 반복하지 않고, 공격당 한 번만 넓게 후보를 수집한 뒤 그리드로 필터링합니다.
-        int count = Physics2D.OverlapCircleNonAlloc(transform.position, queryRadius + hitRadius, s_HitBuffer);
+        int count = Physics2D.OverlapCircle(transform.position, queryRadius + hitRadius, s_NoFilter, s_HitBuffer);
         for (int i = 0; i < count; i++)
         {
             Collider2D col = s_HitBuffer[i];
@@ -383,7 +385,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _currentHp = Mathf.Max(0, _currentHp - actual);
         combatChannel?.RaisePlayerHpChanged(_currentHp, maxHp);
 #if UNITY_EDITOR
-        Debug.Log($"[Combat] 플레이어 -${actual} HP → {_currentHp}/{maxHp}");
+        Debug.Log($"[Combat] 플레이어 -{actual} HP → {_currentHp}/{maxHp}");
 #endif
         if (_currentHp == 0)
             OnPlayerDied();

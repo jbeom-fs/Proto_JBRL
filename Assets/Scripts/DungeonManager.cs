@@ -1,4 +1,4 @@
-// ═══════════════════════════════════════════════════════════════════
+﻿// ═══════════════════════════════════════════════════════════════════
 //  DungeonManager.cs
 //  Application Layer — 던전 생애주기 조율
 //
@@ -336,7 +336,7 @@ public class DungeonManager : MonoBehaviour
 
         if (dungeonRenderer == null)
         {
-            Debug.LogError("[DungeonManager] DungeonTilemapRenderer媛 ?곌껐?섏? ?딆븯?듬땲??");
+            Debug.LogError("[DungeonManager] DungeonTilemapRenderer가 연결되지 않았습니다.");
             yield break;
         }
 
@@ -389,7 +389,7 @@ public class DungeonManager : MonoBehaviour
         RuntimePerfLogger.MarkEvent("generate_end",
             "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y + " chunked=true");
 
-        Debug.Log($"[DungeonManager] ?앹꽦 ?꾨즺 ??Seed: {seed}, Floor: {floor}");
+        Debug.Log($"[DungeonManager] 생성 완료 — Seed: {seed}, Floor: {floor}");
     }
 
     // ── 데이터 쿼리 위임 API ─────────────────────────────────────────

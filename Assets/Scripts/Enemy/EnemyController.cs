@@ -65,6 +65,10 @@ public class EnemyController : MonoBehaviour, IDamageable
             _currentHp = data.maxHp;
             _healthBar?.SetHp(_currentHp, data.maxHp);
         }
+        else
+        {
+            Debug.LogWarning($"[EnemyController] {gameObject.name}: EnemyData 없음 — HP가 0으로 설정됩니다.");
+        }
     }
 
     /// <summary>프리팹 풀에서 꺼낼 때 데이터를 주입합니다.</summary>

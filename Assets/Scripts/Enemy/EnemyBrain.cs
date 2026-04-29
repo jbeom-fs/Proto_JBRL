@@ -338,6 +338,7 @@ public abstract class EnemyBrain : MonoBehaviour
         private readonly EnemyBrain _brain;
         private readonly Vector3[] _corners = new Vector3[4];
         private readonly Collider2D[] _separationBuffer = new Collider2D[16];
+        private static readonly ContactFilter2D s_SeparationFilter = ContactFilter2D.noFilter;
         private float _tileSize = 1f;
         private Vector2 _smoothedSeparation;
 
@@ -471,9 +472,10 @@ public abstract class EnemyBrain : MonoBehaviour
         {
             if (!_brain.enableSeparation) return Vector2.zero;
 
-            int neighborCount = Physics2D.OverlapCircleNonAlloc(
+            int neighborCount = Physics2D.OverlapCircle(
                 _brain.transform.position,
                 _brain.separationRadius,
+                s_SeparationFilter,
                 _separationBuffer);
 
             Vector2 repel = Vector2.zero;
