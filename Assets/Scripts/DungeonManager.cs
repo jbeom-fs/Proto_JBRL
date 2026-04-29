@@ -92,10 +92,11 @@ public class DungeonManager : MonoBehaviour
     public int tilePlacementChunkRows = 8;
 
     // ── 도메인 객체 ─────────────────────────────────────────────────
-    private DungeonData    _data;
-    private RoomRegistry   _registry;
-    private Vector2Int     _cachedSpawnPos;   // Generate 시 계산 후 캐싱
-    private RoomInfo?      _currentDoorRoom;
+    private DungeonData         _data;
+    private RoomRegistry        _registry;
+    private Vector2Int          _cachedSpawnPos;   // Generate 시 계산 후 캐싱
+    private RoomInfo?           _currentDoorRoom;
+    private DungeonQueryService _queryService;
 
     // 층 전환 중복 방지 — 코루틴 실행 중 추가 요청을 차단
     private bool _isTransitioning = false;
@@ -119,6 +120,11 @@ public class DungeonManager : MonoBehaviour
 
         // 전역 던전 접근 지점입니다. 풀링된 적/스폰 시스템은 인스펙터 참조 대신 이 싱글톤을 사용합니다.
         Instance = this;
+
+        // 쿼리 서비스 초기화 — dungeonRenderer는 Inspector에서 주입된 상태
+        if (dungeonRenderer == null)
+            Debug.LogWarning("[DungeonManager] Awake: dungeonRenderer가 없습니다 — 좌표 변환이 동작하지 않습니다.");
+        _queryService = new DungeonQueryService(dungeonRenderer);
     }
 
     // ── 생성 파이프라인 ──────────────────────────────────────────────
@@ -173,6 +179,9 @@ public class DungeonManager : MonoBehaviour
         _registry.Initialize(_data);
         RuntimePerfLogger.MarkEvent("generate_stage_registry_init",
             "elapsedMs=" + ElapsedMs(stageStart));
+
+        // 쿼리 서비스에 최신 데이터 주입 (Registry 초기화 완료 후)
+        _queryService?.UpdateData(_data, _registry, _originGrid);
 
         // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
         stageStart = Time.realtimeSinceStartupAsDouble;
@@ -375,6 +384,9 @@ public class DungeonManager : MonoBehaviour
         RuntimePerfLogger.MarkEvent("generate_stage_registry_init",
             "elapsedMs=" + ElapsedMs(stageStart));
 
+        // 쿼리 서비스에 최신 데이터 주입 (Registry 초기화 완료 후)
+        _queryService?.UpdateData(_data, _registry, _originGrid);
+
         stageStart = Time.realtimeSinceStartupAsDouble;
         _cachedSpawnPos = ComputeSpawnPos();
         RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
@@ -394,27 +406,38 @@ public class DungeonManager : MonoBehaviour
 
     // ── 데이터 쿼리 위임 API ─────────────────────────────────────────
     // PlayerController 등이 DungeonManager 하나만 참조해도 되도록 위임합니다.
+    // 구현은 DungeonQueryService에 있으며, 시그니처는 하위 호환을 위해 그대로 유지합니다.
 
     public bool IsWalkable(int col, int row)
-        => _data?.IsWalkable(col, row) ?? false;
+        => _queryService.IsWalkable(col, row);
 
     public int GetTileType(int col, int row)
-        => _data?.GetTileType(col, row) ?? DungeonGenerator.EMPTY;
+        => _queryService.GetTileType(col, row);
 
     /// <summary>그리드 좌표가 속한 방을 타입 정보 포함해 반환합니다.</summary>
     public RoomInfo? GetRoomAt(int col, int row)
-    {
-        if (_data == null || _registry == null) return null;
-        var room = _data.GetRoomAt(col, row);
-        if (!room.HasValue) return null;
-        return _registry.Resolve(room.Value);
-    }
+        => _queryService.GetRoomAt(col, row);
 
-    /// <summary>
-    /// 스폰 위치를 반환합니다.
-    /// Generate() 시점에 계산된 캐시를 반환하므로 O(1).
-    /// </summary>
+    /// <summary>스폰 위치를 반환합니다. Generate() 시점에 계산된 캐시를 반환하므로 O(1).</summary>
     public Vector2Int GetSpawnTilePos() => _cachedSpawnPos;
+
+    /// <summary>그리드 좌표를 월드 좌표로 변환합니다 (QueryService → Renderer에 위임).</summary>
+    public Vector3 GridToWorld(Vector2Int gridPos)
+        => _queryService.GridToWorld(gridPos);
+
+    /// <summary>월드 좌표를 그리드 좌표로 변환합니다 (QueryService → Renderer에 위임).</summary>
+    public Vector2Int WorldToGrid(Vector3 worldPos)
+        => _queryService.WorldToGrid(worldPos);
+
+    /// <summary>해당 타입의 계단 위치를 그리드 좌표로 반환합니다.</summary>
+    public Vector2Int FindStairPos(int stairType)
+        => _queryService.FindStairPos(stairType);
+
+    /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
+    public void SetRoomType(RoomInfo room, RoomType type)
+        => _registry?.SetRoomType(room, type);
+
+    // ── 내부 전용 ────────────────────────────────────────────────────
 
     /// <summary>
     /// 맵 중앙에 가장 가까운 방 내부 타일 좌표를 계산합니다.
@@ -442,29 +465,6 @@ public class DungeonManager : MonoBehaviour
 
         return new Vector2Int(spawnCol, spawnRow);
     }
-
-    /// <summary>그리드 좌표를 월드 좌표로 변환합니다 (Renderer에 위임).</summary>
-    public Vector3 GridToWorld(Vector2Int gridPos)
-        => dungeonRenderer.GridToWorld(gridPos);
-
-    /// <summary>월드 좌표를 그리드 좌표로 변환합니다 (Renderer에 위임).</summary>
-    public Vector2Int WorldToGrid(Vector3 worldPos)
-        => dungeonRenderer.WorldToGrid(worldPos);
-
-    /// <summary>해당 타입의 계단 위치를 그리드 좌표로 반환합니다.</summary>
-    public Vector2Int FindStairPos(int stairType)
-    {
-        if (_data == null) return new Vector2Int(-1, -1);
-        for (int row = 0; row < _data.MapHeight; row++)
-            for (int col = 0; col < _data.MapWidth; col++)
-                if (_data.GetTileType(col, row) == stairType)
-                    return new Vector2Int(col, row);
-        return new Vector2Int(-1, -1);
-    }
-
-    /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
-    public void SetRoomType(RoomInfo room, RoomType type)
-        => _registry?.SetRoomType(room, type);
 
     public void CloseCurrentRoomDoors(RoomInfo room)
     {
@@ -534,13 +534,7 @@ public class DungeonManager : MonoBehaviour
 
 
     public bool IsCorr(int x, int y)
-    {
-        if (_originGrid == null) return false;
-        if (x < 0 || y < 0 || y >= _originGrid.GetLength(0) || x >= _originGrid.GetLength(1))
-            return false;
-
-        return _originGrid[y, x] == DungeonGenerator.CORRIDOR;
-    }
+        => _queryService.IsCorr(x, y);
 
 #if UNITY_EDITOR
     // ── Editor 버튼 ──────────────────────────────────────────────────
