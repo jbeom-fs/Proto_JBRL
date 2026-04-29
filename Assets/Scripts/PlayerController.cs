@@ -15,10 +15,10 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(CircleCollider2D))]
+[RequireComponent(typeof(PlayerInputReader))]
 public class PlayerController : MonoBehaviour
 {
     // ── Inspector 필드 ───────────────────────────────────────────────
@@ -30,7 +30,7 @@ public class PlayerController : MonoBehaviour
     [Tooltip("이벤트 채널 — 방 진입 이벤트 발행")]
     public DungeonEventChannel eventChannel;
 
-    [Tooltip("문 컨트롤러 — R키로 문 열기 호출")]
+    [Tooltip("문 컨트롤러 — F10키로 문 열기 호출")]
     public DoorController doorController;
 
     [Header("Movement")]
@@ -43,6 +43,7 @@ public class PlayerController : MonoBehaviour
     public float collisionRadius = 0.2f;
 
     // ── 내부 상태 ─────────────────────────────────────────────────────
+    private PlayerInputReader _inputReader;
     private float      _tileSize;
     private float      _stairCooldown;
     private const float STAIR_COOLDOWN = 0.5f;
@@ -77,6 +78,9 @@ public class PlayerController : MonoBehaviour
     private void Start()
     {
         ConfigurePhysics();
+
+        _inputReader = GetComponent<PlayerInputReader>();
+        if (_inputReader == null) { Debug.LogError("[PlayerController] PlayerInputReader 없음"); enabled = false; return; }
 
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
         if (eventChannel   == null) { Debug.LogError("[PlayerController] EventChannel 없음");  enabled = false; return; }
@@ -188,23 +192,22 @@ public class PlayerController : MonoBehaviour
         if (dungeonManager != null && dungeonManager.IsTransitioning)
             return;
 
-        var keyboard = Keyboard.current;
-        if (keyboard == null) return;
+        if (_inputReader == null) return;
 
-        if (keyboard.zKey.wasPressedThisFrame && _stairCooldown <= 0f)
+        if (_inputReader.WasStairPressed && _stairCooldown <= 0f)
         {
             TryInteractStair();
             return;
         }
 
-        // f10키: 문 열기 — 입력 감지는 Player, 실행은 DoorController
-        if (keyboard.f10Key.wasPressedThisFrame)
+        // f10키: 문 열기 — 입력 감지는 PlayerInputReader, 실행은 DoorController
+        if (_inputReader.WasOpenDoorPressed)
         {
             doorController?.OpenAllDoors();
             return;
         }
 
-        Vector2 input = ReadMovementInput(keyboard);
+        Vector2 input = _inputReader.MoveInput;
         if (input != Vector2.zero)
         {
             // 대각선 입력 시 X 축 우선으로 facing 결정
@@ -240,16 +243,6 @@ public class PlayerController : MonoBehaviour
     // ══════════════════════════════════════════════════════════════
     //  이동
     // ══════════════════════════════════════════════════════════════
-
-    private static Vector2 ReadMovementInput(Keyboard kb)
-    {
-        float x = 0f, y = 0f;
-        if (kb.upArrowKey.isPressed)    y =  1f;
-        if (kb.downArrowKey.isPressed)  y = -1f;
-        if (kb.leftArrowKey.isPressed)  x = -1f;
-        if (kb.rightArrowKey.isPressed) x =  1f;
-        return new Vector2(x, y);
-    }
 
     private void MoveWithCollision(Vector2 input)
     {

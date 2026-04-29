@@ -15,7 +15,6 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class PlayerCombatController : MonoBehaviour, IDamageable
 {
@@ -51,6 +50,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private readonly HashSet<Vector2Int> _targetGridSet = new();
     private readonly List<HitCandidate> _hitCandidates = new();
     private bool    _isAttackAlreadyProcessed;
+    private PlayerInputReader _inputReader;
 
     private struct HitCandidate
     {
@@ -80,6 +80,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         _currentHp = maxHp;
         _currentMp = maxMp;
+        _inputReader = GetComponent<PlayerInputReader>();
+        if (_inputReader == null && playerMovement != null)
+            _inputReader = playerMovement.GetComponent<PlayerInputReader>();
+        if (_inputReader == null)
+            Debug.LogWarning("[PlayerCombatController] PlayerInputReader 없음 — 전투 입력 불가");
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -109,14 +114,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
 
-        var kb = Keyboard.current;
-        if (kb == null) return;
+        if (_inputReader == null) return;
 
-        if (kb.spaceKey.wasPressedThisFrame) TryBasicAttack();
-        if (kb.qKey.wasPressedThisFrame)     TryUseSkill(0);
-        if (kb.wKey.wasPressedThisFrame)     TryUseSkill(1);
-        if (kb.eKey.wasPressedThisFrame)     TryUseSkill(2);
-        if (kb.rKey.wasPressedThisFrame)     TryUseSkill(3);
+        if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
+        if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
+        if (_inputReader.WasSkillPressed(1)) TryUseSkill(1);
+        if (_inputReader.WasSkillPressed(2)) TryUseSkill(2);
+        if (_inputReader.WasSkillPressed(3)) TryUseSkill(3);
     }
 
     private void TickCooldowns()

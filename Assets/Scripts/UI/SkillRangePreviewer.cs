@@ -22,7 +22,6 @@
 // ═══════════════════════════════════════════════════════════════════
 
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(LineRenderer))]
 public class SkillRangePreviewer : MonoBehaviour
@@ -32,6 +31,8 @@ public class SkillRangePreviewer : MonoBehaviour
     [Header("의존성")]
     [SerializeField] private PlayerCombatController combat;
     [SerializeField] private PlayerController       movement;
+    [SerializeField] private DungeonManager         dungeonManager;
+    [SerializeField] private PlayerInputReader      inputReader;
 
     [Header("곡선 품질")]
     [Tooltip("원·부채꼴 호의 분절 수. 50이 기본값 (충분히 매끄럽고 저비용).")]
@@ -70,6 +71,13 @@ public class SkillRangePreviewer : MonoBehaviour
         _lr = GetComponent<LineRenderer>();
         SetupLineRenderer();
         _lr.enabled = false;
+
+        if (inputReader == null && movement != null)
+            inputReader = movement.GetComponent<PlayerInputReader>();
+        if (inputReader == null)
+            inputReader = FindAnyObjectByType<PlayerInputReader>();
+        if (inputReader == null)
+            Debug.LogWarning("[SkillRangePreviewer] PlayerInputReader를 찾을 수 없습니다.");
     }
 
     private void SetupLineRenderer()
@@ -119,30 +127,17 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private void HandleInput()
     {
-        Keyboard kb = Keyboard.current;
-        if (kb == null) return;
+        if (inputReader == null) return;
 
         // 키를 처음 누를 때 → 미리보기 시작 (슬롯 변경 감지)
-        if      (kb.qKey.wasPressedThisFrame) TryShowPreview(0);
-        else if (kb.wKey.wasPressedThisFrame) TryShowPreview(1);
-        else if (kb.eKey.wasPressedThisFrame) TryShowPreview(2);
-        else if (kb.rKey.wasPressedThisFrame) TryShowPreview(3);
+        if      (inputReader.WasSkillPressed(0)) TryShowPreview(0);
+        else if (inputReader.WasSkillPressed(1)) TryShowPreview(1);
+        else if (inputReader.WasSkillPressed(2)) TryShowPreview(2);
+        else if (inputReader.WasSkillPressed(3)) TryShowPreview(3);
 
         // 현재 표시 중인 키가 릴리즈되면 → 미리보기 숨김
-        if (_activeSlot >= 0 && !IsKeyHeld(_activeSlot, kb))
+        if (_activeSlot >= 0 && !inputReader.IsSkillHeld(_activeSlot))
             HidePreview();
-    }
-
-    private static bool IsKeyHeld(int slot, Keyboard kb)
-    {
-        return slot switch
-        {
-            0 => kb.qKey.isPressed,
-            1 => kb.wKey.isPressed,
-            2 => kb.eKey.isPressed,
-            3 => kb.rKey.isPressed,
-            _ => false
-        };
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -326,7 +321,7 @@ public class SkillRangePreviewer : MonoBehaviour
     // ══════════════════════════════════════════════════════════════
     //  벽 클리핑 — 꼭짓점이 벽을 뚫지 않도록 경계에서 자름
     // ══════════════════════════════════════════════════════════════
-
+    
     /// <summary>
     /// 로컬 좌표 fromLocal → toLocal 방향으로 벽이 있으면
     /// 벽 직전 위치를 로컬 좌표로 반환합니다.
@@ -353,7 +348,6 @@ public class SkillRangePreviewer : MonoBehaviour
         }
 
         // ② DungeonData 그리드 샘플링 (wallLayer 미설정 시 폴백)
-        var dungeonManager = DungeonManager.Instance;
         if (dungeonManager == null || dungeonManager.Data == null) return toLocal;
 
         float   step     = tileSize * 0.5f;   // 0.5칸 간격으로 샘플링
