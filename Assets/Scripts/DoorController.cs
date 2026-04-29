@@ -8,24 +8,14 @@ public class DoorController : MonoBehaviour
 
     private void OnEnable()
     {
-        if (eventChannel != null)
-            eventChannel.OnNormalRoomEntered += OnNormalRoomEntered;
     }
 
     private void OnDisable()
     {
-        if (eventChannel != null)
-            eventChannel.OnNormalRoomEntered -= OnNormalRoomEntered;
     }
 
     public void OpenAllDoors()
     {
-        dungeonRenderer?.OpenAllDoors();
-    }
-
-    private void OnNormalRoomEntered(RoomEnteredEventArgs args)
-    {
-        if (!args.IsFirstVisit) return;
-        dungeonRenderer?.CloseDoorsForRoom(args.Room);
+        DungeonManager.Instance?.OpenCurrentRoomDoors();
     }
 }

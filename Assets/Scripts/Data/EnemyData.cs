@@ -16,6 +16,11 @@ public class EnemyData : ScriptableObject
     public int defense   = 0;
     public int expReward = 10;
 
+    [Header("스폰 예산")]
+    [Min(1)]
+    public int spawnCost = 1;
+    public SpawnRegion allowedRegions = SpawnRegion.Dungeon;
+
     [Header("AI 행동")]
     [Tooltip("플레이어 감지 거리 (월드 단위)")]
     public float detectRange    = 5f;
@@ -31,4 +36,8 @@ public class EnemyData : ScriptableObject
 
     [Tooltip("공격 선딜레이 (초). 이 시간 동안 플레이어가 피할 수 있습니다.")]
     public float attackWindup   = 0.4f;
+
+    [Header("Status Resistance")]
+    [Range(0f, 1f)]
+    public float knockbackResistance = 0f;
 }

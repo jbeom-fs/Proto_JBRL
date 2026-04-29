@@ -53,7 +53,7 @@ public class LoadingScreenController : MonoBehaviour
             }
         }
 
-        gameObject.SetActive(false);
+       
     }
 
     public IEnumerator Show()
@@ -63,7 +63,7 @@ public class LoadingScreenController : MonoBehaviour
             " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture));
 
         double start = Time.realtimeSinceStartupAsDouble;
-        gameObject.SetActive(true);
+
         if (canvasGroup != null)
         {
             canvasGroup.interactable = false;
@@ -99,7 +99,7 @@ public class LoadingScreenController : MonoBehaviour
             canvasGroup.blocksRaycasts = false;
         }
 
-        gameObject.SetActive(false);
+
         RuntimePerfLogger.MarkEvent("loading_hide_end",
             "elapsedMs=" + ElapsedMs(start) +
             " dtMs=" + CurrentDtMs());

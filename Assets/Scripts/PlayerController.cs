@@ -17,13 +17,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(Rigidbody2D))]
+[RequireComponent(typeof(CircleCollider2D))]
 public class PlayerController : MonoBehaviour
 {
     // ── Inspector 필드 ───────────────────────────────────────────────
 
     [Header("Dependencies")]
     [Tooltip("던전 관리자 — 이동 가능 여부·방 쿼리 제공")]
-    public DungeonManager dungeonManager;
+    private DungeonManager dungeonManager => DungeonManager.Instance;
 
     [Tooltip("이벤트 채널 — 방 진입 이벤트 발행")]
     public DungeonEventChannel eventChannel;
@@ -63,6 +65,10 @@ public class PlayerController : MonoBehaviour
     // 마지막으로 방문안 Room
     // Room이 변경되거나 복도로 나가기 전까진 체크하지 않는다.
     private RoomInfo? _lastRoom;
+    private Rigidbody2D _rb;
+    private CircleCollider2D _circleCollider;
+    private Vector3 _lastSafePosition;
+    private static PhysicsMaterial2D s_NoFrictionMaterial;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화
@@ -70,6 +76,8 @@ public class PlayerController : MonoBehaviour
 
     private void Start()
     {
+        ConfigurePhysics();
+
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
         if (eventChannel   == null) { Debug.LogError("[PlayerController] EventChannel 없음");  enabled = false; return; }
 
@@ -88,6 +96,49 @@ public class PlayerController : MonoBehaviour
     {
         if (eventChannel != null)
             eventChannel.OnFloorChanged -= OnFloorChangedHandler;
+    }
+
+    private void ConfigurePhysics()
+    {
+        // 플레이어도 적과 물리적으로 겹치지 않도록 Dynamic Rigidbody2D와 작은 원형 콜라이더를 보장합니다.
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb == null)
+            rb = gameObject.AddComponent<Rigidbody2D>();
+        rb.bodyType = RigidbodyType2D.Dynamic;
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
+        rb.sharedMaterial = GetNoFrictionMaterial();
+        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+        _rb = rb;
+
+        CircleCollider2D circle = GetComponent<CircleCollider2D>();
+        if (circle == null)
+            circle = gameObject.AddComponent<CircleCollider2D>();
+        circle.isTrigger = false;
+        circle.radius = 0.32f;
+        circle.offset = Vector2.zero;
+        circle.sharedMaterial = GetNoFrictionMaterial();
+        _circleCollider = circle;
+
+        foreach (BoxCollider2D box in GetComponents<BoxCollider2D>())
+            box.enabled = false;
+
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer >= 0)
+            gameObject.layer = playerLayer;
+    }
+
+    private static PhysicsMaterial2D GetNoFrictionMaterial()
+    {
+        if (s_NoFrictionMaterial != null) return s_NoFrictionMaterial;
+
+        s_NoFrictionMaterial = new PhysicsMaterial2D("NoFriction")
+        {
+            friction = 0f,
+            bounciness = 0f
+        };
+        return s_NoFrictionMaterial;
     }
 
     /// <summary>
@@ -113,6 +164,9 @@ public class PlayerController : MonoBehaviour
     {
         Vector2Int gridPos = dungeonManager.GetSpawnTilePos();
         transform.position = dungeonManager.GridToWorld(gridPos);
+        _lastSafePosition = transform.position;
+        if (_rb != null)
+            _rb.linearVelocity = Vector2.zero;
         _stairCooldown          = STAIR_COOLDOWN;
         _currentRoom            = null;
         _visitedRooms.Clear();
@@ -143,8 +197,8 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        // R키: 문 열기 — 입력 감지는 Player, 실행은 DoorController
-        if (keyboard.rKey.wasPressedThisFrame)
+        // f10키: 문 열기 — 입력 감지는 Player, 실행은 DoorController
+        if (keyboard.f10Key.wasPressedThisFrame)
         {
             doorController?.OpenAllDoors();
             return;
@@ -164,6 +218,23 @@ public class PlayerController : MonoBehaviour
         }
 
         CheckRoomEntry();
+    }
+
+    private void LateUpdate()
+    {
+        if (dungeonManager == null || dungeonManager.Data == null) return;
+
+        if (IsPhysicsFootprintWalkable(transform.position))
+        {
+            _lastSafePosition = transform.position;
+            return;
+        }
+
+        // 유닛끼리 Rigidbody 충돌로 밀렸더라도 벽/닫힌 문 타일 안에 들어가면 마지막 안전 위치로 되돌립니다.
+        // 이동 로직의 그리드 충돌 체크와 물리 충돌 해소 사이의 빈틈을 막는 최종 안전장치입니다.
+        transform.position = _lastSafePosition;
+        if (_rb != null)
+            _rb.linearVelocity = Vector2.zero;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -213,6 +284,36 @@ public class PlayerController : MonoBehaviour
             if (!dungeonManager.IsWalkable(g.x, g.y)) return false;
         }
         return true;
+    }
+
+    private bool IsPhysicsFootprintWalkable(Vector3 pos)
+    {
+        float r = GetWorldColliderRadius();
+        _corners[0] = new Vector3(pos.x - r, pos.y - r, 0f);
+        _corners[1] = new Vector3(pos.x + r, pos.y - r, 0f);
+        _corners[2] = new Vector3(pos.x - r, pos.y + r, 0f);
+        _corners[3] = new Vector3(pos.x + r, pos.y + r, 0f);
+
+        for (int i = 0; i < _corners.Length; i++)
+        {
+            Vector2Int grid = dungeonManager.WorldToGrid(_corners[i]);
+            if (!dungeonManager.IsWalkable(grid.x, grid.y))
+                return false;
+        }
+
+        return true;
+    }
+
+    private float GetWorldColliderRadius()
+    {
+        if (_circleCollider == null)
+            return Mathf.Max(0.01f, _tileSize * collisionRadius);
+
+        float maxScale = Mathf.Max(
+            Mathf.Abs(transform.lossyScale.x),
+            Mathf.Abs(transform.lossyScale.y));
+
+        return Mathf.Max(0.01f, _circleCollider.radius * maxScale);
     }
 
     // ══════════════════════════════════════════════════════════════

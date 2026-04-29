@@ -46,6 +46,7 @@ public class EnemyHealthBar : MonoBehaviour
     private Transform      _bgTf;
     private float          _hideTimer;
     private bool           _isVisible;
+    private bool           _initialized;
 
     // ── 정적 픽셀 스프라이트 (적 N마리가 공유, 텍스처 1회만 생성) ────
 
@@ -57,9 +58,18 @@ public class EnemyHealthBar : MonoBehaviour
 
     private void Awake()
     {
+        EnsureInitialized();
+    }
+
+    private void EnsureInitialized()
+    {
+        if (_initialized) return;
+
         if (s_Pixel == null) s_Pixel = BuildPixelSprite();
         CreateBarObjects();
         SetVisible(!hideWhenFull);
+
+        _initialized = true;
     }
 
     private void CreateBarObjects()
@@ -102,6 +112,8 @@ public class EnemyHealthBar : MonoBehaviour
     /// <summary>HP 값을 받아 바 크기·색상을 즉시 갱신합니다.</summary>
     public void SetHp(int current, int max)
     {
+        EnsureInitialized();
+
         float ratio = max > 0 ? Mathf.Clamp01((float)current / max) : 0f;
 
         // Fill 스케일 & 위치 — 왼쪽 앵커, 오른쪽에서 줄어듦

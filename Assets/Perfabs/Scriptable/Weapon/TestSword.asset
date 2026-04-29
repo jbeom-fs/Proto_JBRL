@@ -19,5 +19,9 @@ MonoBehaviour:
   patternRange: 1
   bonusAttack: 0
   bonusDefense: 0
+  canPenetrateWalls: 0
   skills:
   - {fileID: 11400000, guid: 3200b860526f7b340bbe0587bfd8cf4d, type: 2}
+  - {fileID: 11400000, guid: af09b4693ef3dcc4fb358ad71c6b3a1a, type: 2}
+  - {fileID: 11400000, guid: c11ff1c4b1b186747bc3f66ded76dd78, type: 2}
+  - {fileID: 11400000, guid: 276298522aba3b041a1d3eae65b8337b, type: 2}

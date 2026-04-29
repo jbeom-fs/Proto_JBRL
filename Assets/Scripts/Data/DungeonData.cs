@@ -7,6 +7,7 @@ public class DungeonData
     public int MapWidth { get; }
     public int MapHeight { get; }
     public int RoomCount => _rooms.Length;
+    public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
 
     public DungeonData(int[,] grid, RoomInfo[] rooms)
     {
@@ -83,6 +84,18 @@ public class DungeonData
     public RoomInfo GetRoom(int index)
     {
         return _rooms[index];
+    }
+
+    public System.Collections.Generic.List<UnityEngine.Vector2Int> GetWalkableTiles(RoomInfo room)
+    {
+        var tiles = new System.Collections.Generic.List<UnityEngine.Vector2Int>();
+
+        for (int row = room.Y; row < room.Bottom; row++)
+            for (int col = room.X; col < room.Right; col++)
+                if (IsWalkable(col, row))
+                    tiles.Add(new UnityEngine.Vector2Int(col, row));
+
+        return tiles;
     }
 
     public bool InBounds(int col, int row)

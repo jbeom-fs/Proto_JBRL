@@ -18,6 +18,7 @@ using UnityEngine.Serialization;
 public class DungeonManager : MonoBehaviour
 {
     private static readonly bool AllowForcedGarbageCollectionDuringFloorTransition = false;
+    public static DungeonManager Instance { get; private set; }
 
     // ── Inspector 연결 ───────────────────────────────────────────────
 
@@ -60,6 +61,9 @@ public class DungeonManager : MonoBehaviour
     [Range(0f, 1f)]
     public float extraConnProb = 0.5f;
 
+    [Header("Spawn Region")]
+    public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
+
     [Header("Floor Transition Stabilization")]
     [Tooltip("After generation, keep the loading screen visible while Unity settles Tilemap/render work.")]
     [Min(0f)]
@@ -91,6 +95,7 @@ public class DungeonManager : MonoBehaviour
     private DungeonData    _data;
     private RoomRegistry   _registry;
     private Vector2Int     _cachedSpawnPos;   // Generate 시 계산 후 캐싱
+    private RoomInfo?      _currentDoorRoom;
 
     // 층 전환 중복 방지 — 코루틴 실행 중 추가 요청을 차단
     private bool _isTransitioning = false;
@@ -102,6 +107,19 @@ public class DungeonManager : MonoBehaviour
     public DungeonData   Data     => _data;
     public RoomRegistry  Registry => _registry;
     public bool IsTransitioning => _isTransitioning;
+    public RoomInfo? CurrentDoorRoom => _currentDoorRoom;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        // 전역 던전 접근 지점입니다. 풀링된 적/스폰 시스템은 인스펙터 참조 대신 이 싱글톤을 사용합니다.
+        Instance = this;
+    }
 
     // ── 생성 파이프라인 ──────────────────────────────────────────────
 
@@ -145,6 +163,7 @@ public class DungeonManager : MonoBehaviour
         // 4. DungeonData 생성
         stageStart = Time.realtimeSinceStartupAsDouble;
         _data = new DungeonData(grid, roomInfos);
+        _data.currentStageRegion = currentStageRegion;
         RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
             "elapsedMs=" + ElapsedMs(stageStart) +
             " walkable=" + CountWalkableTiles(grid));
@@ -346,6 +365,7 @@ public class DungeonManager : MonoBehaviour
 
         stageStart = Time.realtimeSinceStartupAsDouble;
         _data = new DungeonData(grid, roomInfos);
+        _data.currentStageRegion = currentStageRegion;
         RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
             "elapsedMs=" + ElapsedMs(stageStart) +
             " walkable=" + CountWalkableTiles(grid));
@@ -445,6 +465,20 @@ public class DungeonManager : MonoBehaviour
     /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
     public void SetRoomType(RoomInfo room, RoomType type)
         => _registry?.SetRoomType(room, type);
+
+    public void CloseCurrentRoomDoors(RoomInfo room)
+    {
+        _currentDoorRoom = room;
+        dungeonRenderer?.CloseDoorsForRoom(room);
+    }
+
+    public void OpenCurrentRoomDoors()
+    {
+        // 문 개폐는 DungeonManager.Instance를 통해 중앙에서만 처리합니다.
+        // RoomSpawner는 방 클리어 상태만 판단하고, 실제 타일맵 문 제어는 여기로 위임합니다.
+        if (dungeonRenderer != null && dungeonRenderer.OpenAllDoors())
+            _currentDoorRoom = null;
+    }
 
     // ── 내부 빌더 ────────────────────────────────────────────────────
 

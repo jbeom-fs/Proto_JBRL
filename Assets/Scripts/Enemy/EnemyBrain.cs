@@ -33,8 +33,8 @@ public abstract class EnemyBrain : MonoBehaviour
     protected const string ANIM_MOVING = "Walk";
     protected const string ANIM_ATTACK = "Attack";
 
+    public DungeonManager dungeonManager => DungeonManager.Instance;
     [Header("Dependencies")]
-    public DungeonManager dungeonManager;
     public Transform player;
 
     [Header("Pathfinding")]
@@ -47,6 +47,12 @@ public abstract class EnemyBrain : MonoBehaviour
     [Header("Collision")]
     [Range(0.05f, 0.49f)]
     public float collisionRadius = 0.2f;
+
+    [Header("Separation")]
+    public bool enableSeparation = true;
+    [Min(0.05f)] public float separationRadius = 0.7f;
+    [Range(0f, 2f)] public float separationWeight = 0.55f;
+    [Range(0f, 30f)] public float separationSmoothing = 12f;
 
     [Header("Animation")]
     public Animator animator;
@@ -69,6 +75,9 @@ public abstract class EnemyBrain : MonoBehaviour
     public EnemyData Data => _data;
     public EnemyAIStateId CurrentState => _currentStateId;
     public DungeonData DungeonData => dungeonManager != null ? dungeonManager.Data : null;
+    public float CurrentMoveSpeed => Data != null && Enemy != null
+        ? Data.moveSpeed * Enemy.MoveSpeedMultiplier
+        : 0f;
 
     public MovementHandler Movement { get; private set; }
     public TargetHandler Target { get; private set; }
@@ -102,10 +111,33 @@ public abstract class EnemyBrain : MonoBehaviour
         _currentState.OnEnter();
     }
 
+    public virtual void ResetRuntimeState()
+    {
+        // 풀에서 다시 꺼낸 적은 현재 층의 DungeonManager.Instance 기준으로 이동/타겟 캐시를 새로 잡는다.
+        _data = null;
+        Movement?.Initialize();
+        Target?.RefreshTarget();
+        Action?.ResetRuntimeState();
+
+        if (_idleState != null)
+        {
+            _currentState?.OnExit();
+            _currentState = _idleState;
+            _currentStateId = EnemyAIStateId.Idle;
+            _currentState.OnEnter();
+        }
+    }
+
     protected virtual void Update()
     {
         if (_enemy == null || !_enemy.IsAlive) return;
         if (!TryCacheData()) return;
+
+        if (_enemy.IsKnockbackLocked)
+        {
+            StopMoving();
+            return;
+        }
 
         // CheckRoomEntry가 복도에서 조기 종료하더라도 AI는 매 프레임 실제 월드 좌표를 그리드로 변환합니다.
         // 따라서 플레이어가 ROOM 밖 CORRIDOR에 있어도 목표 좌표가 끊기지 않습니다.
@@ -305,7 +337,9 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         private readonly EnemyBrain _brain;
         private readonly Vector3[] _corners = new Vector3[4];
+        private readonly Collider2D[] _separationBuffer = new Collider2D[16];
         private float _tileSize = 1f;
+        private Vector2 _smoothedSeparation;
 
         public MovementHandler(EnemyBrain brain)
         {
@@ -334,7 +368,14 @@ public abstract class EnemyBrain : MonoBehaviour
             if (dir.sqrMagnitude <= 0.0001f)
                 return false;
 
-            return MoveWithCollision(dir.normalized);
+            Vector2 desired = dir.normalized;
+            Vector2 separation = CalculateSeparation();
+            Vector2 blended = desired + separation * _brain.separationWeight;
+
+            if (blended.sqrMagnitude > 1f)
+                blended.Normalize();
+
+            return MoveWithCollision(blended);
         }
 
         public virtual void Stop()
@@ -394,7 +435,11 @@ public abstract class EnemyBrain : MonoBehaviour
 
         private bool MoveWithCollision(Vector2 dir)
         {
-            float step = _brain.Data.moveSpeed * Time.deltaTime;
+            if (dir.sqrMagnitude <= 0.0001f)
+                return false;
+
+            float step = _brain.CurrentMoveSpeed * Time.deltaTime;
+            if (step <= 0f) return false;
             Vector3 origin = _brain.transform.position;
             bool moved = false;
 
@@ -422,11 +467,49 @@ public abstract class EnemyBrain : MonoBehaviour
             return moved;
         }
 
+        private Vector2 CalculateSeparation()
+        {
+            if (!_brain.enableSeparation) return Vector2.zero;
+
+            int neighborCount = Physics2D.OverlapCircleNonAlloc(
+                _brain.transform.position,
+                _brain.separationRadius,
+                _separationBuffer);
+
+            Vector2 repel = Vector2.zero;
+            int count = 0;
+            Vector2 self = _brain.transform.position;
+
+            for (int i = 0; i < neighborCount; i++)
+            {
+                Collider2D col = _separationBuffer[i];
+                if (col == null) continue;
+                if (col.transform == _brain.transform) continue;
+                if (!col.TryGetComponent<EnemyController>(out _)) continue;
+
+                Vector2 away = self - (Vector2)col.bounds.center;
+                float sqrDistance = Mathf.Max(away.sqrMagnitude, 0.0001f);
+
+                // 가까운 이웃일수록 더 강하게 밀어내 평균 반발 벡터를 만든다.
+                repel += away.normalized / sqrDistance;
+                count++;
+            }
+
+            Vector2 targetSeparation = count > 0 ? (repel / count).normalized : Vector2.zero;
+
+            // 분리 벡터를 보간해 프레임마다 방향이 튀는 지터를 줄인다.
+            float t = 1f - Mathf.Exp(-_brain.separationSmoothing * Time.deltaTime);
+            _smoothedSeparation = Vector2.Lerp(_smoothedSeparation, targetSeparation, t);
+            return _smoothedSeparation;
+        }
+
         private bool CanMoveTo(Vector3 pos)
         {
             if (_brain.dungeonManager == null) return true;
 
-            float radius = _tileSize * _brain.collisionRadius;
+            float radius = _brain.Enemy != null
+                ? _brain.Enemy.CollisionFootprintRadius
+                : _tileSize * _brain.collisionRadius;
             _corners[0] = new Vector3(pos.x - radius, pos.y - radius, 0f);
             _corners[1] = new Vector3(pos.x + radius, pos.y - radius, 0f);
             _corners[2] = new Vector3(pos.x - radius, pos.y + radius, 0f);
@@ -546,6 +629,13 @@ public abstract class EnemyBrain : MonoBehaviour
         public virtual void TickCooldown(float deltaTime)
         {
             _attackCooldownTimer -= deltaTime;
+        }
+
+        public virtual void ResetRuntimeState()
+        {
+            _attackCooldownTimer = 0f;
+            _windupTimer = 0f;
+            _windupFired = false;
         }
 
         public virtual bool CanAttack(float sqrDistanceToTarget)
