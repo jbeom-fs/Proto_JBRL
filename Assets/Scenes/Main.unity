@@ -2165,7 +2165,7 @@ MonoBehaviour:
   backgroundImage: {fileID: 1859646880}
   loadingImage: {fileID: 1002466290}
   canvasGroup: {fileID: 877297038}
-  fadeDuration: 10
+  fadeDuration: 2.24
   bgFadeInSpeed: 3.64
   bgFadeOutDelay: 0.5
 --- !u!1 &896344610
