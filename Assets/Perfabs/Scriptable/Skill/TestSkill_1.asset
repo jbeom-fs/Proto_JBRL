@@ -23,7 +23,7 @@ MonoBehaviour:
   knockbackDuration: 0.15
   slowPercentage: 0.5
   slowDuration: 1.5
-  mpCost: 0
+  mpCost: 1
   cooldown: 1
   canPenetrateWalls: 0
   coneHalfAngle: 45
