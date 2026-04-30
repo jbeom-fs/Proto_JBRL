@@ -6,8 +6,8 @@ public class PlayerStatusBarUI : MonoBehaviour
 {
     [SerializeField] private PlayerCombatController combat;
     [SerializeField] private CombatEventChannel combatChannel;
-    [SerializeField] private Image hpFillImage;
-    [SerializeField] private Image mpFillImage;
+    [SerializeField] private Slider hpSlider;
+    [SerializeField] private Slider mpSlider;
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI mpText;
 
@@ -21,19 +21,19 @@ public class PlayerStatusBarUI : MonoBehaviour
         if (combatChannel == null)
             Debug.LogWarning("[PlayerStatusBarUI] CombatEventChannel is missing. HP/MP change events will not be received.");
 
-        bool hasRequiredImages = true;
-        if (hpFillImage == null)
+        bool hasRequiredSliders = true;
+        if (hpSlider == null)
         {
-            Debug.LogError("[PlayerStatusBarUI] hpFillImage is missing.");
-            hasRequiredImages = false;
+            Debug.LogError("[PlayerStatusBarUI] hpSlider is missing.");
+            hasRequiredSliders = false;
         }
-        if (mpFillImage == null)
+        if (mpSlider == null)
         {
-            Debug.LogError("[PlayerStatusBarUI] mpFillImage is missing.");
-            hasRequiredImages = false;
+            Debug.LogError("[PlayerStatusBarUI] mpSlider is missing.");
+            hasRequiredSliders = false;
         }
 
-        if (!hasRequiredImages)
+        if (!hasRequiredSliders)
             enabled = false;
     }
 
@@ -63,7 +63,7 @@ public class PlayerStatusBarUI : MonoBehaviour
 
     private void UpdateHp(int current, int max)
     {
-        hpFillImage.fillAmount = max <= 0 ? 0f : Mathf.Clamp01((float)current / max);
+        hpSlider.value = max <= 0 ? 0f : Mathf.Clamp01((float)current / max);
 
         if (hpText != null)
             hpText.text = $"{current}/{max}";
@@ -71,7 +71,7 @@ public class PlayerStatusBarUI : MonoBehaviour
 
     private void UpdateMp(int current, int max)
     {
-        mpFillImage.fillAmount = max <= 0 ? 0f : Mathf.Clamp01((float)current / max);
+        mpSlider.value = max <= 0 ? 0f : Mathf.Clamp01((float)current / max);
 
         if (mpText != null)
             mpText.text = $"{current}/{max}";
