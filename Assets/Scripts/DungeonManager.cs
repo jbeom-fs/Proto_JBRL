@@ -211,10 +211,7 @@ public class DungeonManager : MonoBehaviour
 
         // 2. 던전 생성 (무거운 연산 — 로딩 화면 뒤에서 수행)
         stageStart = Time.realtimeSinceStartupAsDouble;
-        if (useChunkedTilePlacementDuringFloorTransition)
-            yield return StartCoroutine(GenerateChunkedForFloorTransition());
-        else
-            Generate();
+        yield return GenerateForFloorTransition(useChunkedTilePlacementDuringFloorTransition);
         RuntimePerfLogger.MarkEvent("floor_transition_generate_end",
             "elapsedMs=" + ElapsedMs(stageStart) + " floor=" + floor);
 
@@ -254,10 +251,11 @@ public class DungeonManager : MonoBehaviour
         _isTransitioning = false;
     }
 
-    private IEnumerator GenerateChunkedForFloorTransition()
+    private IEnumerator GenerateForFloorTransition(bool useChunked)
     {
         RuntimePerfLogger.MarkEvent("generate_begin",
-            "floor=" + floor + " seed=" + seed + " size=" + mapWidth + "x" + mapHeight + " chunked=true");
+            "floor=" + floor + " seed=" + seed + " size=" + mapWidth + "x" + mapHeight +
+            (useChunked ? " chunked=true" : ""));
 
         if (dungeonRenderer == null)
         {
@@ -267,14 +265,19 @@ public class DungeonManager : MonoBehaviour
 
         RunGenerationPipeline();
 
-        // 7. Tilemap 청크 배치
+        // 7. Tilemap 배치
         double stageStart = Time.realtimeSinceStartupAsDouble;
-        yield return StartCoroutine(dungeonRenderer.PlaceTilesChunked(_data, tilePlacementChunkRows));
+        if (useChunked)
+            yield return StartCoroutine(dungeonRenderer.PlaceTilesChunked(_data, tilePlacementChunkRows));
+        else
+            dungeonRenderer.PlaceTiles(_data);
+
         RuntimePerfLogger.MarkEvent("generate_stage_place_tiles",
             "elapsedMs=" + ElapsedMs(stageStart) +
-            " chunkRows=" + tilePlacementChunkRows);
+            (useChunked ? " chunkRows=" + tilePlacementChunkRows : ""));
         RuntimePerfLogger.MarkEvent("generate_end",
-            "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y + " chunked=true");
+            "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y +
+            (useChunked ? " chunked=true" : ""));
 
         Debug.Log($"[DungeonManager] 생성 완료 — Seed: {seed}, Floor: {floor}");
     }
