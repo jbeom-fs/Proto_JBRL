@@ -190,12 +190,13 @@ public class EnemyController : MonoBehaviour, IDamageable
     private float ClampKnockbackForceAgainstWall(Vector2 direction, float force, float duration)
     {
         int wallMask = GetKnockbackBlockMask();
-        if (wallMask == 0 || duration <= 0f) return force;
+        if (duration <= 0f) return force;
 
         float mass = _rb != null ? Mathf.Max(0.01f, _rb.mass) : 1f;
         float expectedDistance = force / mass * duration;
         if (expectedDistance <= 0f) return force;
 
+        float clampedForce = force;
         float radius = GetWorldColliderRadius();
         Vector2 origin = _circleCollider != null
             ? (Vector2)transform.TransformPoint(_circleCollider.offset)
@@ -203,13 +204,28 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         // 넉백 전에 같은 반지름으로 CircleCast를 쏴서 벽까지 남은 거리를 확인합니다.
         // 벽이 예상 넉백 거리 안에 있으면 임펄스 크기를 줄여 콜라이더가 벽 안으로 파고들지 않게 합니다.
-        RaycastHit2D hit = Physics2D.CircleCast(origin, radius, direction, expectedDistance, wallMask);
-        if (hit.collider == null) return force;
+        if (wallMask != 0)
+        {
+            RaycastHit2D hit = Physics2D.CircleCast(origin, radius, direction, expectedDistance, wallMask);
+            if (hit.collider != null)
+            {
+                float safeDistance = Mathf.Max(0f, hit.distance - knockbackWallSkin);
+                float physicsClampedForce = safeDistance <= 0f
+                    ? 0f
+                    : force * Mathf.Clamp01(safeDistance / expectedDistance);
 
-        float safeDistance = Mathf.Max(0f, hit.distance - knockbackWallSkin);
-        if (safeDistance <= 0f) return 0f;
+                clampedForce = Mathf.Min(clampedForce, physicsClampedForce);
+            }
+        }
 
-        return force * Mathf.Clamp01(safeDistance / expectedDistance);
+        float gridClampedForce = ClampKnockbackForceAgainstWalkableGrid(
+            origin,
+            direction,
+            force,
+            expectedDistance,
+            radius);
+
+        return Mathf.Min(clampedForce, gridClampedForce);
     }
 
     private int GetKnockbackBlockMask()
@@ -218,6 +234,38 @@ public class EnemyController : MonoBehaviour, IDamageable
             return knockbackBlockLayers.value;
 
         return LayerMask.GetMask("Wall", "Obstacle", "Obstacles");
+    }
+
+    private float ClampKnockbackForceAgainstWalkableGrid(
+        Vector2 origin,
+        Vector2 direction,
+        float force,
+        float expectedDistance,
+        float radius)
+    {
+        var dungeonManager = DungeonManager.Instance;
+        if (dungeonManager == null || dungeonManager.Data == null) return force;
+        if (!IsFootprintWalkable(origin)) return force;
+
+        float step = Mathf.Max(0.05f, radius * 0.5f);
+        int steps = Mathf.CeilToInt(expectedDistance / step);
+        float lastSafeDistance = 0f;
+
+        for (int i = 1; i <= steps; i++)
+        {
+            float distance = Mathf.Min(expectedDistance, i * step);
+            Vector2 candidate = origin + direction * distance;
+
+            if (!IsFootprintWalkable(candidate))
+                break;
+
+            lastSafeDistance = distance;
+        }
+
+        float safeDistance = Mathf.Max(0f, lastSafeDistance - knockbackWallSkin);
+        if (safeDistance <= 0f) return 0f;
+
+        return force * Mathf.Clamp01(safeDistance / expectedDistance);
     }
 
     private float GetWorldColliderRadius()
