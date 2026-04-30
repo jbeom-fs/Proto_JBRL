@@ -142,7 +142,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void TryUseSkill(int slotIndex)
     {
         if (currentWeapon == null) return;
-        if (slotIndex >= currentWeapon.skills.Length) return;
+        if (currentWeapon.skills == null) return;
+        if ((uint)slotIndex >= (uint)currentWeapon.skills.Length) return;
 
         SkillData skill = currentWeapon.skills[slotIndex];
         if (skill == null)                       return;
@@ -240,11 +241,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
     public float GetSkillCooldownRemaining(int slotIndex) =>
-        _cooldownController.GetSkillRemaining(slotIndex);
+        (uint)slotIndex < 4u ? _cooldownController.GetSkillRemaining(slotIndex) : 0f;
 
     public float GetSkillCooldownMax(int slotIndex)
     {
-        if (currentWeapon == null || slotIndex >= currentWeapon.skills.Length) return 0f;
+        if (currentWeapon == null || currentWeapon.skills == null) return 0f;
+        if ((uint)slotIndex >= (uint)currentWeapon.skills.Length) return 0f;
         return currentWeapon.skills[slotIndex]?.cooldown ?? 0f;
     }
 }
