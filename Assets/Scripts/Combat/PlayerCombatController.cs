@@ -44,8 +44,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
-    private int     _currentHp;
-    private int     _currentMp;
+    private readonly PlayerResource _resource = new();
     private readonly SkillCooldownController _cooldownController = new();
     private readonly HashSet<IDamageable> _hitTargetsThisAttack = new();
     private readonly HashSet<Vector2Int> _targetGridSet = new();
@@ -61,10 +60,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
-    public bool IsAlive     => _currentHp > 0;
-    public int  CurrentHp   => _currentHp;
+    public bool IsAlive     => _resource.IsAlive;
+    public int  CurrentHp   => _resource.CurrentHp;
     public int  MaxHp       => maxHp;
-    public int  CurrentMp   => _currentMp;
+    public int  CurrentMp   => _resource.CurrentMp;
     public int  MaxMp       => maxMp;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
@@ -79,8 +78,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void Awake()
     {
-        _currentHp = maxHp;
-        _currentMp = maxMp;
+        _resource.Initialize(maxHp, maxMp);
         _inputReader = GetComponent<PlayerInputReader>();
         if (_inputReader == null && playerMovement != null)
             _inputReader = playerMovement.GetComponent<PlayerInputReader>();
@@ -161,7 +159,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         SkillData skill = currentWeapon.skills[slotIndex];
         if (skill == null)                       return;
         if (!_cooldownController.IsSkillReady(slotIndex)) return;
-        if (_currentMp < skill.mpCost)           return;
+        if (CurrentMp < skill.mpCost)            return;
 
         _cooldownController.SetSkillCooldown(slotIndex, skill.cooldown);
         SpendMp(skill.mpCost);
@@ -372,12 +370,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (!IsAlive) return;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
-        _currentHp = Mathf.Max(0, _currentHp - actual);
-        combatChannel?.RaisePlayerHpChanged(_currentHp, maxHp);
+        _resource.TakeDamage(actual);
+        combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
 #if UNITY_EDITOR
-        Debug.Log($"[Combat] 플레이어 -{actual} HP → {_currentHp}/{maxHp}");
+        Debug.Log($"[Combat] 플레이어 -{actual} HP → {CurrentHp}/{maxHp}");
 #endif
-        if (_currentHp == 0)
+        if (CurrentHp == 0)
             OnPlayerDied();
     }
 
@@ -394,20 +392,20 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void SpendMp(int amount)
     {
-        _currentMp = Mathf.Max(0, _currentMp - amount);
-        combatChannel?.RaisePlayerMpChanged(_currentMp, maxMp);
+        _resource.SpendMp(amount);
+        combatChannel?.RaisePlayerMpChanged(CurrentMp, maxMp);
     }
 
     public void RestoreMp(int amount)
     {
-        _currentMp = Mathf.Min(maxMp, _currentMp + amount);
-        combatChannel?.RaisePlayerMpChanged(_currentMp, maxMp);
+        _resource.RestoreMp(amount, maxMp);
+        combatChannel?.RaisePlayerMpChanged(CurrentMp, maxMp);
     }
 
     public void RestoreHp(int amount)
     {
-        _currentHp = Mathf.Min(maxHp, _currentHp + amount);
-        combatChannel?.RaisePlayerHpChanged(_currentHp, maxHp);
+        _resource.RestoreHp(amount, maxHp);
+        combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
     }
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
