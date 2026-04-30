@@ -92,11 +92,12 @@ public class DungeonManager : MonoBehaviour
     public int tilePlacementChunkRows = 8;
 
     // ── 도메인 객체 ─────────────────────────────────────────────────
-    private DungeonData         _data;
-    private RoomRegistry        _registry;
-    private Vector2Int          _cachedSpawnPos;   // Generate 시 계산 후 캐싱
-    private RoomInfo?           _currentDoorRoom;
-    private DungeonQueryService _queryService;
+    private DungeonData            _data;
+    private RoomRegistry           _registry;
+    private Vector2Int             _cachedSpawnPos;   // Generate 시 계산 후 캐싱
+    private RoomInfo?              _currentDoorRoom;
+    private DungeonQueryService    _queryService;
+    private SpawnPositionService   _spawnService;
 
     // 층 전환 중복 방지 — 코루틴 실행 중 추가 요청을 차단
     private bool _isTransitioning = false;
@@ -124,7 +125,8 @@ public class DungeonManager : MonoBehaviour
         // 쿼리 서비스 초기화 — dungeonRenderer는 Inspector에서 주입된 상태
         if (dungeonRenderer == null)
             Debug.LogWarning("[DungeonManager] Awake: dungeonRenderer가 없습니다 — 좌표 변환이 동작하지 않습니다.");
-        _queryService = new DungeonQueryService(dungeonRenderer);
+        _queryService  = new DungeonQueryService(dungeonRenderer);
+        _spawnService  = new SpawnPositionService();
     }
 
     // ── 생성 파이프라인 ──────────────────────────────────────────────
@@ -185,7 +187,7 @@ public class DungeonManager : MonoBehaviour
 
         // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
         stageStart = Time.realtimeSinceStartupAsDouble;
-        _cachedSpawnPos = ComputeSpawnPos();
+        _cachedSpawnPos = EnsureSpawnService().ComputeSpawnPos(_data, mapWidth, mapHeight);
         RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
             "elapsedMs=" + ElapsedMs(stageStart) +
             " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
@@ -388,7 +390,7 @@ public class DungeonManager : MonoBehaviour
         _queryService?.UpdateData(_data, _registry, _originGrid);
 
         stageStart = Time.realtimeSinceStartupAsDouble;
-        _cachedSpawnPos = ComputeSpawnPos();
+        _cachedSpawnPos = EnsureSpawnService().ComputeSpawnPos(_data, mapWidth, mapHeight);
         RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
             "elapsedMs=" + ElapsedMs(stageStart) +
             " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
@@ -436,35 +438,6 @@ public class DungeonManager : MonoBehaviour
     /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
     public void SetRoomType(RoomInfo room, RoomType type)
         => _registry?.SetRoomType(room, type);
-
-    // ── 내부 전용 ────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 맵 중앙에 가장 가까운 방 내부 타일 좌표를 계산합니다.
-    /// Generate() 내부에서만 호출됩니다.
-    /// </summary>
-    private Vector2Int ComputeSpawnPos()
-    {
-        if (_data == null) return Vector2Int.zero;
-
-        int midX     = mapWidth  / 2;
-        int midY     = mapHeight / 2;
-        int bestDist = int.MaxValue;
-        int spawnCol = midX, spawnRow = midY;
-
-        for (int row = 0; row < _data.MapHeight; row++)
-            for (int col = 0; col < _data.MapWidth; col++)
-            {
-                if (_data.GetTileType(col, row) != DungeonGenerator.ROOM) continue;
-                int dist = Mathf.Abs(col - midX) + Mathf.Abs(row - midY);
-                if (dist >= bestDist) continue;
-                bestDist = dist;
-                spawnCol = col;
-                spawnRow = row;
-            }
-
-        return new Vector2Int(spawnCol, spawnRow);
-    }
 
     public void CloseCurrentRoomDoors(RoomInfo room)
     {
@@ -550,6 +523,20 @@ public class DungeonManager : MonoBehaviour
             _queryService = new DungeonQueryService(dungeonRenderer);
         }
         return _queryService;
+    }
+
+    /// <summary>
+    /// _spawnService를 반환합니다.
+    /// Awake 이전 등 예외적으로 null인 경우 즉시 초기화 후 반환합니다.
+    /// </summary>
+    private SpawnPositionService EnsureSpawnService()
+    {
+        if (_spawnService == null)
+        {
+            Debug.LogWarning("[DungeonManager] _spawnService가 Awake 이전에 접근됐습니다 — 즉시 초기화합니다.");
+            _spawnService = new SpawnPositionService();
+        }
+        return _spawnService;
     }
 
 #if UNITY_EDITOR
