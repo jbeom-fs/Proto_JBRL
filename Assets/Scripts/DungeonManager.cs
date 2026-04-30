@@ -409,29 +409,29 @@ public class DungeonManager : MonoBehaviour
     // 구현은 DungeonQueryService에 있으며, 시그니처는 하위 호환을 위해 그대로 유지합니다.
 
     public bool IsWalkable(int col, int row)
-        => _queryService.IsWalkable(col, row);
+        => EnsureQueryService().IsWalkable(col, row);
 
     public int GetTileType(int col, int row)
-        => _queryService.GetTileType(col, row);
+        => EnsureQueryService().GetTileType(col, row);
 
     /// <summary>그리드 좌표가 속한 방을 타입 정보 포함해 반환합니다.</summary>
     public RoomInfo? GetRoomAt(int col, int row)
-        => _queryService.GetRoomAt(col, row);
+        => EnsureQueryService().GetRoomAt(col, row);
 
     /// <summary>스폰 위치를 반환합니다. Generate() 시점에 계산된 캐시를 반환하므로 O(1).</summary>
     public Vector2Int GetSpawnTilePos() => _cachedSpawnPos;
 
     /// <summary>그리드 좌표를 월드 좌표로 변환합니다 (QueryService → Renderer에 위임).</summary>
     public Vector3 GridToWorld(Vector2Int gridPos)
-        => _queryService.GridToWorld(gridPos);
+        => EnsureQueryService().GridToWorld(gridPos);
 
     /// <summary>월드 좌표를 그리드 좌표로 변환합니다 (QueryService → Renderer에 위임).</summary>
     public Vector2Int WorldToGrid(Vector3 worldPos)
-        => _queryService.WorldToGrid(worldPos);
+        => EnsureQueryService().WorldToGrid(worldPos);
 
     /// <summary>해당 타입의 계단 위치를 그리드 좌표로 반환합니다.</summary>
     public Vector2Int FindStairPos(int stairType)
-        => _queryService.FindStairPos(stairType);
+        => EnsureQueryService().FindStairPos(stairType);
 
     /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
     public void SetRoomType(RoomInfo room, RoomType type)
@@ -534,7 +534,23 @@ public class DungeonManager : MonoBehaviour
 
 
     public bool IsCorr(int x, int y)
-        => _queryService.IsCorr(x, y);
+        => EnsureQueryService().IsCorr(x, y);
+
+    // ── 내부 초기화 헬퍼 ─────────────────────────────────────────────
+
+    /// <summary>
+    /// _queryService를 반환합니다.
+    /// Awake 이전 등 예외적으로 null인 경우 즉시 초기화 후 반환합니다.
+    /// </summary>
+    private DungeonQueryService EnsureQueryService()
+    {
+        if (_queryService == null)
+        {
+            Debug.LogWarning("[DungeonManager] _queryService가 Awake 이전에 접근됐습니다 — 즉시 초기화합니다.");
+            _queryService = new DungeonQueryService(dungeonRenderer);
+        }
+        return _queryService;
+    }
 
 #if UNITY_EDITOR
     // ── Editor 버튼 ──────────────────────────────────────────────────
