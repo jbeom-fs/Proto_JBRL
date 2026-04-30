@@ -38,8 +38,26 @@ public class SkillUIManager : MonoBehaviour
 
     private void Awake()
     {
+        if (combat == null)
+            Debug.LogWarning("[SkillUIManager] PlayerCombatController가 연결되지 않아 스킬 슬롯 정보를 갱신할 수 없습니다.");
+        if (combatChannel == null)
+            Debug.LogWarning("[SkillUIManager] CombatEventChannel이 연결되지 않아 스킬 쿨다운 UI 이벤트를 받을 수 없습니다.");
+        if (dungeonChannel == null)
+            Debug.LogWarning("[SkillUIManager] DungeonEventChannel이 연결되지 않아 층 이동 후 스킬 UI 자동 갱신을 받을 수 없습니다.");
+        if (slots == null)
+        {
+            Debug.LogError("[SkillUIManager] SkillSlotUI 배열이 연결되지 않아 스킬 UI를 초기화할 수 없습니다.");
+            return;
+        }
+        if (slots.Length != 4)
+            Debug.LogWarning($"[SkillUIManager] SkillSlotUI 배열 길이가 4가 아닙니다. 현재 길이: {slots.Length}");
+
         for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i] == null)
+                Debug.LogWarning($"[SkillUIManager] SkillSlotUI 슬롯 {i}이 연결되지 않았습니다.");
             slots[i]?.Initialize(i, combat, combatChannel, emptySlotSprite);
+        }
     }
 
     private void Start()
@@ -76,6 +94,8 @@ public class SkillUIManager : MonoBehaviour
     /// </summary>
     public void RefreshAllSlots()
     {
+        if (slots == null) return;
+
         foreach (var slot in slots)
             slot?.RefreshIcon();
     }

@@ -50,6 +50,33 @@ public class SkillSlotUI : MonoBehaviour
         _channel         = channel;
         _emptySlotSprite = emptySlotSprite;
 
+        if (_combat == null)
+            Debug.LogWarning($"[SkillSlotUI] 슬롯 {_slotIndex}: PlayerCombatController가 연결되지 않아 스킬 정보를 표시할 수 없습니다.");
+        if (_channel == null)
+            Debug.LogWarning($"[SkillSlotUI] 슬롯 {_slotIndex}: CombatEventChannel이 연결되지 않아 쿨다운 이벤트를 받을 수 없습니다.");
+
+        bool hasRequiredUi = true;
+        if (iconImage == null)
+        {
+            Debug.LogError($"[SkillSlotUI] 슬롯 {_slotIndex}: iconImage가 연결되지 않았습니다.");
+            hasRequiredUi = false;
+        }
+        if (cooldownOverlay == null)
+        {
+            Debug.LogError($"[SkillSlotUI] 슬롯 {_slotIndex}: cooldownOverlay가 연결되지 않았습니다.");
+            hasRequiredUi = false;
+        }
+        if (cooldownText == null)
+        {
+            Debug.LogError($"[SkillSlotUI] 슬롯 {_slotIndex}: cooldownText가 연결되지 않았습니다.");
+            hasRequiredUi = false;
+        }
+        if (!hasRequiredUi)
+        {
+            enabled = false;
+            return;
+        }
+
         if (_channel != null)
             _channel.OnSkillUsed += HandleSkillUsed;
 

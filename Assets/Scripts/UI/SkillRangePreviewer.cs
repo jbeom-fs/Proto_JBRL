@@ -72,6 +72,13 @@ public class SkillRangePreviewer : MonoBehaviour
         SetupLineRenderer();
         _lr.enabled = false;
 
+        if (combat == null)
+            Debug.LogWarning("[SkillRangePreviewer] PlayerCombatController가 연결되지 않아 스킬 미리보기를 표시할 수 없습니다.");
+        if (movement == null)
+            Debug.LogWarning("[SkillRangePreviewer] PlayerController가 연결되지 않아 방향성 미리보기가 기본 방향을 사용합니다.");
+        if (dungeonManager == null)
+            Debug.LogWarning("[SkillRangePreviewer] DungeonManager가 연결되지 않아 벽 인식 미리보기가 비활성화됩니다.");
+
         if (inputReader == null && movement != null)
             inputReader = movement.GetComponent<PlayerInputReader>();
         if (inputReader == null)
@@ -149,7 +156,8 @@ public class SkillRangePreviewer : MonoBehaviour
         if (combat == null || combat.currentWeapon == null) return;
 
         SkillData[] skills = combat.currentWeapon.skills;
-        if (slot >= skills.Length || skills[slot] == null) return;
+        if (skills == null) return;
+        if ((uint)slot >= (uint)skills.Length || skills[slot] == null) return;
 
         _activeSlot   = slot;
         _currentSkill = skills[slot];
