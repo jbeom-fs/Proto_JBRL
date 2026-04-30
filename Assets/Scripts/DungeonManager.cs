@@ -98,6 +98,7 @@ public class DungeonManager : MonoBehaviour
     private RoomInfo?              _currentDoorRoom;
     private DungeonQueryService    _queryService;
     private SpawnPositionService   _spawnService;
+    private FloorTransitionService _transitionService;
 
     // 층 전환 중복 방지 — 코루틴 실행 중 추가 요청을 차단
     private bool _isTransitioning = false;
@@ -125,8 +126,9 @@ public class DungeonManager : MonoBehaviour
         // 쿼리 서비스 초기화 — dungeonRenderer는 Inspector에서 주입된 상태
         if (dungeonRenderer == null)
             Debug.LogWarning("[DungeonManager] Awake: dungeonRenderer가 없습니다 — 좌표 변환이 동작하지 않습니다.");
-        _queryService  = new DungeonQueryService(dungeonRenderer);
-        _spawnService  = new SpawnPositionService();
+        _queryService      = new DungeonQueryService(dungeonRenderer);
+        _spawnService      = new SpawnPositionService();
+        _transitionService = new FloorTransitionService();
     }
 
     // ── 생성 파이프라인 ──────────────────────────────────────────────
@@ -216,55 +218,14 @@ public class DungeonManager : MonoBehaviour
         RuntimePerfLogger.MarkEvent("floor_transition_generate_end",
             "elapsedMs=" + ElapsedMs(stageStart) + " floor=" + floor);
 
-        // 3. Unity가 Tilemap 업데이트를 완료할 시간 확보
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        yield return null;
-        RuntimePerfLogger.MarkEvent("floor_transition_post_generate_frame",
-            "elapsedMs=" + ElapsedMs(stageStart));
-
-        if (AllowForcedGarbageCollectionDuringFloorTransition &&
-            collectGarbageDuringFloorTransition &&
-            floorTransitionGcPasses > 0)
-        {
-            stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_gc_begin",
-                "floor=" + floor +
-                " passes=" + floorTransitionGcPasses +
-                " waitFinalizers=" + waitForFinalizersDuringFloorTransition);
-
-            for (int i = 0; i < floorTransitionGcPasses; i++)
-                System.GC.Collect();
-
-            if (waitForFinalizersDuringFloorTransition)
-                System.GC.WaitForPendingFinalizers();
-
-            RuntimePerfLogger.MarkEvent("floor_transition_gc_end",
-                "elapsedMs=" + ElapsedMs(stageStart) +
-                " passes=" + floorTransitionGcPasses);
-        }
-
-        if (postGenerateSettleSeconds > 0f)
-        {
-            stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_time_begin",
-                "seconds=" + postGenerateSettleSeconds.ToString("F3", CultureInfo.InvariantCulture));
-            yield return YieldCache.WaitForSecondsRealTime(postGenerateSettleSeconds);
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_time_end",
-                "elapsedMs=" + ElapsedMs(stageStart) +
-                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
-        }
-
-        for (int i = 0; i < postGenerateSettleFrames; i++)
-        {
-            stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_frame_begin",
-                "index=" + i);
-            yield return null;
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_frame",
-                "index=" + i +
-                " elapsedMs=" + ElapsedMs(stageStart) +
-                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
-        }
+        yield return _transitionService.RunPostGenerateSettle(
+            postGenerateSettleSeconds,
+            postGenerateSettleFrames,
+            AllowForcedGarbageCollectionDuringFloorTransition,
+            collectGarbageDuringFloorTransition,
+            floorTransitionGcPasses,
+            waitForFinalizersDuringFloorTransition,
+            floor);
 
         // 4. 층 변경 이벤트 발행
         stageStart = Time.realtimeSinceStartupAsDouble;
