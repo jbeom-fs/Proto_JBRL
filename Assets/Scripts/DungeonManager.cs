@@ -143,57 +143,10 @@ public class DungeonManager : MonoBehaviour
             return;
         }
 
-        // 1. 설정 구성
-        double stageStart = Time.realtimeSinceStartupAsDouble;
-        var settings = BuildSettings();
-        RuntimePerfLogger.MarkEvent("generate_stage_build_settings",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " seed=" + settings.Seed +
-            " bspDepth=" + settings.BspDepth);
-
-        // 2. 그리드 + 원시 방 목록 생성
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        DungeonGenerator.RoomRect[] rawRooms;
-        int[,] grid = DungeonGenerator.GenerateDungeon(settings, out rawRooms);
-        _originGrid = grid;
-        RuntimePerfLogger.MarkEvent("generate_stage_generator",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " rawRooms=" + rawRooms.Length +
-            " grid=" + grid.GetLength(1) + "x" + grid.GetLength(0));
-        // 3. RoomInfo 배열 생성 (타입은 Registry가 결정)
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _registry = new RoomRegistry();
-        var roomInfos = BuildRoomInfos(rawRooms);
-        RuntimePerfLogger.MarkEvent("generate_stage_room_infos",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " roomInfos=" + roomInfos.Length);
-
-        // 4. DungeonData 생성
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _data = new DungeonData(grid, roomInfos);
-        _data.currentStageRegion = currentStageRegion;
-        RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " walkable=" + CountWalkableTiles(grid));
-
-        // 5. Registry 초기화 (Stair 방 자동 감지)
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _registry.Initialize(_data);
-        RuntimePerfLogger.MarkEvent("generate_stage_registry_init",
-            "elapsedMs=" + ElapsedMs(stageStart));
-
-        // 쿼리 서비스에 최신 데이터 주입 (Registry 초기화 완료 후)
-        _queryService?.UpdateData(_data, _registry, _originGrid);
-
-        // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _cachedSpawnPos = EnsureSpawnService().ComputeSpawnPos(_data, mapWidth, mapHeight);
-        RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
+        RunGenerationPipeline();
 
         // 7. Tilemap 배치
-        stageStart = Time.realtimeSinceStartupAsDouble;
+        double stageStart = Time.realtimeSinceStartupAsDouble;
         dungeonRenderer.PlaceTiles(_data);
         RuntimePerfLogger.MarkEvent("generate_stage_place_tiles",
             "elapsedMs=" + ElapsedMs(stageStart));
@@ -351,51 +304,10 @@ public class DungeonManager : MonoBehaviour
             yield break;
         }
 
+        RunGenerationPipeline();
+
+        // 7. Tilemap 청크 배치
         double stageStart = Time.realtimeSinceStartupAsDouble;
-        var settings = BuildSettings();
-        RuntimePerfLogger.MarkEvent("generate_stage_build_settings",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " seed=" + settings.Seed +
-            " bspDepth=" + settings.BspDepth);
-
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        DungeonGenerator.RoomRect[] rawRooms;
-        int[,] grid = DungeonGenerator.GenerateDungeon(settings, out rawRooms);
-        _originGrid = grid;
-        RuntimePerfLogger.MarkEvent("generate_stage_generator",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " rawRooms=" + rawRooms.Length +
-            " grid=" + grid.GetLength(1) + "x" + grid.GetLength(0));
-
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _registry = new RoomRegistry();
-        var roomInfos = BuildRoomInfos(rawRooms);
-        RuntimePerfLogger.MarkEvent("generate_stage_room_infos",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " roomInfos=" + roomInfos.Length);
-
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _data = new DungeonData(grid, roomInfos);
-        _data.currentStageRegion = currentStageRegion;
-        RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " walkable=" + CountWalkableTiles(grid));
-
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _registry.Initialize(_data);
-        RuntimePerfLogger.MarkEvent("generate_stage_registry_init",
-            "elapsedMs=" + ElapsedMs(stageStart));
-
-        // 쿼리 서비스에 최신 데이터 주입 (Registry 초기화 완료 후)
-        _queryService?.UpdateData(_data, _registry, _originGrid);
-
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _cachedSpawnPos = EnsureSpawnService().ComputeSpawnPos(_data, mapWidth, mapHeight);
-        RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
-
-        stageStart = Time.realtimeSinceStartupAsDouble;
         yield return StartCoroutine(dungeonRenderer.PlaceTilesChunked(_data, tilePlacementChunkRows));
         RuntimePerfLogger.MarkEvent("generate_stage_place_tiles",
             "elapsedMs=" + ElapsedMs(stageStart) +
@@ -454,6 +366,59 @@ public class DungeonManager : MonoBehaviour
     }
 
     // ── 내부 빌더 ────────────────────────────────────────────────────
+
+    private void RunGenerationPipeline()
+    {
+        // 1. 설정 구성
+        double stageStart = Time.realtimeSinceStartupAsDouble;
+        var settings = BuildSettings();
+        RuntimePerfLogger.MarkEvent("generate_stage_build_settings",
+            "elapsedMs=" + ElapsedMs(stageStart) +
+            " seed=" + settings.Seed +
+            " bspDepth=" + settings.BspDepth);
+
+        // 2. 그리드 + 원시 방 목록 생성
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        DungeonGenerator.RoomRect[] rawRooms;
+        int[,] grid = DungeonGenerator.GenerateDungeon(settings, out rawRooms);
+        _originGrid = grid;
+        RuntimePerfLogger.MarkEvent("generate_stage_generator",
+            "elapsedMs=" + ElapsedMs(stageStart) +
+            " rawRooms=" + rawRooms.Length +
+            " grid=" + grid.GetLength(1) + "x" + grid.GetLength(0));
+
+        // 3. RoomInfo 배열 생성 (타입은 Registry가 결정)
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        _registry = new RoomRegistry();
+        var roomInfos = BuildRoomInfos(rawRooms);
+        RuntimePerfLogger.MarkEvent("generate_stage_room_infos",
+            "elapsedMs=" + ElapsedMs(stageStart) +
+            " roomInfos=" + roomInfos.Length);
+
+        // 4. DungeonData 생성
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        _data = new DungeonData(grid, roomInfos);
+        _data.currentStageRegion = currentStageRegion;
+        RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
+            "elapsedMs=" + ElapsedMs(stageStart) +
+            " walkable=" + CountWalkableTiles(grid));
+
+        // 5. Registry 초기화 (Stair 방 자동 감지)
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        _registry.Initialize(_data);
+        RuntimePerfLogger.MarkEvent("generate_stage_registry_init",
+            "elapsedMs=" + ElapsedMs(stageStart));
+
+        // 쿼리 서비스에 최신 데이터 주입 (Registry 초기화 완료 후)
+        _queryService?.UpdateData(_data, _registry, _originGrid);
+
+        // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        _cachedSpawnPos = EnsureSpawnService().ComputeSpawnPos(_data, mapWidth, mapHeight);
+        RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
+            "elapsedMs=" + ElapsedMs(stageStart) +
+            " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
+    }
 
     private DungeonSettings BuildSettings()
     {
