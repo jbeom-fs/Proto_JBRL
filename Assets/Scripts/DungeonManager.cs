@@ -126,6 +126,8 @@ public class DungeonManager : MonoBehaviour
         // 쿼리 서비스 초기화 — dungeonRenderer는 Inspector에서 주입된 상태
         if (dungeonRenderer == null)
             Debug.LogWarning("[DungeonManager] Awake: dungeonRenderer가 없습니다 — 좌표 변환이 동작하지 않습니다.");
+        if (eventChannel == null)
+            Debug.LogWarning("[DungeonManager] Awake: eventChannel이 없습니다 — 층 변경 이벤트가 발행되지 않습니다.");
         _queryService      = new DungeonQueryService(dungeonRenderer);
         _spawnService      = new SpawnPositionService();
         _transitionService = new FloorTransitionService();

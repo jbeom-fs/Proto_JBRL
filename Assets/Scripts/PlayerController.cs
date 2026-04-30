@@ -84,6 +84,10 @@ public class PlayerController : MonoBehaviour
 
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
         if (eventChannel   == null) { Debug.LogError("[PlayerController] EventChannel 없음");  enabled = false; return; }
+        if (dungeonManager.dungeonRenderer == null) { Debug.LogError("[PlayerController] DungeonTilemapRenderer 없음"); enabled = false; return; }
+        if (dungeonManager.dungeonRenderer.tilemap == null) { Debug.LogError("[PlayerController] DungeonTilemapRenderer.tilemap 없음"); enabled = false; return; }
+        if (doorController == null)
+            Debug.LogWarning("[PlayerController] DoorController 없음 — 문 열기 입력이 동작하지 않습니다.");
 
         if (dungeonManager.Data == null)
             dungeonManager.Generate();

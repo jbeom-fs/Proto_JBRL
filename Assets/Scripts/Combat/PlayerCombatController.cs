@@ -66,6 +66,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         _resource.Initialize(maxHp, maxMp);
         _attackExecutor = new AttackExecutor(transform, this);
+        if (combatChannel == null)
+            Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/MP/스킬 UI 이벤트가 발행되지 않습니다.");
+        if (playerMovement == null)
+            Debug.LogWarning("[PlayerCombatController] PlayerController 없음 — 공격 방향이 기본 방향을 사용합니다.");
         _inputReader = GetComponent<PlayerInputReader>();
         if (_inputReader == null && playerMovement != null)
             _inputReader = playerMovement.GetComponent<PlayerInputReader>();
