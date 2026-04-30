@@ -46,8 +46,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private int     _currentHp;
     private int     _currentMp;
-    private float   _attackCooldown;
-    private readonly float[] _skillCooldowns = new float[4];
+    private readonly SkillCooldownController _cooldownController = new();
     private readonly HashSet<IDamageable> _hitTargetsThisAttack = new();
     private readonly HashSet<Vector2Int> _targetGridSet = new();
     private readonly List<HitCandidate> _hitCandidates = new();
@@ -99,8 +98,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public void EquipWeapon(WeaponData weapon)
     {
         currentWeapon   = weapon;
-        _attackCooldown = 0f;
-        System.Array.Clear(_skillCooldowns, 0, _skillCooldowns.Length);
+        _cooldownController.ResetAll();
 #if UNITY_EDITOR
         Debug.Log($"[Combat] 무기 장착: {weapon?.weaponName ?? "없음"}");
 #endif
@@ -112,7 +110,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void Update()
     {
-        TickCooldowns();
+        _cooldownController.Tick(Time.deltaTime);
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
 
@@ -125,23 +123,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_inputReader.WasSkillPressed(3)) TryUseSkill(3);
     }
 
-    private void TickCooldowns()
-    {
-        float dt = Time.deltaTime;
-        _attackCooldown -= dt;
-        for (int i = 0; i < _skillCooldowns.Length; i++)
-            _skillCooldowns[i] -= dt;
-    }
-
     // ══════════════════════════════════════════════════════════════
     //  기본 공격
     // ══════════════════════════════════════════════════════════════
 
     private void TryBasicAttack()
     {
-        if (_attackCooldown > 0f || currentWeapon == null) return;
+        if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
-        _attackCooldown = currentWeapon.attackCooldown;
+        _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
         BeginAttackActivation();
 
         var targets = ResolveTargets(
@@ -170,10 +160,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         SkillData skill = currentWeapon.skills[slotIndex];
         if (skill == null)                       return;
-        if (_skillCooldowns[slotIndex] > 0f)     return;
+        if (!_cooldownController.IsSkillReady(slotIndex)) return;
         if (_currentMp < skill.mpCost)           return;
 
-        _skillCooldowns[slotIndex] = skill.cooldown;
+        _cooldownController.SetSkillCooldown(slotIndex, skill.cooldown);
         SpendMp(skill.mpCost);
         BeginAttackActivation();
 
@@ -422,7 +412,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
     public float GetSkillCooldownRemaining(int slotIndex) =>
-        slotIndex < _skillCooldowns.Length ? Mathf.Max(0f, _skillCooldowns[slotIndex]) : 0f;
+        _cooldownController.GetSkillRemaining(slotIndex);
 
     public float GetSkillCooldownMax(int slotIndex)
     {
