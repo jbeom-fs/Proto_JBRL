@@ -231,7 +231,7 @@ public class PlayerController : MonoBehaviour
     {
         if (dungeonManager == null || dungeonManager.Data == null) return;
 
-        if (IsPhysicsFootprintWalkable(transform.position))
+        if (CanMoveTo(transform.position))
         {
             _lastSafePosition = transform.position;
             return;
@@ -252,19 +252,66 @@ public class PlayerController : MonoBehaviour
     {
         float   step   = moveSpeed * Time.deltaTime;
         Vector3 origin = transform.position;
+        Vector3 current = origin;
+        bool movedX = false;
+        bool movedY = false;
+        Vector3 xMove = new Vector3(input.x * step, 0f, 0f);
+        Vector3 yMove = new Vector3(0f, input.y * step, 0f);
 
         if (input.x != 0f)
         {
-            Vector3 next = origin + new Vector3(input.x * step, 0f, 0f);
-            if (CanMoveTo(next)) origin = next;
-        }
-        if (input.y != 0f)
-        {
-            Vector3 next = origin + new Vector3(0f, input.y * step, 0f);
-            if (CanMoveTo(next)) origin = next;
+            Vector3 next = current + xMove;
+            if (CanMoveTo(next))
+            {
+                current = next;
+                movedX = true;
+            }
         }
 
-        transform.position = origin;
+        if (input.y != 0f)
+        {
+            Vector3 next = current + yMove;
+            if (CanMoveTo(next))
+            {
+                current = next;
+                movedY = true;
+            }
+        }
+
+        bool isDiagonalInput = input.x != 0f && input.y != 0f;
+        if (isDiagonalInput && !movedX && !movedY)
+        {
+            if (TrySlideWithNudge(origin, yMove, -Mathf.Sign(input.x) * Vector3.right, out Vector3 ySlide))
+                current = ySlide;
+            else if (TrySlideWithNudge(origin, xMove, -Mathf.Sign(input.y) * Vector3.up, out Vector3 xSlide))
+                current = xSlide;
+        }
+
+        transform.position = current;
+    }
+
+    private bool TrySlideWithNudge(Vector3 origin, Vector3 primaryMove, Vector3 nudgeDirection, out Vector3 result)
+    {
+        result = origin;
+
+        if (primaryMove.sqrMagnitude <= 0.000001f || nudgeDirection.sqrMagnitude <= 0.000001f)
+            return false;
+
+        float nudgeStep = Mathf.Max(0.001f, _tileSize * 0.05f);
+        float maxNudgeDistance = Mathf.Max(nudgeStep, _tileSize * 0.45f);
+        int maxAttempts = Mathf.Min(10, Mathf.CeilToInt(maxNudgeDistance / nudgeStep));
+
+        for (int i = 1; i <= maxAttempts; i++)
+        {
+            float nudgeDistance = Mathf.Min(nudgeStep * i, maxNudgeDistance);
+            Vector3 candidate = origin + primaryMove + nudgeDirection * nudgeDistance;
+            if (!CanMoveTo(candidate)) continue;
+
+            result = candidate;
+            return true;
+        }
+
+        return false;
     }
 
     private bool CanMoveTo(Vector3 pos)
