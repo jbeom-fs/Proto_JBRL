@@ -63,6 +63,10 @@ public class DungeonTilemapRenderer : MonoBehaviour
     private readonly List<Vector3Int> _renderedDoorPositions
         = new List<Vector3Int>(16);
 
+    private const int ROOM_ENTRY_SAMPLE_THRESHOLD = 3;
+
+    private readonly Vector3[] _playerRoomSamples = new Vector3[9];
+
     // SetTiles 배치 호출에 재사용할 버퍼 — 매 호출마다 List/Array 할당 방지
     private readonly List<TileChangeData> _doorChangeBuffer
         = new List<TileChangeData>(32);
@@ -74,6 +78,8 @@ public class DungeonTilemapRenderer : MonoBehaviour
     private TileBase[] _wallTileBuffer;
     private TileBase[] _chunkTileBuffer;
     private TileBase[] _chunkWallTileBuffer;
+    private Transform _playerTransform;
+    private CircleCollider2D _playerCircleCollider;
 
     // ── 공개 API ─────────────────────────────────────────────────────
 
@@ -317,7 +323,6 @@ public class DungeonTilemapRenderer : MonoBehaviour
 
         _renderedDoorPositions.Clear();
         _closedDoorPositions.Clear();
-
         // ── 4방향 테두리 직접 순회 (람다/delegate 할당 없음) ────
         for (int col = room.X; col < room.Right; col++)
         {
@@ -387,6 +392,11 @@ public class DungeonTilemapRenderer : MonoBehaviour
 
     // ── 좌표 변환 ────────────────────────────────────────────────────
 
+    public bool CanStartRoomEncounter(RoomInfo room)
+    {
+        return IsPlayerInsideRoom(room) && !IsPlayerOverlappingAnyDoorCell(room);
+    }
+
     public Vector3 GridToWorld(Vector2Int gridPos)
         => tilemap.GetCellCenterWorld(new Vector3Int(gridPos.x, -gridPos.y, 0));
 
@@ -435,10 +445,43 @@ public class DungeonTilemapRenderer : MonoBehaviour
         if (_data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
 
         var tilemapPos = new Vector3Int(col, -row, 0);
+        var gridPos = new Vector2Int(col, row);
         if (!_doorPositions.ContainsKey(tilemapPos)) return;
         if (_closedDoorPositions.Contains(tilemapPos)) return;
 
-        _data.SetTileValue(col, row, DungeonGenerator.DOOR_CLOSED);
+        CloseDoorAt(tilemapPos, gridPos);
+    }
+
+    private bool IsPlayerOverlappingAnyDoorCell(RoomInfo room)
+    {
+        for (int col = room.X; col < room.Right; col++)
+        {
+            if (IsPlayerOverlappingDoorCellAt(col, room.Y - 1))
+                return true;
+            if (IsPlayerOverlappingDoorCellAt(col, room.Bottom))
+                return true;
+        }
+        for (int row = room.Y; row < room.Bottom; row++)
+        {
+            if (IsPlayerOverlappingDoorCellAt(room.X - 1, row))
+                return true;
+            if (IsPlayerOverlappingDoorCellAt(room.Right, row))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsPlayerOverlappingDoorCellAt(int col, int row)
+    {
+        var tilemapPos = new Vector3Int(col, -row, 0);
+        return _doorPositions.ContainsKey(tilemapPos) &&
+               IsPlayerOverlappingDoorCell(tilemapPos);
+    }
+
+    private void CloseDoorAt(Vector3Int tilemapPos, Vector2Int gridPos)
+    {
+        _data.SetTileValue(gridPos.x, gridPos.y, DungeonGenerator.DOOR_CLOSED);
         _closedDoorPositions.Add(tilemapPos);
         _renderedDoorPositions.Add(tilemapPos);
         _doorChangeBuffer.Add(new TileChangeData
@@ -448,6 +491,119 @@ public class DungeonTilemapRenderer : MonoBehaviour
             color     = OPAQUE,
             transform = Matrix4x4.identity,
         });
+    }
+
+    private bool IsPlayerOverlappingDoorCell(Vector3Int tilemapPos)
+    {
+        if (doorTilemap == null)
+            return false;
+
+        if (!TryGetPlayerFootprint(out Vector2 playerCenter, out float playerRadius))
+            return false;
+
+        Vector3 cellCenter = doorTilemap.GetCellCenterWorld(tilemapPos);
+        Vector3 cellSize = doorTilemap.cellSize;
+        float halfWidth = Mathf.Abs(cellSize.x) * 0.5f;
+        float halfHeight = Mathf.Abs(cellSize.y) * 0.5f;
+
+        float closestX = Mathf.Clamp(playerCenter.x, cellCenter.x - halfWidth, cellCenter.x + halfWidth);
+        float closestY = Mathf.Clamp(playerCenter.y, cellCenter.y - halfHeight, cellCenter.y + halfHeight);
+        Vector2 closest = new Vector2(closestX, closestY);
+
+        return (playerCenter - closest).sqrMagnitude < playerRadius * playerRadius;
+    }
+
+    private bool IsPlayerInsideRoom(RoomInfo room)
+    {
+        if (_data == null || tilemap == null)
+            return false;
+
+        if (!TryGetPlayerFootprint(out Vector2 playerCenter, out float playerRadius))
+            return false;
+
+        float tileSize = Mathf.Max(Mathf.Abs(tilemap.cellSize.x), Mathf.Abs(tilemap.cellSize.y));
+        float sampleRadius = Mathf.Min(playerRadius, Mathf.Max(0.01f, tileSize * 0.49f));
+
+        BuildPlayerRoomSamples(playerCenter, sampleRadius);
+
+        if (IsRoomSample(room, WorldToGrid(_playerRoomSamples[0])))
+            return true;
+
+        int roomSampleCount = 0;
+        for (int i = 1; i < _playerRoomSamples.Length; i++)
+        {
+            if (!IsRoomSample(room, WorldToGrid(_playerRoomSamples[i])))
+                continue;
+
+            roomSampleCount++;
+            if (roomSampleCount >= ROOM_ENTRY_SAMPLE_THRESHOLD)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void BuildPlayerRoomSamples(Vector2 center, float radius)
+    {
+        _playerRoomSamples[0] = center;
+        _playerRoomSamples[1] = center + Vector2.left * radius;
+        _playerRoomSamples[2] = center + Vector2.right * radius;
+        _playerRoomSamples[3] = center + Vector2.up * radius;
+        _playerRoomSamples[4] = center + Vector2.down * radius;
+        _playerRoomSamples[5] = center + new Vector2(-radius, radius);
+        _playerRoomSamples[6] = center + new Vector2(radius, radius);
+        _playerRoomSamples[7] = center + new Vector2(-radius, -radius);
+        _playerRoomSamples[8] = center + new Vector2(radius, -radius);
+    }
+
+    private bool IsRoomSample(RoomInfo room, Vector2Int gridPos)
+    {
+        return room.Contains(gridPos.x, gridPos.y) &&
+               _data.GetTileType(gridPos.x, gridPos.y) == DungeonGenerator.ROOM;
+    }
+
+    private bool TryGetPlayerFootprint(out Vector2 center, out float radius)
+    {
+        if (_playerTransform == null)
+        {
+            GameObject playerObject = GameObject.FindWithTag("Player");
+            if (playerObject == null)
+            {
+                PlayerController playerController = FindAnyObjectByType<PlayerController>();
+                if (playerController != null)
+                    playerObject = playerController.gameObject;
+            }
+
+            if (playerObject != null)
+            {
+                _playerTransform = playerObject.transform;
+                _playerCircleCollider = playerObject.GetComponent<CircleCollider2D>();
+            }
+        }
+
+        if (_playerTransform == null)
+        {
+            center = default;
+            radius = 0f;
+            return false;
+        }
+
+        if (_playerCircleCollider == null)
+            _playerCircleCollider = _playerTransform.GetComponent<CircleCollider2D>();
+
+        if (_playerCircleCollider != null)
+        {
+            center = _playerTransform.TransformPoint(_playerCircleCollider.offset);
+            float maxScale = Mathf.Max(
+                Mathf.Abs(_playerTransform.lossyScale.x),
+                Mathf.Abs(_playerTransform.lossyScale.y));
+            radius = Mathf.Max(0.01f, _playerCircleCollider.radius * maxScale);
+            return true;
+        }
+
+        center = _playerTransform.position;
+        radius = 0.32f;
+        return true;
     }
 
     private void EnsureDoorTilemapActive()

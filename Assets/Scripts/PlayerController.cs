@@ -42,6 +42,8 @@ public class PlayerController : MonoBehaviour
     [Range(0.05f, 0.49f)]
     public float collisionRadius = 0.2f;
 
+    private const int ROOM_ENTRY_SAMPLE_THRESHOLD = 3;
+
     // ── 내부 상태 ─────────────────────────────────────────────────────
     private PlayerInputReader _inputReader;
     private float      _tileSize;
@@ -58,10 +60,7 @@ public class PlayerController : MonoBehaviour
 
     // CanMoveTo 코너 배열 재사용
     private readonly Vector3[] _corners = new Vector3[4];
-
-    // 마지막으로 CheckRoomEntry를 실행한 그리드 좌표
-    // 같은 셀에 머무는 프레임에는 탐색 전체를 스킵합니다.
-    private Vector2Int _lastCheckedGridPos = new Vector2Int(-1, -1);
+    private readonly Vector3[] _roomEntrySamples = new Vector3[9];
 
     // 마지막으로 방문안 Room
     // Room이 변경되거나 복도로 나가기 전까진 체크하지 않는다.
@@ -178,7 +177,7 @@ public class PlayerController : MonoBehaviour
         _stairCooldown          = STAIR_COOLDOWN;
         _currentRoom            = null;
         _visitedRooms.Clear();
-        _lastCheckedGridPos     = new Vector2Int(-1, -1);   // 강제 재탐색
+        _lastRoom               = null;
 
         var spawnRoom = dungeonManager.GetRoomAt(gridPos.x, gridPos.y);
         if (spawnRoom.HasValue)
@@ -366,60 +365,110 @@ public class PlayerController : MonoBehaviour
 
     private void CheckRoomEntry()
     {
-        // 그리드 좌표가 바뀐 프레임에만 실행
-        // 같은 타일에 머무는 동안은 방 상태가 절대 변하지 않으므로 스킵
-        
-        var gridPos = dungeonManager.WorldToGrid(transform.position);
-        if (dungeonManager.IsCorr(gridPos.x, gridPos.y))
+        Vector2Int centerGrid = dungeonManager.WorldToGrid(transform.position);
+        if (!TryResolveRoomEntry(out RoomInfo room, out Vector2Int gridPos))
         {
+            if (!dungeonManager.IsCorr(centerGrid.x, centerGrid.y))
+                _currentRoom = null;
+
+            _lastRoom = null;
             return;
         }
-        else
-        {
-            _lastRoom = null;
-        }
-        if (gridPos == _lastCheckedGridPos) return;
-        _lastCheckedGridPos = gridPos;
-        
-        
-        // ── 이 아래는 셀이 바뀐 프레임에만 실행 ──────────────────────
-        var room = dungeonManager.GetRoomAt(gridPos.x, gridPos.y);
-        
 
         if(room.Equals(_lastRoom)) return;
         _lastRoom = room;
 
-        if (!room.HasValue)
-        {
-            _currentRoom = null;
-            return;
-        }
-
-        bool isInterior =
-            gridPos.x > room.Value.X     && gridPos.x < room.Value.Right  - 1 &&
-            gridPos.y > room.Value.Y     && gridPos.y < room.Value.Bottom - 1;
-        if (!isInterior) return;
-
         bool isNewEntry = !_currentRoom.HasValue ||
-                          _currentRoom.Value.X != room.Value.X ||
-                          _currentRoom.Value.Y != room.Value.Y;
+                          _currentRoom.Value.X != room.X ||
+                          _currentRoom.Value.Y != room.Y;
         if (!isNewEntry) return;
 
         _currentRoom = room;
 
-        var key = (room.Value.X, room.Value.Y);
+        var key = (room.X, room.Y);
         bool isFirstVisit = !_visitedRooms.Contains(key);
-        if (isFirstVisit && room.Value.Type == RoomType.Normal)
+        if (isFirstVisit && room.Type == RoomType.Normal)
             _visitedRooms.Add(key);
 
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("room_entered",
-                "room=" + room.Value.X + ":" + room.Value.Y +
-                " type=" + room.Value.Type +
+                "room=" + room.X + ":" + room.Y +
+                " type=" + room.Type +
                 " firstVisit=" + isFirstVisit +
                 " grid=" + gridPos.x + ":" + gridPos.y);
-        eventChannel.RaiseRoomEntered(room.Value, isFirstVisit);
+        eventChannel.RaiseRoomEntered(room, isFirstVisit);
         
+    }
+
+    private bool TryResolveRoomEntry(out RoomInfo room, out Vector2Int gridPos)
+    {
+        Vector3 center = transform.position;
+        float radius = Mathf.Min(GetWorldColliderRadius(), Mathf.Max(0.01f, _tileSize * 0.49f));
+
+        _roomEntrySamples[0] = center;
+        _roomEntrySamples[1] = center + new Vector3(-radius, 0f, 0f);
+        _roomEntrySamples[2] = center + new Vector3(radius, 0f, 0f);
+        _roomEntrySamples[3] = center + new Vector3(0f, radius, 0f);
+        _roomEntrySamples[4] = center + new Vector3(0f, -radius, 0f);
+        _roomEntrySamples[5] = center + new Vector3(-radius, -radius, 0f);
+        _roomEntrySamples[6] = center + new Vector3(radius, -radius, 0f);
+        _roomEntrySamples[7] = center + new Vector3(-radius, radius, 0f);
+        _roomEntrySamples[8] = center + new Vector3(radius, radius, 0f);
+
+        Vector2Int centerGrid = dungeonManager.WorldToGrid(_roomEntrySamples[0]);
+        RoomInfo? centerRoom = dungeonManager.GetRoomAt(centerGrid.x, centerGrid.y);
+        if (centerRoom.HasValue && IsRoomEntryTile(centerRoom.Value, centerGrid))
+        {
+            room = centerRoom.Value;
+            gridPos = centerGrid;
+            return true;
+        }
+
+        RoomInfo candidateEntryRoom = default;
+        Vector2Int candidateEntryGrid = default;
+        bool hasCandidateEntry = false;
+        int roomSampleCount = 0;
+
+        for (int i = 1; i < _roomEntrySamples.Length; i++)
+        {
+            Vector2Int candidateGrid = dungeonManager.WorldToGrid(_roomEntrySamples[i]);
+            RoomInfo? candidateRoom = dungeonManager.GetRoomAt(candidateGrid.x, candidateGrid.y);
+            if (!candidateRoom.HasValue) continue;
+            if (!IsRoomEntryTile(candidateRoom.Value, candidateGrid)) continue;
+
+            if (!hasCandidateEntry)
+            {
+                candidateEntryRoom = candidateRoom.Value;
+                candidateEntryGrid = candidateGrid;
+                hasCandidateEntry = true;
+                roomSampleCount = 1;
+                continue;
+            }
+
+            if (candidateRoom.Value.X != candidateEntryRoom.X ||
+                candidateRoom.Value.Y != candidateEntryRoom.Y)
+            {
+                continue;
+            }
+
+            roomSampleCount++;
+            if (roomSampleCount >= ROOM_ENTRY_SAMPLE_THRESHOLD)
+            {
+                room = candidateEntryRoom;
+                gridPos = candidateEntryGrid;
+                return true;
+            }
+        }
+
+        room = default;
+        gridPos = dungeonManager.WorldToGrid(center);
+        return false;
+    }
+
+    private bool IsRoomEntryTile(RoomInfo room, Vector2Int gridPos)
+    {
+        return room.Contains(gridPos.x, gridPos.y) &&
+               dungeonManager.GetTileType(gridPos.x, gridPos.y) == DungeonGenerator.ROOM;
     }
 
     // ══════════════════════════════════════════════════════════════
