@@ -18,28 +18,96 @@ public class RoomSpawner : MonoBehaviour
     private readonly List<EnemyData> _candidates = new();
     private readonly List<EnemyData> _poolEnemyTable = new();
     private readonly List<GameObject> activeEnemies = new();
+    private readonly HashSet<int> _startedRoomKeys = new();
     private RoomInfo? _activeRoom;
+    private RoomInfo? _pendingRoomStart;
 
     private void OnEnable()
     {
         if (eventChannel != null)
+        {
             eventChannel.OnRoomEntered += OnRoomEntered;
+            eventChannel.OnFloorChanged += OnFloorChanged;
+        }
     }
 
     private void OnDisable()
     {
         if (eventChannel != null)
+        {
             eventChannel.OnRoomEntered -= OnRoomEntered;
+            eventChannel.OnFloorChanged -= OnFloorChanged;
+        }
 
+        ClearPendingRoomStart();
         UnsubscribeActiveEnemies();
+    }
+
+    private void LateUpdate()
+    {
+        if (!_pendingRoomStart.HasValue) return;
+        if (!CanStartRoomEncounter(_pendingRoomStart.Value)) return;
+
+        RoomInfo room = _pendingRoomStart.Value;
+        StartRoomEncounter(room);
     }
 
     private void OnRoomEntered(RoomEnteredEventArgs args)
     {
         if (!args.IsFirstVisit) return;
         if (args.Room.Type != RoomType.Normal && args.Room.Type != RoomType.MonsterDen) return;
+        if (_startedRoomKeys.Contains(GetRoomKey(args.Room))) return;
 
-        SpawnRoom(args.Room);
+        if (!CanStartRoomEncounter(args.Room))
+        {
+            SetPendingRoomStart(args.Room);
+            return;
+        }
+
+        StartRoomEncounter(args.Room);
+    }
+
+    public void ClearPendingRoomStart()
+    {
+        _pendingRoomStart = null;
+    }
+
+    public void ResetRoomEncounterState()
+    {
+        ClearPendingRoomStart();
+        _startedRoomKeys.Clear();
+    }
+
+    private void SetPendingRoomStart(RoomInfo room)
+    {
+        if (_startedRoomKeys.Contains(GetRoomKey(room)))
+            return;
+
+        if (_pendingRoomStart.HasValue && IsSameRoom(_pendingRoomStart.Value, room))
+            return;
+
+        _pendingRoomStart = room;
+    }
+
+    private bool CanStartRoomEncounter(RoomInfo room)
+    {
+        DungeonTilemapRenderer renderer = DungeonManager.Instance != null
+            ? DungeonManager.Instance.dungeonRenderer
+            : null;
+
+        return renderer == null || renderer.CanStartRoomEncounter(room);
+    }
+
+    private void OnFloorChanged(int prevFloor, int newFloor)
+    {
+        ResetRoomEncounterState();
+    }
+
+    private void StartRoomEncounter(RoomInfo room)
+    {
+        ClearPendingRoomStart();
+        _startedRoomKeys.Add(GetRoomKey(room));
+        SpawnRoom(room);
     }
 
     private void SpawnRoom(RoomInfo room)
@@ -155,6 +223,24 @@ public class RoomSpawner : MonoBehaviour
 
             if (enemyObject.TryGetComponent<EnemyController>(out var enemy))
                 enemy.OnDied -= OnSpawnedEnemyDied;
+        }
+    }
+
+    private static bool IsSameRoom(RoomInfo a, RoomInfo b)
+    {
+        return a.X == b.X && a.Y == b.Y && a.Right == b.Right && a.Bottom == b.Bottom;
+    }
+
+    private static int GetRoomKey(RoomInfo room)
+    {
+        unchecked
+        {
+            int hash = 17;
+            hash = hash * 31 + room.X;
+            hash = hash * 31 + room.Y;
+            hash = hash * 31 + room.Right;
+            hash = hash * 31 + room.Bottom;
+            return hash;
         }
     }
 

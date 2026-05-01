@@ -19,7 +19,7 @@ MonoBehaviour:
   attackPattern: 5
   patternRange: 14
   isMultiTarget: 1
-  knockbackForce: 4
+  knockbackForce: 30
   knockbackDuration: 0.15
   slowPercentage: 0.5
   slowDuration: 1.5

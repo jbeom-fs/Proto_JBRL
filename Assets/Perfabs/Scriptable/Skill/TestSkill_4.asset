@@ -15,7 +15,7 @@ MonoBehaviour:
   skillName: TestSkill
   description: Test
   icon: {fileID: 5936356172364887011, guid: e7d82edd42ae8b748b7e3716eb88f36c, type: 3}
-  damage: 5
+  damage: 50
   attackPattern: 3
   patternRange: 5
   isMultiTarget: 1

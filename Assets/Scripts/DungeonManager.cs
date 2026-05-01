@@ -147,6 +147,7 @@ public class DungeonManager : MonoBehaviour
             return;
         }
 
+        ResetRoomEncounterState();
         RunGenerationPipeline();
 
         // 7. Tilemap 배치
@@ -327,8 +328,22 @@ public class DungeonManager : MonoBehaviour
     {
         // 문 개폐는 DungeonManager.Instance를 통해 중앙에서만 처리합니다.
         // RoomSpawner는 방 클리어 상태만 판단하고, 실제 타일맵 문 제어는 여기로 위임합니다.
+        ClearPendingRoomStart();
+
         if (dungeonRenderer != null && dungeonRenderer.OpenAllDoors())
             _currentDoorRoom = null;
+    }
+
+    private void ClearPendingRoomStart()
+    {
+        RoomSpawner roomSpawner = FindAnyObjectByType<RoomSpawner>();
+        roomSpawner?.ClearPendingRoomStart();
+    }
+
+    private void ResetRoomEncounterState()
+    {
+        RoomSpawner roomSpawner = FindAnyObjectByType<RoomSpawner>();
+        roomSpawner?.ResetRoomEncounterState();
     }
 
     // ── 내부 빌더 ────────────────────────────────────────────────────
