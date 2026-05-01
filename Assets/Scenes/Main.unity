@@ -99701,7 +99701,7 @@ MonoBehaviour:
   densityFactor: 0.1
   normalMultiplier: 1
   monsterDenMultiplier: 2.5
-  spawnFootprintRadius: 0.34
+  spawnFootprintRadius: 0.65
 --- !u!1 &1859646878
 GameObject:
   m_ObjectHideFlags: 0

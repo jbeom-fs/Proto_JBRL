@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   skillName: TestSkill
   description: Test
-  icon: {fileID: 21300000, guid: 226e1ffd6d431ff489c0e4a703dc7415, type: 3}
+  icon: {fileID: -3859272008004827343, guid: 8e48bf0ec9762e94aab377d59d969b45, type: 3}
   damage: 1
   attackPattern: 5
   patternRange: 14

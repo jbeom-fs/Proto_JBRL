@@ -58,8 +58,9 @@ public class SkillRangePreviewer : MonoBehaviour
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
     private LineRenderer _lr;
-    private int          _activeSlot   = -1;    // -1 = 미표시
+    private int          _activeSlot           = -1;   // -1 = 스킬 미표시
     private SkillData    _currentSkill;
+    private bool         _isBasicAttackPreview  = false;
     private Vector2Int   _lastFacing;
 
     // ══════════════════════════════════════════════════════════════
@@ -114,16 +115,30 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         HandleInput();
 
-        if (_activeSlot < 0 || _currentSkill == null) return;
-
-        // 방향 의존 패턴(Line·Cone·Single)은 FacingDirection 이 바뀔 때만 재계산
-        if (IsDirectional(_currentSkill.attackPattern))
+        if (_activeSlot >= 0 && _currentSkill != null)
         {
-            Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-            if (facing != _lastFacing)
+            // 방향 의존 패턴(Line·Cone·Single)은 FacingDirection 이 바뀔 때만 재계산
+            if (IsDirectional(_currentSkill.attackPattern))
             {
-                _lastFacing = facing;
-                BuildPreview(_currentSkill);
+                Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+                if (facing != _lastFacing)
+                {
+                    _lastFacing = facing;
+                    BuildPreview(_currentSkill);
+                }
+            }
+        }
+        else if (_isBasicAttackPreview)
+        {
+            var weapon = combat?.currentWeapon;
+            if (weapon != null && IsDirectional(weapon.attackPattern))
+            {
+                Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+                if (facing != _lastFacing)
+                {
+                    _lastFacing = facing;
+                    BuildBasicAttackPreview(weapon);
+                }
             }
         }
     }
@@ -136,15 +151,32 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         if (inputReader == null) return;
 
-        // 키를 처음 누를 때 → 미리보기 시작 (슬롯 변경 감지)
-        if      (inputReader.WasSkillPressed(0)) TryShowPreview(0);
-        else if (inputReader.WasSkillPressed(1)) TryShowPreview(1);
-        else if (inputReader.WasSkillPressed(2)) TryShowPreview(2);
-        else if (inputReader.WasSkillPressed(3)) TryShowPreview(3);
+        // 스킬 키 최초 입력 → 스킬 미리보기 시작 (기본 공격 미리보기보다 우선)
+        if      (inputReader.WasSkillPressed(0)) { HideBasicAttackPreview(); TryShowPreview(0); }
+        else if (inputReader.WasSkillPressed(1)) { HideBasicAttackPreview(); TryShowPreview(1); }
+        else if (inputReader.WasSkillPressed(2)) { HideBasicAttackPreview(); TryShowPreview(2); }
+        else if (inputReader.WasSkillPressed(3)) { HideBasicAttackPreview(); TryShowPreview(3); }
 
-        // 현재 표시 중인 키가 릴리즈되면 → 미리보기 숨김
+        // 현재 표시 중인 스킬 키가 릴리즈되면 → 스킬 미리보기 숨김
         if (_activeSlot >= 0 && !inputReader.IsSkillHeld(_activeSlot))
             HidePreview();
+
+        // 기본 공격 미리보기: 스킬 미리보기가 없을 때만 Space hold 감지
+        if (_activeSlot < 0)
+        {
+            if (inputReader.IsBasicAttackHeld)
+            {
+                if (!_isBasicAttackPreview) TryShowBasicAttackPreview();
+            }
+            else if (_isBasicAttackPreview)
+            {
+                HideBasicAttackPreview();
+            }
+        }
+        else if (_isBasicAttackPreview)
+        {
+            HideBasicAttackPreview();
+        }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -172,6 +204,23 @@ public class SkillRangePreviewer : MonoBehaviour
         _activeSlot   = -1;
         _currentSkill = null;
         _lr.enabled   = false;
+    }
+
+    private void TryShowBasicAttackPreview()
+    {
+        var weapon = combat?.currentWeapon;
+        if (weapon == null) return;
+
+        _isBasicAttackPreview = true;
+        _lastFacing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        BuildBasicAttackPreview(weapon);
+        _lr.enabled = true;
+    }
+
+    private void HideBasicAttackPreview()
+    {
+        _isBasicAttackPreview = false;
+        _lr.enabled = false;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -212,6 +261,33 @@ public class SkillRangePreviewer : MonoBehaviour
             case AttackPatternType.Diagonal:
                 // 대각 4방향 각 range칸 (16점, range>1은 직사각형 근사)
                 BuildDiagonal(skill.patternRange);
+                break;
+        }
+    }
+
+    private void BuildBasicAttackPreview(WeaponData weapon)
+    {
+        Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+
+        switch (weapon.attackPattern)
+        {
+            case AttackPatternType.Circle:
+                BuildCircle((weapon.patternRange * Mathf.Sqrt(2f) + 0.5f) * tileSize);
+                break;
+            case AttackPatternType.Cone:
+                BuildCone(facing, (weapon.patternRange * Mathf.Sqrt(2f) + 0.5f) * tileSize, 45f);
+                break;
+            case AttackPatternType.Line:
+                BuildRectangle(facing, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);
+                break;
+            case AttackPatternType.Single:
+                BuildRectangle(facing, (weapon.patternRange - 0.5f) * tileSize, tileSize, tileSize);
+                break;
+            case AttackPatternType.Cross:
+                BuildCross(weapon.patternRange);
+                break;
+            case AttackPatternType.Diagonal:
+                BuildDiagonal(weapon.patternRange);
                 break;
         }
     }

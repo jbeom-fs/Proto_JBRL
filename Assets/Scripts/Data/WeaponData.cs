@@ -16,6 +16,8 @@ public class WeaponData : ScriptableObject
     public AttackPatternType attackPattern  = AttackPatternType.Single;
     [Tooltip("모든 패턴의 사정거리(칸). Line=직선N칸, Cross/Diagonal=각방향N칸, Circle=체비쇼프N, Cone=부채꼴N칸, Single=N칸 거리 1타겟")]
     public int            patternRange   = 1;
+    [Tooltip("true면 기본 공격이 범위 내 모든 적에게 피해를 줍니다. false면 가장 가까운 적 1명에게만 피해.")]
+    public bool           basicAttackMultiTarget = false;
 
     [Header("Hit Effects")]
     public float knockbackForce = 0f;

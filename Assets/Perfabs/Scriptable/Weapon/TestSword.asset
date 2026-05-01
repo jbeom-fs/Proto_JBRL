@@ -15,8 +15,13 @@ MonoBehaviour:
   weaponName: TestSword
   damage: 1
   attackCooldown: 0.3
-  attackPattern: 0
-  patternRange: 1
+  attackPattern: 5
+  patternRange: 2
+  basicAttackMultiTarget: 1
+  knockbackForce: 30
+  knockbackDuration: 0.1
+  slowPercentage: 0
+  slowDuration: 0
   bonusAttack: 0
   bonusDefense: 0
   canPenetrateWalls: 0

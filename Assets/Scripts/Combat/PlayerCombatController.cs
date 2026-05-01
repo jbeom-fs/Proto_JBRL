@@ -131,7 +131,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             targets,
             TotalAttack + currentWeapon.damage,
             currentWeapon.canPenetrateWalls,
-            false,
+            currentWeapon.basicAttackMultiTarget,
             currentWeapon.knockbackForce,
             currentWeapon.knockbackDuration,
             currentWeapon.slowPercentage,

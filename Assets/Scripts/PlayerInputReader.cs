@@ -12,7 +12,7 @@
 //    방향키     → MoveInput
 //    Z          → WasStairPressed
 //    F10        → WasOpenDoorPressed
-//    Space      → WasBasicAttackPressed
+//    Space      → WasBasicAttackPressed, IsBasicAttackHeld
 //    Q/W/E/R    → WasSkillPressed(0~3), IsSkillHeld(0~3)
 //
 //  실행 순서:
@@ -40,6 +40,16 @@ public class PlayerInputReader : MonoBehaviour
 
     /// <summary>슬롯 index(0~3) 이번 프레임에 눌렸는지.</summary>
     public bool WasSkillPressed(int slot) => (uint)slot < 4u && _wasSkillPressed[slot];
+
+    /// <summary>Space 키를 현재 누르고 있는지. SkillRangePreviewer 기본 공격 범위 미리보기용.</summary>
+    public bool IsBasicAttackHeld
+    {
+        get
+        {
+            var kb = Keyboard.current;
+            return kb != null && kb.spaceKey.isPressed;
+        }
+    }
 
     /// <summary>슬롯 index(0~3) 현재 누르고 있는지. SkillRangePreviewer 홀드 감지용.</summary>
     public bool IsSkillHeld(int slot)

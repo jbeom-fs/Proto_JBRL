@@ -19,8 +19,9 @@ MonoBehaviour:
   expReward: 10
   spawnCost: 2
   allowedRegions: 1
-  detectRange: 100
-  attackRange: 1.2
-  moveSpeed: 5
+  detectRange: 7
+  attackRange: 2
+  moveSpeed: 2
   attackCooldown: 2
-  attackWindup: 0.4
+  attackWindup: 1
+  knockbackResistance: 0
