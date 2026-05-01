@@ -143,6 +143,8 @@ public abstract class EnemyBrain : MonoBehaviour
         // 따라서 플레이어가 ROOM 밖 CORRIDOR에 있어도 목표 좌표가 끊기지 않습니다.
         if (!Target.RefreshTarget())
         {
+            if (player != null && Target.SqrDistanceToTarget < 25f)
+                EnemyAIDebugLogWriter.Log($"[Brain] RefreshTarget FAIL enemy={name}, state={CurrentState}, player={player.name}, playerPos={player.position}, playerGrid={Target.TargetGridPosition}, sqrDist={Target.SqrDistanceToTarget:F3}");
             StopMoving();
             return;
         }
@@ -642,13 +644,17 @@ public abstract class EnemyBrain : MonoBehaviour
 
         public virtual bool CanAttack(float sqrDistanceToTarget)
         {
-            return sqrDistanceToTarget <= _attackRangeSqr && _attackCooldownTimer <= 0f;
+            bool result = sqrDistanceToTarget <= _attackRangeSqr && _attackCooldownTimer <= 0f;
+            if (sqrDistanceToTarget < 16f)
+                EnemyAIDebugLogWriter.Log($"[Enemy CanAttack] enemy={_brain.name}, state={_brain.CurrentState}, sqrDist={sqrDistanceToTarget:F3}, attackRangeSqr={_attackRangeSqr:F3}, cooldown={_attackCooldownTimer:F3}, result={result}");
+            return result;
         }
 
         public virtual void BeginAttack()
         {
             _windupTimer = _brain.Data.attackWindup;
             _windupFired = false;
+            EnemyAIDebugLogWriter.Log($"[Enemy BeginAttack] enemy={_brain.name}, state={_brain.CurrentState}, windup={_windupTimer:F3}, attackRangeSqr={_attackRangeSqr:F3}, cooldown={_attackCooldownTimer:F3}");
             _brain.TriggerAttackAnimation();
         }
 
@@ -662,8 +668,13 @@ public abstract class EnemyBrain : MonoBehaviour
 
             _windupFired = true;
 
-            if (sqrDistanceToTarget <= _attackRangeSqr)
+            bool inRange = sqrDistanceToTarget <= _attackRangeSqr;
+            EnemyAIDebugLogWriter.Log($"[Enemy TickAttack] windup fire enemy={_brain.name}, state={_brain.CurrentState}, sqrDist={sqrDistanceToTarget:F3}, attackRangeSqr={_attackRangeSqr:F3}, inRange={inRange}");
+
+            if (inRange)
                 ApplyDamage();
+            else
+                EnemyAIDebugLogWriter.Log($"[Enemy TickAttack] miss enemy={_brain.name}, state={_brain.CurrentState}, sqrDist={sqrDistanceToTarget:F3}, attackRangeSqr={_attackRangeSqr:F3}");
 
             _attackCooldownTimer = _brain.Data.attackCooldown;
             return true;
@@ -672,8 +683,19 @@ public abstract class EnemyBrain : MonoBehaviour
         protected virtual void ApplyDamage()
         {
             IDamageable target = _brain.Target.Damageable;
-            if (target == null || !target.IsAlive) return;
+            if (target == null)
+            {
+                EnemyAIDebugLogWriter.Log($"[Enemy ApplyDamage] skipped enemy={_brain.name}, state={_brain.CurrentState}, target=null, damage={_brain.Data.attack}");
+                return;
+            }
 
+            if (!target.IsAlive)
+            {
+                EnemyAIDebugLogWriter.Log($"[Enemy ApplyDamage] skipped enemy={_brain.name}, state={_brain.CurrentState}, target={target}, targetAlive=false, damage={_brain.Data.attack}");
+                return;
+            }
+
+            EnemyAIDebugLogWriter.Log($"[Enemy ApplyDamage] enemy={_brain.name}, state={_brain.CurrentState}, target={target}, damage={_brain.Data.attack}");
             target.TakeDamage(_brain.Data.attack);
         }
     }
@@ -716,6 +738,7 @@ public abstract class EnemyBrain : MonoBehaviour
 
         public void OnEnter()
         {
+            EnemyAIDebugLogWriter.Log($"[AttackState] Enter enemy={_brain.name}, state={_brain.CurrentState}, sqrDist={_brain.Target.SqrDistanceToTarget:F3}, playerGrid={_brain.PlayerGridPosition}");
             _brain.StopMoving();
             _brain.Action.BeginAttack();
         }
