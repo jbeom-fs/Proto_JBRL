@@ -48,13 +48,8 @@ public sealed class ChaseState : IEnemyState
     {
         if (!_active) return;
 
-        bool canAttackNow = _brain.CanAttack(sqrDistanceToPlayer);
-        if (sqrDistanceToPlayer < 16f)
-            EnemyAIDebugLogWriter.Log($"[ChaseState] enemy={_brain.name}, state={_brain.CurrentState}, sqrDist={sqrDistanceToPlayer:F3}, canAttack={canAttackNow}");
-
-        if (canAttackNow)
+        if (_brain.CanAttack(sqrDistanceToPlayer))
         {
-            EnemyAIDebugLogWriter.Log($"[ChaseState] AttackState transition enemy={_brain.name}, state={_brain.CurrentState}, sqrDist={sqrDistanceToPlayer:F3}");
             _brain.ChangeState(EnemyAIStateId.Attack);
             return;
         }
