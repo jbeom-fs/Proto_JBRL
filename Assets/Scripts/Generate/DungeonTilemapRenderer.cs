@@ -354,13 +354,24 @@ public class DungeonTilemapRenderer : MonoBehaviour
         double start = Time.realtimeSinceStartupAsDouble;
         int openedCount = _closedDoorPositions.Count;
 
+        _doorChangeBuffer.Clear();
+
         foreach (var tilemapPos in _closedDoorPositions)
         {
             var gridPos = _doorPositions[tilemapPos];
             _data.SetTileValue(gridPos.x, gridPos.y, DungeonGenerator.CORRIDOR);
+            _doorChangeBuffer.Add(new TileChangeData
+            {
+                position  = tilemapPos,
+                tile      = null,
+                color     = OPAQUE,
+                transform = Matrix4x4.identity,
+            });
         }
 
+        FlushDoorChanges();
         _closedDoorPositions.Clear();
+        _renderedDoorPositions.Clear();
         SetDoorVisible(false);
 
         double elapsedMs = (Time.realtimeSinceStartupAsDouble - start) * 1000.0;
