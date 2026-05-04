@@ -28,6 +28,7 @@ public class ProjectileController : MonoBehaviour
     private Collider2D _collider;
     private Rigidbody2D _rigidbody;
     private SpriteRenderer _spriteRenderer;
+    private Animator _animator;
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
     private DungeonManager _dungeon;
@@ -37,6 +38,7 @@ public class ProjectileController : MonoBehaviour
         _collider = GetComponent<Collider2D>();
         _rigidbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
+        _animator = GetComponent<Animator>();
         if (_collider != null)
         {
             _collider.isTrigger = true;
@@ -56,12 +58,20 @@ public class ProjectileController : MonoBehaviour
     {
         if (_spriteRenderer != null && !_spriteRenderer.enabled)
             _spriteRenderer.enabled = true;
+        if (_animator != null)
+        {
+            if (!_animator.enabled)
+                _animator.enabled = true;
+            _animator.Play("Fly", 0, 0f);
+        }
         if (!enabled)
             enabled = true;
     }
 
     public void HideForPool()
     {
+        if (_animator != null && _animator.enabled)
+            _animator.enabled = false;
         if (enabled)
             enabled = false;
         if (_spriteRenderer != null && _spriteRenderer.enabled)
