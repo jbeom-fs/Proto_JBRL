@@ -33,9 +33,10 @@ MonoBehaviour:
   projectileSpeed: 8
   projectileLifetime: 3
   firePattern: 1
-  projectileCount: 3
+  projectileCount: 10
   spreadAngle: 30
   burstInterval: 0.12
-  projectileWallHitMode: 2
+  projectileWallHitMode: 0
   projectileMaxBounceCount: 1
+  projectilePrewarmCount: 8
   knockbackResistance: 0

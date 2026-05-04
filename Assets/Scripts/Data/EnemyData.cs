@@ -96,6 +96,10 @@ public class EnemyData : ScriptableObject
     [Min(0)]
     public int projectileMaxBounceCount = 1;
 
+    [Tooltip("Minimum projectile instances to prepare before this ranged enemy attacks.")]
+    [Min(0)]
+    public int projectilePrewarmCount = 8;
+
     [Header("Status Resistance")]
     [Range(0f, 1f)]
     public float knockbackResistance = 0f;

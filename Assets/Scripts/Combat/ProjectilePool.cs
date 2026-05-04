@@ -7,6 +7,8 @@ public class ProjectilePool : MonoBehaviour
 
     private readonly Dictionary<GameObject, Stack<ProjectileController>> _poolByPrefab = new();
     private readonly Dictionary<ProjectileController, GameObject> _prefabByProjectile = new();
+    private readonly Dictionary<GameObject, int> _createdCountByPrefab = new();
+    private int _activeCount;
 
     public static ProjectilePool Instance
     {
@@ -37,22 +39,17 @@ public class ProjectilePool : MonoBehaviour
         if (prefab == null)
             return null;
 
-        if (!_poolByPrefab.TryGetValue(prefab, out Stack<ProjectileController> pool))
-        {
-            pool = new Stack<ProjectileController>();
-            _poolByPrefab.Add(prefab, pool);
-        }
+        Stack<ProjectileController> pool = GetOrCreatePool(prefab);
 
         ProjectileController projectile = null;
         while (pool.Count > 0 && projectile == null)
             projectile = pool.Pop();
 
+        bool instantiated = false;
         if (projectile == null)
         {
-            GameObject projectileObject = Instantiate(prefab, position, rotation, transform);
-            projectile = projectileObject.GetComponent<ProjectileController>();
-            if (projectile == null)
-                projectile = projectileObject.AddComponent<ProjectileController>();
+            projectile = CreateProjectile(prefab, position, rotation, true);
+            instantiated = true;
         }
         else
         {
@@ -63,10 +60,31 @@ public class ProjectilePool : MonoBehaviour
 
         projectile.SetReleaseAction(Return);
         _prefabByProjectile[projectile] = prefab;
+        _activeCount++;
+        RuntimePerfTraceLogger.RecordPoolGet(prefab.name, instantiated, _activeCount, pool.Count);
         return projectile;
     }
 
-    public void Return(ProjectileController projectile)
+    public void Prewarm(GameObject prefab, int count)
+    {
+        if (prefab == null || count <= 0)
+            return;
+
+        Stack<ProjectileController> pool = GetOrCreatePool(prefab);
+        _createdCountByPrefab.TryGetValue(prefab, out int createdCount);
+
+        while (createdCount < count)
+        {
+            ProjectileController projectile = CreateProjectile(prefab, Vector3.zero, Quaternion.identity, false);
+            if (projectile == null)
+                break;
+
+            pool.Push(projectile);
+            createdCount++;
+        }
+    }
+
+    public void Return(ProjectileController projectile, ProjectileReleaseReason reason)
     {
         if (projectile == null)
             return;
@@ -86,5 +104,39 @@ public class ProjectilePool : MonoBehaviour
         projectile.transform.SetParent(transform);
         projectile.gameObject.SetActive(false);
         pool.Push(projectile);
+        if (_activeCount > 0)
+            _activeCount--;
+        RuntimePerfTraceLogger.RecordPoolReturn(reason, _activeCount, pool.Count);
+    }
+
+    private Stack<ProjectileController> GetOrCreatePool(GameObject prefab)
+    {
+        if (!_poolByPrefab.TryGetValue(prefab, out Stack<ProjectileController> pool))
+        {
+            pool = new Stack<ProjectileController>();
+            _poolByPrefab.Add(prefab, pool);
+        }
+
+        return pool;
+    }
+
+    private ProjectileController CreateProjectile(
+        GameObject prefab,
+        Vector3 position,
+        Quaternion rotation,
+        bool active)
+    {
+        GameObject projectileObject = Instantiate(prefab, position, rotation, transform);
+        ProjectileController projectile = projectileObject.GetComponent<ProjectileController>();
+        if (projectile == null)
+            projectile = projectileObject.AddComponent<ProjectileController>();
+
+        projectile.SetReleaseAction(Return);
+        _prefabByProjectile[projectile] = prefab;
+        _createdCountByPrefab.TryGetValue(prefab, out int createdCount);
+        _createdCountByPrefab[prefab] = createdCount + 1;
+
+        projectileObject.SetActive(active);
+        return projectile;
     }
 }

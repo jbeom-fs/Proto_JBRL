@@ -5,6 +5,14 @@ public class ProjectileController : MonoBehaviour
 {
     [SerializeField] private float hitRadius = 0.08f;
     [SerializeField] private float bounceExitOffset = 0.05f;
+    [SerializeField] private bool disablePhysicsSimulation = true;
+
+    private const float DefaultPlayerHitRadius = 0.5f;
+
+    private static PlayerCombatController s_PlayerCombat;
+    private static Collider2D s_PlayerCollider;
+    private static Transform s_PlayerTransform;
+    private static float s_PlayerRadius = DefaultPlayerHitRadius;
 
     private Vector2 _direction = Vector2.right;
     private float _speed = 6f;
@@ -14,16 +22,27 @@ public class ProjectileController : MonoBehaviour
     private int _maxBounceCount;
     private int _currentBounceCount;
     private Collider2D _collider;
-    private Action<ProjectileController> _releaseAction;
+    private Rigidbody2D _rigidbody;
+    private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
+    private DungeonManager _dungeon;
 
     private void Awake()
     {
         _collider = GetComponent<Collider2D>();
+        _rigidbody = GetComponent<Rigidbody2D>();
         if (_collider != null)
         {
             _collider.isTrigger = true;
             hitRadius = Mathf.Max(hitRadius, Mathf.Max(_collider.bounds.extents.x, _collider.bounds.extents.y));
+        }
+
+        if (disablePhysicsSimulation)
+        {
+            if (_rigidbody != null)
+                _rigidbody.simulated = false;
+            if (_collider != null)
+                _collider.enabled = false;
         }
     }
 
@@ -44,27 +63,38 @@ public class ProjectileController : MonoBehaviour
         _wallHitMode = wallHitMode;
         _maxBounceCount = Mathf.Max(0, maxBounceCount);
         _currentBounceCount = 0;
+        _dungeon = DungeonManager.Instance;
     }
 
-    public void SetReleaseAction(Action<ProjectileController> releaseAction)
+    public void SetReleaseAction(Action<ProjectileController, ProjectileReleaseReason> releaseAction)
     {
         _releaseAction = releaseAction;
     }
 
     private void Update()
     {
+        if (RuntimePerfTraceLogger.IsEnabled)
+        {
+            UpdateMeasured();
+            return;
+        }
+
         float deltaTime = Time.deltaTime;
 
         _lifetime -= deltaTime;
         if (_lifetime <= 0f)
         {
-            Release();
+            Release(ProjectileReleaseReason.LifetimeExpired);
             return;
         }
 
         Vector2 currentPosition = transform.position;
         Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
-        if (IsWallPosition(nextPosition))
+        if (_wallHitMode == ProjectileWallHitMode.PassThrough)
+        {
+            transform.position = nextPosition;
+        }
+        else if (IsWallPosition(nextPosition))
         {
             if (!HandleWallHit(currentPosition, nextPosition))
                 return;
@@ -79,12 +109,13 @@ public class ProjectileController : MonoBehaviour
 
     private bool IsWallPosition(Vector2 position)
     {
-        var dungeon = DungeonManager.Instance;
-        if (dungeon == null || dungeon.Data == null)
+        if (_dungeon == null)
+            _dungeon = DungeonManager.Instance;
+        if (_dungeon == null || _dungeon.Data == null)
             return false;
 
-        Vector2Int grid = dungeon.WorldToGrid(position);
-        return !dungeon.IsWalkable(grid.x, grid.y);
+        Vector2Int grid = _dungeon.WorldToGrid(position);
+        return !_dungeon.IsWalkable(grid.x, grid.y);
     }
 
     private bool HandleWallHit(Vector2 currentPosition, Vector2 nextPosition)
@@ -92,7 +123,7 @@ public class ProjectileController : MonoBehaviour
         switch (_wallHitMode)
         {
             case ProjectileWallHitMode.Destroy:
-                Release();
+                Release(ProjectileReleaseReason.WallHitDestroy);
                 return false;
 
             case ProjectileWallHitMode.PassThrough:
@@ -110,7 +141,7 @@ public class ProjectileController : MonoBehaviour
     {
         if (_currentBounceCount >= _maxBounceCount)
         {
-            Release();
+            Release(ProjectileReleaseReason.BounceLimit);
             return false;
         }
 
@@ -143,26 +174,141 @@ public class ProjectileController : MonoBehaviour
 
     private void TryHitPlayer()
     {
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, hitRadius);
-        for (int i = 0; i < hits.Length; i++)
-        {
-            Collider2D hit = hits[i];
-            if (hit == null) continue;
-
-            PlayerCombatController player = hit.GetComponent<PlayerCombatController>();
-            if (player == null)
-                player = hit.GetComponentInParent<PlayerCombatController>();
-            if (player == null)
-                player = hit.GetComponentInChildren<PlayerCombatController>();
-            if (player == null || !player.IsAlive) continue;
-
-            player.TakeDamage(_damage);
-            Release();
+        if (!TryResolvePlayerCache())
             return;
-        }
+        if (!s_PlayerCombat.IsAlive)
+            return;
+
+        float hitDistance = hitRadius + s_PlayerRadius;
+        Vector2 delta = (Vector2)s_PlayerTransform.position - (Vector2)transform.position;
+        if (delta.sqrMagnitude > hitDistance * hitDistance)
+            return;
+
+        s_PlayerCombat.TakeDamage(_damage);
+        Release(ProjectileReleaseReason.PlayerHit);
     }
 
-    private void Release()
+    private void UpdateMeasured()
+    {
+        long updateStart = RuntimePerfTraceLogger.Timestamp();
+        long moveTicks = 0L;
+        long wallTicks = 0L;
+        long hitTicks = 0L;
+        long bounceTicks = 0L;
+
+        float deltaTime = Time.deltaTime;
+
+        _lifetime -= deltaTime;
+        if (_lifetime <= 0f)
+        {
+            Release(ProjectileReleaseReason.LifetimeExpired);
+            RuntimePerfTraceLogger.RecordProjectileUpdate(
+                RuntimePerfTraceLogger.Timestamp() - updateStart,
+                moveTicks,
+                wallTicks,
+                hitTicks,
+                bounceTicks);
+            return;
+        }
+
+        long moveStart = RuntimePerfTraceLogger.Timestamp();
+        Vector2 currentPosition = transform.position;
+        Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
+        moveTicks += RuntimePerfTraceLogger.Timestamp() - moveStart;
+
+        if (_wallHitMode == ProjectileWallHitMode.PassThrough)
+        {
+            transform.position = nextPosition;
+        }
+        else
+        {
+            long wallStart = RuntimePerfTraceLogger.Timestamp();
+            bool hitWall = IsWallPosition(nextPosition);
+            wallTicks += RuntimePerfTraceLogger.Timestamp() - wallStart;
+
+            if (hitWall)
+            {
+                long bounceStart = RuntimePerfTraceLogger.Timestamp();
+                bool keepAlive = HandleWallHit(currentPosition, nextPosition);
+                bounceTicks += RuntimePerfTraceLogger.Timestamp() - bounceStart;
+                if (!keepAlive)
+                {
+                    RuntimePerfTraceLogger.RecordProjectileUpdate(
+                        RuntimePerfTraceLogger.Timestamp() - updateStart,
+                        moveTicks,
+                        wallTicks,
+                        hitTicks,
+                        bounceTicks);
+                    return;
+                }
+            }
+            else
+            {
+                transform.position = nextPosition;
+            }
+        }
+
+        long hitStart = RuntimePerfTraceLogger.Timestamp();
+        TryHitPlayer();
+        hitTicks += RuntimePerfTraceLogger.Timestamp() - hitStart;
+
+        RuntimePerfTraceLogger.RecordProjectileUpdate(
+            RuntimePerfTraceLogger.Timestamp() - updateStart,
+            moveTicks,
+            wallTicks,
+            hitTicks,
+            bounceTicks);
+    }
+
+    private static bool TryResolvePlayerCache()
+    {
+        if (s_PlayerCombat != null
+            && s_PlayerCombat.isActiveAndEnabled
+            && s_PlayerTransform != null)
+            return true;
+
+        s_PlayerCombat = UnityEngine.Object.FindAnyObjectByType<PlayerCombatController>();
+        if (s_PlayerCombat == null || !s_PlayerCombat.isActiveAndEnabled)
+        {
+            ClearPlayerCache();
+            return false;
+        }
+
+        s_PlayerTransform = s_PlayerCombat.transform;
+        s_PlayerCollider = s_PlayerCombat.GetComponent<Collider2D>();
+        if (s_PlayerCollider == null)
+            s_PlayerCollider = s_PlayerCombat.GetComponentInParent<Collider2D>();
+        if (s_PlayerCollider == null)
+            s_PlayerCollider = s_PlayerCombat.GetComponentInChildren<Collider2D>();
+
+        s_PlayerRadius = CalculateColliderRadius(s_PlayerCollider, DefaultPlayerHitRadius);
+        return true;
+    }
+
+    private static void ClearPlayerCache()
+    {
+        s_PlayerCombat = null;
+        s_PlayerCollider = null;
+        s_PlayerTransform = null;
+        s_PlayerRadius = DefaultPlayerHitRadius;
+    }
+
+    private static float CalculateColliderRadius(Collider2D collider, float fallback)
+    {
+        if (collider == null)
+            return fallback;
+
+        if (collider is CircleCollider2D circle)
+        {
+            Vector3 scale = circle.transform.lossyScale;
+            return Mathf.Abs(circle.radius) * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+        }
+
+        Bounds bounds = collider.bounds;
+        return Mathf.Max(fallback, Mathf.Max(bounds.extents.x, bounds.extents.y));
+    }
+
+    private void Release(ProjectileReleaseReason reason)
     {
         if (_released)
             return;
@@ -170,10 +316,11 @@ public class ProjectileController : MonoBehaviour
         _released = true;
         if (_releaseAction != null)
         {
-            _releaseAction(this);
+            _releaseAction(this, reason);
             return;
         }
 
+        RuntimePerfTraceLogger.RecordPoolReturn(ProjectileReleaseReason.FallbackDestroy, 0, 0);
         Destroy(gameObject);
     }
 }

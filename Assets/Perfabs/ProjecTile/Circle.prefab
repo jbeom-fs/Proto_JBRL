@@ -171,3 +171,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ProjectileController
   hitRadius: 0.08
   bounceExitOffset: 0.05
+  disablePhysicsSimulation: 1
