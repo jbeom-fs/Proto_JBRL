@@ -914,15 +914,11 @@ public abstract class EnemyBrain : MonoBehaviour
                 return;
             }
 
-            GameObject projectileObject = Object.Instantiate(
+            ProjectileController projectile = ProjectilePool.Instance.Get(
                 _brain.Data.projectilePrefab,
                 _brain.transform.position,
                 Quaternion.identity);
-            if (projectileObject == null) return;
-
-            ProjectileController projectile = projectileObject.GetComponent<ProjectileController>();
-            if (projectile == null)
-                projectile = projectileObject.AddComponent<ProjectileController>();
+            if (projectile == null) return;
 
             int damage = _brain.Data.projectileDamage > 0
                 ? _brain.Data.projectileDamage

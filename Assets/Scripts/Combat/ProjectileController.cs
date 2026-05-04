@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class ProjectileController : MonoBehaviour
@@ -10,6 +11,8 @@ public class ProjectileController : MonoBehaviour
     private float _lifetime = 3f;
     private ProjectileWallHitMode _wallHitMode = ProjectileWallHitMode.Destroy;
     private Collider2D _collider;
+    private Action<ProjectileController> _releaseAction;
+    private bool _released;
 
     private void Awake()
     {
@@ -27,13 +30,19 @@ public class ProjectileController : MonoBehaviour
         float speed,
         float lifetime,
         ProjectileWallHitMode wallHitMode,
-        Object owner)
+        UnityEngine.Object owner)
     {
+        _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
         _damage = Mathf.Max(0, damage);
         _speed = Mathf.Max(0f, speed);
         _lifetime = Mathf.Max(0.01f, lifetime);
         _wallHitMode = wallHitMode;
+    }
+
+    public void SetReleaseAction(Action<ProjectileController> releaseAction)
+    {
+        _releaseAction = releaseAction;
     }
 
     private void Update()
@@ -44,7 +53,7 @@ public class ProjectileController : MonoBehaviour
         _lifetime -= deltaTime;
         if (_lifetime <= 0f)
         {
-            Destroy(gameObject);
+            Release();
             return;
         }
 
@@ -72,7 +81,7 @@ public class ProjectileController : MonoBehaviour
         switch (_wallHitMode)
         {
             case ProjectileWallHitMode.Destroy:
-                Destroy(gameObject);
+                Release();
                 return false;
 
             case ProjectileWallHitMode.PassThrough:
@@ -80,7 +89,7 @@ public class ProjectileController : MonoBehaviour
 
             case ProjectileWallHitMode.Bounce:
                 // TODO: Reflect the projectile direction against wall normals when wall normals are available.
-                Destroy(gameObject);
+                Release();
                 return false;
         }
 
@@ -103,8 +112,23 @@ public class ProjectileController : MonoBehaviour
             if (player == null || !player.IsAlive) continue;
 
             player.TakeDamage(_damage);
-            Destroy(gameObject);
+            Release();
             return;
         }
+    }
+
+    private void Release()
+    {
+        if (_released)
+            return;
+
+        _released = true;
+        if (_releaseAction != null)
+        {
+            _releaseAction(this);
+            return;
+        }
+
+        Destroy(gameObject);
     }
 }
