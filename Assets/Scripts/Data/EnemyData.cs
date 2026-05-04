@@ -48,9 +48,6 @@ public class EnemyData : ScriptableObject
     [Tooltip("Contact damage is applied when collider distance is less than or equal to this value.")]
     public float contactDamageSkin = 0.05f;
 
-    [Tooltip("Deprecated: Contact damage frequency is limited by Player damage invincibility.")]
-    public float contactDamageCooldown = 0.75f;
-
     [Header("Status Resistance")]
     [Range(0f, 1f)]
     public float knockbackResistance = 0f;

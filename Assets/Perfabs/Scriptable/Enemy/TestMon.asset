@@ -27,5 +27,4 @@ MonoBehaviour:
   attackWindup: 1
   contactDamageRadius: 0.45
   contactDamageSkin: 0.05
-  contactDamageCooldown: 0.75
   knockbackResistance: 0
