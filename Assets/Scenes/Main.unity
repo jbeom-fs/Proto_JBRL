@@ -168,7 +168,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
   m_Navigation:
     m_Mode: 3
@@ -281,12 +281,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3cf855efefea4dbfbf98c48f4d5bf95f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuntimePerfTraceLogger
   enableOnAwake: 1
   spikeFrameMsThreshold: 33.3
   summaryFrameInterval: 60
   flushFrameInterval: 300
+  logFrameSummary: 1
+  logSpike: 1
+  logFireEvents: 0
+  logPoolEvents: 0
+  logReturnEvents: 0
 --- !u!4 &125325698
 Transform:
   m_ObjectHideFlags: 0
@@ -100689,11 +100694,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 687ea4e35401409fb4e31eb7cc2a2b71, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectilePool
   prewarmEntries:
   - prefab: {fileID: 6815809388123150899, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-    prewarmCount: 60
+    prewarmCount: 120
+  disableMode: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

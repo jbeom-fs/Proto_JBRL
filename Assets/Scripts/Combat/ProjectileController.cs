@@ -1,8 +1,12 @@
 using System;
+using System.Diagnostics;
+using Unity.Profiling;
 using UnityEngine;
 
 public class ProjectileController : MonoBehaviour
 {
+    private static readonly ProfilerMarker s_ReleaseMarker = new ProfilerMarker("Projectile.Release");
+
     [SerializeField] private float hitRadius = 0.08f;
     [SerializeField] private float bounceExitOffset = 0.05f;
     [SerializeField] private bool disablePhysicsSimulation = true;
@@ -23,6 +27,7 @@ public class ProjectileController : MonoBehaviour
     private int _currentBounceCount;
     private Collider2D _collider;
     private Rigidbody2D _rigidbody;
+    private SpriteRenderer _spriteRenderer;
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
     private DungeonManager _dungeon;
@@ -31,6 +36,7 @@ public class ProjectileController : MonoBehaviour
     {
         _collider = GetComponent<Collider2D>();
         _rigidbody = GetComponent<Rigidbody2D>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
         if (_collider != null)
         {
             _collider.isTrigger = true;
@@ -44,6 +50,22 @@ public class ProjectileController : MonoBehaviour
             if (_collider != null)
                 _collider.enabled = false;
         }
+    }
+
+    public void PrepareFromPool()
+    {
+        if (_spriteRenderer != null && !_spriteRenderer.enabled)
+            _spriteRenderer.enabled = true;
+        if (!enabled)
+            enabled = true;
+    }
+
+    public void HideForPool()
+    {
+        if (enabled)
+            enabled = false;
+        if (_spriteRenderer != null && _spriteRenderer.enabled)
+            _spriteRenderer.enabled = false;
     }
 
     public void Initialize(
@@ -314,13 +336,38 @@ public class ProjectileController : MonoBehaviour
             return;
 
         _released = true;
-        if (_releaseAction != null)
+
+        if (!RuntimePerfTraceLogger.IsEnabled)
         {
-            _releaseAction(this, reason);
+            if (_releaseAction != null)
+            {
+                _releaseAction(this, reason);
+                return;
+            }
+
+            Destroy(gameObject);
             return;
         }
 
-        RuntimePerfTraceLogger.RecordPoolReturn(ProjectileReleaseReason.FallbackDestroy, 0, 0);
+        long totalStart = Stopwatch.GetTimestamp();
+        s_ReleaseMarker.Begin();
+
+        if (_releaseAction != null)
+        {
+            long callbackStart = Stopwatch.GetTimestamp();
+            _releaseAction(this, reason);
+            long callbackTicks = Stopwatch.GetTimestamp() - callbackStart;
+
+            s_ReleaseMarker.End();
+            long totalTicks = Stopwatch.GetTimestamp() - totalStart;
+            RuntimePerfTraceLogger.RecordRelease(totalTicks, callbackTicks);
+            return;
+        }
+
+        s_ReleaseMarker.End();
+        long fallbackTotal = Stopwatch.GetTimestamp() - totalStart;
+        RuntimePerfTraceLogger.RecordRelease(fallbackTotal, 0L);
+        RuntimePerfTraceLogger.RecordPoolReturn(ProjectileReleaseReason.FallbackDestroy, 0, 0, 0L, 0L);
         Destroy(gameObject);
     }
 }
