@@ -60,6 +60,7 @@ public abstract class EnemyBrain : MonoBehaviour
     private EnemyController _enemy;
     private EnemyData _data;
     private SpriteRenderer _spriteRenderer;
+    private EnemyAnimationController _animationController;
 
     private IEnemyState _idleState;
     private IEnemyState _chaseState;
@@ -90,6 +91,7 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         _enemy = GetComponent<EnemyController>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
+        _animationController = GetComponentInChildren<EnemyAnimationController>(true);
 
         Movement = CreateMovementHandler();
         Target = CreateTargetHandler();
@@ -118,6 +120,7 @@ public abstract class EnemyBrain : MonoBehaviour
         Movement?.Initialize();
         Target?.RefreshTarget();
         Action?.ResetRuntimeState();
+        _animationController?.ResetAnimationState();
 
         if (_idleState != null)
         {
@@ -268,6 +271,9 @@ public abstract class EnemyBrain : MonoBehaviour
 
     protected virtual void TriggerAttackAnimation()
     {
+        if (Data != null && Data.behaviorType == EnemyBehaviorType.Ranged)
+            _animationController?.TriggerAttack();
+
         SetAnimTrigger(ANIM_ATTACK);
     }
 

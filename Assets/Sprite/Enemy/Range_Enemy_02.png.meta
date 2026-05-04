@@ -1,0 +1,1404 @@
+fileFormatVersion: 2
+guid: a381726b7ff5ca74a84c217139fa32ff
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 4981707126364875288
+    second: Range_Enemy_02_0
+  - first:
+      213: 2836709958494265649
+    second: Range_Enemy_02_1
+  - first:
+      213: 189759943621419418
+    second: Range_Enemy_02_2
+  - first:
+      213: -2956855065108148923
+    second: Range_Enemy_02_3
+  - first:
+      213: 2411023924795159161
+    second: Range_Enemy_02_4
+  - first:
+      213: -8850301369021257821
+    second: Range_Enemy_02_5
+  - first:
+      213: 7589126843491648742
+    second: Range_Enemy_02_6
+  - first:
+      213: 4011816073858982171
+    second: Range_Enemy_02_7
+  - first:
+      213: -2869748982905461067
+    second: Range_Enemy_02_8
+  - first:
+      213: -1019597290176366763
+    second: Range_Enemy_02_9
+  - first:
+      213: -8618992927481313969
+    second: Range_Enemy_02_10
+  - first:
+      213: -5903154673539557460
+    second: Range_Enemy_02_11
+  - first:
+      213: 270023834460401666
+    second: Range_Enemy_02_12
+  - first:
+      213: -458933238697313026
+    second: Range_Enemy_02_13
+  - first:
+      213: 5489728086202727339
+    second: Range_Enemy_02_14
+  - first:
+      213: -272210149406861276
+    second: Range_Enemy_02_15
+  - first:
+      213: -6288343380009433906
+    second: Range_Enemy_02_16
+  - first:
+      213: -4243863480805354850
+    second: Range_Enemy_02_17
+  - first:
+      213: 8643866618192624377
+    second: Range_Enemy_02_18
+  - first:
+      213: 75354726885444596
+    second: Range_Enemy_02_19
+  - first:
+      213: -4892290571120123148
+    second: Range_Enemy_02_20
+  - first:
+      213: 8853163312205897094
+    second: Range_Enemy_02_21
+  - first:
+      213: -8827624955322539520
+    second: Range_Enemy_02_22
+  - first:
+      213: 7071142272698961200
+    second: Range_Enemy_02_23
+  - first:
+      213: 5765285487006396603
+    second: Range_Enemy_02_24
+  - first:
+      213: -425384641764423240
+    second: Range_Enemy_02_25
+  - first:
+      213: -1386631847108255698
+    second: Range_Enemy_02_26
+  - first:
+      213: 1546013123837239753
+    second: Range_Enemy_02_27
+  - first:
+      213: 8603895279944885407
+    second: Range_Enemy_02_28
+  - first:
+      213: 4859716421652319732
+    second: Range_Enemy_02_29
+  - first:
+      213: -7770507716737900713
+    second: Range_Enemy_02_30
+  - first:
+      213: -6978739876235269297
+    second: Range_Enemy_02_31
+  - first:
+      213: -7606656852404452855
+    second: Range_Enemy_02_32
+  - first:
+      213: -2850839360973819121
+    second: Range_Enemy_02_33
+  - first:
+      213: 4826900734240968149
+    second: Range_Enemy_02_34
+  - first:
+      213: -8551964392361776142
+    second: Range_Enemy_02_35
+  - first:
+      213: 4956471924279740579
+    second: Range_Enemy_02_36
+  - first:
+      213: 1337329875930552071
+    second: Range_Enemy_02_37
+  - first:
+      213: -3223963665267212379
+    second: Range_Enemy_02_38
+  - first:
+      213: -5515976682744307710
+    second: Range_Enemy_02_39
+  - first:
+      213: -7172532491075467035
+    second: Range_Enemy_02_40
+  - first:
+      213: -4559742469612100992
+    second: Range_Enemy_02_41
+  - first:
+      213: -4858094420850534317
+    second: Range_Enemy_02_42
+  - first:
+      213: 2465746471196636695
+    second: Range_Enemy_02_43
+  - first:
+      213: -5276742791988736467
+    second: Range_Enemy_02_44
+  - first:
+      213: 6948751863787558066
+    second: Range_Enemy_02_45
+  - first:
+      213: 3883670195623039553
+    second: Range_Enemy_02_46
+  - first:
+      213: 4705217005350897727
+    second: Range_Enemy_02_47
+  - first:
+      213: -826026896199811508
+    second: Range_Enemy_02_48
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Range_Enemy_02_0
+      rect:
+        serializedVersion: 2
+        x: 115
+        y: 950
+        width: 142
+        height: 258
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81aa20abc34922540800000000000000
+      internalID: 4981707126364875288
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_1
+      rect:
+        serializedVersion: 2
+        x: 415
+        y: 952
+        width: 133
+        height: 256
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1312dde7da40e5720800000000000000
+      internalID: 2836709958494265649
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_2
+      rect:
+        serializedVersion: 2
+        x: 542
+        y: 1096
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a912720d9a922a200800000000000000
+      internalID: 189759943621419418
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_3
+      rect:
+        serializedVersion: 2
+        x: 703
+        y: 947
+        width: 138
+        height: 261
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 54d0aeffbf327f6d0800000000000000
+      internalID: -2956855065108148923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_4
+      rect:
+        serializedVersion: 2
+        x: 986
+        y: 947
+        width: 140
+        height: 261
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 97232664c7da57120800000000000000
+      internalID: 2411023924795159161
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_5
+      rect:
+        serializedVersion: 2
+        x: 113
+        y: 1072
+        width: 16
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a7a558bbc96d2580800000000000000
+      internalID: -8850301369021257821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_6
+      rect:
+        serializedVersion: 2
+        x: 408
+        y: 1069
+        width: 14
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6e483bdb7aef15960800000000000000
+      internalID: 7589126843491648742
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_7
+      rect:
+        serializedVersion: 2
+        x: 411
+        y: 1039
+        width: 12
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b112192b675dca730800000000000000
+      internalID: 4011816073858982171
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_8
+      rect:
+        serializedVersion: 2
+        x: 540
+        y: 1036
+        width: 15
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b6a16f218a9c28d0800000000000000
+      internalID: -2869748982905461067
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_9
+      rect:
+        serializedVersion: 2
+        x: 105
+        y: 670
+        width: 190
+        height: 224
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5573619aaa9a9d1f0800000000000000
+      internalID: -1019597290176366763
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_10
+      rect:
+        serializedVersion: 2
+        x: 382
+        y: 671
+        width: 201
+        height: 211
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f454fdb099f236880800000000000000
+      internalID: -8618992927481313969
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_11
+      rect:
+        serializedVersion: 2
+        x: 691
+        y: 667
+        width: 193
+        height: 210
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca7dc75c918c31ea0800000000000000
+      internalID: -5903154673539557460
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_12
+      rect:
+        serializedVersion: 2
+        x: 991
+        y: 665
+        width: 188
+        height: 210
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 200b6ed2f315fb300800000000000000
+      internalID: 270023834460401666
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_13
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 357
+        width: 176
+        height: 260
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: efcb3d3a6aa81a9f0800000000000000
+      internalID: -458933238697313026
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_14
+      rect:
+        serializedVersion: 2
+        x: 357
+        y: 359
+        width: 222
+        height: 256
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bab399bcb9e6f2c40800000000000000
+      internalID: 5489728086202727339
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_15
+      rect:
+        serializedVersion: 2
+        x: 569
+        y: 498
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4281954bf4ae83cf0800000000000000
+      internalID: -272210149406861276
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_16
+      rect:
+        serializedVersion: 2
+        x: 642
+        y: 363
+        width: 247
+        height: 255
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ec4cbd053015bb8a0800000000000000
+      internalID: -6288343380009433906
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_17
+      rect:
+        serializedVersion: 2
+        x: 956
+        y: 367
+        width: 239
+        height: 245
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e92185f26a4ca15c0800000000000000
+      internalID: -4243863480805354850
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_18
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 481
+        width: 11
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9fa7a3f54ee25f770800000000000000
+      internalID: 8643866618192624377
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_19
+      rect:
+        serializedVersion: 2
+        x: 1191
+        y: 468
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fb472099b6bb0100800000000000000
+      internalID: 75354726885444596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_20
+      rect:
+        serializedVersion: 2
+        x: 249
+        y: 442
+        width: 14
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f2646265a71b1cb0800000000000000
+      internalID: -4892290571120123148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_21
+      rect:
+        serializedVersion: 2
+        x: 579
+        y: 438
+        width: 13
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68d9d8a5021ccda70800000000000000
+      internalID: 8853163312205897094
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_22
+      rect:
+        serializedVersion: 2
+        x: 954
+        y: 429
+        width: 20
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00260a7bfd9fd7580800000000000000
+      internalID: -8827624955322539520
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_23
+      rect:
+        serializedVersion: 2
+        x: 1194
+        y: 431
+        width: 10
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 03d4878be6eb12260800000000000000
+      internalID: 7071142272698961200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_24
+      rect:
+        serializedVersion: 2
+        x: 242
+        y: 415
+        width: 12
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb03bb9ca98620050800000000000000
+      internalID: 5765285487006396603
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_25
+      rect:
+        serializedVersion: 2
+        x: 575
+        y: 424
+        width: 9
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b989be0ceab81af0800000000000000
+      internalID: -425384641764423240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_26
+      rect:
+        serializedVersion: 2
+        x: 1186
+        y: 407
+        width: 13
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e206ed68ea1b1cce0800000000000000
+      internalID: -1386631847108255698
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_27
+      rect:
+        serializedVersion: 2
+        x: 83
+        y: 65
+        width: 157
+        height: 250
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c12968beba847510800000000000000
+      internalID: 1546013123837239753
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_28
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 84
+        width: 159
+        height: 231
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f9466c5fb2d276770800000000000000
+      internalID: 8603895279944885407
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_29
+      rect:
+        serializedVersion: 2
+        x: 740
+        y: 282
+        width: 10
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fd08bd665e217340800000000000000
+      internalID: 4859716421652319732
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_30
+      rect:
+        serializedVersion: 2
+        x: 1025
+        y: 268
+        width: 10
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 75fd76bc66c992490800000000000000
+      internalID: -7770507716737900713
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_31
+      rect:
+        serializedVersion: 2
+        x: 366
+        y: 233
+        width: 14
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f4ba429be09862f90800000000000000
+      internalID: -6978739876235269297
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_32
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 66
+        width: 221
+        height: 212
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 902442005e9bf6690800000000000000
+      internalID: -7606656852404452855
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_33
+      rect:
+        serializedVersion: 2
+        x: 1005
+        y: 219
+        width: 12
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f033471a4b8cf68d0800000000000000
+      internalID: -2850839360973819121
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_34
+      rect:
+        serializedVersion: 2
+        x: 1044
+        y: 219
+        width: 11
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5dd418ec4a89cf240800000000000000
+      internalID: 4826900734240968149
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_35
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 182
+        width: 16
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2fbac7502b1515980800000000000000
+      internalID: -8551964392361776142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_36
+      rect:
+        serializedVersion: 2
+        x: 360
+        y: 183
+        width: 32
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a804e164fce8c440800000000000000
+      internalID: 4956471924279740579
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_37
+      rect:
+        serializedVersion: 2
+        x: 522
+        y: 204
+        width: 16
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7079b5acf662f8210800000000000000
+      internalID: 1337329875930552071
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_38
+      rect:
+        serializedVersion: 2
+        x: 956
+        y: 69
+        width: 207
+        height: 142
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5af3bf2b02e2243d0800000000000000
+      internalID: -3223963665267212379
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_39
+      rect:
+        serializedVersion: 2
+        x: 1086
+        y: 205
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 20020b39e605373b0800000000000000
+      internalID: -5515976682744307710
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_40
+      rect:
+        serializedVersion: 2
+        x: 239
+        y: 186
+        width: 8
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e8cf7973bb067c90800000000000000
+      internalID: -7172532491075467035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_41
+      rect:
+        serializedVersion: 2
+        x: 360
+        y: 179
+        width: 10
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0822287e16a88b0c0800000000000000
+      internalID: -4559742469612100992
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_42
+      rect:
+        serializedVersion: 2
+        x: 531
+        y: 173
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35895ef0dd4949cb0800000000000000
+      internalID: -4858094420850534317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_43
+      rect:
+        serializedVersion: 2
+        x: 351
+        y: 146
+        width: 16
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 71639d9f957183220800000000000000
+      internalID: 2465746471196636695
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_44
+      rect:
+        serializedVersion: 2
+        x: 363
+        y: 126
+        width: 8
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2e8868536e35c6b0800000000000000
+      internalID: -5276742791988736467
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_45
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 78
+        width: 39
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2b41469010dee6060800000000000000
+      internalID: 6948751863787558066
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_46
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 66
+        width: 28
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14212e2677195e530800000000000000
+      internalID: 3883670195623039553
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_47
+      rect:
+        serializedVersion: 2
+        x: 466
+        y: 70
+        width: 24
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f384113efe94c4140800000000000000
+      internalID: 4705217005350897727
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Range_Enemy_02_48
+      rect:
+        serializedVersion: 2
+        x: 1047
+        y: 66
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4e77151aec5984f0800000000000000
+      internalID: -826026896199811508
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Range_Enemy_02_0: 4981707126364875288
+      Range_Enemy_02_1: 2836709958494265649
+      Range_Enemy_02_10: -8618992927481313969
+      Range_Enemy_02_11: -5903154673539557460
+      Range_Enemy_02_12: 270023834460401666
+      Range_Enemy_02_13: -458933238697313026
+      Range_Enemy_02_14: 5489728086202727339
+      Range_Enemy_02_15: -272210149406861276
+      Range_Enemy_02_16: -6288343380009433906
+      Range_Enemy_02_17: -4243863480805354850
+      Range_Enemy_02_18: 8643866618192624377
+      Range_Enemy_02_19: 75354726885444596
+      Range_Enemy_02_2: 189759943621419418
+      Range_Enemy_02_20: -4892290571120123148
+      Range_Enemy_02_21: 8853163312205897094
+      Range_Enemy_02_22: -8827624955322539520
+      Range_Enemy_02_23: 7071142272698961200
+      Range_Enemy_02_24: 5765285487006396603
+      Range_Enemy_02_25: -425384641764423240
+      Range_Enemy_02_26: -1386631847108255698
+      Range_Enemy_02_27: 1546013123837239753
+      Range_Enemy_02_28: 8603895279944885407
+      Range_Enemy_02_29: 4859716421652319732
+      Range_Enemy_02_3: -2956855065108148923
+      Range_Enemy_02_30: -7770507716737900713
+      Range_Enemy_02_31: -6978739876235269297
+      Range_Enemy_02_32: -7606656852404452855
+      Range_Enemy_02_33: -2850839360973819121
+      Range_Enemy_02_34: 4826900734240968149
+      Range_Enemy_02_35: -8551964392361776142
+      Range_Enemy_02_36: 4956471924279740579
+      Range_Enemy_02_37: 1337329875930552071
+      Range_Enemy_02_38: -3223963665267212379
+      Range_Enemy_02_39: -5515976682744307710
+      Range_Enemy_02_4: 2411023924795159161
+      Range_Enemy_02_40: -7172532491075467035
+      Range_Enemy_02_41: -4559742469612100992
+      Range_Enemy_02_42: -4858094420850534317
+      Range_Enemy_02_43: 2465746471196636695
+      Range_Enemy_02_44: -5276742791988736467
+      Range_Enemy_02_45: 6948751863787558066
+      Range_Enemy_02_46: 3883670195623039553
+      Range_Enemy_02_47: 4705217005350897727
+      Range_Enemy_02_48: -826026896199811508
+      Range_Enemy_02_5: -8850301369021257821
+      Range_Enemy_02_6: 7589126843491648742
+      Range_Enemy_02_7: 4011816073858982171
+      Range_Enemy_02_8: -2869748982905461067
+      Range_Enemy_02_9: -1019597290176366763
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

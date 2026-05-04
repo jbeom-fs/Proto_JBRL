@@ -36,6 +36,6 @@ MonoBehaviour:
   projectileCount: 10
   spreadAngle: 30
   burstInterval: 0.12
-  projectileWallHitMode: 0
+  projectileWallHitMode: 2
   projectileMaxBounceCount: 1
   knockbackResistance: 0

@@ -34,6 +34,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private Rigidbody2D     _rb;
     private CircleCollider2D _circleCollider;
     private HitFlashFeedback _hitFlash;
+    private EnemyAnimationController _animationController;
     private static PhysicsMaterial2D s_NoFrictionMaterial;
     private float _knockbackLockTimer;
     private float _activeSlowPercentage;
@@ -61,6 +62,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _circleCollider = GetComponent<CircleCollider2D>();
         _healthBar = GetComponent<EnemyHealthBar>();
         _hitFlash = ResolveHitFlashFeedback();
+        _animationController = GetComponentInChildren<EnemyAnimationController>(true);
         _lastSafePosition = transform.position;
         if (data != null)
         {
@@ -84,6 +86,8 @@ public class EnemyController : MonoBehaviour, IDamageable
         _hitFlash = ResolveHitFlashFeedback();
         _hitFlash?.ResetColor();
         gameObject.SetActive(true);
+        _animationController = GetComponentInChildren<EnemyAnimationController>(true);
+        _animationController?.ResetAnimationState();
 
         if (TryGetComponent<EnemyBrain>(out var brain))
             brain.ResetRuntimeState();
@@ -155,6 +159,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private void Die()
     {
+        _animationController?.TriggerDeath();
         combatChannel?.RaiseEnemyKilled(this);
         OnDied?.Invoke(this);
 #if UNITY_EDITOR
