@@ -171,7 +171,6 @@ public class RuntimePerfTraceLogger : MonoBehaviour
             .Append(" speed=").Append(data.projectileSpeed)
             .Append(" lifetime=").Append(data.projectileLifetime)
             .Append(" wallMode=").Append(data.projectileWallHitMode)
-            .Append(" prewarm=").Append(data.projectilePrewarmCount)
             .Append(" windup=").Append(data.attackWindup)
             .Append(" recovery=").Append(data.attackRecovery)
             .Append(" cooldown=").Append(data.attackCooldown)

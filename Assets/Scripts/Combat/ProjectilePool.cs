@@ -3,7 +3,16 @@ using UnityEngine;
 
 public class ProjectilePool : MonoBehaviour
 {
+    [System.Serializable]
+    public class ProjectilePoolEntry
+    {
+        public ProjectileController prefab;
+        [Min(0)] public int prewarmCount = 32;
+    }
+
     private static ProjectilePool _instance;
+
+    [SerializeField] private ProjectilePoolEntry[] prewarmEntries;
 
     private readonly Dictionary<GameObject, Stack<ProjectileController>> _poolByPrefab = new();
     private readonly Dictionary<ProjectileController, GameObject> _prefabByProjectile = new();
@@ -32,6 +41,7 @@ public class ProjectilePool : MonoBehaviour
         }
 
         _instance = this;
+        PrewarmConfiguredEntries();
     }
 
     public ProjectileController Get(GameObject prefab, Vector3 position, Quaternion rotation)
@@ -118,6 +128,25 @@ public class ProjectilePool : MonoBehaviour
         }
 
         return pool;
+    }
+
+    private void PrewarmConfiguredEntries()
+    {
+        if (prewarmEntries == null || prewarmEntries.Length == 0)
+            return;
+
+        for (int i = 0; i < prewarmEntries.Length; i++)
+        {
+            ProjectilePoolEntry entry = prewarmEntries[i];
+            if (entry == null || entry.prefab == null)
+                continue;
+
+            int requestedCount = Mathf.Max(0, entry.prewarmCount);
+            if (requestedCount <= 0)
+                continue;
+
+            Prewarm(entry.prefab.gameObject, requestedCount);
+        }
     }
 
     private ProjectileController CreateProjectile(

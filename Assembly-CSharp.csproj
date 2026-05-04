@@ -79,7 +79,6 @@
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
-    <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
@@ -95,6 +94,7 @@
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
+    <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CoinDisplay.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />

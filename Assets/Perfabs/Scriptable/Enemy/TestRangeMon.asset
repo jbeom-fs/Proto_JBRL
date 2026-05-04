@@ -38,5 +38,4 @@ MonoBehaviour:
   burstInterval: 0.12
   projectileWallHitMode: 0
   projectileMaxBounceCount: 1
-  projectilePrewarmCount: 8
   knockbackResistance: 0

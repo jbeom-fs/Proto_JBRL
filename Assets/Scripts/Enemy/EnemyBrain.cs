@@ -263,37 +263,7 @@ public abstract class EnemyBrain : MonoBehaviour
         _data = _enemy.data;
         Target.RecalculateRanges();
         Action.RecalculateRanges();
-        PrewarmProjectilePool();
         return true;
-    }
-
-    private void PrewarmProjectilePool()
-    {
-        if (_data == null
-            || _data.behaviorType != EnemyBehaviorType.Ranged
-            || _data.projectilePrefab == null
-            || _data.projectilePrewarmCount <= 0)
-            return;
-
-        int prewarmCount = Mathf.Max(_data.projectilePrewarmCount, GetProjectilesPerAttack());
-        ProjectilePool.Instance.Prewarm(_data.projectilePrefab, prewarmCount);
-    }
-
-    private int GetProjectilesPerAttack()
-    {
-        if (_data == null)
-            return 1;
-
-        switch (_data.firePattern)
-        {
-            case ProjectileFirePattern.Burst:
-            case ProjectileFirePattern.Spread:
-            case ProjectileFirePattern.Circle:
-                return Mathf.Max(1, _data.projectileCount);
-
-            default:
-                return 1;
-        }
     }
 
     protected virtual void TriggerAttackAnimation()
