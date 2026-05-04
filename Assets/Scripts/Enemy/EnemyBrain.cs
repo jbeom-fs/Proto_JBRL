@@ -661,7 +661,12 @@ public abstract class EnemyBrain : MonoBehaviour
         private Collider2D _selfCollider;
         private float _attackCooldownTimer;
         private float _windupTimer;
+        private float _recoveryTimer;
+        private Vector2 _aimDirection = Vector2.down;
+        private int _pendingBurstShots;
+        private float _burstTimer;
         private bool _windupFired;
+        private bool _warnedMissingProjectile;
 
         public ActionHandler(EnemyBrain brain)
         {
@@ -684,6 +689,9 @@ public abstract class EnemyBrain : MonoBehaviour
         {
             _attackCooldownTimer = 0f;
             _windupTimer = 0f;
+            _recoveryTimer = 0f;
+            _pendingBurstShots = 0;
+            _burstTimer = 0f;
             _windupFired = false;
         }
 
@@ -698,8 +706,33 @@ public abstract class EnemyBrain : MonoBehaviour
                     break;
 
                 case EnemyBehaviorType.Ranged:
-                    // Ranged behavior keeps the legacy AttackState windup/cooldown path for now.
+                    TickRangedBehavior();
                     break;
+            }
+        }
+
+        private void TickRangedBehavior()
+        {
+            if (_pendingBurstShots <= 0)
+                return;
+
+            float interval = Mathf.Max(0f, _brain.Data.burstInterval);
+            if (interval <= 0f)
+            {
+                while (_pendingBurstShots > 0)
+                {
+                    FireProjectile(_aimDirection);
+                    _pendingBurstShots--;
+                }
+                return;
+            }
+
+            _burstTimer -= Time.deltaTime;
+            while (_pendingBurstShots > 0 && _burstTimer <= 0f)
+            {
+                FireProjectile(_aimDirection);
+                _pendingBurstShots--;
+                _burstTimer += interval;
             }
         }
 
@@ -755,9 +788,14 @@ public abstract class EnemyBrain : MonoBehaviour
             if (_brain.Data == null || _brain.Data.behaviorType != EnemyBehaviorType.Ranged)
                 return;
 
-            _windupTimer = _brain.Data.attackWindup;
+            _windupTimer = Mathf.Max(0f, _brain.Data.attackWindup);
+            _recoveryTimer = 0f;
+            _aimDirection = ResolveAimDirection();
             _windupFired = false;
             _brain.TriggerAttackAnimation();
+
+            if (_windupTimer > 0f)
+                _brain.StopMoving();
         }
 
         public virtual bool TickAttack(float sqrDistanceToTarget)
@@ -765,20 +803,150 @@ public abstract class EnemyBrain : MonoBehaviour
             if (_brain.Data == null || _brain.Data.behaviorType != EnemyBehaviorType.Ranged)
                 return true;
 
-            // Ranged projectile logic can replace this legacy windup attack flow later.
-            _brain.StopMoving();
-            _windupTimer -= Time.deltaTime;
+            if (!_windupFired)
+            {
+                if (_windupTimer > 0f)
+                {
+                    _brain.StopMoving();
+                    _aimDirection = ResolveAimDirection();
+                    _windupTimer -= Time.deltaTime;
 
-            if (_windupFired || _windupTimer > 0f)
-                return false;
+                    if (_windupTimer > 0f)
+                        return false;
+                }
 
-            _windupFired = true;
+                FireRangedPattern(_aimDirection);
+                _windupFired = true;
+                _attackCooldownTimer = Mathf.Max(0f, _brain.Data.attackCooldown);
+                _recoveryTimer = Mathf.Max(0f, _brain.Data.attackRecovery);
+            }
 
-            if (sqrDistanceToTarget <= _attackRangeSqr)
-                ApplyDamage();
+            if (_recoveryTimer > 0f)
+            {
+                _brain.StopMoving();
+                _recoveryTimer -= Time.deltaTime;
+                return _recoveryTimer <= 0f;
+            }
 
-            _attackCooldownTimer = _brain.Data.attackCooldown;
             return true;
+        }
+
+        private Vector2 ResolveAimDirection()
+        {
+            if (_brain.Target == null || !_brain.Target.HasTarget)
+                return _aimDirection.sqrMagnitude > 0.0001f ? _aimDirection : Vector2.down;
+
+            Vector2 direction = _brain.Target.TargetPosition - _brain.transform.position;
+            if (direction.sqrMagnitude <= 0.0001f)
+                return _aimDirection.sqrMagnitude > 0.0001f ? _aimDirection : Vector2.down;
+
+            return direction.normalized;
+        }
+
+        private void FireRangedPattern(Vector2 direction)
+        {
+            switch (_brain.Data.firePattern)
+            {
+                case ProjectileFirePattern.Single:
+                    FireProjectile(direction);
+                    break;
+
+                case ProjectileFirePattern.Burst:
+                    StartBurst(direction);
+                    break;
+
+                case ProjectileFirePattern.Spread:
+                    FireSpread(direction);
+                    break;
+
+                case ProjectileFirePattern.Circle:
+                    FireCircle(direction);
+                    break;
+            }
+        }
+
+        private void StartBurst(Vector2 direction)
+        {
+            int count = Mathf.Max(1, _brain.Data.projectileCount);
+            FireProjectile(direction);
+            _pendingBurstShots = count - 1;
+            _burstTimer = Mathf.Max(0f, _brain.Data.burstInterval);
+        }
+
+        private void FireSpread(Vector2 direction)
+        {
+            int count = Mathf.Max(1, _brain.Data.projectileCount);
+            if (count == 1)
+            {
+                FireProjectile(direction);
+                return;
+            }
+
+            float startAngle = -_brain.Data.spreadAngle * 0.5f;
+            float step = _brain.Data.spreadAngle / (count - 1);
+            for (int i = 0; i < count; i++)
+                FireProjectile(Rotate(direction, startAngle + step * i));
+        }
+
+        private void FireCircle(Vector2 direction)
+        {
+            int count = Mathf.Max(1, _brain.Data.projectileCount);
+            if (count == 1)
+            {
+                FireProjectile(direction);
+                return;
+            }
+
+            float step = 360f / count;
+            for (int i = 0; i < count; i++)
+                FireProjectile(Rotate(direction, step * i));
+        }
+
+        private void FireProjectile(Vector2 direction)
+        {
+            if (_brain.Data.projectilePrefab == null)
+            {
+                if (!_warnedMissingProjectile)
+                {
+                    Debug.LogWarning($"[EnemyBrain] {_brain.Data.enemyName}: Ranged projectilePrefab is missing.");
+                    _warnedMissingProjectile = true;
+                }
+                return;
+            }
+
+            GameObject projectileObject = Object.Instantiate(
+                _brain.Data.projectilePrefab,
+                _brain.transform.position,
+                Quaternion.identity);
+            if (projectileObject == null) return;
+
+            ProjectileController projectile = projectileObject.GetComponent<ProjectileController>();
+            if (projectile == null)
+                projectile = projectileObject.AddComponent<ProjectileController>();
+
+            int damage = _brain.Data.projectileDamage > 0
+                ? _brain.Data.projectileDamage
+                : _brain.Data.attack;
+            projectile.Initialize(
+                direction,
+                damage,
+                _brain.Data.projectileSpeed,
+                _brain.Data.projectileLifetime,
+                _brain.Data.projectileWallHitMode,
+                _brain.Enemy);
+        }
+
+        private static Vector2 Rotate(Vector2 direction, float degrees)
+        {
+            if (direction.sqrMagnitude <= 0.0001f)
+                direction = Vector2.down;
+
+            float radians = degrees * Mathf.Deg2Rad;
+            float sin = Mathf.Sin(radians);
+            float cos = Mathf.Cos(radians);
+            return new Vector2(
+                direction.x * cos - direction.y * sin,
+                direction.x * sin + direction.y * cos).normalized;
         }
 
         protected virtual void ApplyDamage()
@@ -828,7 +996,6 @@ public abstract class EnemyBrain : MonoBehaviour
 
         public void OnEnter()
         {
-            _brain.StopMoving();
             _brain.Action.BeginAttack();
         }
 
@@ -840,7 +1007,6 @@ public abstract class EnemyBrain : MonoBehaviour
 
         public void OnExit()
         {
-            _brain.StopMoving();
         }
     }
 }

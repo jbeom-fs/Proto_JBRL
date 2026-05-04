@@ -86,6 +86,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\PlayerMovement.cs" />
+    <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Enemy\ChaseState.cs" />
