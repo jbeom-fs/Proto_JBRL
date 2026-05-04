@@ -272,7 +272,12 @@ public abstract class EnemyBrain : MonoBehaviour
     protected virtual void TriggerAttackAnimation()
     {
         if (Data != null && Data.behaviorType == EnemyBehaviorType.Ranged)
-            _animationController?.TriggerAttack();
+        {
+            if (Target != null && Target.HasTarget)
+                _animationController?.PlayAttack(Target.TargetPosition);
+            else
+                _animationController?.PlayAttack();
+        }
 
         SetAnimTrigger(ANIM_ATTACK);
     }

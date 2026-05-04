@@ -179,6 +179,10 @@ MonoBehaviour:
   animator: {fileID: 5944476601763459082}
   spriteRenderer: {fileID: 2529847795632861024}
   movementThreshold: 0.001
+  defaultFacesRight: 1
+  faceMoveDirectionWhenMoving: 1
+  faceTargetOnAttack: 1
+  facingDeadZone: 0.03
 --- !u!1 &5313294262261449395
 GameObject:
   m_ObjectHideFlags: 0

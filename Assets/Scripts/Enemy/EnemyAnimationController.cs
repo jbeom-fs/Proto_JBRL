@@ -13,8 +13,13 @@ public class EnemyAnimationController : MonoBehaviour
     [SerializeField] private Animator animator;
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private float movementThreshold = 0.001f;
+    [SerializeField] private bool defaultFacesRight = true;
+    [SerializeField] private bool faceMoveDirectionWhenMoving = true;
+    [SerializeField] private bool faceTargetOnAttack = true;
+    [SerializeField] private float facingDeadZone = 0.03f;
 
     private Vector3 _previousPosition;
+    private bool _isDead;
     private bool _hasIsMoving;
     private bool _hasAttackTrigger;
     private bool _hasDeathTrigger;
@@ -37,22 +42,26 @@ public class EnemyAnimationController : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (animator == null)
-            return;
-
         Vector3 currentPosition = transform.position;
         Vector2 delta = currentPosition - _previousPosition;
         bool isMoving = delta.sqrMagnitude > movementThreshold * movementThreshold;
 
-        SetBool(IsMovingHash, _hasIsMoving, isMoving);
+        if (animator != null)
+            SetBool(IsMovingHash, _hasIsMoving, isMoving);
 
         if (isMoving)
         {
             Vector2 direction = delta.normalized;
-            SetFloat(MoveXHash, _hasMoveX, direction.x);
-            SetFloat(MoveYHash, _hasMoveY, direction.y);
-            SetFloat(LastMoveXHash, _hasLastMoveX, direction.x);
-            SetFloat(LastMoveYHash, _hasLastMoveY, direction.y);
+            if (animator != null)
+            {
+                SetFloat(MoveXHash, _hasMoveX, direction.x);
+                SetFloat(MoveYHash, _hasMoveY, direction.y);
+                SetFloat(LastMoveXHash, _hasLastMoveX, direction.x);
+                SetFloat(LastMoveYHash, _hasLastMoveY, direction.y);
+            }
+
+            if (!_isDead && faceMoveDirectionWhenMoving)
+                FaceHorizontalDirection(delta.x);
         }
 
         _previousPosition = currentPosition;
@@ -62,9 +71,13 @@ public class EnemyAnimationController : MonoBehaviour
     {
         ResolveDependencies();
         CacheAnimatorParameters();
+        _isDead = false;
 
         if (spriteRenderer != null)
+        {
             spriteRenderer.enabled = true;
+            SetFacingRight(defaultFacesRight);
+        }
 
         if (animator == null)
             return;
@@ -84,6 +97,11 @@ public class EnemyAnimationController : MonoBehaviour
 
     public void TriggerAttack()
     {
+        PlayAttack();
+    }
+
+    public void PlayAttack()
+    {
         if (animator == null || !_hasAttackTrigger)
             return;
 
@@ -91,8 +109,23 @@ public class EnemyAnimationController : MonoBehaviour
         animator.SetTrigger(AttackTriggerHash);
     }
 
+    public void PlayAttack(Vector3 targetPosition)
+    {
+        if (faceTargetOnAttack)
+            FacePosition(targetPosition);
+
+        PlayAttack();
+    }
+
     public void TriggerDeath()
     {
+        PlayDeath();
+    }
+
+    public void PlayDeath()
+    {
+        _isDead = true;
+
         if (animator == null || !_hasDeathTrigger)
             return;
 
@@ -106,7 +139,33 @@ public class EnemyAnimationController : MonoBehaviour
             animator = GetComponentInChildren<Animator>(true);
 
         if (spriteRenderer == null)
+            spriteRenderer = GetComponent<SpriteRenderer>();
+        if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>(true);
+    }
+
+    public void FacePosition(Vector3 targetPosition)
+    {
+        if (_isDead)
+            return;
+
+        FaceHorizontalDirection(targetPosition.x - transform.position.x);
+    }
+
+    private void FaceHorizontalDirection(float directionX)
+    {
+        if (Mathf.Abs(directionX) <= facingDeadZone)
+            return;
+
+        SetFacingRight(directionX > 0f);
+    }
+
+    private void SetFacingRight(bool faceRight)
+    {
+        if (spriteRenderer == null)
+            return;
+
+        spriteRenderer.flipX = defaultFacesRight != faceRight;
     }
 
     private void CacheAnimatorParameters()
