@@ -37,6 +37,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     [Tooltip("공격 판정 반경 (월드 단위). 타일 크기의 약 40% 권장.")]
     [SerializeField] private float hitRadius = 0.3f;
 
+    [Header("Damage Invincibility")]
+    [SerializeField, Min(0f)] private float damageInvincibleDuration = 0.5f;
+
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
     private readonly PlayerResource _resource = new();
@@ -44,6 +47,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private AttackExecutor _attackExecutor;
     private PlayerInputReader _inputReader;
     private HitFlashFeedback _hitFlash;
+    private float _damageInvincibleTimer;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -52,6 +56,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public int  MaxHp       => maxHp;
     public int  CurrentMp   => _resource.CurrentMp;
     public int  MaxMp       => maxMp;
+    public bool IsDamageInvincible => _damageInvincibleTimer > 0f;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
     public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0);
@@ -101,6 +106,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void Update()
     {
+        if (_damageInvincibleTimer > 0f)
+            _damageInvincibleTimer -= Time.deltaTime;
+
         _cooldownController.Tick(Time.deltaTime);
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
@@ -205,12 +213,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public void TakeDamage(int incomingDamage)
     {
         if (!IsAlive) return;
+        if (IsDamageInvincible) return;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
         int hpBefore = CurrentHp;
         _resource.TakeDamage(actual);
         if (CurrentHp < hpBefore)
+        {
+            _damageInvincibleTimer = damageInvincibleDuration;
             _hitFlash?.Play();
+        }
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
 #if UNITY_EDITOR
         Debug.Log($"[Combat] 플레이어 -{actual} HP → {CurrentHp}/{maxHp}");

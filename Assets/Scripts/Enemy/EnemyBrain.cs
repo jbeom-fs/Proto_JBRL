@@ -150,6 +150,7 @@ public abstract class EnemyBrain : MonoBehaviour
         Action.TickCooldown(Time.deltaTime);
 
         float sqrDistance = Target.SqrDistanceToTarget;
+        Action.TickBehavior(sqrDistance);
         _currentState.Tick(sqrDistance);
     }
 
@@ -536,6 +537,7 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         private readonly EnemyBrain _brain;
         private IDamageable _damageable;
+        private Collider2D _targetCollider;
         private float _detectRangeSqr;
 
         public TargetHandler(EnemyBrain brain)
@@ -545,6 +547,7 @@ public abstract class EnemyBrain : MonoBehaviour
 
         public bool HasTarget => _brain.player != null;
         public IDamageable Damageable => _damageable;
+        public Collider2D TargetCollider => _targetCollider;
         public float DetectRangeSqr => _detectRangeSqr;
         public Vector3 TargetPosition => _brain.player != null ? _brain.player.position : _brain.transform.position;
         public float SqrDistanceToTarget => (_brain.player.position - _brain.transform.position).sqrMagnitude;
@@ -569,6 +572,8 @@ public abstract class EnemyBrain : MonoBehaviour
 
             if (_damageable == null)
                 _damageable = ResolveDamageable(_brain.player);
+            if (_targetCollider == null)
+                _targetCollider = ResolveCollider(_brain.player);
 
             return IsTargetOnTrackableTile();
         }
@@ -587,6 +592,20 @@ public abstract class EnemyBrain : MonoBehaviour
 
             _brain.player = playerObject.transform;
             _damageable = ResolveDamageable(_brain.player);
+            _targetCollider = ResolveCollider(_brain.player);
+        }
+
+        private Collider2D ResolveCollider(Transform targetTransform)
+        {
+            if (targetTransform == null) return null;
+
+            Collider2D col = targetTransform.GetComponent<Collider2D>();
+            if (col != null) return col;
+
+            col = targetTransform.GetComponentInParent<Collider2D>();
+            if (col != null) return col;
+
+            return targetTransform.GetComponentInChildren<Collider2D>();
         }
 
         private IDamageable ResolveDamageable(Transform targetTransform)
@@ -638,6 +657,8 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         private readonly EnemyBrain _brain;
         private float _attackRangeSqr;
+        private float _contactDamageRangeSqr;
+        private Collider2D _selfCollider;
         private float _attackCooldownTimer;
         private float _windupTimer;
         private bool _windupFired;
@@ -651,6 +672,7 @@ public abstract class EnemyBrain : MonoBehaviour
         {
             if (_brain.Data == null) return;
             _attackRangeSqr = _brain.Data.attackRange * _brain.Data.attackRange;
+            _contactDamageRangeSqr = _brain.Data.contactDamageRadius * _brain.Data.contactDamageRadius;
         }
 
         public virtual void TickCooldown(float deltaTime)
@@ -665,13 +687,74 @@ public abstract class EnemyBrain : MonoBehaviour
             _windupFired = false;
         }
 
+        public virtual void TickBehavior(float sqrDistanceToTarget)
+        {
+            if (_brain.Data == null) return;
+
+            switch (_brain.Data.behaviorType)
+            {
+                case EnemyBehaviorType.Contact:
+                    TickContactBehavior(sqrDistanceToTarget);
+                    break;
+
+                case EnemyBehaviorType.Ranged:
+                    // Ranged behavior keeps the legacy AttackState windup/cooldown path for now.
+                    break;
+            }
+        }
+
+        private void TickContactBehavior(float sqrDistanceToTarget)
+        {
+            if (!_brain.ShouldKeepChasing(sqrDistanceToTarget))
+                return;
+
+            if (!IsContactingTarget(sqrDistanceToTarget))
+                return;
+
+            ApplyDamage();
+        }
+
+        private bool IsContactingTarget(float sqrDistanceToTarget)
+        {
+            Collider2D self = ResolveSelfCollider();
+            Collider2D target = _brain.Target.TargetCollider;
+            if (self != null && target != null && self.enabled && target.enabled)
+            {
+                ColliderDistance2D distance = self.Distance(target);
+                return distance.isOverlapped || distance.distance <= Mathf.Max(0f, _brain.Data.contactDamageSkin);
+            }
+
+            return sqrDistanceToTarget <= _contactDamageRangeSqr;
+        }
+
+        private Collider2D ResolveSelfCollider()
+        {
+            if (_selfCollider != null)
+                return _selfCollider;
+
+            if (_brain.Enemy != null)
+                _selfCollider = _brain.Enemy.GetComponent<Collider2D>();
+            if (_selfCollider == null)
+                _selfCollider = _brain.GetComponent<Collider2D>();
+            if (_selfCollider == null)
+                _selfCollider = _brain.GetComponentInChildren<Collider2D>();
+
+            return _selfCollider;
+        }
+
         public virtual bool CanAttack(float sqrDistanceToTarget)
         {
+            if (_brain.Data == null || _brain.Data.behaviorType == EnemyBehaviorType.Contact)
+                return false;
+
             return sqrDistanceToTarget <= _attackRangeSqr && _attackCooldownTimer <= 0f;
         }
 
         public virtual void BeginAttack()
         {
+            if (_brain.Data == null || _brain.Data.behaviorType != EnemyBehaviorType.Ranged)
+                return;
+
             _windupTimer = _brain.Data.attackWindup;
             _windupFired = false;
             _brain.TriggerAttackAnimation();
@@ -679,6 +762,10 @@ public abstract class EnemyBrain : MonoBehaviour
 
         public virtual bool TickAttack(float sqrDistanceToTarget)
         {
+            if (_brain.Data == null || _brain.Data.behaviorType != EnemyBehaviorType.Ranged)
+                return true;
+
+            // Ranged projectile logic can replace this legacy windup attack flow later.
             _brain.StopMoving();
             _windupTimer -= Time.deltaTime;
 

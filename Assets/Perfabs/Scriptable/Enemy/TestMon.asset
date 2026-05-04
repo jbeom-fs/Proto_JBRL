@@ -19,9 +19,13 @@ MonoBehaviour:
   expReward: 10
   spawnCost: 3
   allowedRegions: 1
+  behaviorType: 0
   detectRange: 7
   attackRange: 2
   moveSpeed: 2
   attackCooldown: 2
   attackWindup: 1
+  contactDamageRadius: 0.45
+  contactDamageSkin: 0.05
+  contactDamageCooldown: 0.75
   knockbackResistance: 0
