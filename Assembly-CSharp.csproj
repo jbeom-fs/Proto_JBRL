@@ -106,6 +106,7 @@
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
+    <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\DUN Documentation.txt" />
