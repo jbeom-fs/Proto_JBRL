@@ -929,6 +929,7 @@ public abstract class EnemyBrain : MonoBehaviour
                 _brain.Data.projectileSpeed,
                 _brain.Data.projectileLifetime,
                 _brain.Data.projectileWallHitMode,
+                _brain.Data.projectileMaxBounceCount,
                 _brain.Enemy);
         }
 

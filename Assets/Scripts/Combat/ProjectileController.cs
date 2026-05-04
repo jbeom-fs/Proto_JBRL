@@ -4,12 +4,15 @@ using UnityEngine;
 public class ProjectileController : MonoBehaviour
 {
     [SerializeField] private float hitRadius = 0.08f;
+    [SerializeField] private float bounceExitOffset = 0.05f;
 
     private Vector2 _direction = Vector2.right;
     private float _speed = 6f;
     private int _damage = 1;
     private float _lifetime = 3f;
     private ProjectileWallHitMode _wallHitMode = ProjectileWallHitMode.Destroy;
+    private int _maxBounceCount;
+    private int _currentBounceCount;
     private Collider2D _collider;
     private Action<ProjectileController> _releaseAction;
     private bool _released;
@@ -30,6 +33,7 @@ public class ProjectileController : MonoBehaviour
         float speed,
         float lifetime,
         ProjectileWallHitMode wallHitMode,
+        int maxBounceCount,
         UnityEngine.Object owner)
     {
         _released = false;
@@ -38,6 +42,8 @@ public class ProjectileController : MonoBehaviour
         _speed = Mathf.Max(0f, speed);
         _lifetime = Mathf.Max(0.01f, lifetime);
         _wallHitMode = wallHitMode;
+        _maxBounceCount = Mathf.Max(0, maxBounceCount);
+        _currentBounceCount = 0;
     }
 
     public void SetReleaseAction(Action<ProjectileController> releaseAction)
@@ -48,7 +54,6 @@ public class ProjectileController : MonoBehaviour
     private void Update()
     {
         float deltaTime = Time.deltaTime;
-        transform.position += (Vector3)(_direction * (_speed * deltaTime));
 
         _lifetime -= deltaTime;
         if (_lifetime <= 0f)
@@ -57,26 +62,32 @@ public class ProjectileController : MonoBehaviour
             return;
         }
 
-        if (HitsWall())
+        Vector2 currentPosition = transform.position;
+        Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
+        if (IsWallPosition(nextPosition))
         {
-            if (!HandleWallHit())
+            if (!HandleWallHit(currentPosition, nextPosition))
                 return;
+        }
+        else
+        {
+            transform.position = nextPosition;
         }
 
         TryHitPlayer();
     }
 
-    private bool HitsWall()
+    private bool IsWallPosition(Vector2 position)
     {
         var dungeon = DungeonManager.Instance;
         if (dungeon == null || dungeon.Data == null)
             return false;
 
-        Vector2Int grid = dungeon.WorldToGrid(transform.position);
+        Vector2Int grid = dungeon.WorldToGrid(position);
         return !dungeon.IsWalkable(grid.x, grid.y);
     }
 
-    private bool HandleWallHit()
+    private bool HandleWallHit(Vector2 currentPosition, Vector2 nextPosition)
     {
         switch (_wallHitMode)
         {
@@ -85,13 +96,47 @@ public class ProjectileController : MonoBehaviour
                 return false;
 
             case ProjectileWallHitMode.PassThrough:
+                transform.position = nextPosition;
                 return true;
 
             case ProjectileWallHitMode.Bounce:
-                // TODO: Reflect the projectile direction against wall normals when wall normals are available.
-                Release();
-                return false;
+                return TryBounce(currentPosition, nextPosition);
         }
+
+        return true;
+    }
+
+    private bool TryBounce(Vector2 currentPosition, Vector2 nextPosition)
+    {
+        if (_currentBounceCount >= _maxBounceCount)
+        {
+            Release();
+            return false;
+        }
+
+        Vector2 xOnlyPosition = new Vector2(nextPosition.x, currentPosition.y);
+        Vector2 yOnlyPosition = new Vector2(currentPosition.x, nextPosition.y);
+        bool blockedX = IsWallPosition(xOnlyPosition);
+        bool blockedY = IsWallPosition(yOnlyPosition);
+
+        if (blockedX)
+            _direction.x *= -1f;
+        if (blockedY)
+            _direction.y *= -1f;
+        if (!blockedX && !blockedY)
+            _direction = -_direction;
+
+        if (_direction.sqrMagnitude <= 0.0001f)
+            _direction = Vector2.right;
+        else
+            _direction.Normalize();
+
+        _currentBounceCount++;
+
+        Vector2 correctedPosition = currentPosition + _direction * Mathf.Max(0.01f, bounceExitOffset);
+        transform.position = IsWallPosition(correctedPosition)
+            ? currentPosition
+            : correctedPosition;
 
         return true;
     }

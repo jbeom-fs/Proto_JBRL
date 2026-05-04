@@ -30,11 +30,12 @@ MonoBehaviour:
   contactDamageSkin: 0.05
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
   projectileDamage: 2
-  projectileSpeed: 5
+  projectileSpeed: 8
   projectileLifetime: 3
-  firePattern: 0
+  firePattern: 1
   projectileCount: 3
   spreadAngle: 30
   burstInterval: 0.12
-  projectileWallHitMode: 0
+  projectileWallHitMode: 2
+  projectileMaxBounceCount: 1
   knockbackResistance: 0

@@ -92,6 +92,10 @@ public class EnemyData : ScriptableObject
 
     public ProjectileWallHitMode projectileWallHitMode = ProjectileWallHitMode.Destroy;
 
+    [Tooltip("Maximum wall bounces for Bounce mode. 0 means the projectile is released on the first wall hit.")]
+    [Min(0)]
+    public int projectileMaxBounceCount = 1;
+
     [Header("Status Resistance")]
     [Range(0f, 1f)]
     public float knockbackResistance = 0f;
