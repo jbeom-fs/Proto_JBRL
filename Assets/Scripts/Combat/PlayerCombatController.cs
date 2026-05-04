@@ -43,6 +43,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private readonly SkillCooldownController _cooldownController = new();
     private AttackExecutor _attackExecutor;
     private PlayerInputReader _inputReader;
+    private HitFlashFeedback _hitFlash;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _inputReader = GetComponent<PlayerInputReader>();
         if (_inputReader == null && playerMovement != null)
             _inputReader = playerMovement.GetComponent<PlayerInputReader>();
+        _hitFlash = ResolveHitFlashFeedback();
         if (_inputReader == null)
             Debug.LogWarning("[PlayerCombatController] PlayerInputReader 없음 — 전투 입력 불가");
     }
@@ -205,7 +207,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (!IsAlive) return;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
+        int hpBefore = CurrentHp;
         _resource.TakeDamage(actual);
+        if (CurrentHp < hpBefore)
+            _hitFlash?.Play();
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
 #if UNITY_EDITOR
         Debug.Log($"[Combat] 플레이어 -{actual} HP → {CurrentHp}/{maxHp}");
@@ -224,6 +229,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     // ══════════════════════════════════════════════════════════════
     //  MP 관리
     // ══════════════════════════════════════════════════════════════
+
+    private HitFlashFeedback ResolveHitFlashFeedback()
+    {
+        HitFlashFeedback feedback = GetComponentInChildren<HitFlashFeedback>(true);
+        return feedback != null ? feedback : gameObject.AddComponent<HitFlashFeedback>();
+    }
 
     private void SpendMp(int amount)
     {

@@ -33,6 +33,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private EnemyHealthBar  _healthBar;
     private Rigidbody2D     _rb;
     private CircleCollider2D _circleCollider;
+    private HitFlashFeedback _hitFlash;
     private static PhysicsMaterial2D s_NoFrictionMaterial;
     private float _knockbackLockTimer;
     private float _activeSlowPercentage;
@@ -59,6 +60,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _rb = GetComponent<Rigidbody2D>();
         _circleCollider = GetComponent<CircleCollider2D>();
         _healthBar = GetComponent<EnemyHealthBar>();
+        _hitFlash = ResolveHitFlashFeedback();
         _lastSafePosition = transform.position;
         if (data != null)
         {
@@ -79,6 +81,8 @@ public class EnemyController : MonoBehaviour, IDamageable
         _healthBar?.SetHp(_currentHp, data.maxHp);
         _lastSafePosition = transform.position;
         ResetStatusEffects();
+        _hitFlash = ResolveHitFlashFeedback();
+        _hitFlash?.ResetColor();
         gameObject.SetActive(true);
 
         if (TryGetComponent<EnemyBrain>(out var brain))
@@ -90,7 +94,10 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (!IsAlive) return;
 
         int actual = Mathf.Max(1, damage - (data?.defense ?? 0));
+        int hpBefore = _currentHp;
         _currentHp = Mathf.Max(0, _currentHp - actual);
+        if (_currentHp < hpBefore)
+            _hitFlash?.Play();
         _healthBar?.SetHp(_currentHp, data.maxHp);
 
 #if UNITY_EDITOR
@@ -164,6 +171,12 @@ public class EnemyController : MonoBehaviour, IDamageable
         _activeSlows.Clear();
         if (_rb != null)
             _rb.linearVelocity = Vector2.zero;
+    }
+
+    private HitFlashFeedback ResolveHitFlashFeedback()
+    {
+        HitFlashFeedback feedback = GetComponentInChildren<HitFlashFeedback>(true);
+        return feedback != null ? feedback : gameObject.AddComponent<HitFlashFeedback>();
     }
 
     private void ApplyKnockback(Vector2 attackerPosition, float force, float duration)
