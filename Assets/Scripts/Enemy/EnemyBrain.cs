@@ -133,7 +133,7 @@ public abstract class EnemyBrain : MonoBehaviour
 
     protected virtual void Update()
     {
-        if (_enemy == null || !_enemy.IsAlive) return;
+        if (_enemy == null || _enemy.IsDead || !_enemy.IsAlive) return;
         if (!TryCacheData()) return;
 
         if (_enemy.IsKnockbackLocked)
@@ -320,7 +320,7 @@ public abstract class EnemyBrain : MonoBehaviour
         if (Target == null || !Target.HasTarget)
             return false;
 
-        if (Enemy == null || !Enemy.IsAlive)
+        if (Enemy == null || Enemy.IsDead || !Enemy.IsAlive)
             return false;
 
         _animationController.FacePosition(Target.TargetPosition);

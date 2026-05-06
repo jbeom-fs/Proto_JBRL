@@ -38,6 +38,8 @@ public class EnemyController : MonoBehaviour, IDamageable
     private static PhysicsMaterial2D s_NoFrictionMaterial;
     private float _knockbackLockTimer;
     private float _activeSlowPercentage;
+    private float _deathTimer;
+    private bool _deathFinished;
     private Vector3 _lastSafePosition;
     private readonly Vector3[] _footprintCorners = new Vector3[4];
     private readonly List<SlowEffect> _activeSlows = new();
@@ -48,12 +50,14 @@ public class EnemyController : MonoBehaviour, IDamageable
         public float Timer;
     }
 
-    public bool IsAlive => _currentHp > 0;
+    public bool IsAlive => _currentHp > 0 && !IsDead;
+    public bool IsDead { get; private set; }
     public bool IsKnockbackLocked => _knockbackLockTimer > 0f;
     public float MoveSpeedMultiplier => Mathf.Clamp01(1f - _activeSlowPercentage);
     public float CollisionFootprintRadius => GetWorldColliderRadius();
 
     public event Action<EnemyController> OnDied;
+    public event Action<EnemyController> OnDeathFinished;
 
     private void Awake()
     {
@@ -80,9 +84,14 @@ public class EnemyController : MonoBehaviour, IDamageable
     {
         data       = enemyData;
         _currentHp = data.maxHp;
+        IsDead = false;
+        _deathFinished = false;
+        _deathTimer = 0f;
         _healthBar?.SetHp(_currentHp, data.maxHp);
         _lastSafePosition = transform.position;
         ResetStatusEffects();
+        if (_circleCollider != null)
+            _circleCollider.enabled = true;
         _hitFlash = ResolveHitFlashFeedback();
         _hitFlash?.ResetColor();
         gameObject.SetActive(true);
@@ -95,7 +104,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     public void TakeDamage(int damage)
     {
-        if (!IsAlive) return;
+        if (IsDead || !IsAlive) return;
 
         int actual = Mathf.Max(1, damage - (data?.defense ?? 0));
         int hpBefore = _currentHp;
@@ -120,6 +129,8 @@ public class EnemyController : MonoBehaviour, IDamageable
         float slowPercentage,
         float slowDuration)
     {
+        if (IsDead) return;
+
         TakeDamage(damage);
         if (!IsAlive) return;
 
@@ -129,6 +140,12 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private void Update()
     {
+        if (IsDead)
+        {
+            TickDeathDelay();
+            return;
+        }
+
         if (_knockbackLockTimer > 0f)
         {
             _knockbackLockTimer -= Time.deltaTime;
@@ -142,7 +159,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private void LateUpdate()
     {
-        if (!IsAlive) return;
+        if (IsDead || !IsAlive) return;
 
         if (IsFootprintWalkable(transform.position))
         {
@@ -159,6 +176,15 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private void Die()
     {
+        if (IsDead) return;
+
+        IsDead = true;
+        _deathFinished = false;
+        _deathTimer = data != null ? Mathf.Max(0f, data.deathDelay) : 0.5f;
+        ResetStatusEffects();
+        if (_circleCollider != null)
+            _circleCollider.enabled = false;
+
         _animationController?.TriggerDeath();
         combatChannel?.RaiseEnemyKilled(this);
         OnDied?.Invoke(this);
@@ -166,6 +192,27 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (logDamageInEditor)
             Debug.Log($"[Enemy:{data?.enemyName}] 사망");
 #endif
+        if (_deathTimer <= 0f)
+            FinishDeath();
+    }
+
+    private void TickDeathDelay()
+    {
+        if (_deathFinished)
+            return;
+
+        _deathTimer -= Time.deltaTime;
+        if (_deathTimer <= 0f)
+            FinishDeath();
+    }
+
+    private void FinishDeath()
+    {
+        if (_deathFinished)
+            return;
+
+        _deathFinished = true;
+        OnDeathFinished?.Invoke(this);
         gameObject.SetActive(false);
     }
 

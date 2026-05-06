@@ -69,8 +69,8 @@ public class EnemyPoolManager : MonoBehaviour
         if (enemy == null) return null;
 
         _activeData[enemy] = data;
-        enemy.OnDied -= Release;
-        enemy.OnDied += Release;
+        enemy.OnDeathFinished -= Release;
+        enemy.OnDeathFinished += Release;
         if (enemy.TryGetComponent<EnemyBrain>(out var brain))
             brain.ResetRuntimeState();
         return enemy;
@@ -105,7 +105,7 @@ public class EnemyPoolManager : MonoBehaviour
         if (!_activeData.TryGetValue(enemy, out var data)) return;
 
         _activeData.Remove(enemy);
-        enemy.OnDied -= Release;
+        enemy.OnDeathFinished -= Release;
         enemy.transform.SetParent(transform);
 
         if (!_pools.TryGetValue(data, out var queue))

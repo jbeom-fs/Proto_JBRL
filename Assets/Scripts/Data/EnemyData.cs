@@ -33,6 +33,10 @@ public class EnemyData : ScriptableObject
     public int defense = 0;
     public int expReward = 10;
 
+    [Tooltip("Delay before this enemy is disabled after reaching 0 HP.")]
+    [Min(0f)]
+    public float deathDelay = 0.5f;
+
     [Header("Spawn Budget")]
     [Min(1)]
     public int spawnCost = 1;

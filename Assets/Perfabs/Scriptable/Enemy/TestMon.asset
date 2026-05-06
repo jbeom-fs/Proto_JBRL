@@ -17,6 +17,7 @@ MonoBehaviour:
   attack: 2
   defense: 1
   expReward: 10
+  deathDelay: 0.5
   spawnCost: 3
   allowedRegions: 1
   behaviorType: 0
