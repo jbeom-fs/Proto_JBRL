@@ -96,6 +96,13 @@ public class EnemyAnimationController : MonoBehaviour
         SetFloat(MoveYHash, _hasMoveY, 0f);
         SetFloat(LastMoveXHash, _hasLastMoveX, 0f);
         SetFloat(LastMoveYHash, _hasLastMoveY, -1f);
+
+        if (!animator.gameObject.activeInHierarchy)
+        {
+            _previousPosition = transform.position;
+            return;
+        }
+
         animator.Rebind();
         animator.Update(0f);
         animator.Play("Idle", 0, 0f);
