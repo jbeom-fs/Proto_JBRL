@@ -1,0 +1,1560 @@
+fileFormatVersion: 2
+guid: 07e947c41f8d9b441a3da5b123c333e1
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6290771979527031043
+    second: spider_Enemy_0_0
+  - first:
+      213: 9028908756362221151
+    second: spider_Enemy_0_1
+  - first:
+      213: -7817666531946445539
+    second: spider_Enemy_0_2
+  - first:
+      213: -8721830472638768535
+    second: spider_Enemy_0_3
+  - first:
+      213: 457582315613030278
+    second: spider_Enemy_0_4
+  - first:
+      213: -4928852630184441439
+    second: spider_Enemy_0_5
+  - first:
+      213: -7843978055113610734
+    second: spider_Enemy_0_6
+  - first:
+      213: 7635556538399069049
+    second: spider_Enemy_0_7
+  - first:
+      213: -4124084400820893807
+    second: spider_Enemy_0_8
+  - first:
+      213: -2473182488825018671
+    second: spider_Enemy_0_9
+  - first:
+      213: -6954350270454962755
+    second: spider_Enemy_0_10
+  - first:
+      213: -3484269906925159518
+    second: spider_Enemy_0_11
+  - first:
+      213: 5263017205931991550
+    second: spider_Enemy_0_12
+  - first:
+      213: 1909731139994046951
+    second: spider_Enemy_0_13
+  - first:
+      213: -5870493351290977479
+    second: spider_Enemy_0_14
+  - first:
+      213: 3864758896388745851
+    second: spider_Enemy_0_15
+  - first:
+      213: -927256246470326297
+    second: spider_Enemy_0_16
+  - first:
+      213: 4054756664099037021
+    second: spider_Enemy_0_17
+  - first:
+      213: -1775981744695517975
+    second: spider_Enemy_0_18
+  - first:
+      213: -4819833024383096149
+    second: spider_Enemy_0_19
+  - first:
+      213: 1592675632173800325
+    second: spider_Enemy_0_20
+  - first:
+      213: -6216016971904573157
+    second: spider_Enemy_0_21
+  - first:
+      213: -7716037332897777376
+    second: spider_Enemy_0_22
+  - first:
+      213: 7354086136186530355
+    second: spider_Enemy_0_23
+  - first:
+      213: -2590011073109149139
+    second: spider_Enemy_0_24
+  - first:
+      213: 2412338471713711636
+    second: spider_Enemy_0_25
+  - first:
+      213: -3149202128445267899
+    second: spider_Enemy_0_26
+  - first:
+      213: -598386266083327438
+    second: spider_Enemy_0_27
+  - first:
+      213: -6090034305364795596
+    second: spider_Enemy_0_28
+  - first:
+      213: 3025637670161896652
+    second: spider_Enemy_0_29
+  - first:
+      213: 1197348199270676431
+    second: spider_Enemy_0_30
+  - first:
+      213: -1135012014853187163
+    second: spider_Enemy_0_31
+  - first:
+      213: 3280360098055980040
+    second: spider_Enemy_0_32
+  - first:
+      213: 6255635283739562676
+    second: spider_Enemy_0_33
+  - first:
+      213: -5734518353856233249
+    second: spider_Enemy_0_34
+  - first:
+      213: -8203572239727513568
+    second: spider_Enemy_0_35
+  - first:
+      213: 2242157399289946937
+    second: spider_Enemy_0_36
+  - first:
+      213: -5808490469416610697
+    second: spider_Enemy_0_37
+  - first:
+      213: 4931587565779099875
+    second: spider_Enemy_0_38
+  - first:
+      213: 4572772292052723976
+    second: spider_Enemy_0_39
+  - first:
+      213: -1117093506935645887
+    second: spider_Enemy_0_40
+  - first:
+      213: -7092608206926857862
+    second: spider_Enemy_0_41
+  - first:
+      213: 6329415469338178108
+    second: spider_Enemy_0_42
+  - first:
+      213: -3790809066608346556
+    second: spider_Enemy_0_43
+  - first:
+      213: 537207775063762520
+    second: spider_Enemy_0_44
+  - first:
+      213: -3520590192232430179
+    second: spider_Enemy_0_45
+  - first:
+      213: 9106658727267534308
+    second: spider_Enemy_0_46
+  - first:
+      213: 7036220968511930049
+    second: spider_Enemy_0_47
+  - first:
+      213: -1028400550335613593
+    second: spider_Enemy_0_48
+  - first:
+      213: 9083142193339729730
+    second: spider_Enemy_0_49
+  - first:
+      213: -4429727661782531368
+    second: spider_Enemy_0_50
+  - first:
+      213: -3623680877069350821
+    second: spider_Enemy_0_51
+  - first:
+      213: -2311240512773537072
+    second: spider_Enemy_0_52
+  - first:
+      213: -7368746571007969445
+    second: spider_Enemy_0_53
+  - first:
+      213: 190451444834810224
+    second: spider_Enemy_0_54
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: spider_Enemy_0_0
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 947
+        width: 270
+        height: 155
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30980b219cf4d4750800000000000000
+      internalID: 6290771979527031043
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_1
+      rect:
+        serializedVersion: 2
+        x: 359
+        y: 947
+        width: 236
+        height: 148
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f56526c3da02d4d70800000000000000
+      internalID: 9028908756362221151
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_2
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 947
+        width: 250
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d154fde75b1128390800000000000000
+      internalID: -7817666531946445539
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_3
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 947
+        width: 248
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96a50373565d5f680800000000000000
+      internalID: -8721830472638768535
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_4
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 669
+        width: 259
+        height: 138
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6878d9111b8a95600800000000000000
+      internalID: 457582315613030278
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_5
+      rect:
+        serializedVersion: 2
+        x: 338
+        y: 669
+        width: 264
+        height: 131
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a94b93a5a2399bb0800000000000000
+      internalID: -4928852630184441439
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_6
+      rect:
+        serializedVersion: 2
+        x: 634
+        y: 664
+        width: 268
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21a6efe9487942390800000000000000
+      internalID: -7843978055113610734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_7
+      rect:
+        serializedVersion: 2
+        x: 930
+        y: 661
+        width: 272
+        height: 136
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 97310bd7732f6f960800000000000000
+      internalID: 7635556538399069049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_8
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 385
+        width: 234
+        height: 173
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1974759761f44c6c0800000000000000
+      internalID: -4124084400820893807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_9
+      rect:
+        serializedVersion: 2
+        x: 606
+        y: 392
+        width: 302
+        height: 163
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d64ed041ad7dadd0800000000000000
+      internalID: -2473182488825018671
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_10
+      rect:
+        serializedVersion: 2
+        x: 667
+        y: 551
+        width: 16
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db5e3e5564f2d7f90800000000000000
+      internalID: -6954350270454962755
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_11
+      rect:
+        serializedVersion: 2
+        x: 314
+        y: 391
+        width: 277
+        height: 147
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ab7428eaf265afc0800000000000000
+      internalID: -3484269906925159518
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_12
+      rect:
+        serializedVersion: 2
+        x: 602
+        y: 455
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef1685e934ef90940800000000000000
+      internalID: 5263017205931991550
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_13
+      rect:
+        serializedVersion: 2
+        x: 933
+        y: 385
+        width: 243
+        height: 146
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e1d8d78a5ab08a10800000000000000
+      internalID: 1909731139994046951
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_14
+      rect:
+        serializedVersion: 2
+        x: 315
+        y: 442
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93342047661d78ea0800000000000000
+      internalID: -5870493351290977479
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_15
+      rect:
+        serializedVersion: 2
+        x: 927
+        y: 422
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7a28c96db162a530800000000000000
+      internalID: 3864758896388745851
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_16
+      rect:
+        serializedVersion: 2
+        x: 1185
+        y: 429
+        width: 12
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e7cf5d4b59b123f0800000000000000
+      internalID: -927256246470326297
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_17
+      rect:
+        serializedVersion: 2
+        x: 1174
+        y: 416
+        width: 14
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d5f5546f3b3654830800000000000000
+      internalID: 4054756664099037021
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_18
+      rect:
+        serializedVersion: 2
+        x: 1194
+        y: 409
+        width: 15
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ec58d343027a57e0800000000000000
+      internalID: -1775981744695517975
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_19
+      rect:
+        serializedVersion: 2
+        x: 917
+        y: 392
+        width: 16
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: baae2f0a6638c1db0800000000000000
+      internalID: -4819833024383096149
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_20
+      rect:
+        serializedVersion: 2
+        x: 1175
+        y: 392
+        width: 27
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58bd3229c025a1610800000000000000
+      internalID: 1592675632173800325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_21
+      rect:
+        serializedVersion: 2
+        x: 1206
+        y: 392
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b1124d77f754cb9a0800000000000000
+      internalID: -6216016971904573157
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_22
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 261
+        width: 17
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 029b9f25de02be490800000000000000
+      internalID: -7716037332897777376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_23
+      rect:
+        serializedVersion: 2
+        x: 172
+        y: 276
+        width: 11
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 33ae5039066fe0660800000000000000
+      internalID: 7354086136186530355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_24
+      rect:
+        serializedVersion: 2
+        x: 478
+        y: 270
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2a3007c6ae6e0cd0800000000000000
+      internalID: -2590011073109149139
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_25
+      rect:
+        serializedVersion: 2
+        x: 111
+        y: 254
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41621841f095a7120800000000000000
+      internalID: 2412338471713711636
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_26
+      rect:
+        serializedVersion: 2
+        x: 179
+        y: 251
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 540ad107959cb44d0800000000000000
+      internalID: -3149202128445267899
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_27
+      rect:
+        serializedVersion: 2
+        x: 445
+        y: 261
+        width: 9
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23281a38cda12b7f0800000000000000
+      internalID: -598386266083327438
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_28
+      rect:
+        serializedVersion: 2
+        x: 759
+        y: 257
+        width: 13
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 43fd9cec01adb7ba0800000000000000
+      internalID: -6090034305364795596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_29
+      rect:
+        serializedVersion: 2
+        x: 1042
+        y: 252
+        width: 9
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc45a053e693df920800000000000000
+      internalID: 3025637670161896652
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_30
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 245
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc77bf9e7d5dd9010800000000000000
+      internalID: 1197348199270676431
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_31
+      rect:
+        serializedVersion: 2
+        x: 159
+        y: 234
+        width: 21
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a910e60690af30f0800000000000000
+      internalID: -1135012014853187163
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_32
+      rect:
+        serializedVersion: 2
+        x: 409
+        y: 244
+        width: 14
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8040efb012e268d20800000000000000
+      internalID: 3280360098055980040
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_33
+      rect:
+        serializedVersion: 2
+        x: 455
+        y: 228
+        width: 20
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b252b3952b70d650800000000000000
+      internalID: 6255635283739562676
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_34
+      rect:
+        serializedVersion: 2
+        x: 716
+        y: 236
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd00170a0f5ea60b0800000000000000
+      internalID: -5734518353856233249
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_35
+      rect:
+        serializedVersion: 2
+        x: 749
+        y: 236
+        width: 16
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02039c9238e072e80800000000000000
+      internalID: -8203572239727513568
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_36
+      rect:
+        serializedVersion: 2
+        x: 792
+        y: 238
+        width: 14
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 933e033764ebd1f10800000000000000
+      internalID: 2242157399289946937
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_37
+      rect:
+        serializedVersion: 2
+        x: 1034
+        y: 239
+        width: 10
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7745e2951b8146fa0800000000000000
+      internalID: -5808490469416610697
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_38
+      rect:
+        serializedVersion: 2
+        x: 1071
+        y: 242
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3e02ffc23c4807440800000000000000
+      internalID: 4931587565779099875
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_39
+      rect:
+        serializedVersion: 2
+        x: 38
+        y: 101
+        width: 268
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8092d8a0c20c57f30800000000000000
+      internalID: 4572772292052723976
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_40
+      rect:
+        serializedVersion: 2
+        x: 383
+        y: 228
+        width: 11
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1499432cf594f70f0800000000000000
+      internalID: -1117093506935645887
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_41
+      rect:
+        serializedVersion: 2
+        x: 439
+        y: 232
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a79ba1ff96ef19d90800000000000000
+      internalID: -7092608206926857862
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_42
+      rect:
+        serializedVersion: 2
+        x: 738
+        y: 223
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c32b3cda5d996d750800000000000000
+      internalID: 6329415469338178108
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_43
+      rect:
+        serializedVersion: 2
+        x: 1059
+        y: 215
+        width: 17
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44aba7d0d37546bc0800000000000000
+      internalID: -3790809066608346556
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_44
+      rect:
+        serializedVersion: 2
+        x: 340
+        y: 103
+        width: 267
+        height: 126
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 856e04b00ab847700800000000000000
+      internalID: 537207775063762520
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_45
+      rect:
+        serializedVersion: 2
+        x: 773
+        y: 218
+        width: 13
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d9503408fd9542fc0800000000000000
+      internalID: -3520590192232430179
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_46
+      rect:
+        serializedVersion: 2
+        x: 792
+        y: 207
+        width: 12
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e50e710dd9516e70800000000000000
+      internalID: 9106658727267534308
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_47
+      rect:
+        serializedVersion: 2
+        x: 1028
+        y: 218
+        width: 14
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1cefe4df0bda5a160800000000000000
+      internalID: 7036220968511930049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_48
+      rect:
+        serializedVersion: 2
+        x: 639
+        y: 103
+        width: 238
+        height: 113
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 765fd6ee5236ab1f0800000000000000
+      internalID: -1028400550335613593
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_49
+      rect:
+        serializedVersion: 2
+        x: 1003
+        y: 193
+        width: 9
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 247806643bdcd0e70800000000000000
+      internalID: 9083142193339729730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_50
+      rect:
+        serializedVersion: 2
+        x: 1057
+        y: 202
+        width: 13
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d20bbb49227682c0800000000000000
+      internalID: -4429727661782531368
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_51
+      rect:
+        serializedVersion: 2
+        x: 1072
+        y: 197
+        width: 11
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b58c7eef07916bdc0800000000000000
+      internalID: -3623680877069350821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_52
+      rect:
+        serializedVersion: 2
+        x: 877
+        y: 116
+        width: 13
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0d244a5cff2dcefd0800000000000000
+      internalID: -2311240512773537072
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_53
+      rect:
+        serializedVersion: 2
+        x: 948
+        y: 118
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b573133f804fcb990800000000000000
+      internalID: -7368746571007969445
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spider_Enemy_0_54
+      rect:
+        serializedVersion: 2
+        x: 958
+        y: 105
+        width: 240
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 079b65c749e94a200800000000000000
+      internalID: 190451444834810224
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      spider_Enemy_0_0: 6290771979527031043
+      spider_Enemy_0_1: 9028908756362221151
+      spider_Enemy_0_10: -6954350270454962755
+      spider_Enemy_0_11: -3484269906925159518
+      spider_Enemy_0_12: 5263017205931991550
+      spider_Enemy_0_13: 1909731139994046951
+      spider_Enemy_0_14: -5870493351290977479
+      spider_Enemy_0_15: 3864758896388745851
+      spider_Enemy_0_16: -927256246470326297
+      spider_Enemy_0_17: 4054756664099037021
+      spider_Enemy_0_18: -1775981744695517975
+      spider_Enemy_0_19: -4819833024383096149
+      spider_Enemy_0_2: -7817666531946445539
+      spider_Enemy_0_20: 1592675632173800325
+      spider_Enemy_0_21: -6216016971904573157
+      spider_Enemy_0_22: -7716037332897777376
+      spider_Enemy_0_23: 7354086136186530355
+      spider_Enemy_0_24: -2590011073109149139
+      spider_Enemy_0_25: 2412338471713711636
+      spider_Enemy_0_26: -3149202128445267899
+      spider_Enemy_0_27: -598386266083327438
+      spider_Enemy_0_28: -6090034305364795596
+      spider_Enemy_0_29: 3025637670161896652
+      spider_Enemy_0_3: -8721830472638768535
+      spider_Enemy_0_30: 1197348199270676431
+      spider_Enemy_0_31: -1135012014853187163
+      spider_Enemy_0_32: 3280360098055980040
+      spider_Enemy_0_33: 6255635283739562676
+      spider_Enemy_0_34: -5734518353856233249
+      spider_Enemy_0_35: -8203572239727513568
+      spider_Enemy_0_36: 2242157399289946937
+      spider_Enemy_0_37: -5808490469416610697
+      spider_Enemy_0_38: 4931587565779099875
+      spider_Enemy_0_39: 4572772292052723976
+      spider_Enemy_0_4: 457582315613030278
+      spider_Enemy_0_40: -1117093506935645887
+      spider_Enemy_0_41: -7092608206926857862
+      spider_Enemy_0_42: 6329415469338178108
+      spider_Enemy_0_43: -3790809066608346556
+      spider_Enemy_0_44: 537207775063762520
+      spider_Enemy_0_45: -3520590192232430179
+      spider_Enemy_0_46: 9106658727267534308
+      spider_Enemy_0_47: 7036220968511930049
+      spider_Enemy_0_48: -1028400550335613593
+      spider_Enemy_0_49: 9083142193339729730
+      spider_Enemy_0_5: -4928852630184441439
+      spider_Enemy_0_50: -4429727661782531368
+      spider_Enemy_0_51: -3623680877069350821
+      spider_Enemy_0_52: -2311240512773537072
+      spider_Enemy_0_53: -7368746571007969445
+      spider_Enemy_0_54: 190451444834810224
+      spider_Enemy_0_6: -7843978055113610734
+      spider_Enemy_0_7: 7635556538399069049
+      spider_Enemy_0_8: -4124084400820893807
+      spider_Enemy_0_9: -2473182488825018671
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

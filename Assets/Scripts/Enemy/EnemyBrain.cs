@@ -194,6 +194,19 @@ public abstract class EnemyBrain : MonoBehaviour
         SetAnimBool(ANIM_MOVING, moved);
 
         float dirX = target.x - transform.position.x;
+        if (Data != null &&
+            Data.behaviorType == EnemyBehaviorType.Contact &&
+            Target != null &&
+            Target.HasTarget &&
+            Enemy != null &&
+            Enemy.IsAlive &&
+            _animationController != null &&
+            _animationController.FaceTargetWhileChasing)
+        {
+            _animationController.FacePosition(Target.TargetPosition);
+            return;
+        }
+
         FlipSprite(dirX);
     }
 

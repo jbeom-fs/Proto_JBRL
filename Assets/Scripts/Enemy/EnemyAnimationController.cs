@@ -16,10 +16,12 @@ public class EnemyAnimationController : MonoBehaviour
     [SerializeField] private bool defaultFacesRight = true;
     [SerializeField] private bool faceMoveDirectionWhenMoving = true;
     [SerializeField] private bool faceTargetOnAttack = true;
+    [SerializeField] private bool faceTargetWhileChasing = false;
     [SerializeField] private float facingDeadZone = 0.03f;
 
     private Vector3 _previousPosition;
     private bool _isDead;
+    private bool _targetFacingAppliedThisFrame;
     private bool _hasIsMoving;
     private bool _hasAttackTrigger;
     private bool _hasDeathTrigger;
@@ -37,6 +39,7 @@ public class EnemyAnimationController : MonoBehaviour
 
     private void OnEnable()
     {
+        _targetFacingAppliedThisFrame = false;
         _previousPosition = transform.position;
     }
 
@@ -60,18 +63,22 @@ public class EnemyAnimationController : MonoBehaviour
                 SetFloat(LastMoveYHash, _hasLastMoveY, direction.y);
             }
 
-            if (!_isDead && faceMoveDirectionWhenMoving)
+            if (!_isDead && faceMoveDirectionWhenMoving && !_targetFacingAppliedThisFrame)
                 FaceHorizontalDirection(delta.x);
         }
 
+        _targetFacingAppliedThisFrame = false;
         _previousPosition = currentPosition;
     }
+
+    public bool FaceTargetWhileChasing => faceTargetWhileChasing;
 
     public void ResetAnimationState()
     {
         ResolveDependencies();
         CacheAnimatorParameters();
         _isDead = false;
+        _targetFacingAppliedThisFrame = false;
 
         if (spriteRenderer != null)
         {
@@ -148,6 +155,9 @@ public class EnemyAnimationController : MonoBehaviour
     {
         if (_isDead)
             return;
+
+        if (faceTargetWhileChasing)
+            _targetFacingAppliedThisFrame = true;
 
         FaceHorizontalDirection(targetPosition.x - transform.position.x);
     }
