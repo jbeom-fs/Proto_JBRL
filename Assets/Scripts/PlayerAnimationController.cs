@@ -12,6 +12,7 @@ public class PlayerAnimationController : MonoBehaviour
     private static readonly int LastMoveXHash = Animator.StringToHash("LastMoveX");
     private static readonly int LastMoveYHash = Animator.StringToHash("LastMoveY");
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
+    private static readonly int IsDeadHash = Animator.StringToHash("IsDead");
 
     private Vector2 _lastMoveDirection = Vector2.down;
 
@@ -38,9 +39,14 @@ public class PlayerAnimationController : MonoBehaviour
 
         if (combat != null && combat.IsDead)
         {
-            ApplyIdleParameters();
+            animator.SetBool(IsDeadHash, true);
+            animator.SetBool(IsMovingHash, false);
+            animator.SetFloat(MoveXHash, 0f);
+            animator.SetFloat(MoveYHash, 0f);
             return;
         }
+
+        animator.SetBool(IsDeadHash, false);
 
         Vector2 input = inputReader.MoveInput;
         if (input.sqrMagnitude <= inputDeadZone * inputDeadZone)

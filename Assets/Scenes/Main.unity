@@ -99207,7 +99207,7 @@ MonoBehaviour:
   baseDefense: 1
   currentWeapon: {fileID: 11400000, guid: 76534a25531f9ee479638279ac83fdf5, type: 2}
   hitRadius: 0.3
-  damageInvincibleDuration: 0.5
+  damageInvincibleDuration: 0.2
 --- !u!114 &1562452758
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99431,6 +99431,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationController
   inputReader: {fileID: 1562452762}
   animator: {fileID: 2005918157}
+  combat: {fileID: 0}
   inputDeadZone: 0.01
 --- !u!1 &1589293247
 GameObject:
@@ -100668,7 +100669,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &2110000001
 Transform:
   m_ObjectHideFlags: 0
