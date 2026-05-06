@@ -182,6 +182,7 @@ MonoBehaviour:
   defaultFacesRight: 1
   faceMoveDirectionWhenMoving: 1
   faceTargetOnAttack: 1
+  faceTargetWhileChasing: 1
   facingDeadZone: 0.03
 --- !u!1 &5313294262261449395
 GameObject:
@@ -270,7 +271,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1.41, y: 2.58}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1

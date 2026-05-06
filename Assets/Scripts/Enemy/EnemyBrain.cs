@@ -155,6 +155,7 @@ public abstract class EnemyBrain : MonoBehaviour
         float sqrDistance = Target.SqrDistanceToTarget;
         Action.TickBehavior(sqrDistance);
         _currentState.Tick(sqrDistance);
+        TryFaceTargetWhileChasing();
     }
 
     public void ChangeState(EnemyAIStateId next)
@@ -194,18 +195,8 @@ public abstract class EnemyBrain : MonoBehaviour
         SetAnimBool(ANIM_MOVING, moved);
 
         float dirX = target.x - transform.position.x;
-        if (Data != null &&
-            Data.behaviorType == EnemyBehaviorType.Contact &&
-            Target != null &&
-            Target.HasTarget &&
-            Enemy != null &&
-            Enemy.IsAlive &&
-            _animationController != null &&
-            _animationController.FaceTargetWhileChasing)
-        {
-            _animationController.FacePosition(Target.TargetPosition);
+        if (TryFaceTargetWhileChasing())
             return;
-        }
 
         FlipSprite(dirX);
     }
@@ -319,6 +310,21 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         if (_spriteRenderer == null || dirX == 0f) return;
         _spriteRenderer.flipX = dirX < 0f;
+    }
+
+    private bool TryFaceTargetWhileChasing()
+    {
+        if (_animationController == null || !_animationController.FaceTargetWhileChasing)
+            return false;
+
+        if (Target == null || !Target.HasTarget)
+            return false;
+
+        if (Enemy == null || !Enemy.IsAlive)
+            return false;
+
+        _animationController.FacePosition(Target.TargetPosition);
+        return true;
     }
 
     private void EnsureAnimScanned()
