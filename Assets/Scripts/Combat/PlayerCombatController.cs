@@ -13,6 +13,7 @@
 //    • 던전 생성
 // ═══════════════════════════════════════════════════════════════════
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -51,7 +52,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
-    public bool IsAlive     => _resource.IsAlive;
+    public bool IsAlive     => _resource.IsAlive && !IsDead;
+    public bool IsDead { get; private set; }
     public int  CurrentHp   => _resource.CurrentHp;
     public int  MaxHp       => maxHp;
     public int  CurrentMp   => _resource.CurrentMp;
@@ -63,6 +65,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     /// <summary>무기 보정치가 합산된 최종 방어력.</summary>
     public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0);
+
+    public event Action<PlayerCombatController> OnDied;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화
@@ -106,6 +110,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void Update()
     {
+        if (IsDead)
+            return;
+
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
 
@@ -128,6 +135,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void TryBasicAttack()
     {
+        if (IsDead) return;
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
@@ -155,6 +163,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void TryUseSkill(int slotIndex)
     {
+        if (IsDead) return;
         if (currentWeapon == null) return;
         if (currentWeapon.skills == null) return;
         if ((uint)slotIndex >= (uint)currentWeapon.skills.Length) return;
@@ -212,7 +221,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     public void TakeDamage(int incomingDamage)
     {
-        if (!IsAlive) return;
+        if (IsDead || !IsAlive) return;
         if (IsDamageInvincible) return;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
@@ -228,14 +237,18 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         Debug.Log($"[Combat] 플레이어 -{actual} HP → {CurrentHp}/{maxHp}");
 #endif
         if (CurrentHp == 0)
-            OnPlayerDied();
+            Die();
     }
 
-    private void OnPlayerDied()
+    private void Die()
     {
-#if UNITY_EDITOR
-        Debug.Log("[Combat] 플레이어 사망");
-#endif
+        if (IsDead)
+            return;
+
+        IsDead = true;
+        _damageInvincibleTimer = 0f;
+        OnDied?.Invoke(this);
+        combatChannel?.RaisePlayerDied(this);
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -256,12 +269,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     public void RestoreMp(int amount)
     {
+        if (IsDead) return;
+
         _resource.RestoreMp(amount, maxMp);
         combatChannel?.RaisePlayerMpChanged(CurrentMp, maxMp);
     }
 
     public void RestoreHp(int amount)
     {
+        if (IsDead) return;
+
         _resource.RestoreHp(amount, maxHp);
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
     }

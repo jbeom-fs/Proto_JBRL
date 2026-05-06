@@ -113,6 +113,12 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private void Update()
     {
+        if (combat != null && combat.IsDead)
+        {
+            HideAllPreviews();
+            return;
+        }
+
         HandleInput();
 
         if (_activeSlot >= 0 && _currentSkill != null)
@@ -150,6 +156,11 @@ public class SkillRangePreviewer : MonoBehaviour
     private void HandleInput()
     {
         if (inputReader == null) return;
+        if (combat != null && combat.IsDead)
+        {
+            HideAllPreviews();
+            return;
+        }
 
         // 스킬 키 최초 입력 → 스킬 미리보기 시작 (기본 공격 미리보기보다 우선)
         if      (inputReader.WasSkillPressed(0)) { HideBasicAttackPreview(); TryShowPreview(0); }
@@ -185,6 +196,7 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private void TryShowPreview(int slot)
     {
+        if (combat != null && combat.IsDead) return;
         if (combat == null || combat.currentWeapon == null) return;
 
         SkillData[] skills = combat.currentWeapon.skills;
@@ -208,6 +220,8 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private void TryShowBasicAttackPreview()
     {
+        if (combat != null && combat.IsDead) return;
+
         var weapon = combat?.currentWeapon;
         if (weapon == null) return;
 
@@ -221,6 +235,15 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         _isBasicAttackPreview = false;
         _lr.enabled = false;
+    }
+
+    private void HideAllPreviews()
+    {
+        _activeSlot = -1;
+        _currentSkill = null;
+        _isBasicAttackPreview = false;
+        if (_lr != null)
+            _lr.enabled = false;
     }
 
     // ══════════════════════════════════════════════════════════════

@@ -67,6 +67,7 @@ public class PlayerController : MonoBehaviour
     private RoomInfo? _lastRoom;
     private Rigidbody2D _rb;
     private CircleCollider2D _circleCollider;
+    private PlayerCombatController _combat;
     private Vector3 _lastSafePosition;
     private static PhysicsMaterial2D s_NoFrictionMaterial;
 
@@ -79,6 +80,7 @@ public class PlayerController : MonoBehaviour
         ConfigurePhysics();
 
         _inputReader = GetComponent<PlayerInputReader>();
+        _combat = GetComponent<PlayerCombatController>();
         if (_inputReader == null) { Debug.LogError("[PlayerController] PlayerInputReader 없음"); enabled = false; return; }
 
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
@@ -190,6 +192,13 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
+        if (_combat != null && _combat.IsDead)
+        {
+            if (_rb != null)
+                _rb.linearVelocity = Vector2.zero;
+            return;
+        }
+
         _stairCooldown -= Time.deltaTime;
 
         if (dungeonManager != null && dungeonManager.IsTransitioning)

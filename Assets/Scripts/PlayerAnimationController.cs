@@ -4,6 +4,7 @@ public class PlayerAnimationController : MonoBehaviour
 {
     [SerializeField] private PlayerInputReader inputReader;
     [SerializeField] private Animator animator;
+    [SerializeField] private PlayerCombatController combat;
     [SerializeField] private float inputDeadZone = 0.01f;
 
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -21,6 +22,9 @@ public class PlayerAnimationController : MonoBehaviour
 
         if (animator == null)
             animator = GetComponentInChildren<Animator>(true);
+
+        if (combat == null)
+            combat = GetComponent<PlayerCombatController>();
     }
 
     private void OnEnable()
@@ -31,6 +35,12 @@ public class PlayerAnimationController : MonoBehaviour
     private void Update()
     {
         if (inputReader == null || animator == null) return;
+
+        if (combat != null && combat.IsDead)
+        {
+            ApplyIdleParameters();
+            return;
+        }
 
         Vector2 input = inputReader.MoveInput;
         if (input.sqrMagnitude <= inputDeadZone * inputDeadZone)
