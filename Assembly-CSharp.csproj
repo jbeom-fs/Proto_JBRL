@@ -79,6 +79,7 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyPoolManager.cs" />
     <Compile Include="Assets\Scripts\Tool\LoadingScreenController.cs" />
     <Compile Include="Assets\Scripts\DoorController.cs" />
+    <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnRegion.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectilePool.cs" />
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />

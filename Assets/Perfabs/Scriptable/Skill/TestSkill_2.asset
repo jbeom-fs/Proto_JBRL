@@ -17,17 +17,23 @@ MonoBehaviour:
   icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
   executionType: 1
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-  projectileSpeed: 15
+  projectileSpeed: 20
   projectileLifetime: 3
-  projectileCount: 15
+  projectileCount: 3
   projectileSpreadAngle: 15
-  projectileFirePattern: 2
-  projectileWallHitMode: 2
-  projectileTargetHitMode: 0
+  projectileFirePattern: 1
+  projectileWallHitMode: 1
+  projectileTargetHitMode: 1
   projectileMaxBounceCount: 2
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.15
   projectileBurstSpacing: 0.5
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
   damage: 10
   attackPattern: 4
   patternRange: 10
@@ -36,7 +42,7 @@ MonoBehaviour:
   knockbackDuration: 1
   slowPercentage: 0.8
   slowDuration: 3
-  mpCost: 0
+  mpCost: 1
   cooldown: 0
   canPenetrateWalls: 1
   coneHalfAngle: 45

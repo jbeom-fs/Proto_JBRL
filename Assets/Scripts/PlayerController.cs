@@ -68,6 +68,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D _rb;
     private CircleCollider2D _circleCollider;
     private PlayerCombatController _combat;
+    private PlayerDashController _dashController;
     private Vector3 _lastSafePosition;
     private static PhysicsMaterial2D s_NoFrictionMaterial;
 
@@ -81,6 +82,7 @@ public class PlayerController : MonoBehaviour
 
         _inputReader = GetComponent<PlayerInputReader>();
         _combat = GetComponent<PlayerCombatController>();
+        _dashController = GetComponent<PlayerDashController>();
         if (_inputReader == null) { Debug.LogError("[PlayerController] PlayerInputReader 없음"); enabled = false; return; }
 
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
@@ -203,6 +205,12 @@ public class PlayerController : MonoBehaviour
 
         if (dungeonManager != null && dungeonManager.IsTransitioning)
             return;
+
+        if (_dashController != null && _dashController.IsDashing)
+        {
+            CheckRoomEntry();
+            return;
+        }
 
         if (_inputReader == null) return;
 

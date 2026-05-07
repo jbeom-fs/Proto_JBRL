@@ -51,9 +51,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private AttackExecutor _attackExecutor;
     private SkillExecutor _skillExecutor;
     private PlayerInputReader _inputReader;
+    private PlayerDashController _dashController;
     private HitFlashFeedback _hitFlash;
     private WeaponData _boundSkillWeapon;
     private float _damageInvincibleTimer;
+    private int _externalInvincibilityCount;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -63,7 +65,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public int  MaxHp       => maxHp;
     public int  CurrentMp   => _resource.CurrentMp;
     public int  MaxMp       => maxMp;
-    public bool IsDamageInvincible => _damageInvincibleTimer > 0f;
+    public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
+    public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
+    public bool IsDashing => _dashController != null && _dashController.IsDashing;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
     public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0);
@@ -90,6 +94,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _inputReader = GetComponent<PlayerInputReader>();
         if (_inputReader == null && playerMovement != null)
             _inputReader = playerMovement.GetComponent<PlayerInputReader>();
+        _dashController = GetComponent<PlayerDashController>();
+        if (_dashController == null)
+            _dashController = gameObject.AddComponent<PlayerDashController>();
         _hitFlash = ResolveHitFlashFeedback();
         if (_inputReader == null)
             Debug.LogWarning("[PlayerCombatController] PlayerInputReader 없음 — 전투 입력 불가");
@@ -129,6 +136,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         TickSkillSlots(Time.deltaTime);
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
+        if (IsDashing) return;
 
         if (_inputReader == null) return;
 
@@ -146,6 +154,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void TryBasicAttack()
     {
         if (IsDead) return;
+        if (IsDashing) return;
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
@@ -174,6 +183,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void TryUseSkill(int slotIndex)
     {
         if (IsDead) return;
+        if (IsDashing) return;
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
@@ -259,8 +269,26 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         IsDead = true;
         _damageInvincibleTimer = 0f;
+        _externalInvincibilityCount = 0;
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
+    }
+
+    public void BeginExternalInvincibility()
+    {
+        if (_externalInvincibilityCount < int.MaxValue)
+            _externalInvincibilityCount++;
+    }
+
+    public void EndExternalInvincibility()
+    {
+        if (_externalInvincibilityCount <= 0)
+        {
+            _externalInvincibilityCount = 0;
+            return;
+        }
+
+        _externalInvincibilityCount--;
     }
 
     // ══════════════════════════════════════════════════════════════

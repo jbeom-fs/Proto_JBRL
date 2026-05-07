@@ -263,6 +263,12 @@ public class SkillRangePreviewer : MonoBehaviour
             return;
         }
 
+        if (skill.executionType == SkillExecutionType.Dash)
+        {
+            BuildDashPreview(skill);
+            return;
+        }
+
         BuildInstantAreaPreview(skill);
     }
 
@@ -430,6 +436,15 @@ public class SkillRangePreviewer : MonoBehaviour
         return new Vector2(
             direction.x * cos - direction.y * sin,
             direction.x * sin + direction.y * cos).normalized;
+    }
+
+    private void BuildDashPreview(SkillData skill)
+    {
+        Vector2 direction = GetPreviewDirection();
+        Vector3 end = new Vector3(direction.x, direction.y, 0f) * Mathf.Max(0f, skill.dashDistance);
+        s_Buf[0] = Vector3.zero;
+        s_Buf[1] = ClipToWall(Vector3.zero, end);
+        Apply(2, false);
     }
 
     private void BuildBasicAttackPreview(WeaponData weapon)
@@ -635,6 +650,7 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         if (skill == null) return false;
         if (skill.executionType == SkillExecutionType.Projectile) return true;
+        if (skill.executionType == SkillExecutionType.Dash) return true;
         return SkillTargetResolver.IsDirectional(skill.attackPattern);
     }
 

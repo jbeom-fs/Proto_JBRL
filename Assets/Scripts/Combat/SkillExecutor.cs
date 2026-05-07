@@ -37,6 +37,8 @@ public sealed class SkillExecutor
                 return ExecuteProjectile(context);
 
             case SkillExecutionType.Dash:
+                return ExecuteDash(context);
+
             case SkillExecutionType.AreaOverTime:
             case SkillExecutionType.Buff:
             default:
@@ -72,8 +74,24 @@ public sealed class SkillExecutor
             return false;
         }
 
-        Vector2 direction = ResolveProjectileDirection(context);
+        Vector2 direction = ResolveExecutionDirection(context);
         return _projectileFireService.Fire(CreateProjectileFireRequest(context, direction));
+    }
+
+    private static bool ExecuteDash(SkillExecutionContext context)
+    {
+        PlayerDashController dashController = ResolveDashController(context);
+        if (dashController == null) return false;
+
+        SkillData skill = context.Skill;
+        Vector2 direction = ResolveExecutionDirection(context);
+        return dashController.TryStartDash(
+            context.CasterCombat,
+            direction,
+            skill.dashDistance,
+            skill.dashDuration,
+            skill.dashStopOnWall,
+            skill.dashInvincibleDuringDash);
     }
 
     private static ProjectileFireRequest CreateProjectileFireRequest(SkillExecutionContext context, Vector2 direction)
@@ -106,7 +124,7 @@ public sealed class SkillExecutor
         };
     }
 
-    private static Vector2 ResolveProjectileDirection(SkillExecutionContext context)
+    private static Vector2 ResolveExecutionDirection(SkillExecutionContext context)
     {
         Vector2 direction = context.AimDirection;
         if (direction.sqrMagnitude <= 0.0001f)
@@ -119,6 +137,17 @@ public sealed class SkillExecutor
             direction = Vector2.down;
 
         return direction.normalized;
+    }
+
+    private static PlayerDashController ResolveDashController(SkillExecutionContext context)
+    {
+        if (context.CasterCombat == null) return null;
+
+        PlayerDashController dashController = context.CasterCombat.GetComponent<PlayerDashController>();
+        if (dashController == null)
+            dashController = context.CasterCombat.gameObject.AddComponent<PlayerDashController>();
+
+        return dashController;
     }
 
     private void ReportUnsupportedExecutionType(SkillExecutionType executionType)

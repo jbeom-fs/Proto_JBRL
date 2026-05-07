@@ -31,6 +31,20 @@ public class SkillData : ScriptableObject
     [Min(0f)] public float projectileBurstInterval = 0.1f;
     [Min(0f)] public float projectileBurstSpacing = 0.12f;
 
+    [Header("Dash")]
+    [Tooltip("World-space distance the caster tries to dash.")]
+    [Min(0f)] public float dashDistance = 3f;
+    [Tooltip("Seconds used to interpolate the dash movement.")]
+    [Min(0f)] public float dashDuration = 0.12f;
+    [Tooltip("If true, dash stops at the last walkable point before a blocked tile. If false, blocked paths fail.")]
+    public bool dashStopOnWall = true;
+    [Tooltip("Reserved for a later phase: damage enemies along the dash path.")]
+    public bool dashDamageOnPath = false;
+    [Tooltip("Reserved for a later phase: damage enemies touched by the dash.")]
+    public bool dashDamageOnContact = false;
+    [Tooltip("Reserved for a later phase: ignore incoming damage during the dash.")]
+    public bool dashInvincibleDuringDash = false;
+
     [Header("전투")]
     public int               damage        = 10;
     public AttackPatternType attackPattern = AttackPatternType.Cross;
