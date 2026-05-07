@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-06  
+> 작성 기준일: 2026-05-07  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -36,11 +36,12 @@
 | 장르 | 로그라이크 던전 탐색 |
 | 시점 | 탑다운 2D |
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
-| 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 |
-| 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 |
+| 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
+| 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair |
 | 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기 |
 | 적 전투 | 근접 접촉 피해 + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 |
+| 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
 | 진행 방식 | 계단을 통한 층 이동 (무한 층 구조) |
 
 ---
@@ -53,27 +54,32 @@
 ┌──────────────────────────────────────────────────────────────┐
 │  Application Layer (MonoBehaviour)                           │
 │  PlayerController · PlayerInputReader                        │
-│  PlayerCombatController · SkillCooldownController            │
+│  PlayerCombatController · PlayerDashController               │
 │  PlayerAnimationController                                   │
 │  DungeonManager · FloorTransitionService                     │
 │  EnemyBrain · NormalEnemyBrain · RoomSpawner                 │
 │  ProjectilePool · ProjectileController                       │
+│  FogOfWarController                                          │
 │  GameOverFlowController · GameOverSceneReloadRestartHandler  │
 ├──────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (ScriptableObject Event Bus)           │
 │  DungeonEventChannel · CombatEventChannel                    │
 ├──────────────────────────────────────────────────────────────┤
-│  Domain Layer (순수 C# — Unity 의존 없음)                     │
+│  Domain / Pure Service Layer (순수 C# — Unity 의존 없음)      │
 │  DungeonData · DungeonGenerator · RoomRegistry               │
 │  DungeonQueryService · SpawnPositionService                  │
 │  WeaponData · SkillData · EnemyData                          │
 │  PlayerResource · AttackPattern · AStarPathfinder            │
+│  SkillExecutor · SkillTargetResolver · SkillExecutionContext │
+│  SkillSlotRuntime · SkillCooldownController                  │
+│  ProjectileFireService · ProjectileFireRequest               │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
 │  EnemyHealthBar · PlayerStatusBarUI                          │
 │  SkillSlotUI · SkillUIManager · SkillRangePreviewer          │
-│  HitFlashFeedback · EnemyAnimationController                 │
+│  HitFlashFeedback · PlayerInvincibilityFlashFeedback         │
+│  EnemyAnimationController                                    │
 │  GameOverUIController                                        │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -85,7 +91,10 @@
 - **데이터 주입 (ScriptableObject)**: 무기/스킬/적의 수치는 에셋으로 분리, 코드 수정 없이 교체 가능
 - **FSM 분리**: EnemyBrain의 상태·이동·타겟·액션을 Handler로 분리해 결합도 최소화
 - **책임 분리 (SRP)**: DungeonManager의 기능을 서비스 클래스로 추출 (FloorTransitionService, SpawnPositionService, DungeonQueryService)
-- **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용
+- **스킬 실행 라우팅**: SkillData.executionType → SkillExecutor 가 InstantArea / Projectile / Dash 분기로 라우팅, MonoBehaviour와 분리된 순수 서비스 계층
+- **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀 계산 제공
+- **공유 투사체 발사**: ProjectileFireService가 적 원거리·플레이어 스킬 모두에 동일한 패턴(Single/Burst/Spread/Circle) 처리
+- **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 
 ---
 
@@ -94,7 +103,7 @@
 ```
 Assets/Scripts/
 │
-├── PlayerController.cs             # 입력·이동·방 감지
+├── PlayerController.cs             # 입력·이동·방 감지·대시 중 이동 위임
 ├── PlayerInputReader.cs            # 키보드 입력 단일 집계 (실행 순서 제어)
 ├── PlayerAnimationController.cs    # 4방향 이동 애니메이션 (MoveX/Y, LastMoveX/Y)
 │
@@ -104,7 +113,9 @@ Assets/Scripts/
 ├── Data/
 │   ├── DungeonData.cs              # 타일 그리드 + 방 목록 (Domain)
 │   ├── WeaponData.cs               # 무기 ScriptableObject
-│   ├── SkillData.cs                # 스킬 ScriptableObject
+│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드)
+│   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
+│   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
 │   └── EnemyData.cs                # 적 ScriptableObject (Contact/Ranged + 투사체 패턴)
 │
 ├── Generate/
@@ -116,20 +127,29 @@ Assets/Scripts/
 │   ├── FloorTransitionService.cs   # 층 이동 코루틴·로딩 화면·GC 관리
 │   ├── RoomRegistry.cs             # 방 상태 관리 (타입·문 닫힘)
 │   ├── DungeonTilemapRenderer.cs   # Tilemap 3레이어 배치 (바닥·벽·문)
+│   ├── FogOfWarController.cs       # 안개 시야 — Bresenham LoS, 미탐사/탐사/현재시야 3상태
 │   ├── SpawnRegion.cs              # 스폰 지역 플래그 (Dungeon/Forest/Castle)
 │   └── RoomSpawner.cs              # 방 진입 시 적 스폰, 방 클리어 감지
 │
 ├── Combat/
 │   ├── IDamageable.cs              # 피해 수신 인터페이스
-│   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기
+│   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기 (FillTargets API)
 │   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용
 │   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간)
-│   ├── SkillCooldownController.cs  # 기본 공격·스킬 4슬롯 쿨다운 관리
 │   ├── PlayerResource.cs           # HP·MP 상태 컨테이너 (Domain)
-│   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
-│   ├── Projectile.cs               # (구) 플레이어 스킬용 트리거 기반 발사체
-│   ├── ProjectileController.cs     # (신) 적 원거리용 풀링 발사체 — 벽 반사·관통·파괴
+│   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·경로 데미지
+│   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기)
+│   ├── SkillTargetResolver.cs      # 스킬 셀·미리보기 반경·투사체 거리 공통 계산
+│   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
+│   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존)
+│   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
+│   ├── ProjectileFireService.cs    # 투사체 발사 패턴 처리 (Single/Burst/Spread/Circle)
+│   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
+│   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 타깃모드(Player/Enemy)
 │   ├── ProjectilePool.cs           # 투사체 사전 풀링 (SetActive/DisableComponents 모드)
+│   ├── Projectile.cs               # (구) 트리거 기반 발사체 — 호환 유지용
+│   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
+│   ├── PlayerInvincibilityFlashFeedback.cs # 무적 시 셰이더 _FlashAmount 보간 (PropertyBlock)
 │   └── CombatEventChannel.cs       # 전투 이벤트 버스 (ScriptableObject)
 │
 ├── Enemy/
@@ -148,7 +168,7 @@ Assets/Scripts/
 │   ├── PlayerStatusBarUI.cs        # 플레이어 HP·MP 상태바 (슬라이더 + 텍스트)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
-│   ├── SkillRangePreviewer.cs      # Q/W/E/R 스킬 범위 미리보기 (LineRenderer)
+│   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
 │   ├── GameOverUIController.cs     # 게임오버 UI 빌드·페이드 인/아웃·확인 버튼
 │   ├── GameOverRestartHandler.cs   # IGameOverRestartHandler 인터페이스
@@ -348,8 +368,8 @@ CheckRoomEntry():
 | ↑↓←→ | 이동 + Facing 방향 갱신 |
 | Z | 계단 상호작용 (0.5초 쿨다운) |
 | F10 | 문 열기 |
-| Space | 기본 공격 |
-| Q / W / E / R | 스킬 슬롯 1~4 (홀드 시 범위 미리보기) |
+| Space | 기본 공격 (홀드 시 범위 미리보기) |
+| Q / W / E / R | 스킬 슬롯 1~4 — InstantArea / Projectile / Dash 라우팅 (홀드 시 범위 미리보기) |
 
 ---
 
@@ -360,53 +380,122 @@ CheckRoomEntry():
 ```
 WeaponData (ScriptableObject)
   ├── damage, attackCooldown
-  ├── attackPattern (AttackPatternType)
-  ├── patternRange
+  ├── attackPattern (AttackPatternType), patternRange
+  ├── basicAttackMultiTarget
+  ├── knockbackForce/Duration · slowPercentage/Duration
+  ├── canPenetrateWalls
   └── skills[4] (SkillData[])
-         ├── damage, mpCost, cooldown
-         ├── attackPattern, patternRange
-         └── canPenetrateWalls
+
+SkillData (ScriptableObject)
+  ├── executionType (SkillExecutionType)  ← InstantArea/Projectile/Dash/AreaOverTime/Buff
+  ├── 공통: damage, mpCost, cooldown, isMultiTarget, canPenetrateWalls
+  ├── 공통: attackPattern, patternRange, coneHalfAngle
+  ├── 공통: knockback/slow 파라미터
+  ├── Projectile: prefab, speed, lifetime, count, spreadAngle,
+  │              firePattern, wallHitMode, targetHitMode,
+  │              maxBounceCount, spawnOffset, burstInterval
+  └── Dash: distance, duration, stopOnWall,
+           damageOnPath, damageOnContact, invincibleDuringDash
 
 PlayerResource (Domain)
   ├── currentHp, maxHp
   └── currentMp, maxMp
 
 PlayerCombatController
-  ├── PlayerResource 참조 (HP/MP 상태)
-  ├── SkillCooldownController 참조 (쿨다운 관리)
-  ├── HitFlashFeedback 참조 (피격 시 색상 점멸)
+  ├── PlayerResource (HP/MP 상태)
+  ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태)
+  ├── AttackExecutor / SkillExecutor (스킬 실행 라우팅)
+  ├── PlayerDashController (대시 코루틴, 자동 부착)
+  ├── HitFlashFeedback (피격 색상 점멸)
+  ├── PlayerInvincibilityFlashFeedback (무적 셰이더 플래시)
   ├── damageInvincibleDuration — 피격 후 무적시간 (기본 0.5초)
-  ├── IsDamageInvincible: 피격 시 데미지 무시
+  ├── _externalInvincibilityCount — 대시·외부 효과 무적 카운터
+  ├── IsDamageInvincible / HasExternalInvincibility / IsDashing
   ├── IsDead / OnDied(player) — HP 0 도달 시 단발 사망 처리
+  ├── BeginExternalInvincibility(visualDuration) / EndExternalInvincibility()
   ├── Die() → CombatEventChannel.RaisePlayerDied()
   ├── Space → TryBasicAttack()
   └── Q/W/E/R → TryUseSkill(index)
 
+SkillSlotRuntime (1슬롯)
+  ├── Data (현재 슬롯에 바인드된 SkillData)
+  ├── CooldownRemaining
+  ├── Bind(data) / TickCooldown(dt) / StartCooldown()
+  └── CanUse(availableMp) — 쿨다운+MP 확인
+
 SkillCooldownController
-  ├── 기본 공격 쿨다운
-  └── 스킬 슬롯 4개 쿨다운 (코루틴 기반)
+  └── 기본 공격 쿨다운만 담당 (스킬 쿨다운은 SkillSlotRuntime이 보유)
 ```
 
-### 7-2. 공격 실행 흐름
+### 7-2. 기본 공격 흐름
 
 ```
-TryBasicAttack() / TryUseSkill(i):
-  ① 쿨다운 / MP 확인 (SkillCooldownController)
-  ② AttackPattern.GetTargets() → List<Vector2Int>
-  ③ AttackExecutor.BeginAttackActivation()  ← 히트셋·버퍼 초기화
-  ④ AttackExecutor.ExecuteAttack(
-       gridPositions, damage,
-       canPenetrateWalls, isMultiTarget,
-       knockbackForce, knockbackDuration,
-       slowPercentage, slowDuration,
-       hitRadius):
-         Physics2D.OverlapCircle(queryRadius, s_HitBuffer)
-         targetGrid ∈ _targetGridSet 필터
-         canPenetrateWalls == false → HasWallBetween() 제외
-         isMultiTarget: 전체 히트 / false: 최근접 단일 히트
-         EnemyController → ApplyCombatImpact(damage, knockback, slow)
-         그 외 IDamageable → TakeDamage(damage)
-  ⑤ CombatEventChannel 이벤트 발행
+TryBasicAttack():
+  ① _cooldownController.IsAttackReady & currentWeapon 확인
+  ② SetAttackCooldown(weapon.attackCooldown)
+  ③ ResolveTargets(weapon.attackPattern, weapon.patternRange)
+       → SkillTargetResolver.ToGridAimDirection(facing)
+       → AttackPattern.FillTargets(...)
+  ④ AttackExecutor.BeginAttackActivation()
+  ⑤ AttackExecutor.ExecuteAttack(
+       targets, TotalAttack + weapon.damage,
+       weapon.canPenetrateWalls, weapon.basicAttackMultiTarget,
+       knockback/slow, hitRadius)
+```
+
+### 7-3. 스킬 실행 흐름 — SkillExecutor 라우팅
+
+```
+TryUseSkill(slotIndex):
+  ① 슬롯·쿨다운·MP 확인 (SkillSlotRuntime.CanUse)
+  ② SkillExecutionContext 생성
+       (caster, transform, skill, slotIndex, aim, gridFacing,
+        TotalAttack, hitRadius)
+  ③ SkillExecutor.Execute(context)
+       switch (skill.executionType):
+         InstantArea  → ExecuteInstantArea()
+         Projectile   → ExecuteProjectile()
+         Dash         → ExecuteDash()
+         AreaOverTime/Buff → 미구현 (경고 로그 1회)
+  ④ 성공 시 SpendMp / slot.StartCooldown / RaiseSkillUsed
+
+InstantArea:
+  SkillTargetResolver.ResolveTargets(context)
+    → AttackPattern.FillTargets(skill.attackPattern, origin, gridAim, range, coneHalfAngle)
+  AttackExecutor.ExecuteAttack(targets, totalAttack + skill.damage,
+    canPenetrateWalls, isMultiTarget, knockback/slow, hitRadius)
+
+Projectile:
+  ResolveExecutionDirection(context) → 정규화 방향
+  ProjectileFireService.Fire(ProjectileFireRequest):
+    Single  → SpawnProjectile 1회
+    Spread  → spreadAngle 부채꼴에 N발 균등 분포
+    Circle  → 360°를 N등분
+    Burst   → 1발 즉시 + (N-1)발을 burstInterval 간격으로 코루틴 발사
+  Owner = caster, TargetMode = Enemy
+  → ProjectilePool에서 prefab을 가져와 ProjectileController.Initialize(...)
+
+Dash:
+  PlayerDashController = caster.GetOrAdd<PlayerDashController>()
+  TryStartDash(direction, distance, duration, stopOnWall,
+               invincibleDuringDash, DashDamageRequest)
+  → 발자국(4코너) IsWalkable 검사로 destination 결정
+  → 무적 옵션 시 BeginExternalInvincibility(duration) → flash 셰이더 진행
+  → 코루틴 보간 이동, 이동 중 매 프레임 OverlapCircle로 적 1회 히트 후 ApplyCombatImpact
+```
+
+### 7-4. 공격 판정 (AttackExecutor)
+
+```
+ExecuteAttack(gridPositions, damage,
+              canPenetrateWalls, isMultiTarget,
+              knockback/slow, hitRadius):
+  Physics2D.OverlapCircleNonAlloc(queryRadius, s_HitBuffer)
+  targetGrid ∈ _targetGridSet 필터
+  canPenetrateWalls == false → HasWallBetween() 제외
+  isMultiTarget: 전체 히트 / false: 최근접 단일 히트
+  EnemyController → ApplyCombatImpact(damage, knockback, slow)
+  그 외 IDamageable → TakeDamage(damage)
 ```
 
 **벽 시야 검사 (HasWallBetween)**
@@ -416,7 +505,7 @@ TryBasicAttack() / TryUseSkill(i):
 중간 타일 중 IsWalkable == false 가 있으면 차단
 ```
 
-### 7-3. 공격 패턴 목록
+### 7-5. 공격 패턴 목록
 
 | enum | 설명 | 대상 타일 수 |
 |------|------|-------------|
@@ -427,30 +516,34 @@ TryBasicAttack() / TryUseSkill(i):
 | `Line` | 정면 직선 N칸 | patternRange |
 | `Cone` | 정면 + 좌우 대각 부채꼴 | 3 |
 
-### 7-4. 발사체
+### 7-6. 발사체 — 적·플레이어 공유 파이프라인
 
-프로젝트에는 두 종류의 발사체가 공존합니다.
+플레이어 스킬과 적 원거리 공격 모두 `ProjectileFireService` → `ProjectilePool` → `ProjectileController` 동일 경로를 사용합니다. (구 `Projectile.cs`는 호환 유지용으로 남아 있음)
 
-**Projectile.cs (구 — 플레이어 스킬용)**
+**ProjectileFireService — 패턴 처리**
 
 ```
-Projectile (Trigger Collider 기반):
-  ├── 직선 이동 (Rigidbody2D linearVelocity)
-  ├── OnTriggerEnter2D → wallLayerMask / unitLayerMask 분기
-  ├── 벽 충돌 → 파괴 (canPenetrateWalls=false 시)
-  ├── 유닛 충돌 → IDamageable.TakeDamage() → 파괴
-  └── maxRange 초과 → 자동 파괴
+Fire(ProjectileFireRequest):
+  Single → 1발
+  Spread → spreadAngle 부채꼴 N발 균등 분포
+  Circle → 360°를 N등분
+  Burst  → 즉시 1발 + 코루틴으로 (N-1)발을 burstInterval 간격으로 발사
+           (CoroutineRunner = caster의 MonoBehaviour)
+  CanFire 검사: prefab/origin/caster 살아있음 확인 후 매 발사마다 재검사
+  → ProjectilePool.Get → ProjectileController.Initialize(...)
 ```
 
-**ProjectileController.cs (신 — 적 원거리용, 풀링 대응)**
+**ProjectileController — 비행/충돌**
 
 ```
 ProjectileController:
   ├── DungeonManager 그리드 IsWalkable 기반 벽 검사 (Physics2D 미사용)
   ├── ProjectileWallHitMode: Destroy / PassThrough / Bounce
-  ├── 플레이어 적중: 정적 캐시된 PlayerCombatController 위치 + 반경 비교
-  ├── lifetime 만료 / 벽 / 플레이어 적중 시 Release(Reason)
-  └── ProjectilePool가 Release 콜백을 받아 비활성화 후 풀로 반납
+  ├── TargetMode = Player: 정적 캐시된 PlayerCombatController 거리 비교
+  ├── TargetMode = Enemy : Physics2D.OverlapCircle → EnemyController.ApplyCombatImpact
+  ├── ProjectileTargetHitMode: DestroyOnHit / Pierce / HitOncePerTarget
+  ├── PrepareFromPool / HideForPool — 컴포넌트 enabled 토글 + Animator "Fly" 재시작
+  └── lifetime 만료 / 벽 / 적중 시 Release(reason) → 풀 콜백
 ```
 
 **ProjectilePool — 두 가지 비활성화 모드**
@@ -462,6 +555,28 @@ ProjectileController:
 
 - `prewarmEntries`로 프리팹별 사전 풀 생성 수 지정
 - Get/Return은 RuntimePerfTraceLogger 활성 시 ProfilerMarker + 마이크로 타이밍 기록
+
+### 7-7. 대시 (PlayerDashController)
+
+```
+TryStartDash(caster, direction, distance, duration,
+             stopOnWall, invincibleDuringDash, DashDamageRequest):
+  ① 진행 중/사망/방향0 가드
+  ② TryResolveDestination(start, dir, distance, stopOnWall):
+       0.05~타일×0.25 간격으로 IsFootprintWalkable(4코너 IsWalkable) 검사
+       stopOnWall = true → 마지막 통과 지점에서 정지
+       stopOnWall = false → 막히면 실패
+  ③ invincibleDuringDash → caster.BeginExternalInvincibility(duration)
+                          → InvincibilityFlashFeedback _FlashAmount 보간
+  ④ DashRoutine 코루틴: Lerp(start, destination, t) 이동
+       매 프레임 TryApplyDashDamage():
+         OverlapCircleNonAlloc(hitRadius)로 적 검사
+         _hitEnemiesThisDash로 1회만 히트 → ApplyCombatImpact
+  ⑤ 종료 시 ClearDashInvincibility / ClearDashDamageState
+
+PlayerController는 IsDashing 동안 Move/입력 처리를 스킵하고
+CheckRoomEntry만 호출해 대시 중 방 전환을 감지합니다.
+```
 
 ---
 
@@ -688,12 +803,30 @@ SkillUIManager:
 
 ### 10-3. 스킬 범위 미리보기 (SkillRangePreviewer)
 
-Q/W/E/R 키를 누르고 있는 동안 공격 범위를 LineRenderer로 시각화합니다.
+Q/W/E/R 홀드 시 스킬 범위, Space 홀드 시 기본 공격 범위를 LineRenderer로 시각화합니다.
 
 ```
-키 홀드 감지 → GetTargets() → 그리드 좌표 목록
-  ├── 벽 인식: IsWalkable 검사로 벽 뒤 타일 제외
-  └── LineRenderer로 각 타일 테두리 표시
+입력 분기:
+  WasSkillPressed(0~3) → 슬롯 미리보기 시작 (기본 공격 미리보기 우선 숨김)
+  IsSkillHeld(0~3) == false → 미리보기 숨김
+  IsBasicAttackHeld → 슬롯 미리보기가 없을 때만 기본 공격 미리보기
+
+스킬 미리보기 분기 (BuildPreview):
+  executionType == Projectile → BuildProjectilePreview
+       Single/Burst → 직선
+       Spread       → 부채꼴 N갈래
+       Circle       → 360° N갈래
+       각 라인은 wallHitMode 가 PassThrough 가 아니면 ClipToWall 적용
+  executionType == Dash      → BuildDashPreview (직선 + 벽 클리핑)
+  그 외 (InstantArea)         → BuildInstantAreaPreview
+       Circle / Cone / Line / Single / Cross / Diagonal 6종 다각형
+
+벽 인식 (ClipToWall):
+  wallLayer 설정 시 Physics2D.Raycast 우선
+  미설정 시 DungeonData.IsWalkable 그리드 샘플링 폴백
+
+재계산 조건:
+  슬롯 변경 시 즉시 / FacingDirection 변경 시 (Line/Cone/Single/Projectile/Dash)
 ```
 
 플레이어가 사망(`PlayerCombatController.IsDead`)한 경우 활성 미리보기를 즉시 숨기고 입력 처리도 중단합니다.
@@ -736,7 +869,37 @@ GameOverFlowController.HandlePlayerDied()
 
 ---
 
-## 11. 시스템 8 — 렌더링 및 로딩
+## 11. 시스템 8 — 렌더링·로딩·시야
+
+### 11-0. Fog of War (FogOfWarController)
+
+플레이어 시야 안의 셀만 보이고, 한 번 본 셀은 어두운 톤으로 남기는 3상태 시야 시스템.
+
+```
+상태 (셀당):
+  미탐사  → unexploredFogTile + unexploredFogColor (기본 검정 불투명)
+  탐사됨 → exploredFogTile + exploredFogColor   (기본 검정 반투명)
+  현재시야 → 안개 타일 비움 (clear)
+
+LateUpdate 흐름:
+  ① 데이터·플레이어 변경 감지 → 필요 시 InitializeForDungeon
+  ② 플레이어 그리드가 변하지 않았으면 조기 종료
+  ③ RefreshVisibility(playerGrid):
+        AddVisionRadiusCells(중심, visionRadius)
+          → 원형 거리 + Bresenham HasLineOfSight 체크
+          → blockVisionByWalls = true 시 EMPTY/닫힌문에서 차단
+        revealCurrentRoom = true 면 현재 방 + 패딩/테두리 셀 추가
+        새로 보이는 셀 / 사라진 셀 두 집합으로 SetTiles 1회 배치
+
+GC·성능:
+  HashSet 두 개를 swap해서 가비지 없이 visible delta 계산
+  TileChangeData[] 크기별 캐시로 SetTiles 인터롭 1회 호출
+  closedDoorsBlockVision: 닫힌 문 너머 시야 차단
+```
+
+이벤트 구독:
+- `DungeonEventChannel.OnFloorChanged` → 다음 LateUpdate 에서 전체 재초기화 요청
+- `DungeonEventChannel.OnRoomEntered` → 즉시 ForceRefresh
 
 ### 11-1. Tilemap 3레이어 구조
 
@@ -843,6 +1006,15 @@ FloorTransition(targetFloor):
 | 사망 시 콜라이더 비활성 | `EnemyController.Die` | 시체와 추가 접촉 피해/충돌 방지 |
 | 게임오버 페이드 (unscaled) | `GameOverUIController.FadeInRoutine` | Time.timeScale=0 일시정지에도 페이드 동작 |
 | 추격 중 타겟 페이싱 | `EnemyAnimationController.faceTargetWhileChasing` | 근접 적이 추격 방향 흔들림 없이 항상 타겟을 바라봄 |
+| 스킬 슬롯 런타임 분리 | `SkillSlotRuntime` | MonoBehaviour 미의존 — 적·보스 슬롯 재사용 가능, 새 SkillData 바인딩 시 GC 없음 |
+| 스킬 타겟 버퍼 재사용 | `SkillTargetResolver._targetBuffer` | 매 프레임 호출되는 미리보기·실행 셀 계산을 단일 List로 처리 |
+| 투사체 발사 코루틴 1개 | `ProjectileFireService.FireBurstRoutine` | Burst 패턴이 매 발사마다 새 코루틴을 만들지 않고 1개로 (N-1)발 처리 |
+| Fog of War 셀 swap | `FogOfWarController._previousVisibleCells` ↔ `_currentVisibleCells` | 가비지 없이 visible delta 계산, SetTiles 1회로 일괄 적용 |
+| Fog Tile 변경 배열 캐시 | `FogOfWarController._tileChangeArraysBySize` | 시야 셀 개수별 배열 1회 할당 후 재사용 |
+| Bresenham LoS 차단 | `FogOfWarController.HasLineOfSight` | Raycast 없이 그리드 단위로 벽 너머 시야 차단 |
+| 무적 셰이더 PropertyBlock | `PlayerInvincibilityFlashFeedback` | 머티리얼 클로닝 없이 _FlashAmount 보간 (인스턴싱 친화적) |
+| 외부 무적 카운터 | `PlayerCombatController._externalInvincibilityCount` | 대시 등 중첩 무적을 부울이 아닌 카운터로 관리 |
+| 대시 적중 1회 제한 | `PlayerDashController._hitEnemiesThisDash` | 대시 1회당 적당 1히트 보장 (HashSet) |
 
 ---
 
@@ -929,6 +1101,23 @@ WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다.
 
 에디터에서 `Create > JBLogLike > Combat > Weapon` 또는 `Skill` 에셋 생성 후 수치 입력. 코드 수정 불필요.
 
+`SkillData.executionType` 으로 실행 형태 선택:
+- `InstantArea` — AttackPattern 기반 즉시 범위 공격
+- `Projectile` — projectilePrefab + ProjectileFireService 패턴 (Single/Burst/Spread/Circle)
+- `Dash` — PlayerDashController 코루틴 (선택적 무적·경로 데미지)
+- `AreaOverTime` / `Buff` — enum만 정의, 핸들러 미구현 (확장 자리)
+
+### 새 스킬 실행 타입 추가
+
+```csharp
+// SkillExecutionType.cs 에 enum 값 추가 (예: AreaOverTime)
+// SkillExecutor.Execute() switch 에 분기 추가
+case SkillExecutionType.AreaOverTime:
+    return ExecuteAreaOverTime(context);
+```
+
+`SkillExecutionContext` 가 caster·aim·grid·totalAttack·hitRadius 를 모두 보유하므로 새 핸들러는 컨텍스트만 받아 실행하면 됩니다.
+
 ### 새 적 타입 추가
 
 1. `EnemyData` ScriptableObject 생성 (수치 입력)
@@ -961,8 +1150,22 @@ WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다.
 | **공격 패턴 시스템** | 6종 패턴, 데이터 드리븐 |
 | **플레이어 전투** | 기본 공격, 스킬 4슬롯, HP/MP 관리 (PlayerResource) |
 | **공격 판정 분리** | AttackExecutor — 히트 감지·데미지 적용 독립 처리 |
-| **쿨다운 관리** | SkillCooldownController — 기본 공격·스킬 4슬롯 쿨다운 분리 |
+| **스킬 실행 라우팅** | SkillExecutor — InstantArea/Projectile/Dash/AreaOverTime/Buff 분기 |
+| **스킬 슬롯 런타임 분리** | SkillSlotRuntime — MonoBehaviour 미의존 슬롯 상태(데이터·쿨다운) |
+| **스킬 타겟 공통화** | SkillTargetResolver — 미리보기·기본공격·스킬이 동일한 셀 계산 사용 |
+| **스킬 실행 컨텍스트** | SkillExecutionContext — caster/aim/grid/totalAttack/hitRadius 일체 전달 |
+| **쿨다운 관리** | 기본 공격은 SkillCooldownController, 스킬은 SkillSlotRuntime이 보유 |
 | **발사체 시스템** | 직선 이동, 벽/유닛 충돌, 관통 옵션 |
+| **투사체 발사 공통화** | ProjectileFireService — 적 원거리·플레이어 스킬이 Single/Burst/Spread/Circle 동일 처리 |
+| **투사체 타겟 정책** | ProjectileTargetHitMode — DestroyOnHit / Pierce / HitOncePerTarget |
+| **플레이어 투사체 스킬** | SkillData.executionType=Projectile — prefab/속도/수명/패턴/벽반사 인스펙터 설정 |
+| **플레이어 대시 스킬** | PlayerDashController — 발자국 검사 이동, 경로 데미지·무적 옵션, 외부 무적 카운터 |
+| **외부 무적 시스템** | BeginExternalInvincibility/EndExternalInvincibility — 다중 출처(대시 등) 무적 중첩 처리 |
+| **무적 셰이더 플래시** | PlayerInvincibilityFlashFeedback — MaterialPropertyBlock 기반 _FlashAmount 보간 |
+| **일반 피격/외부 무적 분리** | HitFlashFeedback(피격 색상) ↔ PlayerInvincibilityFlashFeedback(셰이더) 독립 |
+| **투사체/대시 미리보기** | SkillRangePreviewer — Projectile은 발사 패턴별, Dash는 거리 + 벽 클리핑 |
+| **기본 공격 미리보기** | Space 홀드 시 무기 attackPattern 시각화 (스킬 미리보기와 우선순위 분리) |
+| **Fog of War** | FogOfWarController — 미탐사/탐사/현재시야 3상태, Bresenham LoS, 닫힌 문 시야 차단 |
 | **적 전투** | IDamageable, 방어력 계산, 사망 처리 |
 | **적 체력바** | 실시간 갱신, 색상 그라디언트, 자동 숨김 |
 | **적 AI (FSM)** | Idle/Chase/Attack 상태, A* 경로탐색, 군중 분리 |
@@ -1006,12 +1209,16 @@ WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다.
 
 | 항목 | 우선순위 | 비고 |
 |------|----------|------|
+| AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 |
+| Buff 스킬 핸들러 | 중간 | 동일 — caster 자체에 효과를 적용하는 형태 |
 | 아이템 / 장비 드랍 | 중간 | OnEnemyKilled 이벤트 활용 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨 |
+| 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
 | 상태이상 시스템 확장 | 낮음 | 독, 빙결 등 StatusEffectData 추가 |
 | 세이브 / 로드 | 낮음 | Seed 기반 재현으로 부분 대체 가능 |
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
+| 대시 경로 데미지 정식 노출 | 낮음 | dashDamageOnPath/onContact 필드는 있으나 SkillData 인스펙터에서 "예약" 라벨 |
 
 ---
 
