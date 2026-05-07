@@ -53,6 +53,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
     private HitFlashFeedback _hitFlash;
+    [SerializeField] private PlayerInvincibilityFlashFeedback invincibilityFlashFeedback;
     private WeaponData _boundSkillWeapon;
     private float _damageInvincibleTimer;
     private int _externalInvincibilityCount;
@@ -98,6 +99,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_dashController == null)
             _dashController = gameObject.AddComponent<PlayerDashController>();
         _hitFlash = ResolveHitFlashFeedback();
+        if (invincibilityFlashFeedback == null)
+            invincibilityFlashFeedback = ResolveInvincibilityFlashFeedback();
         if (_inputReader == null)
             Debug.LogWarning("[PlayerCombatController] PlayerInputReader 없음 — 전투 입력 불가");
     }
@@ -252,6 +255,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (CurrentHp < hpBefore)
         {
             _damageInvincibleTimer = damageInvincibleDuration;
+            invincibilityFlashFeedback?.Play(damageInvincibleDuration);
             _hitFlash?.Play();
         }
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
@@ -270,6 +274,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         IsDead = true;
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
+        invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
     }
@@ -278,6 +283,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (_externalInvincibilityCount < int.MaxValue)
             _externalInvincibilityCount++;
+    }
+
+    public void BeginExternalInvincibility(float visualDuration)
+    {
+        BeginExternalInvincibility();
+        invincibilityFlashFeedback?.Play(visualDuration);
     }
 
     public void EndExternalInvincibility()
@@ -299,6 +310,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         HitFlashFeedback feedback = GetComponentInChildren<HitFlashFeedback>(true);
         return feedback != null ? feedback : gameObject.AddComponent<HitFlashFeedback>();
+    }
+
+    private PlayerInvincibilityFlashFeedback ResolveInvincibilityFlashFeedback()
+    {
+        PlayerInvincibilityFlashFeedback feedback = GetComponentInChildren<PlayerInvincibilityFlashFeedback>(true);
+        return feedback != null ? feedback : gameObject.AddComponent<PlayerInvincibilityFlashFeedback>();
     }
 
     private void SpendMp(int amount)

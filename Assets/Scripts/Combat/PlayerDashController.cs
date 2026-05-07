@@ -62,7 +62,7 @@ public sealed class PlayerDashController : MonoBehaviour
             return false;
 
         if (invincibleDuringDash)
-            BeginDashInvincibility(caster);
+            BeginDashInvincibility(caster, Mathf.Max(0f, duration));
 
         _dashRoutine = StartCoroutine(DashRoutine(caster, start, destination, Mathf.Max(0f, duration)));
         return true;
@@ -195,11 +195,11 @@ public sealed class PlayerDashController : MonoBehaviour
                !caster.gameObject.activeInHierarchy;
     }
 
-    private void BeginDashInvincibility(PlayerCombatController caster)
+    private void BeginDashInvincibility(PlayerCombatController caster, float visualDuration)
     {
         ClearDashInvincibility();
         _activeInvincibilityOwner = caster;
-        _activeInvincibilityOwner.BeginExternalInvincibility();
+        _activeInvincibilityOwner.BeginExternalInvincibility(visualDuration);
     }
 
     private void ClearDashInvincibility()
