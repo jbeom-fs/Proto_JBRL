@@ -25,6 +25,8 @@ public class FogOfWarController : MonoBehaviour
     [SerializeField, Min(0)] private int roomRevealPadding = 1;
     [SerializeField] private bool revealRoomBorderWalls = true;
     [SerializeField, Min(1)] private int roomBorderWallRevealThickness = 1;
+    [SerializeField] private bool blockVisionByWalls = true;
+    [SerializeField] private bool closedDoorsBlockVision = true;
 
     private bool[,] _explored;
     private DungeonData _data;
@@ -53,6 +55,8 @@ public class FogOfWarController : MonoBehaviour
     public int RoomRevealPadding => roomRevealPadding;
     public bool RevealRoomBorderWalls => revealRoomBorderWalls;
     public int RoomBorderWallRevealThickness => roomBorderWallRevealThickness;
+    public bool BlockVisionByWalls => blockVisionByWalls;
+    public bool ClosedDoorsBlockVision => closedDoorsBlockVision;
 
     private void Awake()
     {
@@ -248,9 +252,61 @@ public class FogOfWarController : MonoBehaviour
                 if (dx * dx + dy * dy > radiusSqr)
                     continue;
 
+                if (blockVisionByWalls && !HasLineOfSight(center, x, y))
+                    continue;
+
                 _currentVisibleCells.Add(new Vector2Int(x, y));
             }
         }
+    }
+
+    private bool HasLineOfSight(Vector2Int origin, int targetX, int targetY)
+    {
+        int x0 = origin.x;
+        int y0 = origin.y;
+        int x1 = targetX;
+        int y1 = targetY;
+
+        int dx = Mathf.Abs(x1 - x0);
+        int dy = Mathf.Abs(y1 - y0);
+        int sx = x0 < x1 ? 1 : -1;
+        int sy = y0 < y1 ? 1 : -1;
+        int err = dx - dy;
+
+        while (true)
+        {
+            if (x0 == x1 && y0 == y1)
+                return true;
+
+            int e2 = err * 2;
+            if (e2 > -dy)
+            {
+                err -= dy;
+                x0 += sx;
+            }
+
+            if (e2 < dx)
+            {
+                err += dx;
+                y0 += sy;
+            }
+
+            if (!_data.InBounds(x0, y0))
+                return false;
+
+            if (IsVisionBlockingCell(x0, y0))
+                return x0 == x1 && y0 == y1;
+        }
+    }
+
+    private bool IsVisionBlockingCell(int x, int y)
+    {
+        int tileType = _data.GetTileType(x, y);
+        if (tileType == DungeonGenerator.EMPTY)
+            return true;
+
+        return closedDoorsBlockVision &&
+               tileType == DungeonGenerator.DOOR_CLOSED;
     }
 
     private void AddRoomVisibleCells(RoomInfo room)
