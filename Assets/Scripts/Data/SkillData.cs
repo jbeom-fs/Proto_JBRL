@@ -1,74 +1,138 @@
 using UnityEngine;
 
 /// <summary>
-/// 스킬 데이터 — WeaponData.skills[] 슬롯에 할당합니다.
-/// Assets > Create > JBLogLike > Combat > Skill 로 생성합니다.
+/// Skill data assigned from WeaponData.skills[].
+/// Create from Assets > Create > JBLogLike > Combat > Skill.
 /// </summary>
 [CreateAssetMenu(fileName = "NewSkill", menuName = "JBLogLike/Combat/Skill")]
 public class SkillData : ScriptableObject
 {
-    [Header("기본 정보")]
+    [Header("Basic Info")]
+    [Tooltip("Display name shown for this skill.")]
     public string skillName = "새 스킬";
-    [TextArea(2, 4)]
-    public string description;
+
+    [Tooltip("Icon used by skill UI.")]
     public Sprite icon;
 
-    [Header("Execution")]
-    [Tooltip("How this skill is executed. Existing skills should use InstantArea.")]
+    [Tooltip("Designer-facing description for UI and balancing notes.")]
+    [TextArea(2, 4)]
+    public string description;
+
+    [Tooltip("Execution route for this skill. AreaOverTime and Buff are reserved and not implemented yet.")]
     public SkillExecutionType executionType = SkillExecutionType.InstantArea;
 
-    [Header("Projectile")]
-    public GameObject projectilePrefab;
-    [Min(0.01f)] public float projectileSpeed = 8f;
-    [Min(0.01f)] public float projectileLifetime = 3f;
-    [Min(1)] public int projectileCount = 1;
-    [Min(0f)] public float projectileSpreadAngle = 15f;
-    public ProjectileFirePattern projectileFirePattern = ProjectileFirePattern.Single;
-    public ProjectileWallHitMode projectileWallHitMode = ProjectileWallHitMode.Destroy;
-    public ProjectileTargetHitMode projectileTargetHitMode = ProjectileTargetHitMode.DestroyOnHit;
-    [Min(0)] public int projectileMaxBounceCount = 1;
-    [Min(0f)] public float projectileSpawnOffset = 0.35f;
-    [Min(0f)] public float projectileBurstInterval = 0.1f;
-    [Min(0f)] public float projectileBurstSpacing = 0.12f;
+    [Tooltip("MP consumed when the skill is cast.")]
+    [Min(0)]
+    public int mpCost = 3;
 
-    [Header("Dash")]
-    [Tooltip("World-space distance the caster tries to dash.")]
-    [Min(0f)] public float dashDistance = 3f;
-    [Tooltip("Seconds used to interpolate the dash movement.")]
-    [Min(0f)] public float dashDuration = 0.12f;
-    [Tooltip("If true, dash stops at the last walkable point before a blocked tile. If false, blocked paths fail.")]
-    public bool dashStopOnWall = true;
-    [Tooltip("Reserved for a later phase: damage enemies along the dash path.")]
-    public bool dashDamageOnPath = false;
-    [Tooltip("Reserved for a later phase: damage enemies touched by the dash.")]
-    public bool dashDamageOnContact = false;
-    [Tooltip("Reserved for a later phase: ignore incoming damage during the dash.")]
-    public bool dashInvincibleDuringDash = false;
-
-    [Header("전투")]
-    public int               damage        = 10;
-    public AttackPatternType attackPattern = AttackPatternType.Cross;
-    [Tooltip("모든 패턴의 사정거리(칸). Line=직선N칸, Cross/Diagonal=각방향N칸, Circle=체비쇼프N, Cone=부채꼴N칸, Single=N칸 거리 1타겟")]
-    public int               patternRange  = 1;
-    public bool              isMultiTarget = false;
-
-    [Header("Hit Effects")]
-    public float knockbackForce = 0f;
-    public float knockbackDuration = 0f;
-    [Range(0f, 1f)]
-    public float slowPercentage = 0f;
-    public float slowDuration = 0f;
-
-    [Header("비용 및 쿨다운")]
-    public int   mpCost   = 3;
+    [Tooltip("Cooldown in seconds after the skill is cast.")]
+    [Min(0f)]
     public float cooldown = 2f;
 
-    [Header("벽 관통")]
-    [Tooltip("false: 벽에 막힘 / true: 벽을 무시하고 유닛에게 피해")]
-    public bool canPenetrateWalls = false;
+    [Tooltip("Base damage shared by InstantArea, Projectile, and Dash damage checks where applicable.")]
+    [Min(0)]
+    public int damage = 10;
 
-    [Header("시각화 (SkillRangePreviewer)")]
-    [Tooltip("Cone 패턴의 반각도 (°). 기본 45 → 전체 90° 부채꼴.\n현재 Cone 패턴은 정면+좌우45° 3칸이므로 45가 정확합니다.")]
+    [Space(8)]
+    [Header("Target / InstantArea")]
+    [Tooltip("Target shape used by InstantArea and some preview/target calculations.")]
+    public AttackPatternType attackPattern = AttackPatternType.Cross;
+
+    [Tooltip("Target range in tiles. Used by InstantArea and some preview/target calculations.")]
+    [Min(1)]
+    public int patternRange = 1;
+
+    [Tooltip("Half angle in degrees for Cone targeting. Used by InstantArea and SkillRangePreviewer.")]
     [Range(1f, 179f)]
     public float coneHalfAngle = 45f;
+
+    [Tooltip("Allows InstantArea targeting to affect multiple resolved targets.")]
+    public bool isMultiTarget = false;
+
+    [Tooltip("If true, target and preview checks may ignore wall blocking where supported.")]
+    public bool canPenetrateWalls = false;
+
+    [Tooltip("Knockback force applied by InstantArea hit effects.")]
+    [Min(0f)]
+    public float knockbackForce = 0f;
+
+    [Tooltip("Knockback duration in seconds for InstantArea hit effects.")]
+    [Min(0f)]
+    public float knockbackDuration = 0f;
+
+    [Tooltip("Slow ratio applied by InstantArea hit effects. 0 means no slow, 1 means fully slowed.")]
+    [Range(0f, 1f)]
+    public float slowPercentage = 0f;
+
+    [Tooltip("Slow duration in seconds for InstantArea hit effects.")]
+    [Min(0f)]
+    public float slowDuration = 0f;
+
+    [Space(8)]
+    [Header("Projectile")]
+    [Tooltip("Projectile prefab spawned when executionType is Projectile.")]
+    public GameObject projectilePrefab;
+
+    [Tooltip("Projectile movement speed used when executionType is Projectile.")]
+    [Min(0.01f)]
+    public float projectileSpeed = 8f;
+
+    [Tooltip("Projectile lifetime in seconds used when executionType is Projectile.")]
+    [Min(0.01f)]
+    public float projectileLifetime = 3f;
+
+    [Tooltip("Number of projectiles to fire. Values above 1 are meaningful for Burst, Spread, or Circle patterns.")]
+    [Min(1)]
+    public int projectileCount = 1;
+
+    [Tooltip("Angle between projectiles for Spread patterns when executionType is Projectile.")]
+    [Min(0f)]
+    public float projectileSpreadAngle = 15f;
+
+    [Tooltip("Fire pattern used when executionType is Projectile.")]
+    public ProjectileFirePattern projectileFirePattern = ProjectileFirePattern.Single;
+
+    [Tooltip("Wall collision behavior used when executionType is Projectile.")]
+    public ProjectileWallHitMode projectileWallHitMode = ProjectileWallHitMode.Destroy;
+
+    [Tooltip("Target collision behavior used when executionType is Projectile.")]
+    public ProjectileTargetHitMode projectileTargetHitMode = ProjectileTargetHitMode.DestroyOnHit;
+
+    [Tooltip("Maximum bounce count when projectileWallHitMode is Bounce.")]
+    [Min(0)]
+    public int projectileMaxBounceCount = 1;
+
+    [Tooltip("Distance from the caster where the projectile spawns when executionType is Projectile.")]
+    [Min(0f)]
+    public float projectileSpawnOffset = 0.35f;
+
+    [Tooltip("Delay between shots when projectileFirePattern is Burst and projectileCount is greater than 1.")]
+    [Min(0f)]
+    public float projectileBurstInterval = 0.1f;
+
+    [Tooltip("Forward spacing between burst projectiles when projectileFirePattern is Burst and projectileCount is greater than 1.")]
+    [Min(0f)]
+    public float projectileBurstSpacing = 0.12f;
+
+    [Space(8)]
+    [Header("Dash")]
+    [Tooltip("World-space distance the caster tries to dash when executionType is Dash.")]
+    [Min(0f)]
+    public float dashDistance = 3f;
+
+    [Tooltip("Seconds used to interpolate the dash movement when executionType is Dash.")]
+    [Min(0f)]
+    public float dashDuration = 0.12f;
+
+    [Tooltip("If true, Dash stops at the last walkable point before a blocked tile. If false, blocked paths fail.")]
+    public bool dashStopOnWall = true;
+
+    [Tooltip("Damage enemies along the Dash path. First-pass implementation shares the same detection path as dashDamageOnContact; it can be split later.")]
+    public bool dashDamageOnPath = false;
+
+    [Tooltip("Damage enemies touched by Dash contact. First-pass implementation shares the same detection path as dashDamageOnPath; it can be split later.")]
+    public bool dashDamageOnContact = false;
+
+    [Tooltip("Ignore incoming damage while executionType is Dash.")]
+    public bool dashInvincibleDuringDash = false;
 }

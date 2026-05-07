@@ -32,7 +32,7 @@ MonoBehaviour:
   dashDuration: 0.1
   dashStopOnWall: 1
   dashDamageOnPath: 1
-  dashDamageOnContact: 1
+  dashDamageOnContact: 0
   dashInvincibleDuringDash: 1
   damage: 1
   attackPattern: 1
