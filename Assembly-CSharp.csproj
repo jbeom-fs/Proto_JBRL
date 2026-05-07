@@ -66,6 +66,7 @@
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyAI.cs" />
     <Compile Include="Assets\Scripts\Generate\FloorTransitionService.cs" />
+    <Compile Include="Assets\Scripts\Generate\FogOfWarController.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomSpawner.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
