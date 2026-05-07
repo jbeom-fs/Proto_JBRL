@@ -28,11 +28,11 @@ MonoBehaviour:
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
-  dashDistance: 5
-  dashDuration: 0.12
+  dashDistance: 8
+  dashDuration: 0.1
   dashStopOnWall: 1
   dashDamageOnPath: 1
-  dashDamageOnContact: 0
+  dashDamageOnContact: 1
   dashInvincibleDuringDash: 1
   damage: 1
   attackPattern: 1

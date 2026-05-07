@@ -255,7 +255,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (CurrentHp < hpBefore)
         {
             _damageInvincibleTimer = damageInvincibleDuration;
-            invincibilityFlashFeedback?.Play(damageInvincibleDuration);
             _hitFlash?.Play();
         }
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
@@ -288,7 +287,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public void BeginExternalInvincibility(float visualDuration)
     {
         BeginExternalInvincibility();
-        invincibilityFlashFeedback?.Play(visualDuration);
+        if (visualDuration > 0f)
+            invincibilityFlashFeedback?.Play(visualDuration);
     }
 
     public void EndExternalInvincibility()

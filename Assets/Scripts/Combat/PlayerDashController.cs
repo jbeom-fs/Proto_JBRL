@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -9,12 +10,18 @@ public sealed class PlayerDashController : MonoBehaviour
 {
     private const float MinDashMoveDistance = 0.05f;
     private const float MinSampleStep = 0.05f;
+    private const int EnemyHitBufferSize = 64;
+    private static readonly ContactFilter2D s_NoFilter = ContactFilter2D.noFilter;
 
     private readonly Vector3[] _corners = new Vector3[4];
+    private readonly Collider2D[] _enemyHitBuffer = new Collider2D[EnemyHitBufferSize];
+    private readonly HashSet<EnemyController> _hitEnemiesThisDash = new();
     private Coroutine _dashRoutine;
     private CircleCollider2D _circleCollider;
     private DungeonManager _dungeonManager;
     private PlayerCombatController _activeInvincibilityOwner;
+    private DashDamageRequest _damageRequest;
+    private bool _hasDashDamage;
 
     public bool IsDashing => _dashRoutine != null;
 
@@ -33,6 +40,7 @@ public sealed class PlayerDashController : MonoBehaviour
         }
 
         ClearDashInvincibility();
+        ClearDashDamageState();
     }
 
     public bool TryStartDash(
@@ -41,7 +49,8 @@ public sealed class PlayerDashController : MonoBehaviour
         float distance,
         float duration,
         bool stopOnWall,
-        bool invincibleDuringDash)
+        bool invincibleDuringDash,
+        DashDamageRequest damageRequest)
     {
         if (_dashRoutine != null) return false;
         if (caster == null || caster.IsDead || !caster.isActiveAndEnabled) return false;
@@ -64,6 +73,7 @@ public sealed class PlayerDashController : MonoBehaviour
         if (invincibleDuringDash)
             BeginDashInvincibility(caster, Mathf.Max(0f, duration));
 
+        BeginDashDamageState(damageRequest);
         _dashRoutine = StartCoroutine(DashRoutine(caster, start, destination, Mathf.Max(0f, duration)));
         return true;
     }
@@ -75,9 +85,11 @@ public sealed class PlayerDashController : MonoBehaviour
             if (duration <= 0f)
             {
                 transform.position = destination;
+                TryApplyDashDamage();
                 yield break;
             }
 
+            TryApplyDashDamage();
             float elapsed = 0f;
             while (elapsed < duration)
             {
@@ -87,16 +99,21 @@ public sealed class PlayerDashController : MonoBehaviour
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
                 transform.position = Vector3.Lerp(start, destination, t);
+                TryApplyDashDamage();
                 yield return null;
             }
 
             if (!ShouldCancel(caster))
+            {
                 transform.position = destination;
+                TryApplyDashDamage();
+            }
         }
         finally
         {
             _dashRoutine = null;
             ClearDashInvincibility();
+            ClearDashDamageState();
         }
     }
 
@@ -210,4 +227,65 @@ public sealed class PlayerDashController : MonoBehaviour
         _activeInvincibilityOwner.EndExternalInvincibility();
         _activeInvincibilityOwner = null;
     }
+
+    private void BeginDashDamageState(DashDamageRequest damageRequest)
+    {
+        _damageRequest = damageRequest;
+        _hasDashDamage = damageRequest.Enabled;
+        _hitEnemiesThisDash.Clear();
+    }
+
+    private void ClearDashDamageState()
+    {
+        _hasDashDamage = false;
+        _damageRequest = default;
+        _hitEnemiesThisDash.Clear();
+    }
+
+    private void TryApplyDashDamage()
+    {
+        if (!_hasDashDamage) return;
+
+        float radius = Mathf.Max(0.01f, _damageRequest.HitRadius);
+        int count = Physics2D.OverlapCircle(transform.position, radius, s_NoFilter, _enemyHitBuffer);
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D hit = _enemyHitBuffer[i];
+            if (hit == null) continue;
+
+            EnemyController enemy = ResolveEnemy(hit);
+            if (enemy == null || !enemy.IsAlive) continue;
+            if (!_hitEnemiesThisDash.Add(enemy)) continue;
+
+            enemy.ApplyCombatImpact(
+                _damageRequest.Damage,
+                transform.position,
+                _damageRequest.KnockbackForce,
+                _damageRequest.KnockbackDuration,
+                _damageRequest.SlowPercentage,
+                _damageRequest.SlowDuration);
+        }
+    }
+
+    private static EnemyController ResolveEnemy(Collider2D hit)
+    {
+        if (hit.TryGetComponent(out EnemyController enemy))
+            return enemy;
+
+        return hit.GetComponentInParent<EnemyController>();
+    }
+}
+
+public struct DashDamageRequest
+{
+    public bool DamageOnPath;
+    public bool DamageOnContact;
+    public int Damage;
+    public float HitRadius;
+    public float KnockbackForce;
+    public float KnockbackDuration;
+    public float SlowPercentage;
+    public float SlowDuration;
+
+    public bool Enabled => DamageOnPath || DamageOnContact;
 }

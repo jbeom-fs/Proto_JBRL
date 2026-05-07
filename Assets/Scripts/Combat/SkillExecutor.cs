@@ -85,13 +85,31 @@ public sealed class SkillExecutor
 
         SkillData skill = context.Skill;
         Vector2 direction = ResolveExecutionDirection(context);
+        bool invincibleDuringDash = skill.dashInvincibleDuringDash;
         return dashController.TryStartDash(
             context.CasterCombat,
             direction,
             skill.dashDistance,
             skill.dashDuration,
             skill.dashStopOnWall,
-            skill.dashInvincibleDuringDash);
+            invincibleDuringDash,
+            CreateDashDamageRequest(context));
+    }
+
+    private static DashDamageRequest CreateDashDamageRequest(SkillExecutionContext context)
+    {
+        SkillData skill = context.Skill;
+        return new DashDamageRequest
+        {
+            DamageOnPath = skill.dashDamageOnPath,
+            DamageOnContact = skill.dashDamageOnContact,
+            Damage = context.TotalAttack + skill.damage,
+            HitRadius = context.HitRadius,
+            KnockbackForce = skill.knockbackForce,
+            KnockbackDuration = skill.knockbackDuration,
+            SlowPercentage = skill.slowPercentage,
+            SlowDuration = skill.slowDuration
+        };
     }
 
     private static ProjectileFireRequest CreateProjectileFireRequest(SkillExecutionContext context, Vector2 direction)
