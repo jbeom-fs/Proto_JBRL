@@ -49,8 +49,10 @@
     <Analyzer Include="C:\Program Files\Unity\Hub\Editor\6000.4.3f1\Editor\Data\Tools\BuildPipeline\Unity.SourceGenerators\Unity.UIToolkit.SourceGenerator.dll" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Assets\Scripts\Combat\ProjectileFireRequest.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerResource.cs" />
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
+    <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
@@ -97,8 +99,6 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Enemy\ChaseState.cs" />
-    <Compile Include="Assets\Scripts\Combat\ProjectileFireRequest.cs" />
-    <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />

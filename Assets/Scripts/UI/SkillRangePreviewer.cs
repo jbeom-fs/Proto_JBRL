@@ -54,6 +54,12 @@ public class SkillRangePreviewer : MonoBehaviour
     [Tooltip("Physics2D 벽 레이어 (선택). 0이면 DungeonData 그리드 방식 사용.")]
     [SerializeField] private LayerMask wallLayer;
 
+    [Header("Projectile Preview")]
+    [Tooltip("Minimum world-space length used when previewing projectile skills.")]
+    [SerializeField, Min(0.1f)] private float projectilePreviewMinDistance = 1f;
+    [Tooltip("Maximum world-space length used when previewing projectile skills.")]
+    [SerializeField, Min(0.1f)] private float projectilePreviewMaxDistance = 12f;
+
     // ── 정적 꼭짓점 버퍼 (GC 방지, 최대 256점) ─────────────────────
     private static readonly Vector3[] s_Buf = new Vector3[256];
     private readonly List<Vector2Int> _previewShapeCells = new();
@@ -126,7 +132,7 @@ public class SkillRangePreviewer : MonoBehaviour
         if (_activeSlot >= 0 && _currentSkill != null)
         {
             // 방향 의존 패턴(Line·Cone·Single)은 FacingDirection 이 바뀔 때만 재계산
-            if (SkillTargetResolver.IsDirectional(_currentSkill.attackPattern))
+            if (RequiresFacingRefresh(_currentSkill))
             {
                 Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
                 if (facing != _lastFacing)
@@ -251,6 +257,17 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private void BuildPreview(SkillData skill)
     {
+        if (skill.executionType == SkillExecutionType.Projectile)
+        {
+            BuildProjectilePreview(skill);
+            return;
+        }
+
+        BuildInstantAreaPreview(skill);
+    }
+
+    private void BuildInstantAreaPreview(SkillData skill)
+    {
         Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
         Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(facing);
         SkillTargetResolver.ResolveShapeCells(skill, Vector2Int.zero, gridFacing, _previewShapeCells);
@@ -287,6 +304,132 @@ public class SkillRangePreviewer : MonoBehaviour
                 BuildDiagonal(skill.patternRange);
                 break;
         }
+    }
+
+    private void BuildProjectilePreview(SkillData skill)
+    {
+        Vector2 direction = GetPreviewDirection();
+        float distance = SkillTargetResolver.GetProjectilePreviewDistance(
+            skill,
+            projectilePreviewMinDistance,
+            projectilePreviewMaxDistance);
+
+        switch (skill.projectileFirePattern)
+        {
+            case ProjectileFirePattern.Spread:
+                BuildProjectileSpreadPreview(
+                    direction,
+                    Mathf.Max(1, skill.projectileCount),
+                    skill.projectileSpreadAngle,
+                    distance,
+                    skill.projectileWallHitMode);
+                break;
+
+            case ProjectileFirePattern.Circle:
+                BuildProjectileCirclePreview(
+                    direction,
+                    Mathf.Max(1, skill.projectileCount),
+                    distance,
+                    skill.projectileWallHitMode);
+                break;
+
+            case ProjectileFirePattern.Burst:
+            case ProjectileFirePattern.Single:
+            default:
+                BuildProjectileLinePreview(direction, distance, skill.projectileWallHitMode);
+                break;
+        }
+    }
+
+    private Vector2 GetPreviewDirection()
+    {
+        Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        Vector2 direction = new Vector2(facing.x, facing.y);
+        if (direction.sqrMagnitude < 0.001f)
+            direction = Vector2.down;
+
+        return direction.normalized;
+    }
+
+    private void BuildProjectileLinePreview(Vector2 direction, float distance, ProjectileWallHitMode wallHitMode)
+    {
+        s_Buf[0] = Vector3.zero;
+        s_Buf[1] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
+        Apply(2, false);
+    }
+
+    private void BuildProjectileSpreadPreview(
+        Vector2 baseDirection,
+        int projectileCount,
+        float spreadAngle,
+        float distance,
+        ProjectileWallHitMode wallHitMode)
+    {
+        int count = Mathf.Clamp(projectileCount, 1, s_Buf.Length / 2);
+        if (count == 1)
+        {
+            BuildProjectileLinePreview(baseDirection, distance, wallHitMode);
+            return;
+        }
+
+        float startAngle = -spreadAngle * 0.5f;
+        float step = spreadAngle / (count - 1);
+        int pointCount = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 direction = Rotate(baseDirection, startAngle + step * i);
+            s_Buf[pointCount++] = Vector3.zero;
+            s_Buf[pointCount++] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
+        }
+
+        Apply(pointCount, false);
+    }
+
+    private void BuildProjectileCirclePreview(
+        Vector2 baseDirection,
+        int projectileCount,
+        float distance,
+        ProjectileWallHitMode wallHitMode)
+    {
+        int count = Mathf.Clamp(projectileCount, 1, s_Buf.Length / 2);
+        if (count == 1)
+        {
+            BuildProjectileLinePreview(baseDirection, distance, wallHitMode);
+            return;
+        }
+
+        float step = 360f / count;
+        int pointCount = 0;
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector2 direction = Rotate(baseDirection, step * i);
+            s_Buf[pointCount++] = Vector3.zero;
+            s_Buf[pointCount++] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
+        }
+
+        Apply(pointCount, false);
+    }
+
+    private Vector3 ResolveProjectilePreviewEnd(Vector2 direction, float distance, ProjectileWallHitMode wallHitMode)
+    {
+        Vector3 end = new Vector3(direction.x, direction.y, 0f) * distance;
+        if (wallHitMode == ProjectileWallHitMode.PassThrough)
+            return end;
+
+        // Bounce preview currently marks the first wall contact. Reflected path preview can be added later.
+        return ClipToWall(Vector3.zero, end);
+    }
+
+    private static Vector2 Rotate(Vector2 direction, float degrees)
+    {
+        float radians = degrees * Mathf.Deg2Rad;
+        float sin = Mathf.Sin(radians);
+        float cos = Mathf.Cos(radians);
+        return new Vector2(
+            direction.x * cos - direction.y * sin,
+            direction.x * sin + direction.y * cos).normalized;
     }
 
     private void BuildBasicAttackPreview(WeaponData weapon)
@@ -479,13 +622,22 @@ public class SkillRangePreviewer : MonoBehaviour
     // ══════════════════════════════════════════════════════════════
 
     // positionCount 설정 후 s_Buf 를 LineRenderer 에 일괄 적용
-    private void Apply(int count)
+    private void Apply(int count, bool loop = true)
     {
+        _lr.loop = loop;
         _lr.positionCount = count;
-        _lr.SetPositions(s_Buf);
+        for (int i = 0; i < count; i++)
+            _lr.SetPosition(i, s_Buf[i]);
     }
 
     // 방향이 바뀔 때 재계산이 필요한 패턴 여부
+    private static bool RequiresFacingRefresh(SkillData skill)
+    {
+        if (skill == null) return false;
+        if (skill.executionType == SkillExecutionType.Projectile) return true;
+        return SkillTargetResolver.IsDirectional(skill.attackPattern);
+    }
+
     private static bool IsDirectional(AttackPatternType p) =>
         p == AttackPatternType.Line   ||
         p == AttackPatternType.Cone   ||

@@ -52,6 +52,16 @@ public sealed class SkillTargetResolver
         return range * Mathf.Sqrt(2f) + 0.5f;
     }
 
+    public static float GetProjectilePreviewDistance(SkillData skill, float minDistance, float maxDistance)
+    {
+        if (skill == null) return Mathf.Max(0.1f, minDistance);
+
+        float min = Mathf.Max(0.1f, minDistance);
+        float max = Mathf.Max(min, maxDistance);
+        float distance = Mathf.Max(0f, skill.projectileSpeed) * Mathf.Max(0f, skill.projectileLifetime);
+        return Mathf.Clamp(distance, min, max);
+    }
+
     public static bool IsDirectional(AttackPatternType pattern)
     {
         return pattern == AttackPatternType.Line ||
