@@ -693,10 +693,9 @@ public abstract class EnemyBrain : MonoBehaviour
         private float _windupTimer;
         private float _recoveryTimer;
         private Vector2 _aimDirection = Vector2.down;
-        private int _pendingBurstShots;
-        private float _burstTimer;
         private bool _windupFired;
         private bool _warnedMissingProjectile;
+        private readonly ProjectileFireService _projectileFireService = new();
 
         public ActionHandler(EnemyBrain brain)
         {
@@ -720,8 +719,6 @@ public abstract class EnemyBrain : MonoBehaviour
             _attackCooldownTimer = 0f;
             _windupTimer = 0f;
             _recoveryTimer = 0f;
-            _pendingBurstShots = 0;
-            _burstTimer = 0f;
             _windupFired = false;
         }
 
@@ -743,27 +740,6 @@ public abstract class EnemyBrain : MonoBehaviour
 
         private void TickRangedBehavior()
         {
-            if (_pendingBurstShots <= 0)
-                return;
-
-            float interval = Mathf.Max(0f, _brain.Data.burstInterval);
-            if (interval <= 0f)
-            {
-                while (_pendingBurstShots > 0)
-                {
-                    FireProjectile(_aimDirection);
-                    _pendingBurstShots--;
-                }
-                return;
-            }
-
-            _burstTimer -= Time.deltaTime;
-            while (_pendingBurstShots > 0 && _burstTimer <= 0f)
-            {
-                FireProjectile(_aimDirection);
-                _pendingBurstShots--;
-                _burstTimer += interval;
-            }
         }
 
         private void TickContactBehavior(float sqrDistanceToTarget)
@@ -876,24 +852,19 @@ public abstract class EnemyBrain : MonoBehaviour
         private void FireRangedPattern(Vector2 direction)
         {
             long fireStart = RuntimePerfTraceLogger.Timestamp();
-            int requestedProjectiles = GetFireRequestCount();
-            switch (_brain.Data.firePattern)
+            ProjectileFireRequest request = CreateProjectileFireRequest(direction);
+            int requestedProjectiles = ProjectileFireService.GetProjectileRequestCount(request);
+            if (_brain.Data.projectilePrefab == null)
             {
-                case ProjectileFirePattern.Single:
-                    FireProjectile(direction);
-                    break;
-
-                case ProjectileFirePattern.Burst:
-                    StartBurst(direction);
-                    break;
-
-                case ProjectileFirePattern.Spread:
-                    FireSpread(direction);
-                    break;
-
-                case ProjectileFirePattern.Circle:
-                    FireCircle(direction);
-                    break;
+                if (!_warnedMissingProjectile)
+                {
+                    Debug.LogWarning($"[EnemyBrain] {_brain.Data.enemyName}: Ranged projectilePrefab is missing.");
+                    _warnedMissingProjectile = true;
+                }
+            }
+            else
+            {
+                _projectileFireService.Fire(request);
             }
 
             RuntimePerfTraceLogger.RecordFireEvent(
@@ -902,99 +873,33 @@ public abstract class EnemyBrain : MonoBehaviour
                 RuntimePerfTraceLogger.Timestamp() - fireStart);
         }
 
-        private int GetFireRequestCount()
+        private ProjectileFireRequest CreateProjectileFireRequest(Vector2 direction)
         {
-            switch (_brain.Data.firePattern)
-            {
-                case ProjectileFirePattern.Burst:
-                case ProjectileFirePattern.Spread:
-                case ProjectileFirePattern.Circle:
-                    return Mathf.Max(1, _brain.Data.projectileCount);
-
-                default:
-                    return 1;
-            }
-        }
-
-        private void StartBurst(Vector2 direction)
-        {
-            int count = Mathf.Max(1, _brain.Data.projectileCount);
-            FireProjectile(direction);
-            _pendingBurstShots = count - 1;
-            _burstTimer = Mathf.Max(0f, _brain.Data.burstInterval);
-        }
-
-        private void FireSpread(Vector2 direction)
-        {
-            int count = Mathf.Max(1, _brain.Data.projectileCount);
-            if (count == 1)
-            {
-                FireProjectile(direction);
-                return;
-            }
-
-            float startAngle = -_brain.Data.spreadAngle * 0.5f;
-            float step = _brain.Data.spreadAngle / (count - 1);
-            for (int i = 0; i < count; i++)
-                FireProjectile(Rotate(direction, startAngle + step * i));
-        }
-
-        private void FireCircle(Vector2 direction)
-        {
-            int count = Mathf.Max(1, _brain.Data.projectileCount);
-            if (count == 1)
-            {
-                FireProjectile(direction);
-                return;
-            }
-
-            float step = 360f / count;
-            for (int i = 0; i < count; i++)
-                FireProjectile(Rotate(direction, step * i));
-        }
-
-        private void FireProjectile(Vector2 direction)
-        {
-            if (_brain.Data.projectilePrefab == null)
-            {
-                if (!_warnedMissingProjectile)
-                {
-                    Debug.LogWarning($"[EnemyBrain] {_brain.Data.enemyName}: Ranged projectilePrefab is missing.");
-                    _warnedMissingProjectile = true;
-                }
-                return;
-            }
-
-            ProjectileController projectile = ProjectilePool.Instance.Get(
-                _brain.Data.projectilePrefab,
-                _brain.transform.position,
-                Quaternion.identity);
-            if (projectile == null) return;
-
             int damage = _brain.Data.projectileDamage > 0
                 ? _brain.Data.projectileDamage
                 : _brain.Data.attack;
-            projectile.Initialize(
-                direction,
-                damage,
-                _brain.Data.projectileSpeed,
-                _brain.Data.projectileLifetime,
-                _brain.Data.projectileWallHitMode,
-                _brain.Data.projectileMaxBounceCount,
-                _brain.Enemy);
-        }
 
-        private static Vector2 Rotate(Vector2 direction, float degrees)
-        {
-            if (direction.sqrMagnitude <= 0.0001f)
-                direction = Vector2.down;
-
-            float radians = degrees * Mathf.Deg2Rad;
-            float sin = Mathf.Sin(radians);
-            float cos = Mathf.Cos(radians);
-            return new Vector2(
-                direction.x * cos - direction.y * sin,
-                direction.x * sin + direction.y * cos).normalized;
+            return new ProjectileFireRequest
+            {
+                ProjectilePrefab = _brain.Data.projectilePrefab,
+                OriginTransform = _brain.transform,
+                CoroutineRunner = _brain,
+                Caster = _brain.Enemy,
+                Owner = _brain.Enemy,
+                Direction = direction,
+                Damage = damage,
+                Speed = _brain.Data.projectileSpeed,
+                Lifetime = _brain.Data.projectileLifetime,
+                ProjectileCount = _brain.Data.projectileCount,
+                SpreadAngle = _brain.Data.spreadAngle,
+                FirePattern = _brain.Data.firePattern,
+                WallHitMode = _brain.Data.projectileWallHitMode,
+                TargetHitMode = ProjectileTargetHitMode.DestroyOnHit,
+                TargetMode = ProjectileController.TargetMode.Player,
+                MaxBounceCount = _brain.Data.projectileMaxBounceCount,
+                SpawnOffset = 0f,
+                BurstInterval = _brain.Data.burstInterval
+            };
         }
 
         protected virtual void ApplyDamage()

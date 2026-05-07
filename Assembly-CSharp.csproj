@@ -97,6 +97,8 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Enemy\ChaseState.cs" />
+    <Compile Include="Assets\Scripts\Combat\ProjectileFireRequest.cs" />
+    <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
