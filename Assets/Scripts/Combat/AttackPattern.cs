@@ -34,7 +34,19 @@ public static class AttackPattern
         AttackPatternType pattern, Vector2Int origin, Vector2Int facing, int range = 1, float coneHalfAngle = 45f)
     {
         var targets = new List<Vector2Int>();
+        FillTargets(pattern, origin, facing, range, coneHalfAngle, targets);
+        return targets;
+    }
 
+    public static void FillTargets(
+        AttackPatternType pattern,
+        Vector2Int origin,
+        Vector2Int facing,
+        int range,
+        float coneHalfAngle,
+        List<Vector2Int> targets)
+    {
+        if (targets == null) return;
         switch (pattern)
         {
             case AttackPatternType.Single:
@@ -74,8 +86,6 @@ public static class AttackPattern
                 AddConeTargets(targets, origin, facing, range, coneHalfAngle);
                 break;
         }
-
-        return targets;
     }
 
     // facing 벡터를 45도 시계 방향으로 회전 (그리드 단위, 결과 -1~1 클램프)

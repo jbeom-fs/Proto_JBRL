@@ -21,6 +21,7 @@
 //    wallLayer LayerMask 가 설정된 경우 Physics2D.Raycast 를 우선 사용합니다.
 // ═══════════════════════════════════════════════════════════════════
 
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(LineRenderer))]
@@ -55,6 +56,7 @@ public class SkillRangePreviewer : MonoBehaviour
 
     // ── 정적 꼭짓점 버퍼 (GC 방지, 최대 256점) ─────────────────────
     private static readonly Vector3[] s_Buf = new Vector3[256];
+    private readonly List<Vector2Int> _previewShapeCells = new();
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
     private LineRenderer _lr;
@@ -124,7 +126,7 @@ public class SkillRangePreviewer : MonoBehaviour
         if (_activeSlot >= 0 && _currentSkill != null)
         {
             // 방향 의존 패턴(Line·Cone·Single)은 FacingDirection 이 바뀔 때만 재계산
-            if (IsDirectional(_currentSkill.attackPattern))
+            if (SkillTargetResolver.IsDirectional(_currentSkill.attackPattern))
             {
                 Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
                 if (facing != _lastFacing)
@@ -137,7 +139,7 @@ public class SkillRangePreviewer : MonoBehaviour
         else if (_isBasicAttackPreview)
         {
             var weapon = combat?.currentWeapon;
-            if (weapon != null && IsDirectional(weapon.attackPattern))
+            if (weapon != null && SkillTargetResolver.IsDirectional(weapon.attackPattern))
             {
                 Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
                 if (facing != _lastFacing)
@@ -250,17 +252,19 @@ public class SkillRangePreviewer : MonoBehaviour
     private void BuildPreview(SkillData skill)
     {
         Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(facing);
+        SkillTargetResolver.ResolveShapeCells(skill, Vector2Int.zero, gridFacing, _previewShapeCells);
 
         switch (skill.attackPattern)
         {
             case AttackPatternType.Circle:
                 // 체비쇼프 range 이내 — 코너 타일(±range,±range)까지 반경
-                BuildCircle((skill.patternRange * Mathf.Sqrt(2f) + 0.5f) * tileSize);
+                BuildCircle(SkillTargetResolver.GetPreviewRadius(skill.patternRange) * tileSize);
                 break;
 
             case AttackPatternType.Cone:
                 // 정면+좌우45° 각 range칸 — 대각 방향이 가장 멀리 뻗음
-                BuildCone(facing, (skill.patternRange * Mathf.Sqrt(2f) + 0.5f) * tileSize, skill.coneHalfAngle);
+                BuildCone(facing, SkillTargetResolver.GetPreviewRadius(skill.patternRange) * tileSize, skill.coneHalfAngle);
                 break;
 
             case AttackPatternType.Line:
@@ -292,10 +296,10 @@ public class SkillRangePreviewer : MonoBehaviour
         switch (weapon.attackPattern)
         {
             case AttackPatternType.Circle:
-                BuildCircle((weapon.patternRange * Mathf.Sqrt(2f) + 0.5f) * tileSize);
+                BuildCircle(SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize);
                 break;
             case AttackPatternType.Cone:
-                BuildCone(facing, (weapon.patternRange * Mathf.Sqrt(2f) + 0.5f) * tileSize, 45f);
+                BuildCone(facing, SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize, 45f);
                 break;
             case AttackPatternType.Line:
                 BuildRectangle(facing, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);

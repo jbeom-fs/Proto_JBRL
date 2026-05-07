@@ -9,10 +9,12 @@ using UnityEngine;
 public sealed class SkillExecutor
 {
     private readonly AttackExecutor _attackExecutor;
+    private readonly SkillTargetResolver _targetResolver;
 
     public SkillExecutor(AttackExecutor attackExecutor)
     {
         _attackExecutor = attackExecutor;
+        _targetResolver = new SkillTargetResolver();
     }
 
     public bool Execute(SkillExecutionContext context)
@@ -22,7 +24,7 @@ public sealed class SkillExecutor
         if (context.CasterTransform == null) return false;
         if (_attackExecutor == null) return false;
 
-        List<Vector2Int> targets = ResolveTargets(context);
+        List<Vector2Int> targets = _targetResolver.ResolveTargets(context);
         _attackExecutor.BeginAttackActivation();
         _attackExecutor.ExecuteAttack(
             targets,
@@ -36,20 +38,5 @@ public sealed class SkillExecutor
             context.HitRadius);
 
         return true;
-    }
-
-    private static List<Vector2Int> ResolveTargets(SkillExecutionContext context)
-    {
-        DungeonManager dungeonManager = DungeonManager.Instance;
-        if (dungeonManager == null) return new List<Vector2Int>();
-
-        Vector2Int origin = dungeonManager.WorldToGrid(context.CasterPosition);
-        SkillData skill = context.Skill;
-        return AttackPattern.GetTargets(
-            skill.attackPattern,
-            origin,
-            context.GridAimDirection,
-            skill.patternRange,
-            skill.coneHalfAngle);
     }
 }

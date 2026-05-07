@@ -206,7 +206,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         // 그리드 좌표계는 GridToWorld에서 Y가 반전(tilemap y = -row)되므로
         // 화면 +Y = 그리드 -Y 로 변환해야 실제 방향과 일치한다.
         var screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
-        var gridFacing   = new Vector2Int(screenFacing.x, -screenFacing.y);
+        var gridFacing = SkillTargetResolver.ToGridAimDirection(screenFacing);
 
         return AttackPattern.GetTargets(pattern, origin, gridFacing, range, coneHalfAngle);
     }
@@ -214,7 +214,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private SkillExecutionContext CreateSkillExecutionContext(SkillData skill, int slotIndex)
     {
         Vector2Int screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
-        Vector2Int gridFacing = new Vector2Int(screenFacing.x, -screenFacing.y);
+        Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(screenFacing);
 
         return new SkillExecutionContext(
             this,
