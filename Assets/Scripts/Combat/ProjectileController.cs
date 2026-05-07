@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Profiling;
 using UnityEngine;
@@ -12,17 +13,31 @@ public class ProjectileController : MonoBehaviour
     [SerializeField] private bool disablePhysicsSimulation = true;
 
     private const float DefaultPlayerHitRadius = 0.5f;
+    public enum TargetMode
+    {
+        Player,
+        Enemy
+    }
 
     private static PlayerCombatController s_PlayerCombat;
     private static Collider2D s_PlayerCollider;
     private static Transform s_PlayerTransform;
     private static float s_PlayerRadius = DefaultPlayerHitRadius;
+    private static readonly Collider2D[] s_EnemyHitBuffer = new Collider2D[16];
+    private static readonly ContactFilter2D s_NoFilter = ContactFilter2D.noFilter;
 
     private Vector2 _direction = Vector2.right;
     private float _speed = 6f;
     private int _damage = 1;
+    private float _knockbackForce;
+    private float _knockbackDuration;
+    private float _slowPercentage;
+    private float _slowDuration;
     private float _lifetime = 3f;
     private ProjectileWallHitMode _wallHitMode = ProjectileWallHitMode.Destroy;
+    private TargetMode _targetMode = TargetMode.Player;
+    private ProjectileTargetHitMode _targetHitMode = ProjectileTargetHitMode.DestroyOnHit;
+    private UnityEngine.Object _owner;
     private int _maxBounceCount;
     private int _currentBounceCount;
     private Collider2D _collider;
@@ -32,6 +47,7 @@ public class ProjectileController : MonoBehaviour
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
     private DungeonManager _dungeon;
+    private readonly HashSet<EnemyController> _hitEnemies = new();
 
     private void Awake()
     {
@@ -87,15 +103,54 @@ public class ProjectileController : MonoBehaviour
         int maxBounceCount,
         UnityEngine.Object owner)
     {
+        Initialize(
+            direction,
+            damage,
+            speed,
+            lifetime,
+            wallHitMode,
+            maxBounceCount,
+            owner,
+            TargetMode.Player,
+            ProjectileTargetHitMode.DestroyOnHit,
+            0f,
+            0f,
+            0f,
+            0f);
+    }
+
+    public void Initialize(
+        Vector2 direction,
+        int damage,
+        float speed,
+        float lifetime,
+        ProjectileWallHitMode wallHitMode,
+        int maxBounceCount,
+        UnityEngine.Object owner,
+        TargetMode targetMode,
+        ProjectileTargetHitMode targetHitMode,
+        float knockbackForce,
+        float knockbackDuration,
+        float slowPercentage,
+        float slowDuration)
+    {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
         _damage = Mathf.Max(0, damage);
+        _knockbackForce = Mathf.Max(0f, knockbackForce);
+        _knockbackDuration = Mathf.Max(0f, knockbackDuration);
+        _slowPercentage = Mathf.Clamp01(slowPercentage);
+        _slowDuration = Mathf.Max(0f, slowDuration);
         _speed = Mathf.Max(0f, speed);
         _lifetime = Mathf.Max(0.01f, lifetime);
         _wallHitMode = wallHitMode;
+        _targetMode = targetMode;
+        _targetHitMode = targetHitMode;
+        _owner = owner;
         _maxBounceCount = Mathf.Max(0, maxBounceCount);
         _currentBounceCount = 0;
         _dungeon = DungeonManager.Instance;
+        _hitEnemies.Clear();
     }
 
     public void SetReleaseAction(Action<ProjectileController, ProjectileReleaseReason> releaseAction)
@@ -136,7 +191,7 @@ public class ProjectileController : MonoBehaviour
             transform.position = nextPosition;
         }
 
-        TryHitPlayer();
+        TryHitTarget();
     }
 
     private bool IsWallPosition(Vector2 position)
@@ -204,6 +259,20 @@ public class ProjectileController : MonoBehaviour
         return true;
     }
 
+    private void TryHitTarget()
+    {
+        switch (_targetMode)
+        {
+            case TargetMode.Player:
+                TryHitPlayer();
+                break;
+
+            case TargetMode.Enemy:
+                TryHitEnemy();
+                break;
+        }
+    }
+
     private void TryHitPlayer()
     {
         if (!TryResolvePlayerCache())
@@ -218,6 +287,38 @@ public class ProjectileController : MonoBehaviour
 
         s_PlayerCombat.TakeDamage(_damage);
         Release(ProjectileReleaseReason.PlayerHit);
+    }
+
+    private void TryHitEnemy()
+    {
+        int count = Physics2D.OverlapCircle(transform.position, hitRadius, s_NoFilter, s_EnemyHitBuffer);
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D col = s_EnemyHitBuffer[i];
+            if (col == null) continue;
+
+            EnemyController enemy = col.GetComponent<EnemyController>();
+            if (enemy == null)
+                enemy = col.GetComponentInParent<EnemyController>();
+            if (enemy == null || !enemy.IsAlive) continue;
+            if (ReferenceEquals(enemy, _owner)) continue;
+            if (_targetHitMode != ProjectileTargetHitMode.DestroyOnHit && _hitEnemies.Contains(enemy)) continue;
+
+            enemy.ApplyCombatImpact(
+                _damage,
+                transform.position,
+                _knockbackForce,
+                _knockbackDuration,
+                _slowPercentage,
+                _slowDuration);
+            if (_targetHitMode == ProjectileTargetHitMode.DestroyOnHit)
+            {
+                Release(ProjectileReleaseReason.EnemyHit);
+                return;
+            }
+
+            _hitEnemies.Add(enemy);
+        }
     }
 
     private void UpdateMeasured()
@@ -281,7 +382,7 @@ public class ProjectileController : MonoBehaviour
         }
 
         long hitStart = RuntimePerfTraceLogger.Timestamp();
-        TryHitPlayer();
+        TryHitTarget();
         hitTicks += RuntimePerfTraceLogger.Timestamp() - hitStart;
 
         RuntimePerfTraceLogger.RecordProjectileUpdate(

@@ -17,6 +17,20 @@ public class SkillData : ScriptableObject
     [Tooltip("How this skill is executed. Existing skills should use InstantArea.")]
     public SkillExecutionType executionType = SkillExecutionType.InstantArea;
 
+    [Header("Projectile")]
+    public GameObject projectilePrefab;
+    [Min(0.01f)] public float projectileSpeed = 8f;
+    [Min(0.01f)] public float projectileLifetime = 3f;
+    [Min(1)] public int projectileCount = 1;
+    [Min(0f)] public float projectileSpreadAngle = 15f;
+    public ProjectileFirePattern projectileFirePattern = ProjectileFirePattern.Single;
+    public ProjectileWallHitMode projectileWallHitMode = ProjectileWallHitMode.Destroy;
+    public ProjectileTargetHitMode projectileTargetHitMode = ProjectileTargetHitMode.DestroyOnHit;
+    [Min(0)] public int projectileMaxBounceCount = 1;
+    [Min(0f)] public float projectileSpawnOffset = 0.35f;
+    [Min(0f)] public float projectileBurstInterval = 0.1f;
+    [Min(0f)] public float projectileBurstSpacing = 0.12f;
+
     [Header("전투")]
     public int               damage        = 10;
     public AttackPatternType attackPattern = AttackPatternType.Cross;

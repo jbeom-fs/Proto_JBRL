@@ -10,6 +10,7 @@ public enum ProjectileReleaseReason
 {
     LifetimeExpired,
     PlayerHit,
+    EnemyHit,
     WallHitDestroy,
     BounceLimit,
     Manual,
@@ -483,6 +484,7 @@ public class RuntimePerfTraceLogger : MonoBehaviour
         {
             case ProjectileReleaseReason.LifetimeExpired: return "LifetimeExpired";
             case ProjectileReleaseReason.PlayerHit: return "PlayerHit";
+            case ProjectileReleaseReason.EnemyHit: return "EnemyHit";
             case ProjectileReleaseReason.WallHitDestroy: return "WallHitDestroy";
             case ProjectileReleaseReason.BounceLimit: return "BounceLimit";
             case ProjectileReleaseReason.Manual: return "Manual";

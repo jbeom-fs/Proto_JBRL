@@ -104,6 +104,7 @@
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
+    <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CoinDisplay.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Statue.cs" />
