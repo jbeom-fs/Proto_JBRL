@@ -197,14 +197,11 @@ public class SkillRangePreviewer : MonoBehaviour
     private void TryShowPreview(int slot)
     {
         if (combat != null && combat.IsDead) return;
-        if (combat == null || combat.currentWeapon == null) return;
+        if (combat == null) return;
 
-        SkillData[] skills = combat.currentWeapon.skills;
-        if (skills == null) return;
-        if ((uint)slot >= (uint)skills.Length || skills[slot] == null) return;
-
+        _currentSkill = combat.GetSkillData(slot);
+        if (_currentSkill == null) return;
         _activeSlot   = slot;
-        _currentSkill = skills[slot];
         _lastFacing   = movement != null ? movement.FacingDirection : Vector2Int.down;
 
         BuildPreview(_currentSkill);

@@ -19,6 +19,8 @@ using UnityEngine;
 
 public class PlayerCombatController : MonoBehaviour, IDamageable
 {
+    private const int SkillSlotCount = 4;
+
     // ── Inspector 필드 ───────────────────────────────────────────────
 
     [Header("Dependencies")]
@@ -45,9 +47,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private readonly PlayerResource _resource = new();
     private readonly SkillCooldownController _cooldownController = new();
+    private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
     private AttackExecutor _attackExecutor;
     private PlayerInputReader _inputReader;
     private HitFlashFeedback _hitFlash;
+    private WeaponData _boundSkillWeapon;
     private float _damageInvincibleTimer;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
@@ -76,6 +80,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         _resource.Initialize(maxHp, maxMp);
         _attackExecutor = new AttackExecutor(transform, this);
+        BindSkillSlots(currentWeapon);
         if (combatChannel == null)
             Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/MP/스킬 UI 이벤트가 발행되지 않습니다.");
         if (playerMovement == null)
@@ -99,6 +104,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         currentWeapon   = weapon;
         _cooldownController.ResetAll();
+        BindSkillSlots(weapon);
 #if UNITY_EDITOR
         Debug.Log($"[Combat] 무기 장착: {weapon?.weaponName ?? "없음"}");
 #endif
@@ -116,7 +122,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
 
+        EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
+        TickSkillSlots(Time.deltaTime);
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
 
@@ -164,16 +172,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void TryUseSkill(int slotIndex)
     {
         if (IsDead) return;
-        if (currentWeapon == null) return;
-        if (currentWeapon.skills == null) return;
-        if ((uint)slotIndex >= (uint)currentWeapon.skills.Length) return;
+        EnsureSkillSlotsBound();
+        SkillSlotRuntime slot = GetSkillSlot(slotIndex);
+        if (slot == null) return;
+        if (!slot.CanUse(CurrentMp)) return;
 
-        SkillData skill = currentWeapon.skills[slotIndex];
-        if (skill == null)                       return;
-        if (!_cooldownController.IsSkillReady(slotIndex)) return;
-        if (CurrentMp < skill.mpCost)            return;
-
-        _cooldownController.SetSkillCooldown(slotIndex, skill.cooldown);
+        SkillData skill = slot.Data;
+        slot.StartCooldown();
         SpendMp(skill.mpCost);
         _attackExecutor.BeginAttackActivation();
 
@@ -284,13 +289,77 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     }
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
-    public float GetSkillCooldownRemaining(int slotIndex) =>
-        (uint)slotIndex < 4u ? _cooldownController.GetSkillRemaining(slotIndex) : 0f;
+    public float GetSkillCooldownRemaining(int slotIndex)
+    {
+        EnsureSkillSlotsBound();
+        SkillSlotRuntime slot = GetSkillSlot(slotIndex);
+        return slot != null && slot.CooldownRemaining > 0f ? slot.CooldownRemaining : 0f;
+    }
 
     public float GetSkillCooldownMax(int slotIndex)
     {
-        if (currentWeapon == null || currentWeapon.skills == null) return 0f;
-        if ((uint)slotIndex >= (uint)currentWeapon.skills.Length) return 0f;
-        return currentWeapon.skills[slotIndex]?.cooldown ?? 0f;
+        SkillData skill = GetSkillData(slotIndex);
+        return skill != null ? skill.cooldown : 0f;
+    }
+
+    public float GetSkillCooldownNormalized(int slotIndex)
+    {
+        float max = GetSkillCooldownMax(slotIndex);
+        return max > 0f ? GetSkillCooldownRemaining(slotIndex) / max : 0f;
+    }
+
+    public SkillData GetSkillData(int slotIndex)
+    {
+        EnsureSkillSlotsBound();
+        return GetSkillSlot(slotIndex)?.Data;
+    }
+
+    public bool IsSkillReady(int slotIndex)
+    {
+        EnsureSkillSlotsBound();
+        return GetSkillSlot(slotIndex)?.IsCooldownReady ?? false;
+    }
+
+    public bool CanUseSkill(int slotIndex)
+    {
+        EnsureSkillSlotsBound();
+        return !IsDead && (GetSkillSlot(slotIndex)?.CanUse(CurrentMp) ?? false);
+    }
+
+    private static SkillSlotRuntime[] CreateSkillSlots()
+    {
+        var slots = new SkillSlotRuntime[SkillSlotCount];
+        for (int i = 0; i < slots.Length; i++)
+            slots[i] = new SkillSlotRuntime();
+        return slots;
+    }
+
+    private SkillSlotRuntime GetSkillSlot(int slotIndex)
+    {
+        return (uint)slotIndex < (uint)_skillSlots.Length ? _skillSlots[slotIndex] : null;
+    }
+
+    private void EnsureSkillSlotsBound()
+    {
+        if (_boundSkillWeapon != currentWeapon)
+            BindSkillSlots(currentWeapon);
+    }
+
+    private void BindSkillSlots(WeaponData weapon)
+    {
+        _boundSkillWeapon = weapon;
+        SkillData[] skills = weapon != null ? weapon.skills : null;
+
+        for (int i = 0; i < _skillSlots.Length; i++)
+        {
+            SkillData skill = skills != null && i < skills.Length ? skills[i] : null;
+            _skillSlots[i].Bind(skill);
+        }
+    }
+
+    private void TickSkillSlots(float deltaTime)
+    {
+        for (int i = 0; i < _skillSlots.Length; i++)
+            _skillSlots[i].TickCooldown(deltaTime);
     }
 }

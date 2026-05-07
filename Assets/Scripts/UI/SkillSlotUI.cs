@@ -102,12 +102,8 @@ public class SkillSlotUI : MonoBehaviour
     {
         _skill = null;
 
-        if (_combat != null && _combat.currentWeapon != null)
-        {
-            var skills = _combat.currentWeapon.skills;
-            if (skills != null && _slotIndex < skills.Length)
-                _skill = skills[_slotIndex];
-        }
+        if (_combat != null)
+            _skill = _combat.GetSkillData(_slotIndex);
 
         // 스킬 아이콘 or 빈 슬롯 스프라이트 — 둘 다 없으면 Image 비활성화
         Sprite display = (_skill != null && _skill.icon != null) ? _skill.icon : _emptySlotSprite;

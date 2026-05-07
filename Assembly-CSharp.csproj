@@ -114,6 +114,7 @@
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
+    <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>
