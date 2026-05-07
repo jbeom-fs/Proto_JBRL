@@ -13,6 +13,10 @@ public class SkillData : ScriptableObject
     public string description;
     public Sprite icon;
 
+    [Header("Execution")]
+    [Tooltip("How this skill is executed. Existing skills should use InstantArea.")]
+    public SkillExecutionType executionType = SkillExecutionType.InstantArea;
+
     [Header("전투")]
     public int               damage        = 10;
     public AttackPatternType attackPattern = AttackPatternType.Cross;

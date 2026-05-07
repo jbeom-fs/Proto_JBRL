@@ -10,6 +10,7 @@ public sealed class SkillExecutor
 {
     private readonly AttackExecutor _attackExecutor;
     private readonly SkillTargetResolver _targetResolver;
+    private readonly HashSet<SkillExecutionType> _reportedUnsupportedTypes = new();
 
     public SkillExecutor(AttackExecutor attackExecutor)
     {
@@ -24,6 +25,26 @@ public sealed class SkillExecutor
         if (context.CasterTransform == null) return false;
         if (_attackExecutor == null) return false;
 
+        switch (context.Skill.executionType)
+        {
+            case SkillExecutionType.InstantArea:
+                return ExecuteInstantArea(context);
+
+            case SkillExecutionType.Projectile:
+            case SkillExecutionType.Dash:
+            case SkillExecutionType.AreaOverTime:
+            case SkillExecutionType.Buff:
+                ReportUnsupportedExecutionType(context.Skill.executionType);
+                return false;
+
+            default:
+                ReportUnsupportedExecutionType(context.Skill.executionType);
+                return false;
+        }
+    }
+
+    private bool ExecuteInstantArea(SkillExecutionContext context)
+    {
         List<Vector2Int> targets = _targetResolver.ResolveTargets(context);
         _attackExecutor.BeginAttackActivation();
         _attackExecutor.ExecuteAttack(
@@ -38,5 +59,13 @@ public sealed class SkillExecutor
             context.HitRadius);
 
         return true;
+    }
+
+    private void ReportUnsupportedExecutionType(SkillExecutionType executionType)
+    {
+#if UNITY_EDITOR
+        if (_reportedUnsupportedTypes.Add(executionType))
+            Debug.LogWarning($"[SkillExecutor] Skill execution type is not implemented yet: {executionType}");
+#endif
     }
 }
