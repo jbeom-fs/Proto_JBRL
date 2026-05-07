@@ -87,6 +87,7 @@
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
+    <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CollectedCoin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Enemy\ChaseState.cs" />
+    <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />

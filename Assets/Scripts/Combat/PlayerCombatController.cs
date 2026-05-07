@@ -49,6 +49,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private readonly SkillCooldownController _cooldownController = new();
     private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
     private AttackExecutor _attackExecutor;
+    private SkillExecutor _skillExecutor;
     private PlayerInputReader _inputReader;
     private HitFlashFeedback _hitFlash;
     private WeaponData _boundSkillWeapon;
@@ -80,6 +81,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         _resource.Initialize(maxHp, maxMp);
         _attackExecutor = new AttackExecutor(transform, this);
+        _skillExecutor = new SkillExecutor(_attackExecutor);
         BindSkillSlots(currentWeapon);
         if (combatChannel == null)
             Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/MP/스킬 UI 이벤트가 발행되지 않습니다.");
@@ -178,22 +180,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (!slot.CanUse(CurrentMp)) return;
 
         SkillData skill = slot.Data;
-        slot.StartCooldown();
+        SkillExecutionContext context = CreateSkillExecutionContext(skill, slotIndex);
+        if (!_skillExecutor.Execute(context)) return;
+
         SpendMp(skill.mpCost);
-        _attackExecutor.BeginAttackActivation();
-
-        var targets = ResolveTargets(skill.attackPattern, skill.patternRange, skill.coneHalfAngle);
-        _attackExecutor.ExecuteAttack(
-            targets,
-            TotalAttack + skill.damage,
-            skill.canPenetrateWalls,
-            skill.isMultiTarget,
-            skill.knockbackForce,
-            skill.knockbackDuration,
-            skill.slowPercentage,
-            skill.slowDuration,
-            hitRadius);
-
+        slot.StartCooldown();
         combatChannel?.RaiseSkillUsed(skill);
 #if UNITY_EDITOR
         Debug.Log($"[Combat] 스킬 [{slotIndex + 1}] {skill.skillName} 사용");
@@ -218,6 +209,22 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         var gridFacing   = new Vector2Int(screenFacing.x, -screenFacing.y);
 
         return AttackPattern.GetTargets(pattern, origin, gridFacing, range, coneHalfAngle);
+    }
+
+    private SkillExecutionContext CreateSkillExecutionContext(SkillData skill, int slotIndex)
+    {
+        Vector2Int screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
+        Vector2Int gridFacing = new Vector2Int(screenFacing.x, -screenFacing.y);
+
+        return new SkillExecutionContext(
+            this,
+            transform,
+            skill,
+            slotIndex,
+            screenFacing,
+            gridFacing,
+            TotalAttack,
+            hitRadius);
     }
 
     // ══════════════════════════════════════════════════════════════
