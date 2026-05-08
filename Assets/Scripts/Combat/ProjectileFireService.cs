@@ -1,8 +1,15 @@
 using System.Collections;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+using System.Collections.Generic;
+#endif
 using UnityEngine;
 
 public sealed class ProjectileFireService
 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private static readonly HashSet<int> s_ReportedMissingBurstCoroutineRunnerCasters = new();
+#endif
+
     public bool Fire(ProjectileFireRequest request)
     {
         if (!CanFire(request))
@@ -82,6 +89,10 @@ public sealed class ProjectileFireService
         int remainingCount = Mathf.Max(1, request.ProjectileCount) - 1;
         if (remainingCount > 0 && request.CoroutineRunner != null)
             request.CoroutineRunner.StartCoroutine(FireBurstRoutine(request, remainingCount));
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        else if (remainingCount > 0)
+            ReportMissingBurstCoroutineRunner(request, remainingCount);
+#endif
 
         return true;
     }
@@ -165,4 +176,42 @@ public sealed class ProjectileFireService
             direction.x * cos - direction.y * sin,
             direction.x * sin + direction.y * cos).normalized;
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private static void ReportMissingBurstCoroutineRunner(ProjectileFireRequest request, int remainingCount)
+    {
+        int casterId = ResolveCasterWarningId(request);
+        if (!s_ReportedMissingBurstCoroutineRunnerCasters.Add(casterId))
+            return;
+
+        string casterName = ResolveCasterWarningName(request);
+        Debug.LogWarning(
+            $"[ProjectileFireService] Burst requested {remainingCount + 1} projectiles for {casterName}, " +
+            "but CoroutineRunner is null. The first projectile was fired and the remaining burst projectiles were skipped.");
+    }
+
+    private static int ResolveCasterWarningId(ProjectileFireRequest request)
+    {
+#pragma warning disable CS0618 // Requested per-caster warning key; editor/development-only diagnostic path.
+        if (request?.Caster is Object casterObject && casterObject != null)
+            return casterObject.GetInstanceID();
+
+        if (request?.OriginTransform != null)
+            return request.OriginTransform.GetInstanceID();
+#pragma warning restore CS0618
+
+        return 0;
+    }
+
+    private static string ResolveCasterWarningName(ProjectileFireRequest request)
+    {
+        if (request?.Caster is Object casterObject && casterObject != null)
+            return casterObject.name;
+
+        if (request?.OriginTransform != null)
+            return request.OriginTransform.name;
+
+        return "unknown caster";
+    }
+#endif
 }
