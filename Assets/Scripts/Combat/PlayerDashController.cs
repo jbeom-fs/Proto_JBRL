@@ -11,7 +11,6 @@ public sealed class PlayerDashController : MonoBehaviour
     private const float MinDashMoveDistance = 0.05f;
     private const float MinSampleStep = 0.05f;
     private const int EnemyHitBufferSize = 64;
-    private static readonly ContactFilter2D s_NoFilter = ContactFilter2D.noFilter;
 
     private readonly Vector3[] _corners = new Vector3[4];
     private readonly Collider2D[] _enemyHitBuffer = new Collider2D[EnemyHitBufferSize];
@@ -247,7 +246,7 @@ public sealed class PlayerDashController : MonoBehaviour
         if (!_hasDashDamage) return;
 
         float radius = Mathf.Max(0.01f, _damageRequest.HitRadius);
-        int count = Physics2D.OverlapCircle(transform.position, radius, s_NoFilter, _enemyHitBuffer);
+        int count = Physics2D.OverlapCircle(transform.position, radius, CombatLayers.EnemyFilter, _enemyHitBuffer);
         for (int i = 0; i < count; i++)
         {
             Collider2D hit = _enemyHitBuffer[i];

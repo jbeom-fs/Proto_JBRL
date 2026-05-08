@@ -24,7 +24,6 @@ public class ProjectileController : MonoBehaviour
     private static Transform s_PlayerTransform;
     private static float s_PlayerRadius = DefaultPlayerHitRadius;
     private static readonly Collider2D[] s_EnemyHitBuffer = new Collider2D[16];
-    private static readonly ContactFilter2D s_NoFilter = ContactFilter2D.noFilter;
 
     private Vector2 _direction = Vector2.right;
     private float _speed = 6f;
@@ -291,7 +290,7 @@ public class ProjectileController : MonoBehaviour
 
     private void TryHitEnemy()
     {
-        int count = Physics2D.OverlapCircle(transform.position, hitRadius, s_NoFilter, s_EnemyHitBuffer);
+        int count = Physics2D.OverlapCircle(transform.position, hitRadius, CombatLayers.EnemyFilter, s_EnemyHitBuffer);
         for (int i = 0; i < count; i++)
         {
             Collider2D col = s_EnemyHitBuffer[i];

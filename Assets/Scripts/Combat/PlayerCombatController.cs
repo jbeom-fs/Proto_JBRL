@@ -85,7 +85,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void Awake()
     {
         _resource.Initialize(maxHp, maxMp);
-        _attackExecutor = new AttackExecutor(transform, this);
+        _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
         _skillExecutor = new SkillExecutor(_attackExecutor);
         BindSkillSlots(currentWeapon);
         if (combatChannel == null)

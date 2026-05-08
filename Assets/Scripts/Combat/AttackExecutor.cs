@@ -3,11 +3,11 @@ using UnityEngine;
 
 public class AttackExecutor
 {
-    private static readonly Collider2D[]    s_HitBuffer = new Collider2D[128];
-    private static readonly ContactFilter2D s_NoFilter  = ContactFilter2D.noFilter;
+    private static readonly Collider2D[] s_HitBuffer = new Collider2D[128];
 
     private readonly Transform _attackerTransform;
     private readonly IDamageable _owner;
+    private readonly ContactFilter2D _targetFilter;
     private readonly HashSet<IDamageable> _hitTargetsThisAttack = new();
     private readonly HashSet<Vector2Int> _targetGridSet = new();
     private readonly List<HitCandidate> _hitCandidates = new();
@@ -19,10 +19,11 @@ public class AttackExecutor
         public float SqrDistance;
     }
 
-    public AttackExecutor(Transform attackerTransform, IDamageable owner)
+    public AttackExecutor(Transform attackerTransform, IDamageable owner, ContactFilter2D targetFilter)
     {
         _attackerTransform = attackerTransform;
         _owner = owner;
+        _targetFilter = targetFilter;
     }
 
     public void BeginAttackActivation()
@@ -57,7 +58,7 @@ public class AttackExecutor
         float queryRadius = BuildTargetGridSetAndRadius(gridPositions, dungeonManager);
         if (_targetGridSet.Count == 0) return;
 
-        int count = Physics2D.OverlapCircle(_attackerTransform.position, queryRadius + hitRadius, s_NoFilter, s_HitBuffer);
+        int count = Physics2D.OverlapCircle(_attackerTransform.position, queryRadius + hitRadius, _targetFilter, s_HitBuffer);
         for (int i = 0; i < count; i++)
         {
             Collider2D col = s_HitBuffer[i];
