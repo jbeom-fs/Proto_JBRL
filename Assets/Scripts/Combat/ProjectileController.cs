@@ -12,7 +12,6 @@ public class ProjectileController : MonoBehaviour
     [SerializeField] private float bounceExitOffset = 0.05f;
     [SerializeField] private bool disablePhysicsSimulation = true;
 
-    private const float DefaultPlayerHitRadius = 0.5f;
     public enum TargetMode
     {
         Player,
@@ -20,9 +19,8 @@ public class ProjectileController : MonoBehaviour
     }
 
     private static PlayerCombatController s_PlayerCombat;
-    private static Collider2D s_PlayerCollider;
     private static Transform s_PlayerTransform;
-    private static float s_PlayerRadius = DefaultPlayerHitRadius;
+    private static float s_PlayerRadius;
     private static readonly Collider2D[] s_EnemyHitBuffer = new Collider2D[16];
 
     private Vector2 _direction = Vector2.right;
@@ -394,50 +392,28 @@ public class ProjectileController : MonoBehaviour
 
     private static bool TryResolvePlayerCache()
     {
-        if (s_PlayerCombat != null
-            && s_PlayerCombat.isActiveAndEnabled
-            && s_PlayerTransform != null)
-            return true;
-
-        s_PlayerCombat = UnityEngine.Object.FindAnyObjectByType<PlayerCombatController>();
-        if (s_PlayerCombat == null || !s_PlayerCombat.isActiveAndEnabled)
+        PlayerCombatController active = PlayerCombatController.Active;
+        if (active == null || !active.isActiveAndEnabled)
         {
             ClearPlayerCache();
             return false;
         }
 
-        s_PlayerTransform = s_PlayerCombat.transform;
-        s_PlayerCollider = s_PlayerCombat.GetComponent<Collider2D>();
-        if (s_PlayerCollider == null)
-            s_PlayerCollider = s_PlayerCombat.GetComponentInParent<Collider2D>();
-        if (s_PlayerCollider == null)
-            s_PlayerCollider = s_PlayerCombat.GetComponentInChildren<Collider2D>();
+        if (!ReferenceEquals(s_PlayerCombat, active))
+        {
+            s_PlayerCombat = active;
+            s_PlayerTransform = active.CachedPlayerTransform;
+            s_PlayerRadius = active.CachedHitRadius;
+        }
 
-        s_PlayerRadius = CalculateColliderRadius(s_PlayerCollider, DefaultPlayerHitRadius);
         return true;
     }
 
     private static void ClearPlayerCache()
     {
         s_PlayerCombat = null;
-        s_PlayerCollider = null;
         s_PlayerTransform = null;
-        s_PlayerRadius = DefaultPlayerHitRadius;
-    }
-
-    private static float CalculateColliderRadius(Collider2D collider, float fallback)
-    {
-        if (collider == null)
-            return fallback;
-
-        if (collider is CircleCollider2D circle)
-        {
-            Vector3 scale = circle.transform.lossyScale;
-            return Mathf.Abs(circle.radius) * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
-        }
-
-        Bounds bounds = collider.bounds;
-        return Mathf.Max(fallback, Mathf.Max(bounds.extents.x, bounds.extents.y));
+        s_PlayerRadius = 0f;
     }
 
     private void Release(ProjectileReleaseReason reason)

@@ -20,6 +20,9 @@ using UnityEngine;
 public class PlayerCombatController : MonoBehaviour, IDamageable
 {
     private const int SkillSlotCount = 4;
+    private const float DefaultPlayerHitRadius = 0.5f;
+
+    public static PlayerCombatController Active { get; private set; }
 
     // ── Inspector 필드 ───────────────────────────────────────────────
 
@@ -57,6 +60,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private WeaponData _boundSkillWeapon;
     private float _damageInvincibleTimer;
     private int _externalInvincibilityCount;
+    private Transform _cachedTransform;
+    private Collider2D _cachedHitCollider;
+    private float _cachedHitRadius = DefaultPlayerHitRadius;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -69,6 +75,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
+
+    public Transform   CachedPlayerTransform => _cachedTransform;
+    public Collider2D  CachedHitCollider     => _cachedHitCollider;
+    public float       CachedHitRadius       => _cachedHitRadius;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
     public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0);
@@ -85,6 +95,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void Awake()
     {
         _resource.Initialize(maxHp, maxMp);
+        CachePlayerHitInfo();
+        RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
         _skillExecutor = new SkillExecutor(_attackExecutor);
         BindSkillSlots(currentWeapon);
@@ -103,6 +115,59 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             invincibilityFlashFeedback = ResolveInvincibilityFlashFeedback();
         if (_inputReader == null)
             Debug.LogWarning("[PlayerCombatController] PlayerInputReader 없음 — 전투 입력 불가");
+    }
+
+    private void OnDestroy()
+    {
+        if (ReferenceEquals(Active, this))
+            Active = null;
+    }
+
+    private void RegisterAsActive()
+    {
+        if (Active == null || ReferenceEquals(Active, this))
+        {
+            Active = this;
+            return;
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning(
+            $"[PlayerCombatController] Active 인스턴스가 이미 존재합니다 ({Active.name}) — 새 인스턴스({name})로 교체합니다.",
+            this);
+#endif
+        Active = this;
+    }
+
+    private void CachePlayerHitInfo()
+    {
+        _cachedTransform = transform;
+        _cachedHitCollider = GetComponent<Collider2D>();
+        if (_cachedHitCollider == null)
+            _cachedHitCollider = GetComponentInChildren<Collider2D>();
+        _cachedHitRadius = CalculateColliderRadius(_cachedHitCollider, DefaultPlayerHitRadius);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_cachedHitCollider == null)
+            Debug.LogWarning(
+                "[PlayerCombatController] hit Collider2D를 찾지 못했습니다 — 기본 hit radius로 fallback합니다.",
+                this);
+#endif
+    }
+
+    private static float CalculateColliderRadius(Collider2D collider, float fallback)
+    {
+        if (collider == null)
+            return fallback;
+
+        if (collider is CircleCollider2D circle)
+        {
+            Vector3 scale = circle.transform.lossyScale;
+            return Mathf.Abs(circle.radius) * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+        }
+
+        Bounds bounds = collider.bounds;
+        return Mathf.Max(fallback, Mathf.Max(bounds.extents.x, bounds.extents.y));
     }
 
     // ══════════════════════════════════════════════════════════════

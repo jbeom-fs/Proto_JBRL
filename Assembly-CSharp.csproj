@@ -74,7 +74,6 @@
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonQueryService.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackExecutor.cs" />
-    <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\CameraFollow2D.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_LootSack.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyPoolManager.cs" />
@@ -123,6 +122,7 @@
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
+    <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
