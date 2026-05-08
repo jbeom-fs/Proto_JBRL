@@ -44,6 +44,14 @@ public class DungeonEventChannel : ScriptableObject
     /// <summary>층이 변경될 때 발행됩니다. (이전 층, 새 층)</summary>
     public event Action<int, int> OnFloorChanged;
 
+    // ── 방 문 개폐 이벤트 ────────────────────────────────────────────
+
+    /// <summary>방의 문이 실제로 닫혔을 때 발행됩니다.</summary>
+    public event Action<RoomInfo> OnRoomDoorsClosed;
+
+    /// <summary>방의 문이 실제로 열렸을 때 발행됩니다.</summary>
+    public event Action<RoomInfo> OnRoomDoorsOpened;
+
     // ── 발행 메서드 ──────────────────────────────────────────────────
 
     /// <summary>방 진입 이벤트를 발행합니다.</summary>
@@ -112,6 +120,24 @@ public class DungeonEventChannel : ScriptableObject
             " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
     }
 
+    /// <summary>방 문이 닫혔음을 발행합니다.</summary>
+    public void RaiseRoomDoorsClosed(RoomInfo room)
+    {
+#if UNITY_EDITOR
+        Debug.Log($"[Event] OnRoomDoorsClosed — Room: {room.X}:{room.Y}");
+#endif
+        OnRoomDoorsClosed?.Invoke(room);
+    }
+
+    /// <summary>방 문이 열렸음을 발행합니다.</summary>
+    public void RaiseRoomDoorsOpened(RoomInfo room)
+    {
+#if UNITY_EDITOR
+        Debug.Log($"[Event] OnRoomDoorsOpened — Room: {room.X}:{room.Y}");
+#endif
+        OnRoomDoorsOpened?.Invoke(room);
+    }
+
     // ── ScriptableObject 생명주기 ────────────────────────────────────
 
     private void OnDisable()
@@ -121,5 +147,7 @@ public class DungeonEventChannel : ScriptableObject
         OnSpawnRoomEntered   = null;
         OnStairRoomEntered   = null;
         OnFloorChanged       = null;
+        OnRoomDoorsClosed    = null;
+        OnRoomDoorsOpened    = null;
     }
 }

@@ -149,6 +149,8 @@ public class FogOfWarController : MonoBehaviour
 
         eventChannel.OnFloorChanged += OnFloorChanged;
         eventChannel.OnRoomEntered += OnRoomEntered;
+        eventChannel.OnRoomDoorsClosed += OnRoomDoorsChanged;
+        eventChannel.OnRoomDoorsOpened += OnRoomDoorsChanged;
     }
 
     private void UnsubscribeEvents()
@@ -158,6 +160,8 @@ public class FogOfWarController : MonoBehaviour
 
         eventChannel.OnFloorChanged -= OnFloorChanged;
         eventChannel.OnRoomEntered -= OnRoomEntered;
+        eventChannel.OnRoomDoorsClosed -= OnRoomDoorsChanged;
+        eventChannel.OnRoomDoorsOpened -= OnRoomDoorsChanged;
     }
 
     private void OnFloorChanged(int previousFloor, int newFloor)
@@ -166,6 +170,11 @@ public class FogOfWarController : MonoBehaviour
     }
 
     private void OnRoomEntered(RoomEnteredEventArgs args)
+    {
+        ForceRefresh();
+    }
+
+    private void OnRoomDoorsChanged(RoomInfo room)
     {
         ForceRefresh();
     }

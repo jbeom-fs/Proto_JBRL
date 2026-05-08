@@ -321,7 +321,10 @@ public class DungeonManager : MonoBehaviour
     public void CloseCurrentRoomDoors(RoomInfo room)
     {
         _currentDoorRoom = room;
-        dungeonRenderer?.CloseDoorsForRoom(room);
+        if (dungeonRenderer == null) return;
+
+        dungeonRenderer.CloseDoorsForRoom(room);
+        eventChannel?.RaiseRoomDoorsClosed(room);
     }
 
     public void OpenCurrentRoomDoors()
@@ -330,8 +333,13 @@ public class DungeonManager : MonoBehaviour
         // RoomSpawner는 방 클리어 상태만 판단하고, 실제 타일맵 문 제어는 여기로 위임합니다.
         ClearPendingRoomStart();
 
-        if (dungeonRenderer != null && dungeonRenderer.OpenAllDoors())
-            _currentDoorRoom = null;
+        if (dungeonRenderer == null || !dungeonRenderer.OpenAllDoors())
+            return;
+
+        RoomInfo? openedRoom = _currentDoorRoom;
+        _currentDoorRoom = null;
+        if (openedRoom.HasValue)
+            eventChannel?.RaiseRoomDoorsOpened(openedRoom.Value);
     }
 
     private void ClearPendingRoomStart()
