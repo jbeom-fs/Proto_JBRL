@@ -36,8 +36,8 @@ public class FogOfWarController : MonoBehaviour
     private bool _hasLastPlayerGrid;
     private bool _needsFullInitialize = true;
 
-    private readonly HashSet<Vector2Int> _previousVisibleCells = new HashSet<Vector2Int>();
-    private readonly HashSet<Vector2Int> _currentVisibleCells = new HashSet<Vector2Int>();
+    private HashSet<Vector2Int> _previousVisibleCells = new HashSet<Vector2Int>();
+    private HashSet<Vector2Int> _currentVisibleCells = new HashSet<Vector2Int>();
     private readonly List<TileChangeData> _tileChangeBuffer = new List<TileChangeData>(256);
     private readonly Dictionary<int, TileChangeData[]> _tileChangeArraysBySize = new Dictionary<int, TileChangeData[]>();
     private static readonly Color ClearCellColor = Color.white;
@@ -449,9 +449,10 @@ public class FogOfWarController : MonoBehaviour
 
     private void SwapVisibleSets()
     {
-        _previousVisibleCells.Clear();
-        foreach (Vector2Int cell in _currentVisibleCells)
-            _previousVisibleCells.Add(cell);
+        HashSet<Vector2Int> temp = _previousVisibleCells;
+        _previousVisibleCells = _currentVisibleCells;
+        _currentVisibleCells = temp;
+        _currentVisibleCells.Clear();
     }
 
     private TileChangeData[] GetTileChangeArray(int count)
