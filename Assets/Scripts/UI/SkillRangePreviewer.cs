@@ -70,6 +70,7 @@ public class SkillRangePreviewer : MonoBehaviour
     private SkillData    _currentSkill;
     private bool         _isBasicAttackPreview  = false;
     private Vector2Int   _lastFacing;
+    private Vector2Int   _lastAimDirection = Vector2Int.down;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화
@@ -134,12 +135,7 @@ public class SkillRangePreviewer : MonoBehaviour
             // 방향 의존 패턴(Line·Cone·Single)은 FacingDirection 이 바뀔 때만 재계산
             if (RequiresFacingRefresh(_currentSkill))
             {
-                Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-                if (facing != _lastFacing)
-                {
-                    _lastFacing = facing;
-                    BuildPreview(_currentSkill);
-                }
+                RefreshDirectionalPreview(_currentSkill);
             }
         }
         else if (_isBasicAttackPreview)
@@ -211,6 +207,7 @@ public class SkillRangePreviewer : MonoBehaviour
         if (_currentSkill == null) return;
         _activeSlot   = slot;
         _lastFacing   = movement != null ? movement.FacingDirection : Vector2Int.down;
+        _lastAimDirection = GetPreviewRawDirection();
 
         BuildPreview(_currentSkill);
         _lr.enabled = true;
@@ -349,12 +346,20 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private Vector2 GetPreviewDirection()
     {
-        Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-        Vector2 direction = new Vector2(facing.x, facing.y);
-        if (direction.sqrMagnitude < 0.001f)
-            direction = Vector2.down;
+        return AimDirectionUtility.ToNormalizedDirection(GetPreviewRawDirection());
+    }
 
-        return direction.normalized;
+    private Vector2Int GetPreviewRawDirection()
+    {
+        if (combat != null)
+        {
+            combat.RefreshAimDirection();
+            return combat.CurrentAimRawDirection;
+        }
+
+        Vector2 input = inputReader != null ? inputReader.MoveInput : Vector2.zero;
+        _lastAimDirection = AimDirectionUtility.ResolveEightWayRaw(input, _lastAimDirection);
+        return _lastAimDirection;
     }
 
     private void BuildProjectileLinePreview(Vector2 direction, float distance, ProjectileWallHitMode wallHitMode)
@@ -652,6 +657,34 @@ public class SkillRangePreviewer : MonoBehaviour
         if (skill.executionType == SkillExecutionType.Projectile) return true;
         if (skill.executionType == SkillExecutionType.Dash) return true;
         return SkillTargetResolver.IsDirectional(skill.attackPattern);
+    }
+
+    private void RefreshDirectionalPreview(SkillData skill)
+    {
+        if (UsesEightWayPreviewDirection(skill))
+        {
+            Vector2Int aimDirection = GetPreviewRawDirection();
+            if (aimDirection == _lastAimDirection)
+                return;
+
+            _lastAimDirection = aimDirection;
+            BuildPreview(skill);
+            return;
+        }
+
+        Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        if (facing == _lastFacing)
+            return;
+
+        _lastFacing = facing;
+        BuildPreview(skill);
+    }
+
+    private static bool UsesEightWayPreviewDirection(SkillData skill)
+    {
+        return skill != null &&
+               (skill.executionType == SkillExecutionType.Projectile ||
+                skill.executionType == SkillExecutionType.Dash);
     }
 
     private static bool IsDirectional(AttackPatternType p) =>

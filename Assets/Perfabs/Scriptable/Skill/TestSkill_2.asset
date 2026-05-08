@@ -13,9 +13,21 @@ MonoBehaviour:
   m_Name: TestSkill_2
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   skillName: TestSkill
-  description: Test
   icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  description: Test
   executionType: 1
+  mpCost: 0
+  cooldown: 0
+  damage: 10
+  attackPattern: 4
+  patternRange: 10
+  coneHalfAngle: 45
+  isMultiTarget: 0
+  canPenetrateWalls: 1
+  knockbackForce: 10
+  knockbackDuration: 1
+  slowPercentage: 0.8
+  slowDuration: 3
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
   projectileSpeed: 20
   projectileLifetime: 3
@@ -34,15 +46,3 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
-  damage: 10
-  attackPattern: 4
-  patternRange: 10
-  isMultiTarget: 0
-  knockbackForce: 10
-  knockbackDuration: 1
-  slowPercentage: 0.8
-  slowDuration: 3
-  mpCost: 1
-  cooldown: 0
-  canPenetrateWalls: 1
-  coneHalfAngle: 45

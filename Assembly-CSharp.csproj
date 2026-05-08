@@ -88,6 +88,7 @@
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
+    <Compile Include="Assets\Scripts\Combat\AimDirectionUtility.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />

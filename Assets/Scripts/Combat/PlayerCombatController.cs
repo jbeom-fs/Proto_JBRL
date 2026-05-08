@@ -65,6 +65,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private Transform _cachedTransform;
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
+    private Vector2Int _lastAimDirection = Vector2Int.down;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -81,6 +82,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
     public float       CachedHitRadius       => _cachedHitRadius;
+    public Vector2     CurrentAimDirection   => AimDirectionUtility.ToNormalizedDirection(_lastAimDirection);
+    public Vector2Int  CurrentAimRawDirection => _lastAimDirection;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
     public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0);
@@ -210,16 +213,28 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
 
+        if (_inputReader == null) return;
+        RefreshAimDirection();
+
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
         if (IsDashing) return;
-
-        if (_inputReader == null) return;
 
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
         if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
         if (_inputReader.WasSkillPressed(1)) TryUseSkill(1);
         if (_inputReader.WasSkillPressed(2)) TryUseSkill(2);
         if (_inputReader.WasSkillPressed(3)) TryUseSkill(3);
+    }
+
+    public Vector2 RefreshAimDirection()
+    {
+        if (_inputReader != null &&
+            AimDirectionUtility.TryGetEightWayRaw(_inputReader.MoveInput, out Vector2Int rawDirection))
+        {
+            _lastAimDirection = rawDirection;
+        }
+
+        return CurrentAimDirection;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -300,6 +315,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         Vector2Int screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
         Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(screenFacing);
+        Vector2 aimDirection = RefreshAimDirection();
 
         return new SkillExecutionContext(
             this,
@@ -307,7 +323,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             transform,
             skill,
             slotIndex,
-            screenFacing,
+            aimDirection,
             gridFacing,
             TotalAttack,
             hitRadius);
