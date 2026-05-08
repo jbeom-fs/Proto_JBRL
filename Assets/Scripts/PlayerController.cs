@@ -43,6 +43,7 @@ public class PlayerController : MonoBehaviour
     public float collisionRadius = 0.2f;
 
     private const int ROOM_ENTRY_SAMPLE_THRESHOLD = 3;
+    private const float POSITION_RECHECK_EPSILON_SQR = 0.000001f;
 
     // ── 내부 상태 ─────────────────────────────────────────────────────
     private PlayerInputReader _inputReader;
@@ -246,6 +247,10 @@ public class PlayerController : MonoBehaviour
     private void LateUpdate()
     {
         if (dungeonManager == null || dungeonManager.Data == null) return;
+
+        Vector2 positionDelta = (Vector2)transform.position - (Vector2)_lastSafePosition;
+        if (positionDelta.sqrMagnitude < POSITION_RECHECK_EPSILON_SQR)
+            return;
 
         if (CanMoveTo(transform.position))
         {
