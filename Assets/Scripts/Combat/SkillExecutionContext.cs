@@ -8,6 +8,7 @@ using UnityEngine;
 public sealed class SkillExecutionContext
 {
     public PlayerCombatController CasterCombat { get; }
+    public PlayerDashController CasterDash { get; }
     public Transform CasterTransform { get; }
     public SkillData Skill { get; }
     public int SlotIndex { get; }
@@ -19,6 +20,7 @@ public sealed class SkillExecutionContext
 
     public SkillExecutionContext(
         PlayerCombatController casterCombat,
+        PlayerDashController casterDash,
         Transform casterTransform,
         SkillData skill,
         int slotIndex,
@@ -28,6 +30,7 @@ public sealed class SkillExecutionContext
         float hitRadius)
     {
         CasterCombat = casterCombat;
+        CasterDash = casterDash;
         CasterTransform = casterTransform;
         Skill = skill;
         SlotIndex = slotIndex;

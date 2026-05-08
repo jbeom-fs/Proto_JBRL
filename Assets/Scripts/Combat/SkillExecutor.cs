@@ -13,6 +13,7 @@ public sealed class SkillExecutor
     private readonly ProjectileFireService _projectileFireService;
     private readonly HashSet<SkillExecutionType> _reportedUnsupportedTypes = new();
     private readonly HashSet<SkillData> _reportedMissingProjectilePrefabs = new();
+    private readonly HashSet<PlayerCombatController> _reportedMissingDashControllers = new();
 
     public SkillExecutor(AttackExecutor attackExecutor)
     {
@@ -78,10 +79,14 @@ public sealed class SkillExecutor
         return _projectileFireService.Fire(CreateProjectileFireRequest(context, direction));
     }
 
-    private static bool ExecuteDash(SkillExecutionContext context)
+    private bool ExecuteDash(SkillExecutionContext context)
     {
-        PlayerDashController dashController = ResolveDashController(context);
-        if (dashController == null) return false;
+        PlayerDashController dashController = context.CasterDash;
+        if (dashController == null)
+        {
+            ReportMissingDashController(context.CasterCombat);
+            return false;
+        }
 
         SkillData skill = context.Skill;
         Vector2 direction = ResolveExecutionDirection(context);
@@ -157,17 +162,6 @@ public sealed class SkillExecutor
         return direction.normalized;
     }
 
-    private static PlayerDashController ResolveDashController(SkillExecutionContext context)
-    {
-        if (context.CasterCombat == null) return null;
-
-        PlayerDashController dashController = context.CasterCombat.GetComponent<PlayerDashController>();
-        if (dashController == null)
-            dashController = context.CasterCombat.gameObject.AddComponent<PlayerDashController>();
-
-        return dashController;
-    }
-
     private void ReportUnsupportedExecutionType(SkillExecutionType executionType)
     {
 #if UNITY_EDITOR
@@ -181,6 +175,16 @@ public sealed class SkillExecutor
 #if UNITY_EDITOR
         if (skill != null && _reportedMissingProjectilePrefabs.Add(skill))
             Debug.LogWarning($"[SkillExecutor] Projectile skill is missing projectilePrefab: {skill.skillName}");
+#endif
+    }
+
+    private void ReportMissingDashController(PlayerCombatController caster)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (caster != null && _reportedMissingDashControllers.Add(caster))
+            Debug.LogWarning(
+                $"[SkillExecutor] Dash 스킬을 실행할 PlayerDashController가 없습니다 (caster: {caster.name}).",
+                caster);
 #endif
     }
 }

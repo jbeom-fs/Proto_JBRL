@@ -296,6 +296,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         return new SkillExecutionContext(
             this,
+            _dashController,
             transform,
             skill,
             slotIndex,
