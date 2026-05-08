@@ -13,6 +13,7 @@ public enum ProjectileReleaseReason
     EnemyHit,
     WallHitDestroy,
     BounceLimit,
+    OutOfBounds,
     Manual,
     FallbackDestroy
 }
@@ -487,6 +488,7 @@ public class RuntimePerfTraceLogger : MonoBehaviour
             case ProjectileReleaseReason.EnemyHit: return "EnemyHit";
             case ProjectileReleaseReason.WallHitDestroy: return "WallHitDestroy";
             case ProjectileReleaseReason.BounceLimit: return "BounceLimit";
+            case ProjectileReleaseReason.OutOfBounds: return "OutOfBounds";
             case ProjectileReleaseReason.Manual: return "Manual";
             case ProjectileReleaseReason.FallbackDestroy: return "FallbackDestroy";
             default: return "Unknown";

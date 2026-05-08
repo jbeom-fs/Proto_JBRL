@@ -196,6 +196,13 @@ public class ProjectileController : MonoBehaviour
 
         Vector2 currentPosition = transform.position;
         Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
+
+        if (IsOutOfDungeonBounds(nextPosition))
+        {
+            Release(ProjectileReleaseReason.OutOfBounds);
+            return;
+        }
+
         if (_wallHitMode == ProjectileWallHitMode.PassThrough)
         {
             transform.position = nextPosition;
@@ -211,6 +218,19 @@ public class ProjectileController : MonoBehaviour
         }
 
         TryHitTarget();
+    }
+
+    // Map bounds 밖이면 wall mode와 무관하게 lifecycle을 끝낸다.
+    // _dungeon/Data가 아직 준비되지 않은 짧은 윈도에서는 false로 두어 기존 동작을 유지한다.
+    private bool IsOutOfDungeonBounds(Vector2 worldPosition)
+    {
+        if (_dungeon == null)
+            _dungeon = DungeonManager.Instance;
+        if (_dungeon == null || _dungeon.Data == null)
+            return false;
+
+        Vector2Int grid = _dungeon.WorldToGrid(worldPosition);
+        return !_dungeon.Data.InBounds(grid.x, grid.y);
     }
 
     private bool IsWallPosition(Vector2 position)
@@ -367,6 +387,22 @@ public class ProjectileController : MonoBehaviour
         Vector2 currentPosition = transform.position;
         Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
         moveTicks += RuntimePerfTraceLogger.Timestamp() - moveStart;
+
+        long boundsStart = RuntimePerfTraceLogger.Timestamp();
+        bool outOfBounds = IsOutOfDungeonBounds(nextPosition);
+        wallTicks += RuntimePerfTraceLogger.Timestamp() - boundsStart;
+
+        if (outOfBounds)
+        {
+            Release(ProjectileReleaseReason.OutOfBounds);
+            RuntimePerfTraceLogger.RecordProjectileUpdate(
+                RuntimePerfTraceLogger.Timestamp() - updateStart,
+                moveTicks,
+                wallTicks,
+                hitTicks,
+                bounceTicks);
+            return;
+        }
 
         if (_wallHitMode == ProjectileWallHitMode.PassThrough)
         {
