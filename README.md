@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-07  
+> 작성 기준일: 2026-05-08  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -37,6 +37,7 @@
 | 시점 | 탑다운 2D |
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
 | 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
+| 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair |
 | 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기 |
@@ -73,13 +74,14 @@
 │  SkillExecutor · SkillTargetResolver · SkillExecutionContext │
 │  SkillSlotRuntime · SkillCooldownController                  │
 │  ProjectileFireService · ProjectileFireRequest               │
+│  AimDirectionUtility · CombatLayers                          │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
 │  EnemyHealthBar · PlayerStatusBarUI                          │
 │  SkillSlotUI · SkillUIManager · SkillRangePreviewer          │
 │  HitFlashFeedback · PlayerInvincibilityFlashFeedback         │
-│  EnemyAnimationController                                    │
+│  EnemyAnimationController · FogVisibilityRenderer            │
 │  GameOverUIController                                        │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -94,6 +96,7 @@
 - **스킬 실행 라우팅**: SkillData.executionType → SkillExecutor 가 InstantArea / Projectile / Dash 분기로 라우팅, MonoBehaviour와 분리된 순수 서비스 계층
 - **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀 계산 제공
 - **공유 투사체 발사**: ProjectileFireService가 적 원거리·플레이어 스킬 모두에 동일한 패턴(Single/Burst/Spread/Circle) 처리
+- **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용)
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 
 ---
@@ -135,9 +138,11 @@ Assets/Scripts/
 │   ├── IDamageable.cs              # 피해 수신 인터페이스
 │   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기 (FillTargets API)
 │   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용
-│   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간)
+│   ├── AimDirectionUtility.cs      # 8방향 입력 양자화 + raw/정규화/카디널 변환 (Domain)
+│   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
+│   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간·8방향 조준)
 │   ├── PlayerResource.cs           # HP·MP 상태 컨테이너 (Domain)
-│   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·경로 데미지
+│   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
 │   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기)
 │   ├── SkillTargetResolver.cs      # 스킬 셀·미리보기 반경·투사체 거리 공통 계산
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
@@ -145,12 +150,15 @@ Assets/Scripts/
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
 │   ├── ProjectileFireService.cs    # 투사체 발사 패턴 처리 (Single/Burst/Spread/Circle)
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
-│   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 타깃모드(Player/Enemy)
+│   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성 토글
 │   ├── ProjectilePool.cs           # 투사체 사전 풀링 (SetActive/DisableComponents 모드)
 │   ├── Projectile.cs               # (구) 트리거 기반 발사체 — 호환 유지용
 │   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
 │   ├── PlayerInvincibilityFlashFeedback.cs # 무적 시 셰이더 _FlashAmount 보간 (PropertyBlock)
 │   └── CombatEventChannel.cs       # 전투 이벤트 버스 (ScriptableObject)
+│
+├── Visual/
+│   └── FogVisibilityRenderer.cs    # FogOfWar visible 상태에 따라 Renderer.enabled 토글 (적·적 투사체 공용)
 │
 ├── Enemy/
 │   ├── EnemyController.cs          # 적 HP·피해·사망·상태이상·넉백 벽 클램핑
@@ -290,13 +298,15 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 
 | 이벤트 | 발행자 | 구독자 |
 |--------|--------|--------|
-| `OnRoomEntered` | PlayerController | RoomSpawner |
+| `OnRoomEntered` | PlayerController | RoomSpawner, FogOfWarController |
 | `OnNormalRoomEntered` | PlayerController | — (미사용, 예약) |
 | `OnSpawnRoomEntered` | PlayerController | — |
 | `OnStairRoomEntered` | PlayerController | — |
-| `OnFloorChanged` | DungeonManager | PlayerController, RoomSpawner, SkillUIManager |
+| `OnFloorChanged` | DungeonManager | PlayerController, RoomSpawner, SkillUIManager, FogOfWarController |
+| `OnRoomDoorsClosed(RoomInfo)` | DungeonManager | FogOfWarController |
+| `OnRoomDoorsOpened(RoomInfo)` | DungeonManager | FogOfWarController |
 
-> **참고**: `DoorController`는 이벤트를 구독하지 않습니다. 문 개폐는 `RoomSpawner` → `DungeonManager.CloseCurrentRoomDoors / OpenCurrentRoomDoors`로 직접 호출됩니다.
+> **참고**: `DoorController`는 이벤트를 구독하지 않습니다. 문 개폐는 `RoomSpawner` → `DungeonManager.CloseCurrentRoomDoors / OpenCurrentRoomDoors`로 직접 호출됩니다. 다만 DungeonManager는 실제 문 상태 전환이 발생한 직후 `OnRoomDoorsClosed` / `OnRoomDoorsOpened`를 발행해, `closedDoorsBlockVision`을 사용하는 FogOfWarController가 즉시 시야를 재계산할 수 있도록 합니다.
 
 ### CombatEventChannel
 
@@ -365,11 +375,13 @@ CheckRoomEntry():
 
 | 키 | 동작 |
 |----|------|
-| ↑↓←→ | 이동 + Facing 방향 갱신 |
+| ↑↓←→ | 이동 + Facing 방향 갱신 + 8방향 조준 raw 입력 |
 | Z | 계단 상호작용 (0.5초 쿨다운) |
 | F10 | 문 열기 |
-| Space | 기본 공격 (홀드 시 범위 미리보기) |
+| Space | 기본 공격 (홀드 시 범위 미리보기) — Facing 4방향 기준 |
 | Q / W / E / R | 스킬 슬롯 1~4 — InstantArea / Projectile / Dash 라우팅 (홀드 시 범위 미리보기) |
+
+> **조준 방향 결정**: 기본 공격(Space)은 `PlayerController.FacingDirection`(이동 키 우선 → 카디널 4방향)을, 스킬·투사체·대시는 `AimDirectionUtility.TryGetEightWayRaw(MoveInput)` 으로 얻은 8방향 raw 입력을 사용합니다. 입력이 비어 있을 때는 `PlayerCombatController._lastAimDirection`(기본값 down)으로 폴백합니다. 미리보기도 동일한 raw 방향을 사용해 실제 발사 결과와 시각이 일치합니다.
 
 ---
 
@@ -405,11 +417,16 @@ PlayerCombatController
   ├── PlayerResource (HP/MP 상태)
   ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태)
   ├── AttackExecutor / SkillExecutor (스킬 실행 라우팅)
-  ├── PlayerDashController (대시 코루틴, 자동 부착)
+  ├── PlayerDashController (대시 코루틴, RequireComponent)
+  ├── PlayerInputReader (RequireComponent)
   ├── HitFlashFeedback (피격 색상 점멸)
   ├── PlayerInvincibilityFlashFeedback (무적 셰이더 플래시)
   ├── damageInvincibleDuration — 피격 후 무적시간 (기본 0.5초)
   ├── _externalInvincibilityCount — 대시·외부 효과 무적 카운터
+  ├── _lastAimDirection (Vector2Int) — 8방향 raw 조준 캐시 (입력 없을 때 폴백)
+  ├── CurrentAimDirection / CurrentAimRawDirection — 정규화·raw 8방향 조준
+  ├── RefreshAimDirection() — Update 매 프레임 + 스킬 사용 직전 갱신
+  ├── PlayerCombatController.Active (정적) — Projectile 등에서 거리 비교용 캐시 활용
   ├── IsDamageInvincible / HasExternalInvincibility / IsDashing
   ├── IsDead / OnDied(player) — HP 0 도달 시 단발 사망 처리
   ├── BeginExternalInvincibility(visualDuration) / EndExternalInvincibility()
@@ -466,7 +483,8 @@ InstantArea:
     canPenetrateWalls, isMultiTarget, knockback/slow, hitRadius)
 
 Projectile:
-  ResolveExecutionDirection(context) → 정규화 방향
+  ResolveExecutionDirection(context) →
+    AimDirection(8방향 raw → 정규화) 우선, 0이면 GridAimDirection 폴백
   ProjectileFireService.Fire(ProjectileFireRequest):
     Single  → SpawnProjectile 1회
     Spread  → spreadAngle 부채꼴에 N발 균등 분포
@@ -474,14 +492,23 @@ Projectile:
     Burst   → 1발 즉시 + (N-1)발을 burstInterval 간격으로 코루틴 발사
   Owner = caster, TargetMode = Enemy
   → ProjectilePool에서 prefab을 가져와 ProjectileController.Initialize(...)
+    (knockback/slow 파라미터까지 함께 주입)
 
 Dash:
-  PlayerDashController = caster.GetOrAdd<PlayerDashController>()
+  PlayerDashController = RequireComponent로 보장된 caster의 컴포넌트
   TryStartDash(direction, distance, duration, stopOnWall,
-               invincibleDuringDash, DashDamageRequest)
-  → 발자국(4코너) IsWalkable 검사로 destination 결정
+               invincibleDuringDash, DashDamageRequest{
+                 DamageOnPath, DamageOnContact, Damage, HitRadius,
+                 KnockbackForce/Duration, SlowPercentage/Duration})
+  → direction 은 SkillExecutor가 8방향 raw 조준 기반으로 결정
+  → 발자국(4코너) IsWalkable 검사로 destination 결정 (sampleStep ≈ tile×0.25)
   → 무적 옵션 시 BeginExternalInvincibility(duration) → flash 셰이더 진행
-  → 코루틴 보간 이동, 이동 중 매 프레임 OverlapCircle로 적 1회 히트 후 ApplyCombatImpact
+  → DashRoutine: Lerp(start, destination, t) 보간 이동
+       매 프레임 TryApplyDashPathDamage(prev → current):
+         segment 길이 / (HitRadius×0.75) 만큼 보간 샘플링 (최대 16샘플/segment)
+         OverlapCircleNonAlloc → _hitEnemiesThisDash로 1회만 히트
+       종료 시 TryApplyDashContactDamage(destination):
+         최종 위치에서 한 번 더 OverlapCircle (path와 contact는 분리된 플래그)
 ```
 
 ### 7-4. 공격 판정 (AttackExecutor)
@@ -538,12 +565,20 @@ Fire(ProjectileFireRequest):
 ```
 ProjectileController:
   ├── DungeonManager 그리드 IsWalkable 기반 벽 검사 (Physics2D 미사용)
+  ├── 매 프레임 IsOutOfDungeonBounds(nextPos) — 맵 범위(InBounds) 밖이면 즉시 Release
   ├── ProjectileWallHitMode: Destroy / PassThrough / Bounce
   ├── TargetMode = Player: 정적 캐시된 PlayerCombatController 거리 비교
   ├── TargetMode = Enemy : Physics2D.OverlapCircle → EnemyController.ApplyCombatImpact
   ├── ProjectileTargetHitMode: DestroyOnHit / Pierce / HitOncePerTarget
+  ├── ApplyFogVisibilityForTargetMode():
+  │     Enemy projectile(TargetMode=Player)에만 FogVisibilityRenderer enabled
+  │     ResetToVisible() + RefreshVisibilityImmediate() 로 풀 재사용 시 잔존 상태 제거
+  │     Player projectile(TargetMode=Enemy)는 fog 토글 없이 항상 표시
   ├── PrepareFromPool / HideForPool — 컴포넌트 enabled 토글 + Animator "Fly" 재시작
-  └── lifetime 만료 / 벽 / 적중 시 Release(reason) → 풀 콜백
+  │     HideForPool 시 FogVisibilityRenderer.enabled = false 로 fog 평가 정지
+  └── lifetime 만료 / 벽 / 적중 / 맵 밖 → Release(reason) → 풀 콜백
+        Reason: LifetimeExpired / PlayerHit / EnemyHit / WallHitDestroy /
+                BounceLimit / OutOfBounds / Manual / FallbackDestroy
 ```
 
 **ProjectilePool — 두 가지 비활성화 모드**
@@ -569,10 +604,19 @@ TryStartDash(caster, direction, distance, duration,
   ③ invincibleDuringDash → caster.BeginExternalInvincibility(duration)
                           → InvincibilityFlashFeedback _FlashAmount 보간
   ④ DashRoutine 코루틴: Lerp(start, destination, t) 이동
-       매 프레임 TryApplyDashDamage():
-         OverlapCircleNonAlloc(hitRadius)로 적 검사
-         _hitEnemiesThisDash로 1회만 히트 → ApplyCombatImpact
+       (a) 매 프레임 TryApplyDashPathDamage(prev, current):
+             DamageOnPath 일 때만 활성. segment 거리/(hitRadius×0.75)
+             단위로 보간 샘플링(최대 16/segment), 각 샘플에서 OverlapCircle
+             → _hitEnemiesThisDash HashSet으로 적 1회만 히트
+       (b) 종료 후 TryApplyDashContactDamage(destination):
+             DamageOnContact 일 때만 최종 위치에서 한 번 더 OverlapCircle
+       → ApplyCombatImpact(damage, knockback, slow)
   ⑤ 종료 시 ClearDashInvincibility / ClearDashDamageState
+
+DashDamageRequest 플래그:
+  DamageOnPath    — 이동 경로 위 적 모두에 데미지 (segment 보간 샘플링)
+  DamageOnContact — 대시 종료 지점에서만 데미지 (최종 프레임)
+  두 플래그는 독립이며, 둘 다 켜면 path 적 + 종착 적 모두 처리 (1회 제한)
 
 PlayerController는 IsDashing 동안 Move/입력 처리를 스킵하고
 CheckRoomEntry만 호출해 대시 중 방 전환을 감지합니다.
@@ -897,9 +941,37 @@ GC·성능:
   closedDoorsBlockVision: 닫힌 문 너머 시야 차단
 ```
 
+공개 API:
+- `IsVisibleCell(Vector2Int gridPos)` — 그리드 좌표가 현재 시야 내인지
+- `IsWorldPositionVisible(Vector3 worldPos)` — WorldToGrid 변환 후 시야 검사 (FogVisibilityRenderer 가 매 프레임 호출)
+- `ForceRefresh()` / `RequestFullInitialize()` — 외부 강제 갱신 진입점
+- `FogOfWarController.Active` (정적) — FogVisibilityRenderer 가 인스턴스 검색 없이 참조
+
 이벤트 구독:
 - `DungeonEventChannel.OnFloorChanged` → 다음 LateUpdate 에서 전체 재초기화 요청
 - `DungeonEventChannel.OnRoomEntered` → 즉시 ForceRefresh
+- `DungeonEventChannel.OnRoomDoorsClosed` / `OnRoomDoorsOpened` → 즉시 ForceRefresh
+   (closedDoorsBlockVision = true 일 때 문 개폐 직후 시야 차단/개방을 한 프레임 안에 반영)
+
+### 11-0-1. FogVisibilityRenderer (Visual/)
+
+`Renderer.enabled` 만 토글해 안개 밖 오브젝트를 숨기는 범용 컴포넌트. 게임플레이 로직(AI·콜라이더·데미지·풀)에는 영향을 주지 않습니다. 매 프레임 GetComponent / FindAnyObjectByType / 신규 할당 없이 동작합니다.
+
+```
+FogVisibilityRenderer:
+  ├── managedRenderers — Awake 시 자식 포함 자동 캐시 (또는 Inspector 명시)
+  ├── _rendererInitialEnabled — 프리팹 초기 enabled 상태 보존
+  ├── updateInterval (0이면 매 Update / >0이면 그 초마다 평가)
+  ├── ResolveVisibility() = FogOfWarController.Active.IsWorldPositionVisible(transform.position)
+  ├── ApplyVisibility(visible): Renderer.enabled = visible && initialEnabled
+  ├── ResetToVisible() — 풀 재사용 직전 호출 (모든 Renderer를 visible 기준선으로 복원)
+  └── RefreshVisibilityImmediate() — pool 직후/Initialize 직후 한 프레임 지연 없이 평가
+
+사용 위치:
+  • EnemyPoolManager 가 적 prefab 에 부착해 시야 밖 적 렌더링 차단
+  • ProjectileController 가 Enemy projectile(TargetMode=Player)에만 활성화
+    → 시야 밖에서 날아오는 투사체를 보이지 않게 처리, 풀 회수 시 enabled=false 로 잔존 평가 차단
+```
 
 ### 11-1. Tilemap 3레이어 구조
 
@@ -1015,6 +1087,13 @@ FloorTransition(targetFloor):
 | 무적 셰이더 PropertyBlock | `PlayerInvincibilityFlashFeedback` | 머티리얼 클로닝 없이 _FlashAmount 보간 (인스턴싱 친화적) |
 | 외부 무적 카운터 | `PlayerCombatController._externalInvincibilityCount` | 대시 등 중첩 무적을 부울이 아닌 카운터로 관리 |
 | 대시 적중 1회 제한 | `PlayerDashController._hitEnemiesThisDash` | 대시 1회당 적당 1히트 보장 (HashSet) |
+| 대시 path/contact 분리 | `DashDamageRequest.DamageOnPath`/`OnContact` | 경로 데미지와 종착 데미지를 독립 플래그로 분리, segment 보간(최대 16샘플) |
+| 투사체 맵 범위 가드 | `ProjectileController.IsOutOfDungeonBounds` | 맵 밖으로 나간 투사체를 wall mode와 무관하게 즉시 Release |
+| 8방향 조준 통합 | `AimDirectionUtility` | 입력 → raw/정규화/카디널 변환을 단일 유틸로 — GC 없음, 스킬·미리보기·발사 모두 동일 결과 |
+| Fog 가시성 렌더러 | `FogVisibilityRenderer` | Renderer.enabled 만 토글해 시야 밖 적·투사체 숨김 (콜라이더·AI 영향 없음) |
+| Fog 정적 Active 캐시 | `FogOfWarController.Active` | FogVisibilityRenderer 가 매 프레임 FindAnyObjectByType 없이 참조 |
+| 문 개폐 즉시 시야 갱신 | `OnRoomDoorsClosed`/`OnRoomDoorsOpened` → `FogOfWarController.ForceRefresh` | 닫힌 문이 시야 차단 결과로 반영되기까지 한 프레임 지연 없음 |
+| Layer 필터 정적 캐싱 | `CombatLayers.EnemyFilter`/`PlayerFilter` | LayerMask 빌드/이름 비교를 1회로 줄이고 OverlapCircle에 공유 |
 
 ---
 
@@ -1203,6 +1282,13 @@ case SkillExecutionType.AreaOverTime:
 | **게임오버 UI 자동 빌드** | `GameOverUIController.BuildDefaultUi` — 인스펙터 미설정 시 패널·이미지·확인 버튼 런타임 생성 |
 | **적 사망 지연 처리** | `EnemyData.deathDelay` + `OnDeathFinished` — 사망 모션 종료 후 풀 반납, 방 클리어 판정은 즉시 |
 | **추격 중 타겟 페이싱** | `EnemyAnimationController.faceTargetWhileChasing` — 근접 적의 추적 방향 흔들림 보정 |
+| **8방향 조준 통합** | `AimDirectionUtility` — 입력 → raw/정규화/카디널 변환, 스킬·투사체·대시·미리보기 공유 |
+| **대시 path/contact 분리** | `DashDamageRequest.DamageOnPath`/`OnContact` 독립 플래그 — 경로 보간 샘플링 + 종착 별도 판정 |
+| **투사체 맵 범위 가드** | `ProjectileController.IsOutOfDungeonBounds` + `ProjectileReleaseReason.OutOfBounds` — 맵 밖 투사체 자동 Release |
+| **Fog 가시성 렌더러** | `FogVisibilityRenderer` — Renderer.enabled 토글로 시야 밖 적·적 투사체 시각만 숨김 |
+| **적 투사체 Fog 통합** | `ProjectileController.ApplyFogVisibilityForTargetMode` — Enemy projectile에만 fog 토글, 풀 회수 시 잔존 visibility 정리 |
+| **문 개폐 이벤트 발행** | `DungeonEventChannel.OnRoomDoorsClosed/Opened` — FogOfWarController가 즉시 시야 재계산 |
+| **Combat Layer 정적 캐시** | `CombatLayers` — Enemy/Player ContactFilter2D 공유 |
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 
 ### 미구현 (다음 단계)
@@ -1218,7 +1304,7 @@ case SkillExecutionType.AreaOverTime:
 | 세이브 / 로드 | 낮음 | Seed 기반 재현으로 부분 대체 가능 |
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
-| 대시 경로 데미지 정식 노출 | 낮음 | dashDamageOnPath/onContact 필드는 있으나 SkillData 인스펙터에서 "예약" 라벨 |
+| SkillData dash 툴팁 정정 | 낮음 | `dashDamageOnPath`/`OnContact` 인스펙터 툴팁이 아직 "first-pass implementation shares the same detection path"로 남아 있음 — 실제 구현은 분리됨 |
 
 ---
 
