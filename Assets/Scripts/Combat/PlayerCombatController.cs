@@ -17,6 +17,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(PlayerDashController))]
+[RequireComponent(typeof(PlayerInputReader))]
 public class PlayerCombatController : MonoBehaviour, IDamageable
 {
     private const int SkillSlotCount = 4;
@@ -100,21 +102,26 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
         _skillExecutor = new SkillExecutor(_attackExecutor);
         BindSkillSlots(currentWeapon);
-        if (combatChannel == null)
-            Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/MP/스킬 UI 이벤트가 발행되지 않습니다.");
-        if (playerMovement == null)
-            Debug.LogWarning("[PlayerCombatController] PlayerController 없음 — 공격 방향이 기본 방향을 사용합니다.");
         _inputReader = GetComponent<PlayerInputReader>();
-        if (_inputReader == null && playerMovement != null)
-            _inputReader = playerMovement.GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
-        if (_dashController == null)
-            _dashController = gameObject.AddComponent<PlayerDashController>();
         _hitFlash = ResolveHitFlashFeedback();
         if (invincibilityFlashFeedback == null)
             invincibilityFlashFeedback = ResolveInvincibilityFlashFeedback();
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (combatChannel == null)
+            Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/MP/스킬 UI 이벤트가 발행되지 않습니다.", this);
+        if (playerMovement == null)
+            Debug.LogWarning("[PlayerCombatController] PlayerController 없음 — 공격 방향이 기본 방향을 사용합니다.", this);
         if (_inputReader == null)
-            Debug.LogWarning("[PlayerCombatController] PlayerInputReader 없음 — 전투 입력 불가");
+            Debug.LogError("[PlayerCombatController] PlayerInputReader가 없습니다 — RequireComponent로 추가되어야 합니다.", this);
+        if (_dashController == null)
+            Debug.LogError("[PlayerCombatController] PlayerDashController가 없습니다 — RequireComponent로 추가되어야 합니다.", this);
+        if (_hitFlash == null)
+            Debug.LogWarning("[PlayerCombatController] HitFlashFeedback을 찾지 못했습니다 — 자식에 추가하거나 SerializeField로 연결하세요.", this);
+        if (invincibilityFlashFeedback == null)
+            Debug.LogWarning("[PlayerCombatController] PlayerInvincibilityFlashFeedback을 찾지 못했습니다 — 자식에 추가하거나 SerializeField로 연결하세요.", this);
+#endif
     }
 
     private void OnDestroy()
@@ -374,14 +381,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private HitFlashFeedback ResolveHitFlashFeedback()
     {
-        HitFlashFeedback feedback = GetComponentInChildren<HitFlashFeedback>(true);
-        return feedback != null ? feedback : gameObject.AddComponent<HitFlashFeedback>();
+        return GetComponentInChildren<HitFlashFeedback>(true);
     }
 
     private PlayerInvincibilityFlashFeedback ResolveInvincibilityFlashFeedback()
     {
-        PlayerInvincibilityFlashFeedback feedback = GetComponentInChildren<PlayerInvincibilityFlashFeedback>(true);
-        return feedback != null ? feedback : gameObject.AddComponent<PlayerInvincibilityFlashFeedback>();
+        return GetComponentInChildren<PlayerInvincibilityFlashFeedback>(true);
     }
 
     private void SpendMp(int amount)

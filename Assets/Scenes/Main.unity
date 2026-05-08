@@ -99763,6 +99763,9 @@ GameObject:
   - component: {fileID: 1562452760}
   - component: {fileID: 1562452762}
   - component: {fileID: 1562452763}
+  - component: {fileID: 1562452770}
+  - component: {fileID: 1562452771}
+  - component: {fileID: 1562452772}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -99824,6 +99827,7 @@ MonoBehaviour:
   currentWeapon: {fileID: 11400000, guid: 76534a25531f9ee479638279ac83fdf5, type: 2}
   hitRadius: 0.3
   damageInvincibleDuration: 0.2
+  invincibilityFlashFeedback: {fileID: 1562452772}
 --- !u!114 &1562452758
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -100049,6 +100053,49 @@ MonoBehaviour:
   animator: {fileID: 2005918157}
   combat: {fileID: 0}
   inputDeadZone: 0.01
+--- !u!114 &1562452770
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562452752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cb6ef60c0124b6489191c08b3de08b8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDashController
+--- !u!114 &1562452771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562452752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a1a5d98bb0d4f9498716a7c8d4f1a32, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlashFeedback
+  targetRenderer: {fileID: 0}
+  flashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.08
+  flashCount: 1
+  resetColorOnDisable: 1
+--- !u!114 &1562452772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562452752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dc111b8e3ea4ef4f9359f821a7f9d92, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInvincibilityFlashFeedback
+  targetRenderer: {fileID: 0}
+  flashColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &1589293247
 GameObject:
   m_ObjectHideFlags: 0
