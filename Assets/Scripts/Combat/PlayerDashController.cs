@@ -11,6 +11,7 @@ public sealed class PlayerDashController : MonoBehaviour
     private const float MinDashMoveDistance = 0.05f;
     private const float MinSampleStep = 0.05f;
     private const int EnemyHitBufferSize = 64;
+    private const int MaxDashDamageSamplesPerSegment = 16;
 
     private readonly Vector3[] _corners = new Vector3[4];
     private readonly Collider2D[] _enemyHitBuffer = new Collider2D[EnemyHitBufferSize];
@@ -84,11 +85,12 @@ public sealed class PlayerDashController : MonoBehaviour
             if (duration <= 0f)
             {
                 transform.position = destination;
-                TryApplyDashDamage();
+                TryApplyDashPathDamage(start, destination);
+                TryApplyDashContactDamage(destination);
                 yield break;
             }
 
-            TryApplyDashDamage();
+            Vector3 previousPosition = start;
             float elapsed = 0f;
             while (elapsed < duration)
             {
@@ -97,15 +99,18 @@ public sealed class PlayerDashController : MonoBehaviour
 
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                transform.position = Vector3.Lerp(start, destination, t);
-                TryApplyDashDamage();
+                Vector3 currentPosition = Vector3.Lerp(start, destination, t);
+                transform.position = currentPosition;
+                TryApplyDashPathDamage(previousPosition, currentPosition);
+                previousPosition = currentPosition;
                 yield return null;
             }
 
             if (!ShouldCancel(caster))
             {
                 transform.position = destination;
-                TryApplyDashDamage();
+                TryApplyDashPathDamage(previousPosition, destination);
+                TryApplyDashContactDamage(destination);
             }
         }
         finally
@@ -241,12 +246,45 @@ public sealed class PlayerDashController : MonoBehaviour
         _hitEnemiesThisDash.Clear();
     }
 
-    private void TryApplyDashDamage()
+    private void TryApplyDashPathDamage(Vector3 previousPosition, Vector3 currentPosition)
+    {
+        if (!_hasDashDamage || !_damageRequest.DamageOnPath)
+            return;
+
+        Vector3 delta = currentPosition - previousPosition;
+        float distance = delta.magnitude;
+        if (distance <= 0.0001f)
+            return;
+
+        float radius = Mathf.Max(0.01f, _damageRequest.HitRadius);
+        float spacing = Mathf.Max(0.05f, radius * 0.75f);
+        int sampleCount = Mathf.Min(
+            MaxDashDamageSamplesPerSegment,
+            Mathf.CeilToInt(distance / spacing));
+        if (sampleCount <= 0)
+            return;
+
+        for (int i = 1; i <= sampleCount; i++)
+        {
+            float t = (float)i / sampleCount;
+            ApplyDashDamageAt(Vector3.Lerp(previousPosition, currentPosition, t));
+        }
+    }
+
+    private void TryApplyDashContactDamage(Vector3 position)
+    {
+        if (!_hasDashDamage || !_damageRequest.DamageOnContact)
+            return;
+
+        ApplyDashDamageAt(position);
+    }
+
+    private void ApplyDashDamageAt(Vector3 position)
     {
         if (!_hasDashDamage) return;
 
         float radius = Mathf.Max(0.01f, _damageRequest.HitRadius);
-        int count = Physics2D.OverlapCircle(transform.position, radius, CombatLayers.EnemyFilter, _enemyHitBuffer);
+        int count = Physics2D.OverlapCircle(position, radius, CombatLayers.EnemyFilter, _enemyHitBuffer);
         for (int i = 0; i < count; i++)
         {
             Collider2D hit = _enemyHitBuffer[i];
@@ -256,14 +294,19 @@ public sealed class PlayerDashController : MonoBehaviour
             if (enemy == null || !enemy.IsAlive) continue;
             if (!_hitEnemiesThisDash.Add(enemy)) continue;
 
-            enemy.ApplyCombatImpact(
-                _damageRequest.Damage,
-                transform.position,
-                _damageRequest.KnockbackForce,
-                _damageRequest.KnockbackDuration,
-                _damageRequest.SlowPercentage,
-                _damageRequest.SlowDuration);
+            ApplyDamageToEnemy(enemy, position);
         }
+    }
+
+    private void ApplyDamageToEnemy(EnemyController enemy, Vector3 hitOrigin)
+    {
+        enemy.ApplyCombatImpact(
+            _damageRequest.Damage,
+            hitOrigin,
+            _damageRequest.KnockbackForce,
+            _damageRequest.KnockbackDuration,
+            _damageRequest.SlowPercentage,
+            _damageRequest.SlowDuration);
     }
 
     private static EnemyController ResolveEnemy(Collider2D hit)
