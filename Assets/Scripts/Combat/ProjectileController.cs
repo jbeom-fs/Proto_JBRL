@@ -41,6 +41,7 @@ public class ProjectileController : MonoBehaviour
     private Rigidbody2D _rigidbody;
     private SpriteRenderer _spriteRenderer;
     private Animator _animator;
+    private FogVisibilityRenderer _fogVisibility;
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
     private DungeonManager _dungeon;
@@ -52,6 +53,7 @@ public class ProjectileController : MonoBehaviour
         _rigidbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _animator = GetComponent<Animator>();
+        _fogVisibility = GetComponent<FogVisibilityRenderer>();
         if (_collider != null)
         {
             _collider.isTrigger = true;
@@ -87,6 +89,8 @@ public class ProjectileController : MonoBehaviour
             _animator.enabled = false;
         if (enabled)
             enabled = false;
+        if (_fogVisibility != null && _fogVisibility.enabled)
+            _fogVisibility.enabled = false;
         if (_spriteRenderer != null && _spriteRenderer.enabled)
             _spriteRenderer.enabled = false;
     }
@@ -148,6 +152,24 @@ public class ProjectileController : MonoBehaviour
         _currentBounceCount = 0;
         _dungeon = DungeonManager.Instance;
         _hitEnemies.Clear();
+        ApplyFogVisibilityForTargetMode();
+    }
+
+    // Enemy projectile(TargetMode.Player)만 Fog 가시성 토글 대상.
+    // Player projectile(TargetMode.Enemy)은 기존처럼 표시 유지.
+    private void ApplyFogVisibilityForTargetMode()
+    {
+        if (_fogVisibility == null) return;
+
+        bool isEnemyProjectile = (_targetMode == TargetMode.Player);
+        _fogVisibility.enabled = isEnemyProjectile;
+        if (isEnemyProjectile)
+        {
+            // Pool 재사용으로 _currentlyVisible/Renderer 상태가 어긋난 경우를 대비해
+            // 우선 visible 기준선으로 동기화한 뒤 현재 위치 기준으로 재평가한다.
+            _fogVisibility.ResetToVisible();
+            _fogVisibility.RefreshVisibilityImmediate();
+        }
     }
 
     public void SetReleaseAction(Action<ProjectileController, ProjectileReleaseReason> releaseAction)

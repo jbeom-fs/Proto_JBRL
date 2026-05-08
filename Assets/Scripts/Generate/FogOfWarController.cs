@@ -58,9 +58,51 @@ public class FogOfWarController : MonoBehaviour
     public bool BlockVisionByWalls => blockVisionByWalls;
     public bool ClosedDoorsBlockVision => closedDoorsBlockVision;
 
+    public static FogOfWarController Active { get; private set; }
+
+    public bool IsVisibleCell(Vector2Int gridPos)
+    {
+        if (!_hasLastPlayerGrid)
+            return true;
+        return _previousVisibleCells.Contains(gridPos);
+    }
+
+    public bool IsWorldPositionVisible(Vector3 worldPosition)
+    {
+        if (!_hasLastPlayerGrid)
+            return true;
+        if (dungeonManager == null)
+            return true;
+        Vector2Int gridPos = dungeonManager.WorldToGrid(worldPosition);
+        return _previousVisibleCells.Contains(gridPos);
+    }
+
     private void Awake()
     {
         ResolveDependencies();
+        RegisterAsActive();
+    }
+
+    private void OnDestroy()
+    {
+        if (ReferenceEquals(Active, this))
+            Active = null;
+    }
+
+    private void RegisterAsActive()
+    {
+        if (Active == null || ReferenceEquals(Active, this))
+        {
+            Active = this;
+            return;
+        }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning(
+            $"[FogOfWarController] Active 인스턴스가 이미 존재합니다 ({Active.name}) — 새 인스턴스({name})로 교체합니다.",
+            this);
+#endif
+        Active = this;
     }
 
     private void OnEnable()

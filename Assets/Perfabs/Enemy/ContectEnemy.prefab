@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 5576244762227126394}
   - component: {fileID: 8241069802126359017}
   - component: {fileID: 5723889968893175015}
+  - component: {fileID: 9083884606823067400}
   m_Layer: 8
   m_Name: ContectEnemy
   m_TagString: Untagged
@@ -376,3 +377,19 @@ MonoBehaviour:
   flashDuration: 0.08
   flashCount: 1
   resetColorOnDisable: 1
+--- !u!114 &9083884606823067400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9083884606823067359}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8cc7014d9334bac80d88ac05f378d0b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FogVisibilityRenderer
+  managedRenderers: []
+  includeChildrenOnAutoCache: 1
+  hideWhenFogControllerMissing: 0
+  updateInterval: 0

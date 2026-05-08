@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 8016754683486280891}
   - component: {fileID: 828977406743444624}
   - component: {fileID: 6317729556381488071}
+  - component: {fileID: 2550004066681987800}
   m_Layer: 8
   m_Name: RangedEnemy
   m_TagString: Untagged
@@ -298,3 +299,19 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &2550004066681987800
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2550004066681987757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8cc7014d9334bac80d88ac05f378d0b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::FogVisibilityRenderer
+  managedRenderers: []
+  includeChildrenOnAutoCache: 1
+  hideWhenFogControllerMissing: 0
+  updateInterval: 0
