@@ -126,9 +126,8 @@ public class DungeonManager : MonoBehaviour
             Debug.LogWarning("[DungeonManager] Awake: dungeonRenderer가 없습니다 — 좌표 변환이 동작하지 않습니다.");
         if (eventChannel == null)
             Debug.LogWarning("[DungeonManager] Awake: eventChannel이 없습니다 — 층 변경 이벤트가 발행되지 않습니다.");
-        _queryService      = new DungeonQueryService(dungeonRenderer);
-        _spawnService      = new SpawnPositionService();
-        _transitionService = new FloorTransitionService();
+
+        EnsureServices();
     }
 
     // ── 생성 파이프라인 ──────────────────────────────────────────────
@@ -288,7 +287,7 @@ public class DungeonManager : MonoBehaviour
     // 구현은 DungeonQueryService에 있으며, 시그니처는 하위 호환을 위해 그대로 유지합니다.
 
     public bool IsWalkable(int col, int row)
-        => EnsureQueryService().IsWalkable(col, row);
+        => _queryService.IsWalkable(col, row);
 
     /// <summary>월드 좌표를 중심으로 한 정사각형 footprint(반경 radius)의 4 코너가 모두 walkable인지 검사합니다.</summary>
     public bool IsFootprintWalkable(Vector3 worldPosition, float radius)
@@ -309,26 +308,26 @@ public class DungeonManager : MonoBehaviour
     }
 
     public int GetTileType(int col, int row)
-        => EnsureQueryService().GetTileType(col, row);
+        => _queryService.GetTileType(col, row);
 
     /// <summary>그리드 좌표가 속한 방을 타입 정보 포함해 반환합니다.</summary>
     public RoomInfo? GetRoomAt(int col, int row)
-        => EnsureQueryService().GetRoomAt(col, row);
+        => _queryService.GetRoomAt(col, row);
 
     /// <summary>스폰 위치를 반환합니다. Generate() 시점에 계산된 캐시를 반환하므로 O(1).</summary>
     public Vector2Int GetSpawnTilePos() => _cachedSpawnPos;
 
     /// <summary>그리드 좌표를 월드 좌표로 변환합니다 (QueryService → Renderer에 위임).</summary>
     public Vector3 GridToWorld(Vector2Int gridPos)
-        => EnsureQueryService().GridToWorld(gridPos);
+        => _queryService.GridToWorld(gridPos);
 
     /// <summary>월드 좌표를 그리드 좌표로 변환합니다 (QueryService → Renderer에 위임).</summary>
     public Vector2Int WorldToGrid(Vector3 worldPos)
-        => EnsureQueryService().WorldToGrid(worldPos);
+        => _queryService.WorldToGrid(worldPos);
 
     /// <summary>해당 타입의 계단 위치를 그리드 좌표로 반환합니다.</summary>
     public Vector2Int FindStairPos(int stairType)
-        => EnsureQueryService().FindStairPos(stairType);
+        => _queryService.FindStairPos(stairType);
 
     /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
     public void SetRoomType(RoomInfo room, RoomType type)
@@ -374,6 +373,10 @@ public class DungeonManager : MonoBehaviour
 
     private void RunGenerationPipeline()
     {
+        // Edit Mode ContextMenu / CustomEditor 버튼이 Awake를 거치지 않고 Generate를 호출할 수 있으므로
+        // 여기서 한 번 더 서비스를 보장합니다. Awake 경로에서는 idempotent noop.
+        EnsureServices();
+
         // 1. 설정 구성
         double stageStart = Time.realtimeSinceStartupAsDouble;
         var settings = BuildSettings();
@@ -419,7 +422,7 @@ public class DungeonManager : MonoBehaviour
 
         // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
         stageStart = Time.realtimeSinceStartupAsDouble;
-        _cachedSpawnPos = EnsureSpawnService().ComputeSpawnPos(_data, mapWidth, mapHeight);
+        _cachedSpawnPos = _spawnService.ComputeSpawnPos(_data, mapWidth, mapHeight);
         RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
             "elapsedMs=" + ElapsedMs(stageStart) +
             " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
@@ -477,36 +480,24 @@ public class DungeonManager : MonoBehaviour
 
 
     public bool IsCorr(int x, int y)
-        => EnsureQueryService().IsCorr(x, y);
+        => _queryService.IsCorr(x, y);
 
     // ── 내부 초기화 헬퍼 ─────────────────────────────────────────────
 
     /// <summary>
-    /// _queryService를 반환합니다.
-    /// Awake 이전 등 예외적으로 null인 경우 즉시 초기화 후 반환합니다.
+    /// 모든 도메인 서비스를 보장합니다. Awake가 호출하며,
+    /// Edit Mode ContextMenu / CustomEditor가 Awake를 거치지 않고 Generate를 호출하는
+    /// 진입점(RunGenerationPipeline)에서도 한 번 호출해 invariant를 유지합니다.
+    /// 호출은 idempotent하며 (null이면 생성, 아니면 noop) 중복 비용은 거의 0입니다.
     /// </summary>
-    private DungeonQueryService EnsureQueryService()
+    private void EnsureServices()
     {
         if (_queryService == null)
-        {
-            Debug.LogWarning("[DungeonManager] _queryService가 Awake 이전에 접근됐습니다 — 즉시 초기화합니다.");
             _queryService = new DungeonQueryService(dungeonRenderer);
-        }
-        return _queryService;
-    }
-
-    /// <summary>
-    /// _spawnService를 반환합니다.
-    /// Awake 이전 등 예외적으로 null인 경우 즉시 초기화 후 반환합니다.
-    /// </summary>
-    private SpawnPositionService EnsureSpawnService()
-    {
         if (_spawnService == null)
-        {
-            Debug.LogWarning("[DungeonManager] _spawnService가 Awake 이전에 접근됐습니다 — 즉시 초기화합니다.");
             _spawnService = new SpawnPositionService();
-        }
-        return _spawnService;
+        if (_transitionService == null)
+            _transitionService = new FloorTransitionService();
     }
 
 #if UNITY_EDITOR

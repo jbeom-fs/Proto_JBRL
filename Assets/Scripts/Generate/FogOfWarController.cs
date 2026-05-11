@@ -204,8 +204,10 @@ public class FogOfWarController : MonoBehaviour
         RequestFullInitialize();
     }
 
-    private void OnRoomEntered(RoomEnteredEventArgs args)
+    private void OnRoomEntered(RoomEnteredEventArgs _)
     {
+        // args는 사용하지 않습니다. RoomSpawner가 args.Room / IsFirstVisit를 쓰므로
+        // 이벤트 시그니처는 유지하고, 이 핸들러는 무조건 visibility를 다시 계산합니다.
         ForceRefresh();
     }
 
