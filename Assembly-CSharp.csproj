@@ -78,6 +78,7 @@
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\CameraFollow2D.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_LootSack.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyPoolManager.cs" />
+    <Compile Include="Assets\Scripts\Generate\RoomFootprintSampler.cs" />
     <Compile Include="Assets\Scripts\Tool\LoadingScreenController.cs" />
     <Compile Include="Assets\Scripts\DoorController.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />

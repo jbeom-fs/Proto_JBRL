@@ -63,9 +63,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
     private readonly List<Vector3Int> _renderedDoorPositions
         = new List<Vector3Int>(16);
 
-    private const int ROOM_ENTRY_SAMPLE_THRESHOLD = 3;
-
-    private readonly Vector3[] _playerRoomSamples = new Vector3[9];
+    private readonly Vector3[] _playerRoomSamples = new Vector3[RoomFootprintSampler.SampleCount];
 
     // SetTiles 배치 호출에 재사용할 버퍼 — 매 호출마다 List/Array 할당 방지
     private readonly List<TileChangeData> _doorChangeBuffer
@@ -536,7 +534,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 continue;
 
             roomSampleCount++;
-            if (roomSampleCount >= ROOM_ENTRY_SAMPLE_THRESHOLD)
+            if (roomSampleCount >= RoomFootprintSampler.Threshold)
                 return true;
         }
 
@@ -545,15 +543,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
 
     private void BuildPlayerRoomSamples(Vector2 center, float radius)
     {
-        _playerRoomSamples[0] = center;
-        _playerRoomSamples[1] = center + Vector2.left * radius;
-        _playerRoomSamples[2] = center + Vector2.right * radius;
-        _playerRoomSamples[3] = center + Vector2.up * radius;
-        _playerRoomSamples[4] = center + Vector2.down * radius;
-        _playerRoomSamples[5] = center + new Vector2(-radius, radius);
-        _playerRoomSamples[6] = center + new Vector2(radius, radius);
-        _playerRoomSamples[7] = center + new Vector2(-radius, -radius);
-        _playerRoomSamples[8] = center + new Vector2(radius, -radius);
+        RoomFootprintSampler.FillSamples(_playerRoomSamples, center, radius);
     }
 
     private bool IsRoomSample(RoomInfo room, Vector2Int gridPos)

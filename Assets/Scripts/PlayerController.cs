@@ -44,7 +44,6 @@ public class PlayerController : MonoBehaviour
     [Range(0.05f, 0.49f)]
     public float collisionRadius = 0.2f;
 
-    private const int ROOM_ENTRY_SAMPLE_THRESHOLD = 3;
     private const float POSITION_RECHECK_EPSILON_SQR = 0.000001f;
 
     // ── 내부 상태 ─────────────────────────────────────────────────────
@@ -61,7 +60,7 @@ public class PlayerController : MonoBehaviour
     private readonly HashSet<(int x, int y)> _visitedRooms
         = new HashSet<(int x, int y)>();
 
-    private readonly Vector3[] _roomEntrySamples = new Vector3[9];
+    private readonly Vector3[] _roomEntrySamples = new Vector3[RoomFootprintSampler.SampleCount];
 
     // 마지막으로 방문안 Room
     // Room이 변경되거나 복도로 나가기 전까진 체크하지 않는다.
@@ -379,15 +378,7 @@ public class PlayerController : MonoBehaviour
         Vector3 center = transform.position;
         float radius = Mathf.Min(GetWorldColliderRadius(), Mathf.Max(0.01f, _tileSize * 0.49f));
 
-        _roomEntrySamples[0] = center;
-        _roomEntrySamples[1] = center + new Vector3(-radius, 0f, 0f);
-        _roomEntrySamples[2] = center + new Vector3(radius, 0f, 0f);
-        _roomEntrySamples[3] = center + new Vector3(0f, radius, 0f);
-        _roomEntrySamples[4] = center + new Vector3(0f, -radius, 0f);
-        _roomEntrySamples[5] = center + new Vector3(-radius, -radius, 0f);
-        _roomEntrySamples[6] = center + new Vector3(radius, -radius, 0f);
-        _roomEntrySamples[7] = center + new Vector3(-radius, radius, 0f);
-        _roomEntrySamples[8] = center + new Vector3(radius, radius, 0f);
+        RoomFootprintSampler.FillSamples(_roomEntrySamples, center, radius);
 
         Vector2Int centerGrid = dungeonManager.WorldToGrid(_roomEntrySamples[0]);
         RoomInfo? centerRoom = dungeonManager.GetRoomAt(centerGrid.x, centerGrid.y);
@@ -426,7 +417,7 @@ public class PlayerController : MonoBehaviour
             }
 
             roomSampleCount++;
-            if (roomSampleCount >= ROOM_ENTRY_SAMPLE_THRESHOLD)
+            if (roomSampleCount >= RoomFootprintSampler.Threshold)
             {
                 room = candidateEntryRoom;
                 gridPos = candidateEntryGrid;
