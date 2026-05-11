@@ -31,16 +31,18 @@ public class FloorTransitionService
         // 3. Unity가 Tilemap 업데이트를 완료할 시간 확보
         double stageStart = Time.realtimeSinceStartupAsDouble;
         yield return null;
-        RuntimePerfLogger.MarkEvent("floor_transition_post_generate_frame",
-            "elapsedMs=" + ElapsedMs(stageStart));
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("floor_transition_post_generate_frame",
+                "elapsedMs=" + ElapsedMs(stageStart));
 
         if (allowGc && collectGc && gcPasses > 0)
         {
             stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_gc_begin",
-                "floor=" + floorForLog +
-                " passes=" + gcPasses +
-                " waitFinalizers=" + waitFinalizers);
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_gc_begin",
+                    "floor=" + floorForLog +
+                    " passes=" + gcPasses +
+                    " waitFinalizers=" + waitFinalizers);
 
             for (int i = 0; i < gcPasses; i++)
                 System.GC.Collect();
@@ -48,32 +50,37 @@ public class FloorTransitionService
             if (waitFinalizers)
                 System.GC.WaitForPendingFinalizers();
 
-            RuntimePerfLogger.MarkEvent("floor_transition_gc_end",
-                "elapsedMs=" + ElapsedMs(stageStart) +
-                " passes=" + gcPasses);
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_gc_end",
+                    "elapsedMs=" + ElapsedMs(stageStart) +
+                    " passes=" + gcPasses);
         }
 
         if (settleSeconds > 0f)
         {
             stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_time_begin",
-                "seconds=" + settleSeconds.ToString("F3", CultureInfo.InvariantCulture));
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_settle_time_begin",
+                    "seconds=" + settleSeconds.ToString("F3", CultureInfo.InvariantCulture));
             yield return YieldCache.WaitForSecondsRealTime(settleSeconds);
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_time_end",
-                "elapsedMs=" + ElapsedMs(stageStart) +
-                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_settle_time_end",
+                    "elapsedMs=" + ElapsedMs(stageStart) +
+                    " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
         }
 
         for (int i = 0; i < settleFrames; i++)
         {
             stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_frame_begin",
-                "index=" + i);
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_settle_frame_begin",
+                    "index=" + i);
             yield return null;
-            RuntimePerfLogger.MarkEvent("floor_transition_settle_frame",
-                "index=" + i +
-                " elapsedMs=" + ElapsedMs(stageStart) +
-                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_settle_frame",
+                    "index=" + i +
+                    " elapsedMs=" + ElapsedMs(stageStart) +
+                    " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
         }
     }
 

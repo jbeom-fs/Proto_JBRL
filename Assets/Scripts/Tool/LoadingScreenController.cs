@@ -58,9 +58,10 @@ public class LoadingScreenController : MonoBehaviour
 
     public IEnumerator Show()
     {
-        RuntimePerfLogger.MarkEvent("loading_show_begin",
-            "mode=" + (SeparateMode ? "separate" : "single") +
-            " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture));
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("loading_show_begin",
+                "mode=" + (SeparateMode ? "separate" : "single") +
+                " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture));
 
         double start = Time.realtimeSinceStartupAsDouble;
 
@@ -75,17 +76,19 @@ public class LoadingScreenController : MonoBehaviour
         else
             yield return StartCoroutine(FadeSingle(0f, 1f, "loading_show_single_frame"));
 
-        RuntimePerfLogger.MarkEvent("loading_show_end",
-            "elapsedMs=" + ElapsedMs(start) +
-            " dtMs=" + CurrentDtMs());
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("loading_show_end",
+                "elapsedMs=" + ElapsedMs(start) +
+                " dtMs=" + CurrentDtMs());
     }
 
     public IEnumerator Hide()
     {
-        RuntimePerfLogger.MarkEvent("loading_hide_begin",
-            "mode=" + (SeparateMode ? "separate" : "single") +
-            " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture) +
-            " bgDelay=" + bgFadeOutDelay.ToString("F3", CultureInfo.InvariantCulture));
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("loading_hide_begin",
+                "mode=" + (SeparateMode ? "separate" : "single") +
+                " fadeDuration=" + fadeDuration.ToString("F3", CultureInfo.InvariantCulture) +
+                " bgDelay=" + bgFadeOutDelay.ToString("F3", CultureInfo.InvariantCulture));
 
         double start = Time.realtimeSinceStartupAsDouble;
         if (SeparateMode)
@@ -100,9 +103,10 @@ public class LoadingScreenController : MonoBehaviour
         }
 
 
-        RuntimePerfLogger.MarkEvent("loading_hide_end",
-            "elapsedMs=" + ElapsedMs(start) +
-            " dtMs=" + CurrentDtMs());
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("loading_hide_end",
+                "elapsedMs=" + ElapsedMs(start) +
+                " dtMs=" + CurrentDtMs());
     }
 
     private IEnumerator ShowSeparate()
@@ -219,6 +223,8 @@ public class LoadingScreenController : MonoBehaviour
 
     private static void LogSlowFadeFrame(string eventName, int frameIndex, float elapsed)
     {
+        if (!RuntimePerfLogger.IsActive) return;
+
         float dtMs = Time.unscaledDeltaTime * 1000f;
         if (dtMs < SLOW_FADE_FRAME_MS) return;
 

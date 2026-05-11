@@ -105,19 +105,28 @@ public class DungeonEventChannel : ScriptableObject
 #if UNITY_EDITOR
         Debug.Log($"[Event] OnFloorChanged — {prevFloor}F → {newFloor}F");
 #endif
-        double start = Time.realtimeSinceStartupAsDouble;
-        int listenerCount = OnFloorChanged != null ? OnFloorChanged.GetInvocationList().Length : 0;
-        RuntimePerfLogger.MarkEvent("event_channel_floor_changed_begin",
-            "prev=" + prevFloor +
-            " current=" + newFloor +
-            " listeners=" + listenerCount);
-        OnFloorChanged?.Invoke(prevFloor, newFloor);
-        RuntimePerfLogger.MarkEvent("event_channel_floor_changed_end",
-            "prev=" + prevFloor +
-            " current=" + newFloor +
-            " listeners=" + listenerCount +
-            " elapsedMs=" + ((Time.realtimeSinceStartupAsDouble - start) * 1000.0).ToString("F3", CultureInfo.InvariantCulture) +
-            " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+        // PerfLogger OFF에서는 GetInvocationList()의 배열 alloc과 realtime/ToString/concat을 모두 회피하고,
+        // Invoke 자체는 두 분기 모두에서 동일한 시점·순서로 호출합니다.
+        if (RuntimePerfLogger.IsActive)
+        {
+            double start = Time.realtimeSinceStartupAsDouble;
+            int listenerCount = OnFloorChanged != null ? OnFloorChanged.GetInvocationList().Length : 0;
+            RuntimePerfLogger.MarkEvent("event_channel_floor_changed_begin",
+                "prev=" + prevFloor +
+                " current=" + newFloor +
+                " listeners=" + listenerCount);
+            OnFloorChanged?.Invoke(prevFloor, newFloor);
+            RuntimePerfLogger.MarkEvent("event_channel_floor_changed_end",
+                "prev=" + prevFloor +
+                " current=" + newFloor +
+                " listeners=" + listenerCount +
+                " elapsedMs=" + ((Time.realtimeSinceStartupAsDouble - start) * 1000.0).ToString("F3", CultureInfo.InvariantCulture) +
+                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            OnFloorChanged?.Invoke(prevFloor, newFloor);
+        }
     }
 
     /// <summary>방 문이 닫혔음을 발행합니다.</summary>
