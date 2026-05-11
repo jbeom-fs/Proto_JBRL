@@ -265,8 +265,10 @@ public class MovementHandler
         }
 
         // 적정 거리: 공격 가능 거리에 있다면 ChaseState 진입부의 CanAttack 분기가 이미 Attack으로 보낸다.
-        // 그렇지 않은 경우 한 곳에 뭉치지 않도록 그냥 정지한다.
-        _brain.StopMoving();
+        // 그렇지 않은 경우 정지 직전에 이웃 enemy로부터 떨어지는 separation step을 먼저 시도하고,
+        // 분리할 이웃이 없거나 임계 미달이면 정지한다.
+        if (!TryApplyIdleSeparationStep())
+            _brain.StopMoving();
     }
 
     /// <summary>
@@ -323,7 +325,10 @@ public class MovementHandler
 
         if (!_hasRandomDestination)
         {
-            _brain.StopMoving();
+            // 목적지 선택 실패 또는 도착 후 interval 대기 — 이웃이 가까우면 separation step,
+            // 그렇지 않으면 그대로 정지한다. interval/random 선택 흐름은 변경하지 않는다.
+            if (!TryApplyIdleSeparationStep())
+                _brain.StopMoving();
             return;
         }
 
@@ -332,9 +337,10 @@ public class MovementHandler
         float arriveSqr = _brain.waypointReachDistance * _brain.waypointReachDistance;
         if (delta.sqrMagnitude <= arriveSqr)
         {
-            // 도달: 다음 interval 만료까지 정지한다.
+            // 도달: 다음 interval 만료까지 대기하되 이웃이 가까우면 separation step으로 살짝 산개한다.
             _hasRandomDestination = false;
-            _brain.StopMoving();
+            if (!TryApplyIdleSeparationStep())
+                _brain.StopMoving();
             return;
         }
 
@@ -385,5 +391,35 @@ public class MovementHandler
         }
 
         _hasRandomDestination = false;
+    }
+
+    // _smoothedSeparation의 길이가 이 값 이상이면 정지 분기에서도 separation step을 시도합니다.
+    // CalculateSeparation은 normalize된 결과를 lerp하므로 0~1 범위이며, 0.1 이상이면
+    // 이웃이 가까이 있다고 판단할 수 있는 보수적인 임계값입니다.
+    private const float IdleSeparationActivationSqr = 0.01f;
+
+    /// <summary>
+    /// Kiting 적정 거리 / Random 대기처럼 "정지하려는 순간"에 호출됩니다.
+    /// 기존 separation 인프라(_separationBuffer, s_SeparationFilter, _smoothedSeparation)를 재사용해
+    /// 이웃이 가까우면 separation 방향으로 짧게 이동을 시도합니다.
+    /// 이동 결정은 _brain.MoveToward에 위임하므로 MoveWithCollision의 walkable 4-corner 체크가
+    /// 벽/문 침범을 막고, walking anim도 자동으로 갱신됩니다.
+    /// 이웃이 없거나 임계 미달이면 false를 반환해 호출자가 기존처럼 StopMoving 하도록 합니다.
+    /// </summary>
+    private bool TryApplyIdleSeparationStep()
+    {
+        if (!_brain.enableSeparation) return false;
+        if (_brain.Data == null) return false;
+
+        Vector2 separation = CalculateSeparation();
+        if (separation.sqrMagnitude < IdleSeparationActivationSqr) return false;
+
+        // separation은 보통 정규화 후 보간된 단위 벡터에 가까우므로 self 옆 짧은 가상 target만 만들면 된다.
+        // _brain.MoveToward 내부에서 CalculateSeparation을 한 번 더 호출하지만 같은 프레임이라
+        // 결과 방향은 동일하다. 실제 step 거리는 CurrentMoveSpeed * deltaTime로 처리된다.
+        Vector3 self = _brain.transform.position;
+        Vector3 target = new Vector3(self.x + separation.x, self.y + separation.y, 0f);
+        _brain.MoveToward(target);
+        return true;
     }
 }
