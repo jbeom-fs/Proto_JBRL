@@ -91,59 +91,25 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 "size=" + data.MapWidth + "x" + data.MapHeight + " rooms=" + data.RoomCount);
 
         double stageStart = Time.realtimeSinceStartupAsDouble;
-        _data = data;
-        _doorPositions.Clear();
-        _closedDoorPositions.Clear();
-        _renderedDoorPositions.Clear();
-
-        if (doorTilemap != null)
-        {
-            if (_doorTilemapRenderer == null)
-                _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
-            EnsureDoorTilemapActive();
-            SyncDoorTilemapPresentation();
-            _doorTilemapRenderer.enabled = false;
-        }
-
+        PrepareForPlacement(data);
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("place_tiles_stage_prepare",
                 "elapsedMs=" + ElapsedMs(stageStart) +
                 " hasDoorTilemap=" + (doorTilemap != null));
 
         stageStart = Time.realtimeSinceStartupAsDouble;
-        tilemap.ClearAllTiles();
-        wallTilemap.ClearAllTiles();
-        if (doorTilemap != null) doorTilemap.ClearAllTiles();
+        ClearTilemaps();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("place_tiles_stage_clear",
                 "elapsedMs=" + ElapsedMs(stageStart));
 
         // ── 1. 메인 타일 일괄 배치 ────────────────────────────────
-        stageStart = Time.realtimeSinceStartupAsDouble;
         int total = data.MapWidth * data.MapHeight;
         var tiles = GetMainTileBuffer(total);
         var wallTiles = GetWallTileBuffer(total);
-        int visibleTileCount = 0;
 
-        for (int row = 0; row < data.MapHeight; row++)
-        {
-            int yOffset = data.MapHeight - 1 - row;
-            int dstRow = yOffset * data.MapWidth;
-
-            for (int col = 0; col < data.MapWidth; col++)
-            {
-                int tileType = data.GetTileTypeUnchecked(col, row);
-                TileBase tile = ResolveFloorTile(tileType);
-                TileBase wallLayerTile = ResolveWallTile(tileType);
-                if (tile != null) visibleTileCount++;
-                if (wallLayerTile != null) visibleTileCount++;
-
-                int index = col + dstRow;
-                tiles[index] = tile;
-                wallTiles[index] = wallLayerTile;
-            }
-        }
-
+        stageStart = Time.realtimeSinceStartupAsDouble;
+        int visibleTileCount = FillBuffersForRows(data, 0, data.MapHeight, tiles, wallTiles);
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("place_tiles_stage_build_changes",
                 "elapsedMs=" + ElapsedMs(stageStart) +
@@ -151,9 +117,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 " visible=" + visibleTileCount);
 
         stageStart = Time.realtimeSinceStartupAsDouble;
-        var bounds = new BoundsInt(0, 1 - data.MapHeight, 0, data.MapWidth, data.MapHeight, 1);
-        tilemap.SetTilesBlock(bounds, tiles);
-        wallTilemap.SetTilesBlock(bounds, wallTiles);
+        SetTilesBlockForRows(data, 0, data.MapHeight, tiles, wallTiles);
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("place_tiles_stage_set_tiles",
                 "elapsedMs=" + ElapsedMs(stageStart) +
@@ -183,29 +147,14 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 " chunkRows=" + chunkRows);
 
         double stageStart = Time.realtimeSinceStartupAsDouble;
-        _data = data;
-        _doorPositions.Clear();
-        _closedDoorPositions.Clear();
-        _renderedDoorPositions.Clear();
-
-        if (doorTilemap != null)
-        {
-            if (_doorTilemapRenderer == null)
-                _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
-            EnsureDoorTilemapActive();
-            SyncDoorTilemapPresentation();
-            _doorTilemapRenderer.enabled = false;
-        }
-
+        PrepareForPlacement(data);
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("place_tiles_stage_prepare",
                 "elapsedMs=" + ElapsedMs(stageStart) +
                 " hasDoorTilemap=" + (doorTilemap != null));
 
         stageStart = Time.realtimeSinceStartupAsDouble;
-        tilemap.ClearAllTiles();
-        wallTilemap.ClearAllTiles();
-        if (doorTilemap != null) doorTilemap.ClearAllTiles();
+        ClearTilemaps();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("place_tiles_stage_clear",
                 "elapsedMs=" + ElapsedMs(stageStart));
@@ -225,27 +174,8 @@ public class DungeonTilemapRenderer : MonoBehaviour
             var wallTiles = GetChunkWallTileBuffer(data.MapWidth * currentChunkRows);
 
             stageStart = Time.realtimeSinceStartupAsDouble;
-            int chunkVisible = 0;
-            for (int row = rowStart; row < rowEnd; row++)
-            {
-                int localY = rowEnd - 1 - row;
-                int dstRow = localY * data.MapWidth;
-
-                for (int col = 0; col < data.MapWidth; col++)
-                {
-                    int tileType = data.GetTileTypeUnchecked(col, row);
-                    TileBase tile = ResolveFloorTile(tileType);
-                    TileBase wallLayerTile = ResolveWallTile(tileType);
-                    if (tile != null) chunkVisible++;
-                    if (wallLayerTile != null) chunkVisible++;
-
-                    int index = col + dstRow;
-                    tiles[index] = tile;
-                    wallTiles[index] = wallLayerTile;
-                }
-            }
+            int chunkVisible = FillBuffersForRows(data, rowStart, rowEnd, tiles, wallTiles);
             visibleTileCount += chunkVisible;
-
             if (RuntimePerfLogger.IsActive)
                 RuntimePerfLogger.MarkEvent("place_tiles_stage_build_chunk",
                     "index=" + chunkIndex +
@@ -254,12 +184,9 @@ public class DungeonTilemapRenderer : MonoBehaviour
                     " visible=" + chunkVisible);
 
             stageStart = Time.realtimeSinceStartupAsDouble;
-            var bounds = new BoundsInt(0, 1 - rowEnd, 0, data.MapWidth, currentChunkRows, 1);
-            tilemap.SetTilesBlock(bounds, tiles);
-            wallTilemap.SetTilesBlock(bounds, wallTiles);
+            SetTilesBlockForRows(data, rowStart, rowEnd, tiles, wallTiles);
             double setTilesMs = (Time.realtimeSinceStartupAsDouble - stageStart) * 1000.0;
             totalSetTilesMs += setTilesMs;
-
             if (RuntimePerfLogger.IsActive)
                 RuntimePerfLogger.MarkEvent("place_tiles_stage_set_tiles_chunk",
                     "index=" + chunkIndex +
@@ -293,6 +220,75 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 " doorCandidates=" + _doorPositions.Count);
             RuntimePerfLogger.MarkEvent("place_tiles_end", "doorCandidates=" + _doorPositions.Count);
         }
+    }
+
+    private void PrepareForPlacement(DungeonData data)
+    {
+        _data = data;
+        _doorPositions.Clear();
+        _closedDoorPositions.Clear();
+        _renderedDoorPositions.Clear();
+
+        if (doorTilemap != null)
+        {
+            if (_doorTilemapRenderer == null)
+                _doorTilemapRenderer = doorTilemap.GetComponent<TilemapRenderer>();
+            EnsureDoorTilemapActive();
+            SyncDoorTilemapPresentation();
+            _doorTilemapRenderer.enabled = false;
+        }
+    }
+
+    private void ClearTilemaps()
+    {
+        tilemap.ClearAllTiles();
+        wallTilemap.ClearAllTiles();
+        if (doorTilemap != null) doorTilemap.ClearAllTiles();
+    }
+
+    /// <summary>
+    /// data의 [rowStart, rowEnd) 행을 buffer에 채웁니다.
+    /// buffer는 (rowEnd-rowStart) * MapWidth 길이의 chunk-local 좌표를 사용합니다.
+    /// localY = rowEnd - 1 - row 로 chunk 내에서 상하 반전되며,
+    /// 호출자는 SetTilesBlock의 bounds.y를 (1 - rowEnd)로 두어 world Y에 정확히 매핑합니다.
+    /// 즉시 모드(rowStart=0, rowEnd=MapHeight)에서는 기존 yOffset 계산과 수학적으로 동일합니다.
+    /// </summary>
+    private int FillBuffersForRows(
+        DungeonData data, int rowStart, int rowEnd,
+        TileBase[] tiles, TileBase[] wallTiles)
+    {
+        int visible = 0;
+
+        for (int row = rowStart; row < rowEnd; row++)
+        {
+            int localY = rowEnd - 1 - row;
+            int dstRow = localY * data.MapWidth;
+
+            for (int col = 0; col < data.MapWidth; col++)
+            {
+                int tileType = data.GetTileTypeUnchecked(col, row);
+                TileBase tile = ResolveFloorTile(tileType);
+                TileBase wallLayerTile = ResolveWallTile(tileType);
+                if (tile != null) visible++;
+                if (wallLayerTile != null) visible++;
+
+                int index = col + dstRow;
+                tiles[index] = tile;
+                wallTiles[index] = wallLayerTile;
+            }
+        }
+
+        return visible;
+    }
+
+    private void SetTilesBlockForRows(
+        DungeonData data, int rowStart, int rowEnd,
+        TileBase[] tiles, TileBase[] wallTiles)
+    {
+        int rowCount = rowEnd - rowStart;
+        var bounds = new BoundsInt(0, 1 - rowEnd, 0, data.MapWidth, rowCount, 1);
+        tilemap.SetTilesBlock(bounds, tiles);
+        wallTilemap.SetTilesBlock(bounds, wallTiles);
     }
 
     /// <summary>
