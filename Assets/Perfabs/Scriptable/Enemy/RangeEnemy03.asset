@@ -10,38 +10,38 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 668bddbc810a4ce4f8252f922bee8a14, type: 3}
-  m_Name: TestRangeMon
+  m_Name: RangeEnemy03
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  enemyName: TestRanged
-  maxHp: 5
-  attack: 2
+  enemyName: RangeEnemy03
+  maxHp: 20
+  attack: 5
   defense: 0
-  expReward: 10
+  expReward: 12
   deathDelay: 0.5
-  spawnCost: 3
+  spawnCost: 5
   allowedRegions: 1
   behaviorType: 1
-  detectRange: 20
-  attackRange: 10
-  moveSpeed: 1.5
-  attackCooldown: 1.5
-  attackWindup: 0.4
-  attackRecovery: 0.5
+  detectRange: 50
+  attackRange: 10.5
+  moveSpeed: 2
+  attackCooldown: 3
+  attackWindup: 0.35
+  attackRecovery: 0.35
   contactDamageRadius: 0.45
   contactDamageSkin: 0.05
-  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-  projectileDamage: 2
+  projectilePrefab: {fileID: 2381044973620445434, guid: 554da9809b14bd84f8b63a83d7512688, type: 3}
+  projectileDamage: 5
   projectileSpeed: 8
   projectileLifetime: 3
-  firePattern: 2
-  projectileCount: 3
-  spreadAngle: 30
+  firePattern: 0
+  projectileCount: 1
+  spreadAngle: 35
   burstInterval: 0.12
-  projectileWallHitMode: 0
-  projectileMaxBounceCount: 1
+  projectileWallHitMode: 2
+  projectileMaxBounceCount: 3
   knockbackResistance: 0
-  rangedMovementType: 2
-  preferredRange: 5
+  rangedMovementType: 1
+  preferredRange: 6
   kiteRetreatRange: 3
   randomMoveIntervalMin: 0.8
   randomMoveIntervalMax: 1.8

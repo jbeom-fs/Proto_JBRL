@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-08  
+> 작성 기준일: 2026-05-11  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -131,6 +131,7 @@ Assets/Scripts/
 │   ├── RoomRegistry.cs             # 방 상태 관리 (타입·문 닫힘)
 │   ├── DungeonTilemapRenderer.cs   # Tilemap 3레이어 배치 (바닥·벽·문)
 │   ├── FogOfWarController.cs       # 안개 시야 — Bresenham LoS, 미탐사/탐사/현재시야 3상태
+│   ├── RoomFootprintSampler.cs     # 방 overlap 검증용 공통 9-sample 유틸 (PlayerController·DungeonTilemapRenderer 공용)
 │   ├── SpawnRegion.cs              # 스폰 지역 플래그 (Dungeon/Forest/Castle)
 │   └── RoomSpawner.cs              # 방 진입 시 적 스폰, 방 클리어 감지
 │
@@ -163,10 +164,13 @@ Assets/Scripts/
 ├── Enemy/
 │   ├── EnemyController.cs          # 적 HP·피해·사망·상태이상·넉백 벽 클램핑
 │   ├── EnemyBrain.cs               # FSM 조율 추상 + MovementHandler/TargetHandler/ActionHandler
-│   │                               #   (Idle/Attack 상태 nested + 원거리 BeginAttack/TickAttack)
+│   │                               #   (상태 인스턴스는 EnemyStates.cs에 정의, BossEnemyBrain은 CreateState 오버라이드)
 │   ├── NormalEnemyBrain.cs         # 기본 몬스터용 경량 Brain (커스텀 상태 없음)
-│   ├── NormalEnemyAI.cs            # (호환 유지용 보조 컴포넌트)
-│   ├── ChaseState.cs               # A* 기반 추격 상태
+│   ├── NormalEnemyAI.cs            # [Obsolete] NormalEnemyBrain을 상속만 하는 호환 래퍼 (기존 프리팹 유지용)
+│   ├── EnemyStates.cs              # IdleState · ChaseState · AttackState (internal sealed, A* 추격 포함)
+│   ├── EnemyMovementHandler.cs     # A* 이동 + 군중 분리 + Ranged 이동 분기 (Chase/Kiting/Random)
+│   ├── EnemyTargetHandler.cs       # 플레이어 감지·시야 갱신
+│   ├── EnemyActionHandler.cs       # Contact/Ranged 행동 사이클·쿨다운
 │   ├── AStarPathfinder.cs          # GC 최소화 A* 탐색기
 │   ├── EnemyHealthBar.cs           # 머리 위 체력바 렌더러
 │   ├── EnemyAnimationController.cs # 적 이동/공격/사망 애니메이션 + 사격 방향 페이싱
@@ -405,7 +409,7 @@ SkillData (ScriptableObject)
   ├── 공통: knockback/slow 파라미터
   ├── Projectile: prefab, speed, lifetime, count, spreadAngle,
   │              firePattern, wallHitMode, targetHitMode,
-  │              maxBounceCount, spawnOffset, burstInterval
+  │              maxBounceCount, spawnOffset, burstInterval, burstSpacing
   └── Dash: distance, duration, stopOnWall,
            damageOnPath, damageOnContact, invincibleDuringDash
 
@@ -631,11 +635,13 @@ CheckRoomEntry만 호출해 대시 중 방 전환을 감지합니다.
 ```
 EnemyBrain (추상)
   ├── TargetHandler   — 플레이어 감지 및 타겟 갱신
-  ├── MovementHandler — A* 경로탐색 + 군중 분리 (보간된 분리 벡터)
+  ├── MovementHandler — A* 경로탐색 + 군중 분리 (보간된 분리 벡터) + Ranged 이동(Chase/Kiting/Random)
   └── ActionHandler   — Contact/Ranged 분기 + 쿨다운·선딜·후딜 처리
 
 NormalEnemyBrain (구체)
-  └── 상태: Idle → Chase → Attack (Idle/Attack은 EnemyBrain의 nested sealed class)
+  └── 상태: Idle → Chase → Attack
+       (IdleState/ChaseState/AttackState 는 EnemyStates.cs 의 internal sealed class)
+       (보스/에픽은 EnemyBrain.CreateState 오버라이드로 EnemyAIStateId.Phase2/Berserk 등 추가)
 ```
 
 ```
@@ -669,6 +675,7 @@ FindPath(start, goal, grid):
 | 군중 분리 벡터 | 인접 적 OverlapCircle + Lerp 보간으로 지터 감소 |
 | Footprint 4코너 검사 | CollisionFootprintRadius 기준 4코너 IsWalkable 통과 시에만 이동 |
 | LateUpdate 위치 복원 | 풋프린트가 벽에 끼면 _lastSafePosition으로 복귀 |
+| Ranged 이동 분기 우선 처리 | `MovementHandler.TryTickRangedMovement` 가 Kiting/Random 활성 시 A*/LOS 흐름을 건너뜀 |
 
 ### 8-4. 행동 분기 (EnemyBehaviorType)
 
@@ -691,6 +698,18 @@ Ranged (원거리):
   TickBehavior(Ranged):
     pendingBurstShots > 0 시 burstInterval 마다 FireProjectile()
 ```
+
+### 8-4-1. Ranged 이동 분기 (RangedMovementType)
+
+`EnemyData.rangedMovementType`로 원거리 적의 추격 동작을 선택합니다.
+ChaseState가 매 Tick `MovementHandler.TryTickRangedMovement`를 먼저 호출하고,
+true 를 반환하면 LOS/A* 흐름을 건너뜁니다.
+
+| 값 | 동작 | 사용 파라미터 |
+|----|------|---------------|
+| `Chase`   | 기존 추격 동작과 동일 (LOS 직선 → A*) | — |
+| `Kiting`  | `preferredRange` 보다 멀면 접근, `kiteRetreatRange` 안쪽이면 후퇴 | preferredRange, kiteRetreatRange |
+| `Random`  | `randomMoveInterval[Min,Max]` 간격으로 `randomMoveRadius` 안의 새 목적지 선택 | randomMoveIntervalMin/Max, randomMoveRadius |
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
 
@@ -1005,14 +1024,18 @@ FogVisibilityRenderer:
 ```
 CanStartRoomEncounter(room):
   IsPlayerInsideRoom(room):
-    9-포인트 샘플링 (중앙 1 + 8방향 경계)
+    RoomFootprintSampler.FillSamples — 중앙 1 + 8방향 경계 (총 9개)
     중앙이 방 안 → true
-    나머지 중 ROOM_ENTRY_SAMPLE_THRESHOLD(=3)개 이상 방 안 → true
+    나머지 중 RoomFootprintSampler.Threshold(=3)개 이상 방 안 → true
   IsPlayerOverlappingAnyDoorCell(room):
     방 4면 테두리의 문 후보 타일 각각에 대해
     플레이어 CircleCollider와 타일 AABB 겹침 검사
     → 하나라도 겹치면 false (아직 문 진입 중)
 ```
+
+> `RoomFootprintSampler`는 `PlayerController.CheckRoomEntry()` 의 후보 방 선정과
+> `DungeonTilemapRenderer.IsPlayerInsideRoom()` 에서 같은 9-sample 배치를 공유합니다.
+> sample 인덱스 의미는 `0=center, 1=left, 2=right, 3=up, 4=down, 5=down-left, 6=down-right, 7=up-left, 8=up-right` 순서로 고정.
 
 ### 11-2. Tilemap 청크 분할 배치
 
@@ -1282,6 +1305,8 @@ case SkillExecutionType.AreaOverTime:
 | **게임오버 UI 자동 빌드** | `GameOverUIController.BuildDefaultUi` — 인스펙터 미설정 시 패널·이미지·확인 버튼 런타임 생성 |
 | **적 사망 지연 처리** | `EnemyData.deathDelay` + `OnDeathFinished` — 사망 모션 종료 후 풀 반납, 방 클리어 판정은 즉시 |
 | **추격 중 타겟 페이싱** | `EnemyAnimationController.faceTargetWhileChasing` — 근접 적의 추적 방향 흔들림 보정 |
+| **Ranged 이동 분기** | `RangedMovementType.Chase/Kiting/Random` — `MovementHandler.TryTickRangedMovement`가 LOS/A* 흐름 전에 이동을 가로챔 |
+| **방 진입 footprint 공통화** | `RoomFootprintSampler` — 9-sample 배치를 PlayerController·DungeonTilemapRenderer가 공유 |
 | **8방향 조준 통합** | `AimDirectionUtility` — 입력 → raw/정규화/카디널 변환, 스킬·투사체·대시·미리보기 공유 |
 | **대시 path/contact 분리** | `DashDamageRequest.DamageOnPath`/`OnContact` 독립 플래그 — 경로 보간 샘플링 + 종착 별도 판정 |
 | **투사체 맵 범위 가드** | `ProjectileController.IsOutOfDungeonBounds` + `ProjectileReleaseReason.OutOfBounds` — 맵 밖 투사체 자동 Release |

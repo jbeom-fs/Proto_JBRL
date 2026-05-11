@@ -141,6 +141,7 @@ public class ProjectileController : MonoBehaviour
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
+        ApplyVisualRotation();
         _damage = Mathf.Max(0, damage);
         _knockbackForce = Mathf.Max(0f, knockbackForce);
         _knockbackDuration = Mathf.Max(0f, knockbackDuration);
@@ -335,6 +336,7 @@ public class ProjectileController : MonoBehaviour
         else
             _direction.Normalize();
 
+        ApplyVisualRotation();
         _currentBounceCount++;
 
         Vector2 correctedPosition = currentPosition + _direction * Mathf.Max(0.01f, bounceExitOffset);
@@ -343,6 +345,12 @@ public class ProjectileController : MonoBehaviour
             : correctedPosition;
 
         return true;
+    }
+
+    private void ApplyVisualRotation()
+    {
+        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 
     private void TryHitTarget()
