@@ -13,7 +13,6 @@
 using System.Collections;
 using System.Globalization;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class DungeonManager : MonoBehaviour
 {
@@ -24,7 +23,6 @@ public class DungeonManager : MonoBehaviour
 
     [Header("Dependencies")]
     [Tooltip("Tilemap 렌더링 담당 컴포넌트")]
-    [FormerlySerializedAs("renderer")]
     public DungeonTilemapRenderer dungeonRenderer;
 
     [Tooltip("이벤트 채널 (ScriptableObject Asset)")]

@@ -73,8 +73,10 @@
     <Compile Include="Assets\Scripts\Generate\RoomSpawner.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonQueryService.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackExecutor.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyTargetHandler.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\CameraFollow2D.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_LootSack.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyPoolManager.cs" />
@@ -103,15 +105,12 @@
     <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
-    <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
-    <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
-    <Compile Include="Assets\Scripts\Enemy\EnemyTargetHandler.cs" />
-    <Compile Include="Assets\Scripts\Enemy\EnemyActionHandler.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
@@ -123,6 +122,7 @@
     <Compile Include="Assets\Scripts\Combat\SkillCooldownController.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Banner.cs" />
     <Compile Include="Assets\Scripts\DungeonManager.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyActionHandler.cs" />
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
