@@ -103,7 +103,10 @@
     <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
-    <Compile Include="Assets\Scripts\Enemy\ChaseState.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyTargetHandler.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyActionHandler.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />

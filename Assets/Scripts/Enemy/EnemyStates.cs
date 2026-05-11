@@ -2,6 +2,38 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
+/// 기본 AI 상태(Idle / Chase / Attack) 구현입니다.
+/// EnemyBrain의 public 멤버만 참조해 외부 파일로 분리되어 있습니다.
+/// 보스/에픽 전용 상태는 EnemyBrain.CreateCustomState를 오버라이드해 추가하세요.
+/// </summary>
+public sealed class IdleState : IEnemyState
+{
+    private readonly EnemyBrain _brain;
+
+    public IdleState(EnemyBrain brain)
+    {
+        _brain = brain;
+    }
+
+    public void OnEnter()
+    {
+        _brain.StopMoving();
+    }
+
+    public void Tick(float sqrDistanceToTarget)
+    {
+        _brain.StopMoving();
+
+        if (_brain.Target.HasTarget && sqrDistanceToTarget <= _brain.Target.DetectRangeSqr)
+            _brain.ChangeState(EnemyAIStateId.Chase);
+    }
+
+    public void OnExit()
+    {
+    }
+}
+
+/// <summary>
 /// 추적 상태 전용 로직입니다.
 /// A*는 이 상태가 활성화되어 있을 때만 pathUpdateInterval 주기로 실행됩니다.
 /// 복도 추적 버그를 막기 위해 목표 좌표는 EnemyBrain.TargetHandler가 제공하는 전역 그리드 좌표를 사용합니다.
@@ -136,5 +168,30 @@ public sealed class ChaseState : IEnemyState
         _path.Clear();
         _waypointIndex = 0;
         _pathTimer = 0f;
+    }
+}
+
+public sealed class AttackState : IEnemyState
+{
+    private readonly EnemyBrain _brain;
+
+    public AttackState(EnemyBrain brain)
+    {
+        _brain = brain;
+    }
+
+    public void OnEnter()
+    {
+        _brain.Action.BeginAttack();
+    }
+
+    public void Tick(float sqrDistanceToTarget)
+    {
+        if (_brain.Action.TickAttack(sqrDistanceToTarget))
+            _brain.ChangeState(EnemyAIStateId.Chase);
+    }
+
+    public void OnExit()
+    {
     }
 }
