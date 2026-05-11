@@ -13,6 +13,19 @@ public class MovementHandler
     private float _tileSize = 1f;
     private Vector2 _smoothedSeparation;
 
+    // Kiting 후퇴 방향 후보: away(180°), away ±45°, side ±90°.
+    // 각 항목은 away 벡터에 곱할 회전 행렬의 (cos, sin)입니다.
+    // static readonly이므로 매 프레임 alloc 0.
+    private const float Cos45 = 0.70710678f;
+    private static readonly Vector2[] s_KitingRotations = new Vector2[]
+    {
+        new Vector2(1f, 0f),         // 0°   (away)
+        new Vector2(Cos45, Cos45),   // +45°
+        new Vector2(Cos45, -Cos45),  // -45°
+        new Vector2(0f, 1f),         // +90° (side left)
+        new Vector2(0f, -1f),        // -90° (side right)
+    };
+
     // Ranged Random/Kiting 런타임 상태 — pooling 재사용 시 ResetRuntimeState에서 초기화됩니다.
     private Vector3 _randomDestination;
     private bool _hasRandomDestination;
@@ -238,20 +251,9 @@ public class MovementHandler
 
         if (sqrDistanceToTarget < kiteRetreatSqr)
         {
-            // 후퇴: Player 반대 방향으로 한 step 이동을 시도한다.
-            // 벽이면 MoveWithCollision이 walkable 체크로 자체적으로 정지하므로 별도 fallback이 필요 없다.
-            Vector3 self = _brain.transform.position;
-            Vector3 toPlayer = _brain.Target.TargetPosition - self;
-            if (toPlayer.sqrMagnitude <= 0.0001f)
-            {
+            // 후퇴 방향을 여러 개 시도해 벽/문 앞에서 즉시 정지하지 않도록 한다.
+            if (!TryRetreatWithFallback(data))
                 _brain.StopMoving();
-                return;
-            }
-
-            Vector3 away = -toPlayer.normalized;
-            // preferredRange만큼 떨어진 가상 목적지를 만들어 MoveToward가 그 방향으로 step한다.
-            Vector3 retreatTarget = self + away * Mathf.Max(0.01f, data.preferredRange);
-            _brain.MoveToward(retreatTarget);
             return;
         }
 
@@ -265,6 +267,51 @@ public class MovementHandler
         // 적정 거리: 공격 가능 거리에 있다면 ChaseState 진입부의 CanAttack 분기가 이미 Attack으로 보낸다.
         // 그렇지 않은 경우 한 곳에 뭉치지 않도록 그냥 정지한다.
         _brain.StopMoving();
+    }
+
+    /// <summary>
+    /// Kiting 후퇴 방향을 away → away±45° → side ±90° 순으로 시도하고,
+    /// 1 step 거리의 candidate가 walkable인 첫 방향으로 MoveToward를 호출합니다.
+    /// 모두 실패하면 false를 반환해 호출자가 정지하도록 합니다.
+    /// 후보 배열은 static readonly이며 candidate Vector3는 stack-local이라 alloc은 없습니다.
+    /// </summary>
+    private bool TryRetreatWithFallback(EnemyData data)
+    {
+        Vector3 self = _brain.transform.position;
+        Vector3 toPlayer = _brain.Target.TargetPosition - self;
+        if (toPlayer.sqrMagnitude <= 0.0001f)
+            return false;
+
+        float step = _brain.CurrentMoveSpeed * Time.deltaTime;
+        if (step <= 0f) return false;
+
+        Vector2 awayNorm = -((Vector2)toPlayer).normalized;
+        float reach = Mathf.Max(0.01f, data.preferredRange);
+        DungeonManager dungeon = _brain.dungeonManager;
+        float footprintRadius = _brain.Enemy != null
+            ? _brain.Enemy.CollisionFootprintRadius
+            : _tileSize * _brain.collisionRadius;
+
+        for (int i = 0; i < s_KitingRotations.Length; i++)
+        {
+            Vector2 rot = s_KitingRotations[i];
+            // 회전 행렬: away를 (cos, sin)으로 회전한 단위 벡터.
+            Vector2 dir = new Vector2(
+                awayNorm.x * rot.x - awayNorm.y * rot.y,
+                awayNorm.x * rot.y + awayNorm.y * rot.x);
+
+            // 1 step 떨어진 candidate가 walkable인지 사전 검사한다.
+            Vector3 candidate = new Vector3(self.x + dir.x * step, self.y + dir.y * step, 0f);
+            if (dungeon != null && !dungeon.IsFootprintWalkable(candidate, footprintRadius))
+                continue;
+
+            // 채택: MoveToward가 separation을 합친 뒤 MoveWithCollision의 4-corner 체크로 최종 이동.
+            Vector3 retreatTarget = new Vector3(self.x + dir.x * reach, self.y + dir.y * reach, 0f);
+            _brain.MoveToward(retreatTarget);
+            return true;
+        }
+
+        return false;
     }
 
     private void TickRandomMovement()
@@ -308,12 +355,22 @@ public class MovementHandler
             : _tileSize * _brain.collisionRadius;
         Vector3 self = _brain.transform.position;
 
+        // 자기 자신과 겹치거나 한 칸도 안 떨어진 destination을 만들지 않도록 최소 반경을 보호한다.
+        // footprintRadius가 큰 enemy에서도 도달 직후 즉시 새 destination이 잡히지 않게 한다.
+        float minR = Mathf.Max(radius * 0.25f, footprintRadius + 0.1f);
+        if (minR >= radius)
+        {
+            // randomMoveRadius가 footprint보다도 작은 이상 설정 — 안전하게 random 이동을 skip.
+            _hasRandomDestination = false;
+            return;
+        }
+
         // 시도 횟수는 작은 상수로 제한 — Random.Range 반복 호출만 발생하고 alloc은 없다.
         const int MaxAttempts = 6;
         for (int i = 0; i < MaxAttempts; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
-            float r = Random.Range(radius * 0.25f, radius);
+            float r = Random.Range(minR, radius);
             Vector3 candidate = new Vector3(
                 self.x + Mathf.Cos(angle) * r,
                 self.y + Mathf.Sin(angle) * r,
