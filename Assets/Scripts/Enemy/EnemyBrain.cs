@@ -367,7 +367,6 @@ public abstract class EnemyBrain : MonoBehaviour
     public class MovementHandler
     {
         private readonly EnemyBrain _brain;
-        private readonly Vector3[] _corners = new Vector3[4];
         private readonly Collider2D[] _separationBuffer = new Collider2D[16];
         private static readonly ContactFilter2D s_SeparationFilter = ContactFilter2D.noFilter;
         private float _tileSize = 1f;
@@ -543,19 +542,7 @@ public abstract class EnemyBrain : MonoBehaviour
             float radius = _brain.Enemy != null
                 ? _brain.Enemy.CollisionFootprintRadius
                 : _tileSize * _brain.collisionRadius;
-            _corners[0] = new Vector3(pos.x - radius, pos.y - radius, 0f);
-            _corners[1] = new Vector3(pos.x + radius, pos.y - radius, 0f);
-            _corners[2] = new Vector3(pos.x - radius, pos.y + radius, 0f);
-            _corners[3] = new Vector3(pos.x + radius, pos.y + radius, 0f);
-
-            for (int i = 0; i < _corners.Length; i++)
-            {
-                Vector2Int grid = _brain.dungeonManager.WorldToGrid(_corners[i]);
-                if (!_brain.dungeonManager.IsWalkable(grid.x, grid.y))
-                    return false;
-            }
-
-            return true;
+            return _brain.dungeonManager.IsFootprintWalkable(pos, radius);
         }
     }
 
@@ -610,57 +597,42 @@ public abstract class EnemyBrain : MonoBehaviour
 
         private void FindPlayer()
         {
-            GameObject playerObject = GameObject.FindWithTag("Player");
-            if (playerObject == null)
-            {
-                PlayerController playerController = FindAnyObjectByType<PlayerController>();
-                if (playerController != null)
-                    playerObject = playerController.gameObject;
-            }
+            PlayerController active = PlayerController.Active;
+            if (active == null) return;
 
-            if (playerObject == null) return;
-
-            _brain.player = playerObject.transform;
+            _brain.player = active.transform;
             _damageable = ResolveDamageable(_brain.player);
             _targetCollider = ResolveCollider(_brain.player);
         }
 
         private Collider2D ResolveCollider(Transform targetTransform)
         {
-            if (targetTransform == null) return null;
-
-            Collider2D col = targetTransform.GetComponent<Collider2D>();
-            if (col != null) return col;
-
-            col = targetTransform.GetComponentInParent<Collider2D>();
-            if (col != null) return col;
-
-            return targetTransform.GetComponentInChildren<Collider2D>();
+            return ResolveOnHierarchy<Collider2D>(targetTransform);
         }
 
         private IDamageable ResolveDamageable(Transform targetTransform)
         {
             if (targetTransform == null) return null;
 
-            IDamageable damageable = targetTransform.GetComponent<IDamageable>();
+            IDamageable damageable = ResolveOnHierarchy<IDamageable>(targetTransform);
             if (damageable != null) return damageable;
 
-            damageable = targetTransform.GetComponentInParent<IDamageable>();
-            if (damageable != null) return damageable;
+            // PlayerCombatController가 IDamageable을 구현하지만,
+            // 인터페이스 lookup이 누락된 prefab 구성에서도 안전하게 fallback한다.
+            return ResolveOnHierarchy<PlayerCombatController>(targetTransform);
+        }
 
-            damageable = targetTransform.GetComponentInChildren<IDamageable>();
-            if (damageable != null) return damageable;
+        private static T ResolveOnHierarchy<T>(Transform targetTransform) where T : class
+        {
+            if (targetTransform == null) return null;
 
-            PlayerCombatController combatController = targetTransform.GetComponent<PlayerCombatController>();
-            if (combatController != null) return combatController;
+            T result = targetTransform.GetComponent<T>();
+            if (result != null) return result;
 
-            combatController = targetTransform.GetComponentInParent<PlayerCombatController>();
-            if (combatController != null) return combatController;
+            result = targetTransform.GetComponentInParent<T>();
+            if (result != null) return result;
 
-            combatController = targetTransform.GetComponentInChildren<PlayerCombatController>();
-            if (combatController != null) return combatController;
-
-            return null;
+            return targetTransform.GetComponentInChildren<T>();
         }
 
         private bool IsTargetOnTrackableTile()

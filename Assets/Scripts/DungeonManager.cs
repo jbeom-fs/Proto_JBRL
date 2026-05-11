@@ -292,6 +292,24 @@ public class DungeonManager : MonoBehaviour
     public bool IsWalkable(int col, int row)
         => EnsureQueryService().IsWalkable(col, row);
 
+    /// <summary>월드 좌표를 중심으로 한 정사각형 footprint(반경 radius)의 4 코너가 모두 walkable인지 검사합니다.</summary>
+    public bool IsFootprintWalkable(Vector3 worldPosition, float radius)
+    {
+        if (_data == null) return true;
+
+        Vector2Int g;
+        g = WorldToGrid(new Vector3(worldPosition.x - radius, worldPosition.y - radius, 0f));
+        if (!IsWalkable(g.x, g.y)) return false;
+        g = WorldToGrid(new Vector3(worldPosition.x + radius, worldPosition.y - radius, 0f));
+        if (!IsWalkable(g.x, g.y)) return false;
+        g = WorldToGrid(new Vector3(worldPosition.x - radius, worldPosition.y + radius, 0f));
+        if (!IsWalkable(g.x, g.y)) return false;
+        g = WorldToGrid(new Vector3(worldPosition.x + radius, worldPosition.y + radius, 0f));
+        if (!IsWalkable(g.x, g.y)) return false;
+
+        return true;
+    }
+
     public int GetTileType(int col, int row)
         => EnsureQueryService().GetTileType(col, row);
 

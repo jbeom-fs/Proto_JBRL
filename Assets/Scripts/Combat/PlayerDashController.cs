@@ -13,7 +13,6 @@ public sealed class PlayerDashController : MonoBehaviour
     private const int EnemyHitBufferSize = 64;
     private const int MaxDashDamageSamplesPerSegment = 16;
 
-    private readonly Vector3[] _corners = new Vector3[4];
     private readonly Collider2D[] _enemyHitBuffer = new Collider2D[EnemyHitBufferSize];
     private readonly HashSet<EnemyController> _hitEnemiesThisDash = new();
     private Coroutine _dashRoutine;
@@ -157,20 +156,7 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private bool IsFootprintWalkable(Vector3 position)
     {
-        float radius = ResolveFootprintRadius();
-        _corners[0] = new Vector3(position.x - radius, position.y - radius, 0f);
-        _corners[1] = new Vector3(position.x + radius, position.y - radius, 0f);
-        _corners[2] = new Vector3(position.x - radius, position.y + radius, 0f);
-        _corners[3] = new Vector3(position.x + radius, position.y + radius, 0f);
-
-        for (int i = 0; i < _corners.Length; i++)
-        {
-            Vector2Int grid = _dungeonManager.WorldToGrid(_corners[i]);
-            if (!_dungeonManager.IsWalkable(grid.x, grid.y))
-                return false;
-        }
-
-        return true;
+        return _dungeonManager.IsFootprintWalkable(position, ResolveFootprintRadius());
     }
 
     private float ResolveTileSize()

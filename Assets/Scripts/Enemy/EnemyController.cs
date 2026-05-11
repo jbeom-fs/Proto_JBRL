@@ -35,13 +35,11 @@ public class EnemyController : MonoBehaviour, IDamageable
     private CircleCollider2D _circleCollider;
     private HitFlashFeedback _hitFlash;
     private EnemyAnimationController _animationController;
-    private static PhysicsMaterial2D s_NoFrictionMaterial;
     private float _knockbackLockTimer;
     private float _activeSlowPercentage;
     private float _deathTimer;
     private bool _deathFinished;
     private Vector3 _lastSafePosition;
-    private readonly Vector3[] _footprintCorners = new Vector3[4];
     private readonly List<SlowEffect> _activeSlows = new();
 
     private struct SlowEffect
@@ -61,9 +59,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private void Awake()
     {
-        ConfigurePhysics();
-        _rb = GetComponent<Rigidbody2D>();
-        _circleCollider = GetComponent<CircleCollider2D>();
+        (_rb, _circleCollider) = CharacterPhysicsSetup.Configure(gameObject, "Enemy");
         _healthBar = GetComponent<EnemyHealthBar>();
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
@@ -348,22 +344,8 @@ public class EnemyController : MonoBehaviour, IDamageable
     private bool IsFootprintWalkable(Vector3 position)
     {
         var dungeonManager = DungeonManager.Instance;
-        if (dungeonManager == null || dungeonManager.Data == null) return true;
-
-        float radius = GetWorldColliderRadius();
-        _footprintCorners[0] = new Vector3(position.x - radius, position.y - radius, 0f);
-        _footprintCorners[1] = new Vector3(position.x + radius, position.y - radius, 0f);
-        _footprintCorners[2] = new Vector3(position.x - radius, position.y + radius, 0f);
-        _footprintCorners[3] = new Vector3(position.x + radius, position.y + radius, 0f);
-
-        for (int i = 0; i < _footprintCorners.Length; i++)
-        {
-            Vector2Int grid = dungeonManager.WorldToGrid(_footprintCorners[i]);
-            if (!dungeonManager.IsWalkable(grid.x, grid.y))
-                return false;
-        }
-
-        return true;
+        if (dungeonManager == null) return true;
+        return dungeonManager.IsFootprintWalkable(position, GetWorldColliderRadius());
     }
 
     private void ApplySlow(float percentage, float duration)
@@ -408,46 +390,4 @@ public class EnemyController : MonoBehaviour, IDamageable
         _activeSlowPercentage = strongest;
     }
 
-    private void ConfigurePhysics()
-    {
-        // 적은 물리 충돌로 서로 밀려야 하므로 Dynamic Rigidbody2D를 사용하고, 2D 탑다운이라 중력/회전은 막습니다.
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
-        if (rb == null)
-            rb = gameObject.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.gravityScale = 0f;
-        rb.freezeRotation = true;
-        rb.sharedMaterial = GetNoFrictionMaterial();
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
-
-        CircleCollider2D circle = GetComponent<CircleCollider2D>();
-        if (circle == null)
-            circle = gameObject.AddComponent<CircleCollider2D>();
-        circle.isTrigger = false;
-        circle.radius = 0.32f;
-        circle.offset = Vector2.zero;
-        circle.sharedMaterial = GetNoFrictionMaterial();
-
-        foreach (BoxCollider2D box in GetComponents<BoxCollider2D>())
-            box.enabled = false;
-
-        int enemyLayer = LayerMask.NameToLayer("Enemy");
-        if (enemyLayer >= 0)
-            gameObject.layer = enemyLayer;
-
-        _circleCollider = circle;
-    }
-
-    private static PhysicsMaterial2D GetNoFrictionMaterial()
-    {
-        if (s_NoFrictionMaterial != null) return s_NoFrictionMaterial;
-
-        s_NoFrictionMaterial = new PhysicsMaterial2D("NoFriction")
-        {
-            friction = 0f,
-            bounciness = 0f
-        };
-        return s_NoFrictionMaterial;
-    }
 }

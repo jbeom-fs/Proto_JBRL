@@ -170,16 +170,9 @@ public class FogOfWarController : MonoBehaviour
 
         if (player == null)
         {
-            GameObject playerObject = GameObject.FindWithTag("Player");
-            if (playerObject == null)
-            {
-                PlayerController controller = FindAnyObjectByType<PlayerController>();
-                if (controller != null)
-                    playerObject = controller.gameObject;
-            }
-
-            if (playerObject != null)
-                player = playerObject.transform;
+            PlayerController active = PlayerController.Active;
+            if (active != null)
+                player = active.transform;
         }
     }
 

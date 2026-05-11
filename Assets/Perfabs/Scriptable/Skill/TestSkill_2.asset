@@ -29,14 +29,14 @@ MonoBehaviour:
   slowPercentage: 0.8
   slowDuration: 3
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-  projectileSpeed: 20
+  projectileSpeed: 25
   projectileLifetime: 3
-  projectileCount: 3
+  projectileCount: 10
   projectileSpreadAngle: 15
-  projectileFirePattern: 1
+  projectileFirePattern: 3
   projectileWallHitMode: 1
   projectileTargetHitMode: 1
-  projectileMaxBounceCount: 2
+  projectileMaxBounceCount: 5
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.15
   projectileBurstSpacing: 0.5

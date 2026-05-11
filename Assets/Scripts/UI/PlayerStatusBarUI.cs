@@ -14,7 +14,7 @@ public class PlayerStatusBarUI : MonoBehaviour
     private void Awake()
     {
         if (combat == null)
-            combat = FindAnyObjectByType<PlayerCombatController>();
+            combat = PlayerCombatController.Active;
 
         if (combat == null)
             Debug.LogWarning("[PlayerStatusBarUI] PlayerCombatController is missing. Initial HP/MP UI refresh will be skipped.");

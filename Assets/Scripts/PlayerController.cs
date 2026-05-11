@@ -21,6 +21,8 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerInputReader))]
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController Active { get; private set; }
+
     // ── Inspector 필드 ───────────────────────────────────────────────
 
     [Header("Dependencies")]
@@ -59,8 +61,6 @@ public class PlayerController : MonoBehaviour
     private readonly HashSet<(int x, int y)> _visitedRooms
         = new HashSet<(int x, int y)>();
 
-    // CanMoveTo 코너 배열 재사용
-    private readonly Vector3[] _corners = new Vector3[4];
     private readonly Vector3[] _roomEntrySamples = new Vector3[9];
 
     // 마지막으로 방문안 Room
@@ -71,11 +71,27 @@ public class PlayerController : MonoBehaviour
     private PlayerCombatController _combat;
     private PlayerDashController _dashController;
     private Vector3 _lastSafePosition;
-    private static PhysicsMaterial2D s_NoFrictionMaterial;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화
     // ══════════════════════════════════════════════════════════════
+
+    private void Awake()
+    {
+        if (Active == null || ReferenceEquals(Active, this))
+        {
+            Active = this;
+        }
+        else
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning(
+                $"[PlayerController] Active 인스턴스가 이미 존재합니다 ({Active.name}) — 새 인스턴스({name})로 교체합니다.",
+                this);
+#endif
+            Active = this;
+        }
+    }
 
     private void Start()
     {
@@ -108,49 +124,14 @@ public class PlayerController : MonoBehaviour
     {
         if (eventChannel != null)
             eventChannel.OnFloorChanged -= OnFloorChangedHandler;
+
+        if (ReferenceEquals(Active, this))
+            Active = null;
     }
 
     private void ConfigurePhysics()
     {
-        // 플레이어도 적과 물리적으로 겹치지 않도록 Dynamic Rigidbody2D와 작은 원형 콜라이더를 보장합니다.
-        Rigidbody2D rb = GetComponent<Rigidbody2D>();
-        if (rb == null)
-            rb = gameObject.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.gravityScale = 0f;
-        rb.freezeRotation = true;
-        rb.sharedMaterial = GetNoFrictionMaterial();
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
-        _rb = rb;
-
-        CircleCollider2D circle = GetComponent<CircleCollider2D>();
-        if (circle == null)
-            circle = gameObject.AddComponent<CircleCollider2D>();
-        circle.isTrigger = false;
-        circle.radius = 0.32f;
-        circle.offset = Vector2.zero;
-        circle.sharedMaterial = GetNoFrictionMaterial();
-        _circleCollider = circle;
-
-        foreach (BoxCollider2D box in GetComponents<BoxCollider2D>())
-            box.enabled = false;
-
-        int playerLayer = LayerMask.NameToLayer("Player");
-        if (playerLayer >= 0)
-            gameObject.layer = playerLayer;
-    }
-
-    private static PhysicsMaterial2D GetNoFrictionMaterial()
-    {
-        if (s_NoFrictionMaterial != null) return s_NoFrictionMaterial;
-
-        s_NoFrictionMaterial = new PhysicsMaterial2D("NoFriction")
-        {
-            friction = 0f,
-            bounciness = 0f
-        };
-        return s_NoFrictionMaterial;
+        (_rb, _circleCollider) = CharacterPhysicsSetup.Configure(gameObject, "Player");
     }
 
     /// <summary>
@@ -337,36 +318,7 @@ public class PlayerController : MonoBehaviour
 
     private bool CanMoveTo(Vector3 pos)
     {
-        float r = _tileSize * collisionRadius;
-        _corners[0] = new Vector3(pos.x - r, pos.y - r, 0);
-        _corners[1] = new Vector3(pos.x + r, pos.y - r, 0);
-        _corners[2] = new Vector3(pos.x - r, pos.y + r, 0);
-        _corners[3] = new Vector3(pos.x + r, pos.y + r, 0);
-
-        foreach (var c in _corners)
-        {
-            var g = dungeonManager.WorldToGrid(c);
-            if (!dungeonManager.IsWalkable(g.x, g.y)) return false;
-        }
-        return true;
-    }
-
-    private bool IsPhysicsFootprintWalkable(Vector3 pos)
-    {
-        float r = GetWorldColliderRadius();
-        _corners[0] = new Vector3(pos.x - r, pos.y - r, 0f);
-        _corners[1] = new Vector3(pos.x + r, pos.y - r, 0f);
-        _corners[2] = new Vector3(pos.x - r, pos.y + r, 0f);
-        _corners[3] = new Vector3(pos.x + r, pos.y + r, 0f);
-
-        for (int i = 0; i < _corners.Length; i++)
-        {
-            Vector2Int grid = dungeonManager.WorldToGrid(_corners[i]);
-            if (!dungeonManager.IsWalkable(grid.x, grid.y))
-                return false;
-        }
-
-        return true;
+        return dungeonManager.IsFootprintWalkable(pos, _tileSize * collisionRadius);
     }
 
     private float GetWorldColliderRadius()

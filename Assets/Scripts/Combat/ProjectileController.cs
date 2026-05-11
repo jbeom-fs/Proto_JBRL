@@ -179,11 +179,12 @@ public class ProjectileController : MonoBehaviour
 
     private void Update()
     {
-        if (RuntimePerfTraceLogger.IsEnabled)
-        {
-            UpdateMeasured();
-            return;
-        }
+        bool measure = RuntimePerfTraceLogger.IsEnabled;
+        long updateStart = measure ? RuntimePerfTraceLogger.Timestamp() : 0L;
+        long moveTicks = 0L;
+        long wallTicks = 0L;
+        long hitTicks = 0L;
+        long bounceTicks = 0L;
 
         float deltaTime = Time.deltaTime;
 
@@ -191,15 +192,23 @@ public class ProjectileController : MonoBehaviour
         if (_lifetime <= 0f)
         {
             Release(ProjectileReleaseReason.LifetimeExpired);
+            FlushProjectileUpdateMetrics(measure, updateStart, moveTicks, wallTicks, hitTicks, bounceTicks);
             return;
         }
 
+        long moveStart = measure ? RuntimePerfTraceLogger.Timestamp() : 0L;
         Vector2 currentPosition = transform.position;
         Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
+        if (measure) moveTicks += RuntimePerfTraceLogger.Timestamp() - moveStart;
 
-        if (IsOutOfDungeonBounds(nextPosition))
+        long boundsStart = measure ? RuntimePerfTraceLogger.Timestamp() : 0L;
+        bool outOfBounds = IsOutOfDungeonBounds(nextPosition);
+        if (measure) wallTicks += RuntimePerfTraceLogger.Timestamp() - boundsStart;
+
+        if (outOfBounds)
         {
             Release(ProjectileReleaseReason.OutOfBounds);
+            FlushProjectileUpdateMetrics(measure, updateStart, moveTicks, wallTicks, hitTicks, bounceTicks);
             return;
         }
 
@@ -207,17 +216,53 @@ public class ProjectileController : MonoBehaviour
         {
             transform.position = nextPosition;
         }
-        else if (IsWallPosition(nextPosition))
-        {
-            if (!HandleWallHit(currentPosition, nextPosition))
-                return;
-        }
         else
         {
-            transform.position = nextPosition;
+            long wallStart = measure ? RuntimePerfTraceLogger.Timestamp() : 0L;
+            bool hitWall = IsWallPosition(nextPosition);
+            if (measure) wallTicks += RuntimePerfTraceLogger.Timestamp() - wallStart;
+
+            if (hitWall)
+            {
+                long bounceStart = measure ? RuntimePerfTraceLogger.Timestamp() : 0L;
+                bool keepAlive = HandleWallHit(currentPosition, nextPosition);
+                if (measure) bounceTicks += RuntimePerfTraceLogger.Timestamp() - bounceStart;
+
+                if (!keepAlive)
+                {
+                    FlushProjectileUpdateMetrics(measure, updateStart, moveTicks, wallTicks, hitTicks, bounceTicks);
+                    return;
+                }
+            }
+            else
+            {
+                transform.position = nextPosition;
+            }
         }
 
+        long hitStart = measure ? RuntimePerfTraceLogger.Timestamp() : 0L;
         TryHitTarget();
+        if (measure) hitTicks += RuntimePerfTraceLogger.Timestamp() - hitStart;
+
+        FlushProjectileUpdateMetrics(measure, updateStart, moveTicks, wallTicks, hitTicks, bounceTicks);
+    }
+
+    private static void FlushProjectileUpdateMetrics(
+        bool measure,
+        long updateStart,
+        long moveTicks,
+        long wallTicks,
+        long hitTicks,
+        long bounceTicks)
+    {
+        if (!measure) return;
+
+        RuntimePerfTraceLogger.RecordProjectileUpdate(
+            RuntimePerfTraceLogger.Timestamp() - updateStart,
+            moveTicks,
+            wallTicks,
+            hitTicks,
+            bounceTicks);
     }
 
     // Map bounds 밖이면 wall mode와 무관하게 lifecycle을 끝낸다.
@@ -358,94 +403,6 @@ public class ProjectileController : MonoBehaviour
 
             _hitEnemies.Add(enemy);
         }
-    }
-
-    private void UpdateMeasured()
-    {
-        long updateStart = RuntimePerfTraceLogger.Timestamp();
-        long moveTicks = 0L;
-        long wallTicks = 0L;
-        long hitTicks = 0L;
-        long bounceTicks = 0L;
-
-        float deltaTime = Time.deltaTime;
-
-        _lifetime -= deltaTime;
-        if (_lifetime <= 0f)
-        {
-            Release(ProjectileReleaseReason.LifetimeExpired);
-            RuntimePerfTraceLogger.RecordProjectileUpdate(
-                RuntimePerfTraceLogger.Timestamp() - updateStart,
-                moveTicks,
-                wallTicks,
-                hitTicks,
-                bounceTicks);
-            return;
-        }
-
-        long moveStart = RuntimePerfTraceLogger.Timestamp();
-        Vector2 currentPosition = transform.position;
-        Vector2 nextPosition = currentPosition + _direction * (_speed * deltaTime);
-        moveTicks += RuntimePerfTraceLogger.Timestamp() - moveStart;
-
-        long boundsStart = RuntimePerfTraceLogger.Timestamp();
-        bool outOfBounds = IsOutOfDungeonBounds(nextPosition);
-        wallTicks += RuntimePerfTraceLogger.Timestamp() - boundsStart;
-
-        if (outOfBounds)
-        {
-            Release(ProjectileReleaseReason.OutOfBounds);
-            RuntimePerfTraceLogger.RecordProjectileUpdate(
-                RuntimePerfTraceLogger.Timestamp() - updateStart,
-                moveTicks,
-                wallTicks,
-                hitTicks,
-                bounceTicks);
-            return;
-        }
-
-        if (_wallHitMode == ProjectileWallHitMode.PassThrough)
-        {
-            transform.position = nextPosition;
-        }
-        else
-        {
-            long wallStart = RuntimePerfTraceLogger.Timestamp();
-            bool hitWall = IsWallPosition(nextPosition);
-            wallTicks += RuntimePerfTraceLogger.Timestamp() - wallStart;
-
-            if (hitWall)
-            {
-                long bounceStart = RuntimePerfTraceLogger.Timestamp();
-                bool keepAlive = HandleWallHit(currentPosition, nextPosition);
-                bounceTicks += RuntimePerfTraceLogger.Timestamp() - bounceStart;
-                if (!keepAlive)
-                {
-                    RuntimePerfTraceLogger.RecordProjectileUpdate(
-                        RuntimePerfTraceLogger.Timestamp() - updateStart,
-                        moveTicks,
-                        wallTicks,
-                        hitTicks,
-                        bounceTicks);
-                    return;
-                }
-            }
-            else
-            {
-                transform.position = nextPosition;
-            }
-        }
-
-        long hitStart = RuntimePerfTraceLogger.Timestamp();
-        TryHitTarget();
-        hitTicks += RuntimePerfTraceLogger.Timestamp() - hitStart;
-
-        RuntimePerfTraceLogger.RecordProjectileUpdate(
-            RuntimePerfTraceLogger.Timestamp() - updateStart,
-            moveTicks,
-            wallTicks,
-            hitTicks,
-            bounceTicks);
     }
 
     private static bool TryResolvePlayerCache()

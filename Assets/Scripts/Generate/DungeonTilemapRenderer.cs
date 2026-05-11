@@ -566,18 +566,11 @@ public class DungeonTilemapRenderer : MonoBehaviour
     {
         if (_playerTransform == null)
         {
-            GameObject playerObject = GameObject.FindWithTag("Player");
-            if (playerObject == null)
+            PlayerController active = PlayerController.Active;
+            if (active != null)
             {
-                PlayerController playerController = FindAnyObjectByType<PlayerController>();
-                if (playerController != null)
-                    playerObject = playerController.gameObject;
-            }
-
-            if (playerObject != null)
-            {
-                _playerTransform = playerObject.transform;
-                _playerCircleCollider = playerObject.GetComponent<CircleCollider2D>();
+                _playerTransform = active.transform;
+                _playerCircleCollider = active.GetComponent<CircleCollider2D>();
             }
         }
 
