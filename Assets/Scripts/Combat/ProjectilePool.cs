@@ -30,6 +30,7 @@ public class ProjectilePool : MonoBehaviour
     private readonly Dictionary<GameObject, Stack<ProjectileController>> _poolByPrefab = new();
     private readonly Dictionary<ProjectileController, GameObject> _prefabByProjectile = new();
     private readonly Dictionary<GameObject, int> _createdCountByPrefab = new();
+    private readonly List<ProjectileController> _activeProjectiles = new();
     private int _activeCount;
 
     private static readonly ProfilerMarker s_GetMarker = new ProfilerMarker("ProjectilePool.Get");
@@ -50,6 +51,14 @@ public class ProjectilePool : MonoBehaviour
             _instance = poolObject.AddComponent<ProjectilePool>();
             return _instance;
         }
+    }
+
+    public static void ReleaseAllActiveProjectiles(ProjectileReleaseReason reason)
+    {
+        if (_instance == null)
+            return;
+
+        _instance.ReleaseAllActive(reason);
     }
 
     private void Awake()
@@ -96,7 +105,7 @@ public class ProjectilePool : MonoBehaviour
 
         projectile.SetReleaseAction(Return);
         _prefabByProjectile[projectile] = prefab;
-        _activeCount++;
+        RegisterActive(projectile);
         return projectile;
     }
 
@@ -131,7 +140,7 @@ public class ProjectilePool : MonoBehaviour
 
         projectile.SetReleaseAction(Return);
         _prefabByProjectile[projectile] = prefab;
-        _activeCount++;
+        RegisterActive(projectile);
 
         s_GetMarker.End();
 
@@ -180,8 +189,33 @@ public class ProjectilePool : MonoBehaviour
         ReturnMeasured(projectile, reason);
     }
 
+    public void ReleaseAllActive(ProjectileReleaseReason reason)
+    {
+        // Floor transition / owner cleanup entry point. Uses normal projectile Release -> Return -> HideForPool flow.
+        while (_activeProjectiles.Count > 0)
+        {
+            int lastIndex = _activeProjectiles.Count - 1;
+            ProjectileController projectile = _activeProjectiles[lastIndex];
+            if (projectile == null)
+            {
+                UnregisterActiveAt(lastIndex);
+                continue;
+            }
+
+            projectile.ReleaseForCleanup(reason);
+
+            if (_activeProjectiles.Count > lastIndex &&
+                ReferenceEquals(_activeProjectiles[lastIndex], projectile))
+            {
+                UnregisterActiveAt(lastIndex);
+            }
+        }
+    }
+
     private void ReturnFast(ProjectileController projectile)
     {
+        UnregisterActive(projectile);
+
         if (!_prefabByProjectile.TryGetValue(projectile, out GameObject prefab) || prefab == null)
         {
             Destroy(projectile.gameObject);
@@ -197,8 +231,6 @@ public class ProjectilePool : MonoBehaviour
         projectile.transform.SetParent(transform);
         DeactivateForPool(projectile, measure: false, out _);
         pool.Push(projectile);
-        if (_activeCount > 0)
-            _activeCount--;
     }
 
     private void ReturnMeasured(ProjectileController projectile, ProjectileReleaseReason reason)
@@ -207,6 +239,7 @@ public class ProjectilePool : MonoBehaviour
         long setActiveOffTicks = 0L;
 
         s_ReturnMarker.Begin();
+        UnregisterActive(projectile);
 
         if (!_prefabByProjectile.TryGetValue(projectile, out GameObject prefab) || prefab == null)
         {
@@ -227,13 +260,41 @@ public class ProjectilePool : MonoBehaviour
         DeactivateForPool(projectile, measure: true, out setActiveOffTicks);
 
         pool.Push(projectile);
-        if (_activeCount > 0)
-            _activeCount--;
 
         s_ReturnMarker.End();
 
         long totalTicks = Stopwatch.GetTimestamp() - totalStart;
         RuntimePerfTraceLogger.RecordPoolReturn(reason, _activeCount, pool.Count, totalTicks, setActiveOffTicks);
+    }
+
+    private void RegisterActive(ProjectileController projectile)
+    {
+        if (projectile == null || _activeProjectiles.Contains(projectile))
+            return;
+
+        _activeProjectiles.Add(projectile);
+        _activeCount++;
+    }
+
+    private void UnregisterActive(ProjectileController projectile)
+    {
+        if (projectile == null)
+            return;
+
+        int index = _activeProjectiles.IndexOf(projectile);
+        if (index < 0)
+            return;
+
+        UnregisterActiveAt(index);
+    }
+
+    private void UnregisterActiveAt(int index)
+    {
+        int lastIndex = _activeProjectiles.Count - 1;
+        _activeProjectiles[index] = _activeProjectiles[lastIndex];
+        _activeProjectiles.RemoveAt(lastIndex);
+        if (_activeCount > 0)
+            _activeCount--;
     }
 
     private void ActivateForUse(ProjectileController projectile, bool measure, out long setActiveOnTicks)

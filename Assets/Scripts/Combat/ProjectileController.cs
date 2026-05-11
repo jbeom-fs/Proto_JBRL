@@ -173,6 +173,12 @@ public class ProjectileController : MonoBehaviour
         _releaseAction = releaseAction;
     }
 
+    // Floor transition / pool owner cleanup only. Normal gameplay release paths stay inside ProjectileController.
+    public void ReleaseForCleanup(ProjectileReleaseReason reason)
+    {
+        Release(reason);
+    }
+
     private void Update()
     {
         bool measure = RuntimePerfTraceLogger.IsEnabled;

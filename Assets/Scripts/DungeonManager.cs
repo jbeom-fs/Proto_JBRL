@@ -195,6 +195,8 @@ public class DungeonManager : MonoBehaviour
             RuntimePerfLogger.MarkEvent("floor_transition_begin",
                 "from=" + floor + " target=" + targetFloor);
 
+        ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.FloorTransition);
+
         int prev = floor;
         floor = Mathf.Clamp(targetFloor, 1, 100);
         double stageStart = Time.realtimeSinceStartupAsDouble;
