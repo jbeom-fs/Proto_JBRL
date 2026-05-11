@@ -135,8 +135,9 @@ public class DungeonManager : MonoBehaviour
     [ContextMenu("Generate Dungeon")]
     public void Generate()
     {
-        RuntimePerfLogger.MarkEvent("generate_begin",
-            "floor=" + floor + " seed=" + seed + " size=" + mapWidth + "x" + mapHeight);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_begin",
+                "floor=" + floor + " seed=" + seed + " size=" + mapWidth + "x" + mapHeight);
 
         if (dungeonRenderer == null)
         {
@@ -148,12 +149,13 @@ public class DungeonManager : MonoBehaviour
         RunGenerationPipeline();
 
         // 7. Tilemap 배치
-        double stageStart = Time.realtimeSinceStartupAsDouble;
-        dungeonRenderer.PlaceTiles(_data);
-        RuntimePerfLogger.MarkEvent("generate_stage_place_tiles",
-            "elapsedMs=" + ElapsedMs(stageStart));
-        RuntimePerfLogger.MarkEvent("generate_end",
-            "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
+        using (PerfStage.Begin("generate_stage_place_tiles"))
+        {
+            dungeonRenderer.PlaceTiles(_data);
+        }
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_end",
+                "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
 
         Debug.Log($"[DungeonManager] 생성 완료 — Seed: {seed}, Floor: {floor}");
     }
@@ -189,8 +191,9 @@ public class DungeonManager : MonoBehaviour
     private System.Collections.IEnumerator FloorTransition(int targetFloor)
     {
         _isTransitioning = true;
-        RuntimePerfLogger.MarkEvent("floor_transition_begin",
-            "from=" + floor + " target=" + targetFloor);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("floor_transition_begin",
+                "from=" + floor + " target=" + targetFloor);
 
         int prev = floor;
         floor = Mathf.Clamp(targetFloor, 1, 100);
@@ -199,10 +202,12 @@ public class DungeonManager : MonoBehaviour
         // 1. 로딩 화면 표시
         if (loadingScreen != null)
         {
-            RuntimePerfLogger.MarkEvent("floor_transition_loading_show_begin", "floor=" + floor);
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_loading_show_begin", "floor=" + floor);
             yield return StartCoroutine(loadingScreen.Show());
-            RuntimePerfLogger.MarkEvent("floor_transition_loading_show_end",
-                "elapsedMs=" + ElapsedMs(stageStart));
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_loading_show_end",
+                    "elapsedMs=" + ElapsedMs(stageStart));
         }
         else
         {
@@ -212,8 +217,9 @@ public class DungeonManager : MonoBehaviour
         // 2. 던전 생성 (무거운 연산 — 로딩 화면 뒤에서 수행)
         stageStart = Time.realtimeSinceStartupAsDouble;
         yield return GenerateForFloorTransition(useChunkedTilePlacementDuringFloorTransition);
-        RuntimePerfLogger.MarkEvent("floor_transition_generate_end",
-            "elapsedMs=" + ElapsedMs(stageStart) + " floor=" + floor);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("floor_transition_generate_end",
+                "elapsedMs=" + ElapsedMs(stageStart) + " floor=" + floor);
 
         yield return _transitionService.RunPostGenerateSettle(
             postGenerateSettleSeconds,
@@ -226,36 +232,42 @@ public class DungeonManager : MonoBehaviour
 
         // 4. 층 변경 이벤트 발행
         stageStart = Time.realtimeSinceStartupAsDouble;
-        RuntimePerfLogger.MarkEvent("floor_transition_event_raise_begin",
-            "prev=" + prev + " current=" + floor);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("floor_transition_event_raise_begin",
+                "prev=" + prev + " current=" + floor);
         eventChannel?.RaiseFloorChanged(prev, floor);
-        RuntimePerfLogger.MarkEvent("floor_transition_event_raised",
-            "prev=" + prev + " current=" + floor +
-            " elapsedMs=" + ElapsedMs(stageStart) +
-            " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("floor_transition_event_raised",
+                "prev=" + prev + " current=" + floor +
+                " elapsedMs=" + ElapsedMs(stageStart) +
+                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
 
         // 5. 로딩 화면 숨김
         if (loadingScreen != null)
         {
             stageStart = Time.realtimeSinceStartupAsDouble;
-            RuntimePerfLogger.MarkEvent("floor_transition_loading_hide_begin",
-                "floor=" + floor +
-                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_loading_hide_begin",
+                    "floor=" + floor +
+                    " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
             yield return StartCoroutine(loadingScreen.Hide());
-            RuntimePerfLogger.MarkEvent("floor_transition_loading_hide_end",
-                "elapsedMs=" + ElapsedMs(stageStart) +
-                " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
+            if (RuntimePerfLogger.IsActive)
+                RuntimePerfLogger.MarkEvent("floor_transition_loading_hide_end",
+                    "elapsedMs=" + ElapsedMs(stageStart) +
+                    " dtMs=" + (Time.unscaledDeltaTime * 1000f).ToString("F3", CultureInfo.InvariantCulture));
         }
 
-        RuntimePerfLogger.MarkEvent("floor_transition_end", "floor=" + floor);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("floor_transition_end", "floor=" + floor);
         _isTransitioning = false;
     }
 
     private IEnumerator GenerateForFloorTransition(bool useChunked)
     {
-        RuntimePerfLogger.MarkEvent("generate_begin",
-            "floor=" + floor + " seed=" + seed + " size=" + mapWidth + "x" + mapHeight +
-            (useChunked ? " chunked=true" : ""));
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_begin",
+                "floor=" + floor + " seed=" + seed + " size=" + mapWidth + "x" + mapHeight +
+                (useChunked ? " chunked=true" : ""));
 
         if (dungeonRenderer == null)
         {
@@ -272,12 +284,15 @@ public class DungeonManager : MonoBehaviour
         else
             dungeonRenderer.PlaceTiles(_data);
 
-        RuntimePerfLogger.MarkEvent("generate_stage_place_tiles",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            (useChunked ? " chunkRows=" + tilePlacementChunkRows : ""));
-        RuntimePerfLogger.MarkEvent("generate_end",
-            "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y +
-            (useChunked ? " chunked=true" : ""));
+        if (RuntimePerfLogger.IsActive)
+        {
+            RuntimePerfLogger.MarkEvent("generate_stage_place_tiles",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                (useChunked ? " chunkRows=" + tilePlacementChunkRows : ""));
+            RuntimePerfLogger.MarkEvent("generate_end",
+                "floor=" + floor + " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y +
+                (useChunked ? " chunked=true" : ""));
+        }
 
         Debug.Log($"[DungeonManager] 생성 완료 — Seed: {seed}, Floor: {floor}");
     }
@@ -380,42 +395,47 @@ public class DungeonManager : MonoBehaviour
         // 1. 설정 구성
         double stageStart = Time.realtimeSinceStartupAsDouble;
         var settings = BuildSettings();
-        RuntimePerfLogger.MarkEvent("generate_stage_build_settings",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " seed=" + settings.Seed +
-            " bspDepth=" + settings.BspDepth);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_stage_build_settings",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " seed=" + settings.Seed +
+                " bspDepth=" + settings.BspDepth);
 
         // 2. 그리드 + 원시 방 목록 생성
         stageStart = Time.realtimeSinceStartupAsDouble;
         DungeonGenerator.RoomRect[] rawRooms;
         int[,] grid = DungeonGenerator.GenerateDungeon(settings, out rawRooms);
         _originGrid = grid;
-        RuntimePerfLogger.MarkEvent("generate_stage_generator",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " rawRooms=" + rawRooms.Length +
-            " grid=" + grid.GetLength(1) + "x" + grid.GetLength(0));
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_stage_generator",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " rawRooms=" + rawRooms.Length +
+                " grid=" + grid.GetLength(1) + "x" + grid.GetLength(0));
 
         // 3. RoomInfo 배열 생성 (타입은 Registry가 결정)
         stageStart = Time.realtimeSinceStartupAsDouble;
         _registry = new RoomRegistry();
         var roomInfos = BuildRoomInfos(rawRooms);
-        RuntimePerfLogger.MarkEvent("generate_stage_room_infos",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " roomInfos=" + roomInfos.Length);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_stage_room_infos",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " roomInfos=" + roomInfos.Length);
 
         // 4. DungeonData 생성
         stageStart = Time.realtimeSinceStartupAsDouble;
         _data = new DungeonData(grid, roomInfos);
         _data.currentStageRegion = currentStageRegion;
-        RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " walkable=" + CountWalkableTiles(grid));
+        // CountWalkableTiles는 O(W*H) 비용 — 가드 안에서만 호출해 OFF 상태에서 회피합니다.
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_stage_data_construct",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " walkable=" + CountWalkableTiles(grid));
 
         // 5. Registry 초기화 (Stair 방 자동 감지)
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        _registry.Initialize(_data);
-        RuntimePerfLogger.MarkEvent("generate_stage_registry_init",
-            "elapsedMs=" + ElapsedMs(stageStart));
+        using (PerfStage.Begin("generate_stage_registry_init"))
+        {
+            _registry.Initialize(_data);
+        }
 
         // 쿼리 서비스에 최신 데이터 주입 (Registry 초기화 완료 후)
         _queryService?.UpdateData(_data, _registry, _originGrid);
@@ -423,9 +443,10 @@ public class DungeonManager : MonoBehaviour
         // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
         stageStart = Time.realtimeSinceStartupAsDouble;
         _cachedSpawnPos = _spawnService.ComputeSpawnPos(_data, mapWidth, mapHeight);
-        RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
-            "elapsedMs=" + ElapsedMs(stageStart) +
-            " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
+                "elapsedMs=" + ElapsedMs(stageStart) +
+                " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
     }
 
     private DungeonSettings BuildSettings()
