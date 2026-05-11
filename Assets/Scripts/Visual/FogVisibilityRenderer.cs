@@ -38,7 +38,7 @@ public sealed class FogVisibilityRenderer : MonoBehaviour
         RefreshVisibilityImmediate();
     }
 
-    private void Update()
+    private void LateUpdate()
     {
         if (updateInterval > 0f)
         {
@@ -59,6 +59,13 @@ public sealed class FogVisibilityRenderer : MonoBehaviour
         EnsureRenderers();
         _accumulatedTime = 0f;
         ApplyVisibility(true);
+    }
+
+    public void HideImmediatelyForPool()
+    {
+        EnsureRenderers();
+        _accumulatedTime = 0f;
+        ApplyVisibility(false);
     }
 
     /// <summary>
@@ -84,7 +91,7 @@ public sealed class FogVisibilityRenderer : MonoBehaviour
         FogOfWarController fog = FogOfWarController.Active;
         if (fog == null)
             return !hideWhenFogControllerMissing;
-        return fog.IsWorldPositionVisible(transform.position);
+        return fog.IsVisibleWorldPosition(transform.position);
     }
 
     private void ApplyVisibility(bool visible)

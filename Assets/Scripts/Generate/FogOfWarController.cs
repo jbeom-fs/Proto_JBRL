@@ -77,6 +77,11 @@ public class FogOfWarController : MonoBehaviour
         return _previousVisibleCells.Contains(gridPos);
     }
 
+    public bool IsVisibleWorldPosition(Vector3 worldPosition)
+    {
+        return IsWorldPositionVisible(worldPosition);
+    }
+
     private void Awake()
     {
         ResolveDependencies();
