@@ -97,11 +97,10 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 "elapsedMs=" + ElapsedMs(stageStart) +
                 " hasDoorTilemap=" + (doorTilemap != null));
 
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        ClearTilemaps();
-        if (RuntimePerfLogger.IsActive)
-            RuntimePerfLogger.MarkEvent("place_tiles_stage_clear",
-                "elapsedMs=" + ElapsedMs(stageStart));
+        using (PerfStage.Begin("place_tiles_stage_clear"))
+        {
+            ClearTilemaps();
+        }
 
         // ── 1. 메인 타일 일괄 배치 ────────────────────────────────
         int total = data.MapWidth * data.MapHeight;
@@ -153,11 +152,10 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 "elapsedMs=" + ElapsedMs(stageStart) +
                 " hasDoorTilemap=" + (doorTilemap != null));
 
-        stageStart = Time.realtimeSinceStartupAsDouble;
-        ClearTilemaps();
-        if (RuntimePerfLogger.IsActive)
-            RuntimePerfLogger.MarkEvent("place_tiles_stage_clear",
-                "elapsedMs=" + ElapsedMs(stageStart));
+        using (PerfStage.Begin("place_tiles_stage_clear"))
+        {
+            ClearTilemaps();
+        }
 
         chunkRows = Mathf.Clamp(chunkRows, 1, data.MapHeight);
 
