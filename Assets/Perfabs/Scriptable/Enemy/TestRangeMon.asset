@@ -40,3 +40,9 @@ MonoBehaviour:
   projectileWallHitMode: 0
   projectileMaxBounceCount: 1
   knockbackResistance: 0
+  rangedMovementType: 2
+  preferredRange: 5
+  kiteRetreatRange: 3
+  randomMoveIntervalMin: 0.8
+  randomMoveIntervalMax: 1.8
+  randomMoveRadius: 3

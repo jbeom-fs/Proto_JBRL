@@ -21,6 +21,13 @@ public enum ProjectileWallHitMode
     Bounce
 }
 
+public enum RangedMovementType
+{
+    Chase,
+    Random,
+    Kiting
+}
+
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "JBLogLike/Enemy")]
 public class EnemyData : ScriptableObject
 {
@@ -103,4 +110,28 @@ public class EnemyData : ScriptableObject
     [Header("Status Resistance")]
     [Range(0f, 1f)]
     public float knockbackResistance = 0f;
+
+    [Header("Ranged Movement")]
+    [Tooltip("Ranged 이동 스타일. Chase는 기존 추격 동작과 동일합니다.")]
+    public RangedMovementType rangedMovementType = RangedMovementType.Chase;
+
+    [Tooltip("Kiting: 이 거리보다 멀어지면 Player에게 접근합니다. Random에서는 사용하지 않습니다.")]
+    [Min(0f)]
+    public float preferredRange = 5f;
+
+    [Tooltip("Kiting: 이 거리보다 가까워지면 Player 반대 방향으로 후퇴합니다.")]
+    [Min(0f)]
+    public float kiteRetreatRange = 3f;
+
+    [Tooltip("Random: 새 목적지를 다시 고르는 최소 간격(초).")]
+    [Min(0f)]
+    public float randomMoveIntervalMin = 0.8f;
+
+    [Tooltip("Random: 새 목적지를 다시 고르는 최대 간격(초).")]
+    [Min(0f)]
+    public float randomMoveIntervalMax = 1.8f;
+
+    [Tooltip("Random: 현재 위치 기준 새 목적지를 고르는 반경(월드 단위).")]
+    [Min(0f)]
+    public float randomMoveRadius = 3f;
 }

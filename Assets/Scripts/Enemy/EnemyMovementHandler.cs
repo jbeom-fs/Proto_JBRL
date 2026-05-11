@@ -13,6 +13,11 @@ public class MovementHandler
     private float _tileSize = 1f;
     private Vector2 _smoothedSeparation;
 
+    // Ranged Random/Kiting 런타임 상태 — pooling 재사용 시 ResetRuntimeState에서 초기화됩니다.
+    private Vector3 _randomDestination;
+    private bool _hasRandomDestination;
+    private float _randomTimer;
+
     public MovementHandler(EnemyBrain brain)
     {
         _brain = brain;
@@ -30,6 +35,18 @@ public class MovementHandler
         {
             _tileSize = _brain.dungeonManager.dungeonRenderer.tilemap.cellSize.x;
         }
+    }
+
+    /// <summary>
+    /// 풀에서 다시 꺼낸 적이 이전 인스턴스의 Random/Kiting 상태를 이어받지 않도록
+    /// 런타임 상태를 초기화합니다. EnemyBrain.ResetRuntimeState에서 호출됩니다.
+    /// </summary>
+    public virtual void ResetRuntimeState()
+    {
+        _hasRandomDestination = false;
+        _randomDestination = default;
+        _randomTimer = 0f;
+        _smoothedSeparation = default;
     }
 
     public virtual bool MoveToward(Vector3 target)
@@ -184,5 +201,132 @@ public class MovementHandler
             ? _brain.Enemy.CollisionFootprintRadius
             : _tileSize * _brain.collisionRadius;
         return _brain.dungeonManager.IsFootprintWalkable(pos, radius);
+    }
+
+    /// <summary>
+    /// Ranged behaviorType 전용 이동 결정 진입점입니다.
+    /// Kiting/Random일 때 true를 반환해 호출자(ChaseState)가 LOS/A* 흐름을 건너뛰도록 합니다.
+    /// Contact 또는 Ranged-Chase는 false를 반환해 기존 흐름을 그대로 유지합니다.
+    /// </summary>
+    public bool TryTickRangedMovement(float sqrDistanceToTarget)
+    {
+        EnemyData data = _brain.Data;
+        if (data == null || data.behaviorType != EnemyBehaviorType.Ranged)
+            return false;
+
+        switch (data.rangedMovementType)
+        {
+            case RangedMovementType.Kiting:
+                TickKitingMovement(sqrDistanceToTarget);
+                return true;
+
+            case RangedMovementType.Random:
+                TickRandomMovement();
+                return true;
+
+            case RangedMovementType.Chase:
+            default:
+                return false;
+        }
+    }
+
+    private void TickKitingMovement(float sqrDistanceToTarget)
+    {
+        EnemyData data = _brain.Data;
+        float kiteRetreatSqr = data.kiteRetreatRange * data.kiteRetreatRange;
+        float preferredSqr = data.preferredRange * data.preferredRange;
+
+        if (sqrDistanceToTarget < kiteRetreatSqr)
+        {
+            // 후퇴: Player 반대 방향으로 한 step 이동을 시도한다.
+            // 벽이면 MoveWithCollision이 walkable 체크로 자체적으로 정지하므로 별도 fallback이 필요 없다.
+            Vector3 self = _brain.transform.position;
+            Vector3 toPlayer = _brain.Target.TargetPosition - self;
+            if (toPlayer.sqrMagnitude <= 0.0001f)
+            {
+                _brain.StopMoving();
+                return;
+            }
+
+            Vector3 away = -toPlayer.normalized;
+            // preferredRange만큼 떨어진 가상 목적지를 만들어 MoveToward가 그 방향으로 step한다.
+            Vector3 retreatTarget = self + away * Mathf.Max(0.01f, data.preferredRange);
+            _brain.MoveToward(retreatTarget);
+            return;
+        }
+
+        if (sqrDistanceToTarget > preferredSqr)
+        {
+            // 접근: 기존 Chase 직선 이동을 재사용한다 (separation 포함).
+            _brain.DirectMoveToPlayer();
+            return;
+        }
+
+        // 적정 거리: 공격 가능 거리에 있다면 ChaseState 진입부의 CanAttack 분기가 이미 Attack으로 보낸다.
+        // 그렇지 않은 경우 한 곳에 뭉치지 않도록 그냥 정지한다.
+        _brain.StopMoving();
+    }
+
+    private void TickRandomMovement()
+    {
+        _randomTimer -= Time.deltaTime;
+
+        if (!_hasRandomDestination || _randomTimer <= 0f)
+            SelectNewRandomDestination();
+
+        if (!_hasRandomDestination)
+        {
+            _brain.StopMoving();
+            return;
+        }
+
+        Vector3 self = _brain.transform.position;
+        Vector3 delta = _randomDestination - self;
+        float arriveSqr = _brain.waypointReachDistance * _brain.waypointReachDistance;
+        if (delta.sqrMagnitude <= arriveSqr)
+        {
+            // 도달: 다음 interval 만료까지 정지한다.
+            _hasRandomDestination = false;
+            _brain.StopMoving();
+            return;
+        }
+
+        _brain.MoveToward(_randomDestination);
+    }
+
+    private void SelectNewRandomDestination()
+    {
+        EnemyData data = _brain.Data;
+        float intervalMin = Mathf.Max(0.01f, data.randomMoveIntervalMin);
+        float intervalMax = Mathf.Max(intervalMin, data.randomMoveIntervalMax);
+        _randomTimer = Random.Range(intervalMin, intervalMax);
+
+        DungeonManager dungeon = _brain.dungeonManager;
+        float radius = Mathf.Max(0.01f, data.randomMoveRadius);
+        float footprintRadius = _brain.Enemy != null
+            ? _brain.Enemy.CollisionFootprintRadius
+            : _tileSize * _brain.collisionRadius;
+        Vector3 self = _brain.transform.position;
+
+        // 시도 횟수는 작은 상수로 제한 — Random.Range 반복 호출만 발생하고 alloc은 없다.
+        const int MaxAttempts = 6;
+        for (int i = 0; i < MaxAttempts; i++)
+        {
+            float angle = Random.Range(0f, Mathf.PI * 2f);
+            float r = Random.Range(radius * 0.25f, radius);
+            Vector3 candidate = new Vector3(
+                self.x + Mathf.Cos(angle) * r,
+                self.y + Mathf.Sin(angle) * r,
+                0f);
+
+            if (dungeon == null || dungeon.IsFootprintWalkable(candidate, footprintRadius))
+            {
+                _randomDestination = candidate;
+                _hasRandomDestination = true;
+                return;
+            }
+        }
+
+        _hasRandomDestination = false;
     }
 }

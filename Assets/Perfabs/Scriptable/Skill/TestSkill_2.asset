@@ -34,7 +34,7 @@ MonoBehaviour:
   projectileCount: 10
   projectileSpreadAngle: 15
   projectileFirePattern: 3
-  projectileWallHitMode: 1
+  projectileWallHitMode: 0
   projectileTargetHitMode: 1
   projectileMaxBounceCount: 5
   projectileSpawnOffset: 0.35

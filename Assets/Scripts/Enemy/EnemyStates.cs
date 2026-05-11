@@ -92,6 +92,14 @@ internal sealed class ChaseState : IEnemyState
             return;
         }
 
+        // Ranged 전용 이동 타입(Kiting/Random)이 활성화된 경우 그 분기가 이동을 결정한다.
+        // Contact 또는 Ranged-Chase는 false를 반환하므로 기존 LOS/A* 흐름이 그대로 유지된다.
+        if (_brain.Movement.TryTickRangedMovement(sqrDistanceToPlayer))
+        {
+            ClearPathOnly();
+            return;
+        }
+
         // EMPTY(0) 벽이 없는 직선 시야가 확보되면 A*를 사용하지 않고 바로 이동합니다.
         // 방과 복도를 가로지르는 상황에서도 시야가 뚫려 있으면 탐색 비용을 아낍니다.
         if (_brain.HasLineOfSightToPlayer())

@@ -118,6 +118,7 @@ public abstract class EnemyBrain : MonoBehaviour
         // 풀에서 다시 꺼낸 적은 현재 층의 DungeonManager.Instance 기준으로 이동/타겟 캐시를 새로 잡는다.
         _data = null;
         Movement?.Initialize();
+        Movement?.ResetRuntimeState();
         Target?.RefreshTarget();
         Action?.ResetRuntimeState();
         _animationController?.ResetAnimationState();
