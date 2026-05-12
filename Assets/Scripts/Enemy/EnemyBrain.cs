@@ -77,7 +77,7 @@ public abstract class EnemyBrain : MonoBehaviour
     public EnemyAIStateId CurrentState => _currentStateId;
     public DungeonData DungeonData => dungeonManager != null ? dungeonManager.Data : null;
     public float CurrentMoveSpeed => Data != null && Enemy != null
-        ? Data.moveSpeed * Enemy.MoveSpeedMultiplier
+        ? (Data.isStationary ? 0f : Data.moveSpeed * Enemy.MoveSpeedMultiplier)
         : 0f;
 
     public MovementHandler Movement { get; private set; }
@@ -181,6 +181,12 @@ public abstract class EnemyBrain : MonoBehaviour
 
     public void DirectMoveToPlayer()
     {
+        if (Data != null && Data.isStationary)
+        {
+            StopMoving();
+            return;
+        }
+
         if (!Target.HasTarget)
         {
             StopMoving();
@@ -192,6 +198,12 @@ public abstract class EnemyBrain : MonoBehaviour
 
     public void MoveToward(Vector3 target)
     {
+        if (Data != null && Data.isStationary)
+        {
+            StopMoving();
+            return;
+        }
+
         bool moved = Movement.MoveToward(target);
         SetAnimBool(ANIM_MOVING, moved);
 

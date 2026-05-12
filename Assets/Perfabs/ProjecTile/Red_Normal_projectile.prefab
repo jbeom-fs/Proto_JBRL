@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2381044973620445434
+--- !u!1 &2350118766386836629
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,42 +8,42 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5505528447738377878}
-  - component: {fileID: 6696224498759149635}
-  - component: {fileID: 7520584347557676101}
-  - component: {fileID: 8787474932294631977}
-  - component: {fileID: 1084058808069988342}
-  - component: {fileID: 7510776055880132387}
+  - component: {fileID: 5364707972227257760}
+  - component: {fileID: 8826192137098821370}
+  - component: {fileID: 1951811768430497377}
+  - component: {fileID: 5236561724965507045}
+  - component: {fileID: 6815809388123150899}
+  - component: {fileID: 2350118766386836700}
   m_Layer: 0
-  m_Name: Projectile_03
+  m_Name: Red_Normal_projectile
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5505528447738377878
+--- !u!4 &5364707972227257760
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2381044973620445434}
+  m_GameObject: {fileID: 2350118766386836629}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 41.857, y: -45.6573, z: 0}
-  m_LocalScale: {x: 0.15, y: 0.15, z: 0.15}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.08, y: 0.08, z: 0.08}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &6696224498759149635
+--- !u!212 &8826192137098821370
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2381044973620445434}
+  m_GameObject: {fileID: 2350118766386836629}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -85,7 +85,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 2
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 6805172053825104583, guid: c24c54d54d5706346b30683c97053387, type: 3}
+  m_Sprite: {fileID: -1880612661571430888, guid: 5bf18a27fabb03845b10b877d1aa4e79, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -95,28 +95,13 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &7520584347557676101
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2381044973620445434}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2fa2fb7f20f34c359bbf4f615b9ab97d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProjectileController
-  hitRadius: 0.08
-  bounceExitOffset: 0.05
-  disablePhysicsSimulation: 1
---- !u!58 &8787474932294631977
+--- !u!58 &1951811768430497377
 CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2381044973620445434}
+  m_GameObject: {fileID: 2350118766386836629}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -145,23 +130,23 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_Radius: 3.5049999
---- !u!50 &1084058808069988342
+  m_Radius: 3.5
+--- !u!50 &5236561724965507045
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2381044973620445434}
-  m_BodyType: 0
+  m_GameObject: {fileID: 2350118766386836629}
+  m_BodyType: 1
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -173,13 +158,29 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
---- !u!114 &7510776055880132387
+--- !u!114 &6815809388123150899
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2381044973620445434}
+  m_GameObject: {fileID: 2350118766386836629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fa2fb7f20f34c359bbf4f615b9ab97d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileController
+  hitRadius: 0.08
+  bounceExitOffset: 0.05
+  disablePhysicsSimulation: 1
+  rotationMode: 0
+--- !u!114 &2350118766386836700
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2350118766386836629}
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a8cc7014d9334bac80d88ac05f378d0b, type: 3}

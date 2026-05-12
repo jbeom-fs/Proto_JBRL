@@ -64,6 +64,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
         _lastSafePosition = transform.position;
+        ApplyStationaryPhysicsSettings();
         if (data != null)
         {
             _currentHp = data.maxHp;
@@ -86,6 +87,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _healthBar?.SetHp(_currentHp, data.maxHp);
         _lastSafePosition = transform.position;
         ResetStatusEffects();
+        ApplyStationaryPhysicsSettings();
         if (_circleCollider != null)
             _circleCollider.enabled = true;
         _hitFlash = ResolveHitFlashFeedback();
@@ -230,6 +232,11 @@ public class EnemyController : MonoBehaviour, IDamageable
     private void ApplyKnockback(Vector2 attackerPosition, float force, float duration)
     {
         if (force <= 0f || duration <= 0f || _rb == null) return;
+        if (data != null && data.immuneToKnockback)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            return;
+        }
 
         float resistance = data != null ? Mathf.Clamp01(data.knockbackResistance) : 0f;
         float finalForce = force * (1f - resistance);
@@ -346,6 +353,17 @@ public class EnemyController : MonoBehaviour, IDamageable
         var dungeonManager = DungeonManager.Instance;
         if (dungeonManager == null) return true;
         return dungeonManager.IsFootprintWalkable(position, GetWorldColliderRadius());
+    }
+
+    private void ApplyStationaryPhysicsSettings()
+    {
+        if (_rb == null)
+            return;
+
+        _rb.constraints = data != null && data.isStationary
+            ? RigidbodyConstraints2D.FreezeAll
+            : RigidbodyConstraints2D.FreezeRotation;
+        _rb.linearVelocity = Vector2.zero;
     }
 
     private void ApplySlow(float percentage, float duration)

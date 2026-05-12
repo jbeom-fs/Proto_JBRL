@@ -100613,6 +100613,12 @@ MonoBehaviour:
   - data: {fileID: 11400000, guid: aa319f7a68854d08ab9a4b1c035e4403, type: 2}
     prefab: {fileID: 3448492780483144301, guid: 06f3bda1fcce4b15b6b5091e0781fcd3, type: 3}
     preloadCount: 10
+  - data: {fileID: 11400000, guid: 845a446bd7ca4fec9eab4098da48a01e, type: 2}
+    prefab: {fileID: 3448492780483144301, guid: 73451f83e7a74037b2ecf3e26dc07b0c, type: 3}
+    preloadCount: 8
+  - data: {fileID: 11400000, guid: acc8aa9d142d4770993b3aa35c175cb6, type: 2}
+    prefab: {fileID: 3448492780483144301, guid: acddc1e925f94c4b9843f8727b9edffd, type: 3}
+    preloadCount: 8
 --- !u!4 &1736969808
 Transform:
   m_ObjectHideFlags: 0
@@ -100645,6 +100651,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 65c75f48657fab74f84a6900002dcdf0, type: 2}
   - {fileID: 11400000, guid: ec643a8da5f798244a58cd5e1a0aa946, type: 2}
   - {fileID: 11400000, guid: aa319f7a68854d08ab9a4b1c035e4403, type: 2}
+  - {fileID: 11400000, guid: 845a446bd7ca4fec9eab4098da48a01e, type: 2}
+  - {fileID: 11400000, guid: acc8aa9d142d4770993b3aa35c175cb6, type: 2}
   densityFactor: 0.1
   normalMultiplier: 1
   monsterDenMultiplier: 2.5
@@ -102102,7 +102110,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectilePool
   prewarmEntries:
-  - prefab: {fileID: 6815809388123150899, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
+  - prefab: {fileID: 6815809388123150899, guid: 963a397ef4221374083bbf3e70af9fc4, type: 3}
+    prewarmCount: 120
+  - prefab: {fileID: 6815809388123150899, guid: c66242ce83733664da8d3f37c88da7b0, type: 3}
     prewarmCount: 120
   - prefab: {fileID: 7520584347557676101, guid: 554da9809b14bd84f8b63a83d7512688, type: 3}
     prewarmCount: 120

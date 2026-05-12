@@ -10,40 +10,40 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 668bddbc810a4ce4f8252f922bee8a14, type: 3}
-  m_Name: TestRangeMon
+  m_Name: RangeEnemy05
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
-  enemyName: TestRanged
-  maxHp: 5
-  attack: 2
+  enemyName: Obelisk
+  maxHp: 26
+  attack: 5
   defense: 0
-  expReward: 10
+  expReward: 14
   deathDelay: 0.5
-  spawnCost: 3
+  spawnCost: 6
   allowedRegions: 1
   behaviorType: 1
-  detectRange: 20
-  attackRange: 10
-  moveSpeed: 1.5
-  isStationary: 0
-  immuneToKnockback: 0
-  attackCooldown: 1.5
+  detectRange: 9.5
+  attackRange: 9.5
+  moveSpeed: 0
+  isStationary: 1
+  immuneToKnockback: 1
+  attackCooldown: 3
   attackWindup: 0.4
-  attackRecovery: 0.5
+  attackRecovery: 0.35
   contactDamageRadius: 0.45
   contactDamageSkin: 0.05
-  projectilePrefab: {fileID: 2350118766386836629, guid: 963a397ef4221374083bbf3e70af9fc4, type: 3}
-  projectileDamage: 2
-  projectileSpeed: 8
-  projectileLifetime: 3
-  firePattern: 2
-  projectileCount: 3
-  spreadAngle: 30
+  projectilePrefab: {fileID: 2350118766386836629, guid: c66242ce83733664da8d3f37c88da7b0, type: 3}
+  projectileDamage: 5
+  projectileSpeed: 5.5
+  projectileLifetime: 3.5
+  firePattern: 3
+  projectileCount: 8
+  spreadAngle: 360
   burstInterval: 0.12
   projectileWallHitMode: 0
-  projectileMaxBounceCount: 1
+  projectileMaxBounceCount: 0
   knockbackResistance: 0
-  rangedMovementType: 2
-  preferredRange: 5
+  rangedMovementType: 0
+  preferredRange: 6
   kiteRetreatRange: 3
   randomMoveIntervalMin: 0.8
   randomMoveIntervalMax: 1.8

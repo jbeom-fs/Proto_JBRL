@@ -61,6 +61,14 @@ public class EnemyData : ScriptableObject
     [Tooltip("Movement speed in world units per second.")]
     public float moveSpeed = 2f;
 
+    [Header("Movement Flags")]
+    [Tooltip("If true, AI movement, ranged movement, and separation movement are disabled while targeting and attacks still run.")]
+    public bool isStationary = false;
+
+    [Tooltip("If true, damage and status effects still apply, but knockback position movement is ignored.")]
+    public bool immuneToKnockback = false;
+
+    [Header("Attack")]
     [Tooltip("Ranged behavior cooldown between attacks.")]
     public float attackCooldown = 1.5f;
 

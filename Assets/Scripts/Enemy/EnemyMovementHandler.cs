@@ -65,6 +65,7 @@ public class MovementHandler
     public virtual bool MoveToward(Vector3 target)
     {
         if (_brain.Data == null) return false;
+        if (_brain.Data.isStationary) return false;
 
         Vector2 dir = target - _brain.transform.position;
         if (dir.sqrMagnitude <= 0.0001f)
@@ -226,6 +227,12 @@ public class MovementHandler
         EnemyData data = _brain.Data;
         if (data == null || data.behaviorType != EnemyBehaviorType.Ranged)
             return false;
+
+        if (data.isStationary)
+        {
+            _brain.StopMoving();
+            return true;
+        }
 
         switch (data.rangedMovementType)
         {
