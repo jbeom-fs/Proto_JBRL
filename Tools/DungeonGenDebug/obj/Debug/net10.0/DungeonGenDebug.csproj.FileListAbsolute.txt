@@ -1,0 +1,15 @@
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\bin\Debug\net10.0\DungeonGenDebug.exe
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\bin\Debug\net10.0\DungeonGenDebug.deps.json
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\bin\Debug\net10.0\DungeonGenDebug.runtimeconfig.json
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\bin\Debug\net10.0\DungeonGenDebug.dll
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\bin\Debug\net10.0\DungeonGenDebug.pdb
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.GeneratedMSBuildEditorConfig.editorconfig
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.AssemblyInfoInputs.cache
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.AssemblyInfo.cs
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.csproj.CoreCompileInputs.cache
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.sourcelink.json
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.dll
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\refint\DungeonGenDebug.dll
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.pdb
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\DungeonGenDebug.genruntimeconfig.cache
+D:\JBUnityProject\Projects\JBRogLike\Tools\DungeonGenDebug\obj\Debug\net10.0\ref\DungeonGenDebug.dll

@@ -108,6 +108,22 @@ public static class DungeonGenerator
     public const int STAIR_UP    = 3;   // 올라가는 계단 (다음 층)
     public const int DOOR_CLOSED = 5;   // 닫힌 문 (통로 차단)
 
+    // ── 디버그 (carving 진단용 — 평소 OFF) ─────────────────────────
+    // RuntimePerfLogger와 별개의 toggle. Unity 측에서 켜려면 DebugSink에
+    // Debug.Log를 구독시키고 DebugCorridorCarving=true 로 설정한다.
+    public static bool DebugCorridorCarving = false;
+    public static System.Action<string> DebugSink = null;
+
+    private static List<Room> _debugRooms;
+    private static int _debugSrcIdx = -1;
+    private static int _debugDstIdx = -1;
+
+    private static void DebugEmit(string msg)
+    {
+        if (!DebugCorridorCarving) return;
+        DebugSink?.Invoke(msg);
+    }
+
     // ── 공개 방 정보 구조체 ───────────────────────────────────────
     /// <summary>방의 좌상단 좌표와 크기를 담는 구조체입니다.</summary>
     public struct RoomRect
@@ -295,6 +311,9 @@ public static class DungeonGenerator
         // 이미 직접 연결된 방 쌍 추적 — 중복/병렬 통로 방지
         var connectedPairs = new HashSet<(int, int)>();
 
+        // L corridor path 미리계산용 재사용 버퍼 (allocation 1회).
+        var pathBuf = new List<(int x, int y)>(64);
+
         while (remaining.Count > 0)
         {
             // ── 1st: MST — 가장 가까운 미연결 방 ──────────────────
@@ -308,7 +327,18 @@ public static class DungeonGenerator
                     if (d < bestDist) { bestDist = d; srcIdx = i; dstIdx = j; }
                 }
 
-            DrawLCorridor(grid, rooms[srcIdx], rooms[dstIdx], corridorTiles, s);
+            if (DebugCorridorCarving)
+            {
+                _debugRooms = rooms;
+                _debugSrcIdx = srcIdx;
+                _debugDstIdx = dstIdx;
+                DebugEmit("--- MST corridor: src=R" + srcIdx + " dst=R" + dstIdx + " ---");
+                DebugEmit("  src.Rect: X=" + rooms[srcIdx].X + " Y=" + rooms[srcIdx].Y +
+                          " W=" + rooms[srcIdx].W + " H=" + rooms[srcIdx].H);
+                DebugEmit("  dst.Rect: X=" + rooms[dstIdx].X + " Y=" + rooms[dstIdx].Y +
+                          " W=" + rooms[dstIdx].W + " H=" + rooms[dstIdx].H);
+            }
+            DrawLCorridor(grid, rooms, srcIdx, dstIdx, corridorTiles, s, /*isMandatoryEdge*/ true, pathBuf);
             connectedPairs.Add((Math.Min(srcIdx, dstIdx), Math.Max(srcIdx, dstIdx)));
             connected.Add(dstIdx);
             remaining.Remove(dstIdx);
@@ -332,7 +362,18 @@ public static class DungeonGenerator
 
                 if (bestK >= 0)
                 {
-                    DrawLCorridor(grid, rooms[srcIdx], rooms[bestK], corridorTiles, s);
+                    if (DebugCorridorCarving)
+                    {
+                        _debugRooms = rooms;
+                        _debugSrcIdx = srcIdx;
+                        _debugDstIdx = bestK;
+                        DebugEmit("--- EXTRA corridor: src=R" + srcIdx + " dst=R" + bestK + " ---");
+                        DebugEmit("  src.Rect: X=" + rooms[srcIdx].X + " Y=" + rooms[srcIdx].Y +
+                                  " W=" + rooms[srcIdx].W + " H=" + rooms[srcIdx].H);
+                        DebugEmit("  dst.Rect: X=" + rooms[bestK].X + " Y=" + rooms[bestK].Y +
+                                  " W=" + rooms[bestK].W + " H=" + rooms[bestK].H);
+                    }
+                    DrawLCorridor(grid, rooms, srcIdx, bestK, corridorTiles, s, /*isMandatoryEdge*/ false, pathBuf);
                     connectedPairs.Add((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
                     if (remaining.Contains(bestK))
                     {
@@ -468,44 +509,98 @@ public static class DungeonGenerator
     /// <summary>
     /// 두 방을 L자형 통로로 연결합니다.
     ///
-    /// [스텁 보장 — 코너-벽 거리]
-    ///   코너는 각 방 벽에서 MinStraight 이상 떨어진 far_outside 에 위치
-    ///   → 수직/수평 팔이 방 끝에 붙는 현상 원천 차단
-    ///
-    /// [팔 길이 보장 — 두 방 공동 계산]
-    ///   두 far_outside 의 수직/수평 거리가 MinStraight 미만이면
-    ///   도어 y/x 위치를 방 벽 범위 안에서 조정
-    ///   → Z자형 우회 없이 깔끔한 L 2세그먼트로 완성
+    /// 흐름:
+    ///   1) Primary axis(|dx|≥|dy|에 따른 H-first / V-first)로 path 후보를 cell list에 미리 emit.
+    ///   2) src/dst가 아닌 다른 방의 interior / perim(0) / perim+1(벽 옆 1칸) 과 겹치는지 검사.
+    ///   3) 겹치면 alternate axis로 1회 재시도.
+    ///   4) 둘 다 겹치면: mandatory(MST)는 connectivity 보장 위해 primary로 carve, optional(EXTRA)은 skip.
+    ///   5) src/dst side의 축 범위가 겹치면 같은 door 축을 재사용한다.
+    ///      겹치지 않을 때만 기존 MinStraight 보정을 적용한다.
     /// </summary>
     private static void DrawLCorridor(
-        int[,] grid, Room src, Room dst,
+        int[,] grid, List<Room> rooms, int srcIdx, int dstIdx,
         HashSet<(int, int)> corridorTiles,
-        DungeonSettings s)
+        DungeonSettings s,
+        bool isMandatoryEdge,
+        List<(int x, int y)> pathBuf)
     {
+        var src = rooms[srcIdx];
+        var dst = rooms[dstIdx];
+        int dx = dst.Cx - src.Cx;
+        int dy = dst.Cy - src.Cy;
+        bool primaryHorizFirst = Math.Abs(dx) >= Math.Abs(dy);
+
+        if (DebugCorridorCarving)
+            DebugEmit("  axis-primary=" + (primaryHorizFirst ? "H-first" : "V-first") +
+                      " dx=" + dx + " dy=" + dy + " MIN=" + s.MinStraight +
+                      " src.Cx=" + src.Cx + " src.Cy=" + src.Cy +
+                      " dst.Cx=" + dst.Cx + " dst.Cy=" + dst.Cy);
+
+        // 1) Primary axis 경로 emit + 검사
+        EmitLCorridorPath(grid, src, dst, s, primaryHorizFirst, pathBuf);
+        bool primaryClean = IsCorridorCandidateClean(
+            grid, pathBuf, rooms, srcIdx, dstIdx, s, isMandatoryEdge);
+        if (primaryClean)
+        {
+            if (DebugCorridorCarving) DebugEmit("  carve=primary(clean) cells=" + pathBuf.Count);
+            CarvePath(grid, corridorTiles, pathBuf, s);
+            return;
+        }
+
+        // 2) Alternate axis 재시도
+        EmitLCorridorPath(grid, src, dst, s, !primaryHorizFirst, pathBuf);
+        bool alternateClean = IsCorridorCandidateClean(
+            grid, pathBuf, rooms, srcIdx, dstIdx, s, isMandatoryEdge);
+        if (alternateClean)
+        {
+            if (DebugCorridorCarving) DebugEmit("  carve=alternate(clean) cells=" + pathBuf.Count);
+            CarvePath(grid, corridorTiles, pathBuf, s);
+            return;
+        }
+
+        // 3) 둘 다 충돌 — mandatory면 connectivity 보장 위해 primary 강제 carve, optional은 skip.
+        if (isMandatoryEdge)
+        {
+            EmitLCorridorPath(grid, src, dst, s, primaryHorizFirst, pathBuf);
+            if (DebugCorridorCarving) DebugEmit("  carve=primary FALLBACK(both-dirty,mandatory) cells=" + pathBuf.Count);
+            CarvePath(grid, corridorTiles, pathBuf, s);
+        }
+        else
+        {
+            if (DebugCorridorCarving) DebugEmit("  carve=SKIP(both-dirty,extra)");
+        }
+    }
+
+    // ── L corridor path 생성 (carve 없이 cell list만 채움) ─────────────────
+    private static void EmitLCorridorPath(
+        int[,] grid, Room src, Room dst, DungeonSettings s,
+        bool horizFirst, List<(int x, int y)> path)
+    {
+        path.Clear();
         int MIN = s.MinStraight;
         int dx = dst.Cx - src.Cx;
         int dy = dst.Cy - src.Cy;
 
-        if (Math.Abs(dx) >= Math.Abs(dy))
+        if (horizFirst)
         {
             // ── 수평 연결 ────────────────────────────────────────────
             int doorSX, farSX, doorEX, farEX, stepS, stepE;
-            if (dx >= 0)   // src 우측 출구 → dst 좌측 출구
+            if (dx >= 0)
             {
                 doorSX = src.X + src.W - 1; farSX = src.X + src.W + MIN - 1;
                 doorEX = dst.X;             farEX = dst.X - MIN;
                 stepS = 1; stepE = -1;
             }
-            else           // src 좌측 출구 → dst 우측 출구
+            else
             {
                 doorSX = src.X;             farSX = src.X - MIN;
                 doorEX = dst.X + dst.W - 1; farEX = dst.X + dst.W + MIN - 1;
                 stepS = -1; stepE = 1;
             }
 
-            // 수직 팔 길이 보장: |sy - ey| >= MIN
             int sy = src.Cy, ey = dst.Cy;
-            if (Math.Abs(sy - ey) < MIN)
+            if (Math.Abs(sy - ey) < MIN &&
+                !TryUseSharedDoorAxis(src.Y, src.Y + src.H, dst.Y, dst.Y + dst.H, sy, out sy, out ey))
             {
                 int eyDir = (ey >= sy) ? 1 : -1;
                 if (eyDir == 0) eyDir = 1;
@@ -514,38 +609,33 @@ public static class DungeonGenerator
                     sy = Math.Max(src.Y, Math.Min(src.Y + src.H - 1, ey - eyDir * MIN));
             }
 
-            // 도어 타일 등록
-            SetTile(grid, corridorTiles, doorSX, sy, s);
-            SetTile(grid, corridorTiles, doorEX, ey, s);
-
-            // 스텁: door 다음 칸부터 far_outside 까지
-            DrawHLine(grid, corridorTiles, doorSX + stepS, farSX, sy, s);
-            DrawHLine(grid, corridorTiles, doorEX + stepE, farEX, ey, s);
-
-            // L자: H(farSX → farEX, y=sy) + V(sy → ey, x=farEX)
-            DrawHLine(grid, corridorTiles, farSX, farEX, sy, s);
-            DrawVLine(grid, corridorTiles, sy, ey, farEX, s);
+            path.Add((doorSX, sy));
+            path.Add((doorEX, ey));
+            EmitH(doorSX + stepS, farSX, sy, path);
+            EmitH(doorEX + stepE, farEX, ey, path);
+            EmitH(farSX, farEX, sy, path);
+            EmitV(sy, ey, farEX, path);
         }
         else
         {
             // ── 수직 연결 ────────────────────────────────────────────
             int doorSY, farSY, doorEY, farEY, stepS, stepE;
-            if (dy >= 0)   // src 하단 출구 → dst 상단 출구
+            if (dy >= 0)
             {
                 doorSY = src.Y + src.H - 1; farSY = src.Y + src.H + MIN - 1;
                 doorEY = dst.Y;             farEY = dst.Y - MIN;
                 stepS = 1; stepE = -1;
             }
-            else           // src 상단 출구 → dst 하단 출구
+            else
             {
                 doorSY = src.Y;             farSY = src.Y - MIN;
                 doorEY = dst.Y + dst.H - 1; farEY = dst.Y + dst.H + MIN - 1;
                 stepS = -1; stepE = 1;
             }
 
-            // 수평 팔 길이 보장: |sx - ex| >= MIN
             int sx = src.Cx, ex = dst.Cx;
-            if (Math.Abs(sx - ex) < MIN)
+            if (Math.Abs(sx - ex) < MIN &&
+                !TryUseSharedDoorAxis(src.X, src.X + src.W, dst.X, dst.X + dst.W, sx, out sx, out ex))
             {
                 int exDir = (ex >= sx) ? 1 : -1;
                 if (exDir == 0) exDir = 1;
@@ -554,18 +644,287 @@ public static class DungeonGenerator
                     sx = Math.Max(src.X, Math.Min(src.X + src.W - 1, ex - exDir * MIN));
             }
 
-            // 도어 타일 등록
-            SetTile(grid, corridorTiles, sx, doorSY, s);
-            SetTile(grid, corridorTiles, ex, doorEY, s);
-
-            // 스텁: door 다음 칸부터 far_outside 까지
-            DrawVLine(grid, corridorTiles, doorSY + stepS, farSY, sx, s);
-            DrawVLine(grid, corridorTiles, doorEY + stepE, farEY, ex, s);
-
-            // L자: V(farSY → farEY, x=sx) + H(sx → ex, y=farEY)
-            DrawVLine(grid, corridorTiles, farSY, farEY, sx, s);
-            DrawHLine(grid, corridorTiles, sx, ex, farEY, s);
+            path.Add((sx, doorSY));
+            path.Add((ex, doorEY));
+            EmitV(doorSY + stepS, farSY, sx, path);
+            EmitV(doorEY + stepE, farEY, ex, path);
+            EmitV(farSY, farEY, sx, path);
+            EmitH(sx, ex, farEY, path);
         }
+    }
+
+    private static void EmitH(int x0, int x1, int y, List<(int x, int y)> path)
+    {
+        int step = (x1 >= x0) ? 1 : -1;
+        for (int x = x0; (step > 0) ? (x <= x1) : (x >= x1); x += step)
+            path.Add((x, y));
+    }
+
+    private static void EmitV(int y0, int y1, int x, List<(int x, int y)> path)
+    {
+        int step = (y1 >= y0) ? 1 : -1;
+        for (int y = y0; (step > 0) ? (y <= y1) : (y >= y1); y += step)
+            path.Add((x, y));
+    }
+
+    private static void CarvePath(int[,] grid, HashSet<(int, int)> tiles,
+                                   List<(int x, int y)> path, DungeonSettings s)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            var p = path[i];
+            SetTile(grid, tiles, p.x, p.y, s);
+        }
+    }
+
+    private static bool IsCorridorCandidateClean(
+        int[,] grid, List<(int x, int y)> path, List<Room> rooms,
+        int srcIdx, int dstIdx, DungeonSettings s, bool isMandatoryEdge)
+    {
+        if (PathHitsThirdRoom(path, rooms, srcIdx, dstIdx)) return false;
+        if (PathCreatesBadDoorRun(grid, path, rooms, s)) return false;
+        if (PathCreatesOrphanDoorStub(grid, path, rooms, s)) return false;
+
+        // Extra corridors are optional, so reject long side-parallel runs near
+        // third rooms while still allowing short perpendicular door stubs.
+        if (!isMandatoryEdge &&
+            PathCreatesThirdRoomParallelRun(path, rooms, srcIdx, dstIdx, s))
+            return false;
+
+        return true;
+    }
+
+    /// <summary>
+    /// path가 src/dst가 아닌 다른 방의 interior / perim(0) / perim+1(벽 옆 1칸) 위로 지나가는지 판정.
+    /// perim+1 까지 잡는 이유: bend axis가 이웃 방 벽에서 1칸 떨어진 라인 위로 길게 흐르면
+    /// "벽에 평행하게 붙은 통로" 시각 패턴이 발생하기 때문.
+    /// </summary>
+    private static bool PathHitsThirdRoom(List<(int x, int y)> path,
+                                          List<Room> rooms, int srcIdx, int dstIdx)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            for (int k = 0; k < rooms.Count; k++)
+            {
+                if (k == srcIdx || k == dstIdx) continue;
+                var r = rooms[k];
+                int xL  = r.X,     xR  = r.X + r.W,     yT  = r.Y,     yB  = r.Y + r.H;
+                int xL2 = r.X - 2, xR2 = r.X + r.W + 1, yT2 = r.Y - 2, yB2 = r.Y + r.H + 1;
+
+                // INTERIOR
+                if (x >= xL && x < xR && y >= yT && y < yB) return true;
+                // PERIM (perim+0)
+                bool topBot0 = (y == yT - 1 || y == yB) && x >= xL && x < xR;
+                bool leftRt0 = (x == xL - 1 || x == xR) && y >= yT && y < yB;
+                if (topBot0 || leftRt0) return true;
+                // PERIM+1 (alongside)
+                bool topBot1 = (y == yT2 || y == yB2) && x >= xL && x < xR;
+                bool leftRt1 = (x == xL2 || x == xR2) && y >= yT && y < yB;
+                if (topBot1 || leftRt1) return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool PathCreatesBadDoorRun(
+        int[,] grid, List<(int x, int y)> path, List<Room> rooms, DungeonSettings s)
+    {
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            var r = rooms[i];
+            if (SideHasBadDoorRun(grid, path, s, r.Y - 1, true, r.X, r.X + r.W)) return true;
+            if (SideHasBadDoorRun(grid, path, s, r.Y + r.H, true, r.X, r.X + r.W)) return true;
+            if (SideHasBadDoorRun(grid, path, s, r.X - 1, false, r.Y, r.Y + r.H)) return true;
+            if (SideHasBadDoorRun(grid, path, s, r.X + r.W, false, r.Y, r.Y + r.H)) return true;
+        }
+
+        return false;
+    }
+
+    private static bool PathCreatesOrphanDoorStub(
+        int[,] grid, List<(int x, int y)> path, List<Room> rooms, DungeonSettings s)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            if (!InBounds(s, x, y) || grid[y, x] == ROOM) continue;
+
+            for (int rIdx = 0; rIdx < rooms.Count; rIdx++)
+            {
+                var r = rooms[rIdx];
+                if (IsOrphanDoorOnSide(grid, path, s, x, y, r.Y - 1, true, r.X, r.X + r.W, 0, -1))
+                    return true;
+                if (IsOrphanDoorOnSide(grid, path, s, x, y, r.Y + r.H, true, r.X, r.X + r.W, 0, 1))
+                    return true;
+                if (IsOrphanDoorOnSide(grid, path, s, x, y, r.X - 1, false, r.Y, r.Y + r.H, -1, 0))
+                    return true;
+                if (IsOrphanDoorOnSide(grid, path, s, x, y, r.X + r.W, false, r.Y, r.Y + r.H, 1, 0))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsOrphanDoorOnSide(
+        int[,] grid, List<(int x, int y)> path, DungeonSettings s,
+        int x, int y, int fixedCoord, bool horizontal, int rangeStart, int rangeEnd,
+        int outwardDx, int outwardDy)
+    {
+        int sideK = horizontal ? x : y;
+        int sideFixed = horizontal ? y : x;
+        if (sideFixed != fixedCoord || sideK < rangeStart || sideK >= rangeEnd)
+            return false;
+
+        int ox = x + outwardDx;
+        int oy = y + outwardDy;
+        if (!InBounds(s, ox, oy)) return true;
+        if (grid[oy, ox] == CORRIDOR) return false;
+        return !PathWouldCarveCorridor(grid, path, ox, oy);
+    }
+
+    private static bool PathCreatesThirdRoomParallelRun(
+        List<(int x, int y)> path, List<Room> rooms, int srcIdx, int dstIdx,
+        DungeonSettings s)
+    {
+        const int MaxDistanceFromPerimeter = 2;
+        const int MinParallelRunLength = 3;
+
+        int sidePadding = Math.Max(1, s.MinStraight);
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            if (i == srcIdx || i == dstIdx) continue;
+
+            var r = rooms[i];
+            int xStart = r.X - sidePadding;
+            int xEnd = r.X + r.W + sidePadding;
+            int yStart = r.Y - sidePadding;
+            int yEnd = r.Y + r.H + sidePadding;
+
+            for (int distance = 1; distance <= MaxDistanceFromPerimeter; distance++)
+            {
+                if (PathHasHorizontalRun(path, r.Y - 1 - distance, xStart, xEnd, MinParallelRunLength))
+                    return true;
+                if (PathHasHorizontalRun(path, r.Y + r.H + distance, xStart, xEnd, MinParallelRunLength))
+                    return true;
+                if (PathHasVerticalRun(path, r.X - 1 - distance, yStart, yEnd, MinParallelRunLength))
+                    return true;
+                if (PathHasVerticalRun(path, r.X + r.W + distance, yStart, yEnd, MinParallelRunLength))
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool PathHasHorizontalRun(
+        List<(int x, int y)> path, int y, int xStart, int xEnd, int minRunLength)
+    {
+        int runLen = 0;
+        for (int x = xStart; x < xEnd; x++)
+        {
+            if (PathContains(path, x, y))
+            {
+                runLen++;
+                if (runLen >= minRunLength) return true;
+            }
+            else
+            {
+                runLen = 0;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool PathHasVerticalRun(
+        List<(int x, int y)> path, int x, int yStart, int yEnd, int minRunLength)
+    {
+        int runLen = 0;
+        for (int y = yStart; y < yEnd; y++)
+        {
+            if (PathContains(path, x, y))
+            {
+                runLen++;
+                if (runLen >= minRunLength) return true;
+            }
+            else
+            {
+                runLen = 0;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool PathContains(List<(int x, int y)> path, int x, int y)
+    {
+        for (int i = 0; i < path.Count; i++)
+            if (path[i].x == x && path[i].y == y)
+                return true;
+
+        return false;
+    }
+
+    private static bool SideHasBadDoorRun(
+        int[,] grid, List<(int x, int y)> path, DungeonSettings s,
+        int fixedCoord, bool horizontal, int rangeStart, int rangeEnd)
+    {
+        int runLen = 0;
+        for (int k = rangeStart; k < rangeEnd; k++)
+        {
+            int x = horizontal ? k : fixedCoord;
+            int y = horizontal ? fixedCoord : k;
+            bool isDoor = InBounds(s, x, y) &&
+                          (grid[y, x] == CORRIDOR || PathWouldCarveCorridor(grid, path, x, y));
+            if (isDoor)
+            {
+                runLen++;
+                if (runLen > 1) return true;
+            }
+            else
+            {
+                runLen = 0;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool PathWouldCarveCorridor(int[,] grid, List<(int x, int y)> path, int x, int y)
+    {
+        if (grid[y, x] == ROOM) return false;
+
+        for (int i = 0; i < path.Count; i++)
+            if (path[i].x == x && path[i].y == y)
+                return true;
+
+        return false;
+    }
+
+    private static bool InBounds(DungeonSettings s, int x, int y)
+        => x >= 0 && x < s.MapWidth && y >= 0 && y < s.MapHeight;
+
+    private static bool TryUseSharedDoorAxis(
+        int srcStart, int srcEnd, int dstStart, int dstEnd, int preferred,
+        out int srcAxis, out int dstAxis)
+    {
+        int overlapStart = Math.Max(srcStart, dstStart);
+        int overlapEnd = Math.Min(srcEnd, dstEnd);
+        if (overlapStart >= overlapEnd)
+        {
+            srcAxis = preferred;
+            dstAxis = preferred;
+            return false;
+        }
+
+        int shared = Math.Max(overlapStart, Math.Min(overlapEnd - 1, preferred));
+        srcAxis = shared;
+        dstAxis = shared;
+        return true;
     }
 
     private static void SetTile(
@@ -573,28 +932,32 @@ public static class DungeonGenerator
         int x, int y, DungeonSettings s)
     {
         if (x < 0 || x >= s.MapWidth || y < 0 || y >= s.MapHeight) return;
+
+        if (DebugCorridorCarving && _debugRooms != null)
+            DebugCheckThirdRoomHit(x, y, grid);
+
         // 이미 방(ROOM) 타일이면 덮어쓰지 않음 — 방 바닥 값을 유지
         if (grid[y, x] != ROOM)
             grid[y, x] = CORRIDOR;
         tiles.Add((x, y));
     }
 
-    private static void DrawHLine(
-        int[,] grid, HashSet<(int, int)> tiles,
-        int x0, int x1, int y, DungeonSettings s)
+    private static void DebugCheckThirdRoomHit(int x, int y, int[,] grid)
     {
-        int step = (x1 >= x0) ? 1 : -1;
-        for (int x = x0; (step > 0) ? (x <= x1) : (x >= x1); x += step)
-            SetTile(grid, tiles, x, y, s);
-    }
-
-    private static void DrawVLine(
-        int[,] grid, HashSet<(int, int)> tiles,
-        int y0, int y1, int x, DungeonSettings s)
-    {
-        int step = (y1 >= y0) ? 1 : -1;
-        for (int y = y0; (step > 0) ? (y <= y1) : (y >= y1); y += step)
-            SetTile(grid, tiles, x, y, s);
+        for (int k = 0; k < _debugRooms.Count; k++)
+        {
+            if (k == _debugSrcIdx || k == _debugDstIdx) continue;
+            var r = _debugRooms[k];
+            bool interior = x >= r.X && x < r.X + r.W && y >= r.Y && y < r.Y + r.H;
+            bool perimTB  = (y == r.Y - 1 || y == r.Y + r.H) && x >= r.X && x < r.X + r.W;
+            bool perimLR  = (x == r.X - 1 || x == r.X + r.W) && y >= r.Y && y < r.Y + r.H;
+            if (interior || perimTB || perimLR)
+            {
+                string kind = interior ? "INTERIOR" : (perimTB ? "PERIM-TB" : "PERIM-LR");
+                DebugEmit("  [3rd-room " + kind + "] cell=(" + x + "," + y + ") on R" + k +
+                          " (existing grid=" + grid[y, x] + ")");
+            }
+        }
     }
 
     // ══════════════════════════════════════════════════════════
