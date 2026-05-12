@@ -24,6 +24,8 @@ MonoBehaviour:
   detectRange: 50
   attackRange: 10.5
   moveSpeed: 2
+  isStationary: 0
+  immuneToKnockback: 0
   attackCooldown: 3
   attackWindup: 0.35
   attackRecovery: 0.35

@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-11  
+> 작성 기준일: 2026-05-12  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -38,7 +38,7 @@
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
 | 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
 | 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
-| 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) |
+| 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair |
 | 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기 |
 | 적 전투 | 근접 접촉 피해 + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 |
@@ -74,7 +74,8 @@
 │  SkillExecutor · SkillTargetResolver · SkillExecutionContext │
 │  SkillSlotRuntime · SkillCooldownController                  │
 │  ProjectileFireService · ProjectileFireRequest               │
-│  AimDirectionUtility · CombatLayers                          │
+│  AimDirectionUtility · CombatLayers · CharacterPhysicsSetup  │
+│  PerfStage                                                   │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
@@ -141,7 +142,8 @@ Assets/Scripts/
 │   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용
 │   ├── AimDirectionUtility.cs      # 8방향 입력 양자화 + raw/정규화/카디널 변환 (Domain)
 │   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
-│   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간·8방향 조준)
+│   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시)
+│   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간·8방향 조준·castDelay/recoveryDelay 잠금)
 │   ├── PlayerResource.cs           # HP·MP 상태 컨테이너 (Domain)
 │   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
 │   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기)
@@ -151,8 +153,8 @@ Assets/Scripts/
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
 │   ├── ProjectileFireService.cs    # 투사체 발사 패턴 처리 (Single/Burst/Spread/Circle)
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
-│   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성 토글
-│   ├── ProjectilePool.cs           # 투사체 사전 풀링 (SetActive/DisableComponents 모드)
+│   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성, 회전 모드 (KeepPrefab/FaceMoveDirection)
+│   ├── ProjectilePool.cs           # 투사체 사전 풀링 (SetActive/DisableComponents 모드) — ReleaseAllActiveProjectiles로 층 이동 시 일괄 회수
 │   ├── Projectile.cs               # (구) 트리거 기반 발사체 — 호환 유지용
 │   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
 │   ├── PlayerInvincibilityFlashFeedback.cs # 무적 시 셰이더 _FlashAmount 보간 (PropertyBlock)
@@ -191,8 +193,21 @@ Assets/Scripts/
 │
 └── Tool/
     ├── RuntimePerfLogger.cs        # 성능 타이밍 로거 (호환 레이어)
+    ├── PerfStage.cs                # using-scope 단일 elapsedMs stage 측정 — IsActive false일 때 zero-alloc 패스스루
     ├── YieldCache.cs               # 코루틴 YieldInstruction 캐시
     └── LoadingScreenController.cs  # 층 이동 로딩 화면
+```
+
+```
+Assets/Editor/                     # Editor-only (런타임 미포함)
+├── SkillDataEditor.cs              # SkillData CustomEditor — Basic/InstantArea/Projectile/Dash 섹션 + Reserved foldout + 음수·non-positive 경고
+└── EnemyDataEditor.cs              # EnemyData CustomEditor — Behavior/FirePattern/RangedMovement 별 섹션 분기 + 비활성 필드 Reserved foldout
+```
+
+```
+Tools/DungeonGenDebug/              # Unity 외부 standalone .NET 콘솔 (DungeonGenerator 검증용)
+└── Program.cs                      # seed/floor 별 던전을 그려 corridor carving·MST 연결 디버그 출력
+                                    #   (Unity 측에서 DungeonGenerator.DebugSink + DebugCorridorCarving=true 로 동일 로그 활성 가능)
 ```
 
 ---
@@ -272,15 +287,40 @@ ConnectAll():
   remaining = { 방1, 방2, ... }
 
   while remaining이 비지 않을 때:
-    ── MST 단계 ────────────────────────────────────────
+    ── MST 단계 (isMandatoryEdge=true) ─────────────────
     connected × remaining 쌍 중 유클리드 거리 최소 → src, dst
-    DrawLCorridor(src, dst)       ← L자형 통로 연결
+    DrawLCorridor(src, dst, mandatory=true, pathBuf)  ← L자형 통로 연결
     connected ← dst 추가, remaining ← dst 제거
 
     ── 추가 연결 단계 (ExtraConnProb 확률) ─────────────
     src 기준 dst를 제외한 가장 가까운 방 k 탐색
-    DrawLCorridor(src, k)
+    DrawLCorridor(src, k, mandatory=false, pathBuf)
 ```
+
+### 4-4-1. Corridor Carving 검증 (DrawLCorridor)
+
+`DrawLCorridor`는 L자형 2-segment 통로를 grid에 직접 그리지 않고, 한 번 path 후보를 cell list(`pathBuf`)에 emit해 검증 → carve 순서로 동작합니다.
+
+```
+DrawLCorridor(src, dst, isMandatoryEdge, pathBuf):
+  primaryHorizFirst = |dx| >= |dy|
+
+  1) primary axis 로 path 후보 cell 미리 emit
+  2) src/dst 가 아닌 다른 방의 interior / perim(=0) / perim+1(벽 옆 1칸)
+     과 겹치는지 검사
+  3) 겹치면 alternate axis 로 1회 재시도
+  4) 둘 다 겹치면:
+       isMandatoryEdge == true  → connectivity 보장 위해 primary 로 강제 carve
+       isMandatoryEdge == false → 그냥 skip (EXTRA 연결은 포기 가능)
+  5) src/dst side 축 범위가 겹치면 동일 door 축을 재사용,
+     겹치지 않을 때만 기존 MinStraight 보정 적용
+
+재사용 버퍼: pathBuf (List<(int,int)>) — 통로 1회당 0 할당
+디버그 hook : DungeonGenerator.DebugCorridorCarving = true + DebugSink 구독 시
+              MST/EXTRA 통로마다 src/dst Rect 와 path 결정 사유를 로그
+```
+
+> **알려진 미해결 항목 (보류)**: Seed=283321776792 Floor=3에서 시각적으로 통로가 끊긴 것처럼 보이는 케이스가 있으나, generator 기준으로는 정상 MST 연결이며 bad-door run / detached corridor / orphan door 모두 없음. 현재는 추가 수정하지 않고 유지.
 
 ### 4-5. 타일 타입 상수
 
@@ -326,14 +366,15 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 
 ## 6. 시스템 3 — 플레이어 이동
 
-### 6-1. 물리 설정 (ConfigurePhysics)
+### 6-1. 물리 설정 (CharacterPhysicsSetup)
 
-`Start()`에서 Rigidbody2D와 CircleCollider2D를 코드로 자동 설정합니다.
+`PlayerController.Start()` / `EnemyController.Awake()`가 모두 `CharacterPhysicsSetup.Configure(go, layerName)` 헬퍼를 호출해 Rigidbody2D + CircleCollider2D 를 동일한 규약으로 자동 셋업합니다 (NoFriction `PhysicsMaterial2D`는 static 캐시 1개를 공유).
 
 | 컴포넌트 | 설정값 |
 |---------|-------|
-| Rigidbody2D | Dynamic · gravityScale=0 · Continuous · Interpolate · NoFriction |
-| CircleCollider2D | radius=0.32 · isTrigger=false |
+| Rigidbody2D | Dynamic · gravityScale=0 · freezeRotation · Continuous · Interpolate · NoFriction sharedMaterial |
+| CircleCollider2D | radius=0.32 · isTrigger=false · NoFriction sharedMaterial |
+| 기타 | 동일 GameObject의 모든 BoxCollider2D는 disable, layer 자동 지정 |
 
 ### 6-2. 충돌 처리 알고리즘
 
@@ -385,6 +426,34 @@ CheckRoomEntry():
 | Space | 기본 공격 (홀드 시 범위 미리보기) — Facing 4방향 기준 |
 | Q / W / E / R | 스킬 슬롯 1~4 — InstantArea / Projectile / Dash 라우팅 (홀드 시 범위 미리보기) |
 
+### 6-5. 스킬 castDelay / recoveryDelay 중 이동 잠금
+
+`SkillData.castDelay`(선딜레이)와 `SkillData.recoveryDelay`(후딜레이)가 활성인 동안 플레이어는 이동·기본 공격·스킬 입력이 잠깁니다.
+
+```
+PlayerCombatController:
+  ├── _isSkillCasting  (bool) — SkillCastRoutine 진행 중인지
+  ├── _skillRecoveryTimer (float) — recoveryDelay 만료 카운트다운
+  ├── IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0
+  └── BlocksPlayerMovement => IsSkillBusy   ← PlayerController/PlayerAnimationController 가 구독
+
+흐름:
+  TryUseSkill(slot):
+    castDelay > 0 이면 BeginSkillCast → SkillCastRoutine 로 castDelay 후 ExecuteSkillIfReady
+    castDelay == 0 이면 즉시 ExecuteSkillIfReady
+  ExecuteSkillIfReady:
+    성공 시 SpendMp / slot.StartCooldown / StartSkillRecovery(recoveryDelay)
+    실패 가드: IsDead / IsDashing / DungeonManager.IsTransitioning / 슬롯 데이터 불일치
+  TickSkillRecovery(dt) — Update에서 매 프레임 감소
+
+게이트(IsSkillBusy 검사):
+  Update 기본공격 입력 / TryBasicAttack / TryUseSkill / CanUseSkillSlot
+  PlayerController.Update — BlocksPlayerMovement 시 입력 처리 skip
+  PlayerAnimationController — BlocksPlayerMovement 시 MoveX/Y 0으로 강제
+```
+
+> 사망 / 대시 시작 / 풀링 비활성화 등에서는 `ClearSkillTimingState()`가 진행 중 코루틴을 중단하고 `_skillRecoveryTimer` 를 0 으로 리셋합니다.
+
 > **조준 방향 결정**: 기본 공격(Space)은 `PlayerController.FacingDirection`(이동 키 우선 → 카디널 4방향)을, 스킬·투사체·대시는 `AimDirectionUtility.TryGetEightWayRaw(MoveInput)` 으로 얻은 8방향 raw 입력을 사용합니다. 입력이 비어 있을 때는 `PlayerCombatController._lastAimDirection`(기본값 down)으로 폴백합니다. 미리보기도 동일한 raw 방향을 사용해 실제 발사 결과와 시각이 일치합니다.
 
 ---
@@ -404,7 +473,8 @@ WeaponData (ScriptableObject)
 
 SkillData (ScriptableObject)
   ├── executionType (SkillExecutionType)  ← InstantArea/Projectile/Dash/AreaOverTime/Buff
-  ├── 공통: damage, mpCost, cooldown, isMultiTarget, canPenetrateWalls
+  ├── 공통: damage, mpCost, cooldown, castDelay, recoveryDelay
+  ├── 공통: isMultiTarget, canPenetrateWalls
   ├── 공통: attackPattern, patternRange, coneHalfAngle
   ├── 공통: knockback/slow 파라미터
   ├── Projectile: prefab, speed, lifetime, count, spreadAngle,
@@ -412,6 +482,9 @@ SkillData (ScriptableObject)
   │              maxBounceCount, spawnOffset, burstInterval, burstSpacing
   └── Dash: distance, duration, stopOnWall,
            damageOnPath, damageOnContact, invincibleDuringDash
+
+(Inspector는 SkillDataEditor가 executionType 별로 InstantArea/Projectile/Dash 섹션만 노출,
+ AreaOverTime/Buff는 Reserved 안내, 미사용 필드는 Reserved foldout으로 접어둠)
 
 PlayerResource (Domain)
   ├── currentHp, maxHp
@@ -428,6 +501,8 @@ PlayerCombatController
   ├── damageInvincibleDuration — 피격 후 무적시간 (기본 0.5초)
   ├── _externalInvincibilityCount — 대시·외부 효과 무적 카운터
   ├── _lastAimDirection (Vector2Int) — 8방향 raw 조준 캐시 (입력 없을 때 폴백)
+  ├── _isSkillCasting / _skillRecoveryTimer / _skillCastRoutine — 스킬 선/후딜 상태
+  ├── IsSkillBusy / BlocksPlayerMovement — 캐스팅·후딜 중 이동·입력 잠금
   ├── CurrentAimDirection / CurrentAimRawDirection — 정규화·raw 8방향 조준
   ├── RefreshAimDirection() — Update 매 프레임 + 스킬 사용 직전 갱신
   ├── PlayerCombatController.Active (정적) — Projectile 등에서 거리 비교용 캐시 활용
@@ -468,17 +543,26 @@ TryBasicAttack():
 
 ```
 TryUseSkill(slotIndex):
-  ① 슬롯·쿨다운·MP 확인 (SkillSlotRuntime.CanUse)
-  ② SkillExecutionContext 생성
+  ① IsDead / IsDashing / IsSkillBusy 가드
+  ② 슬롯·쿨다운·MP 확인 (SkillSlotRuntime.CanUse)
+  ③ castDelay > 0 → BeginSkillCast → SkillCastRoutine(_isSkillCasting=true)
+                    castDelay 만료 후 ExecuteSkillIfReady 호출
+     castDelay == 0 → 즉시 ExecuteSkillIfReady
+
+ExecuteSkillIfReady(slotIndex, expectedSkill):
+  ① IsDead / IsDashing / DungeonManager.IsTransitioning 가드
+  ② slot.Data == expectedSkill / CanUse 재검증 (코루틴 중 슬롯 변경 대응)
+  ③ SkillExecutionContext 생성
        (caster, transform, skill, slotIndex, aim, gridFacing,
         TotalAttack, hitRadius)
-  ③ SkillExecutor.Execute(context)
+  ④ SkillExecutor.Execute(context)
        switch (skill.executionType):
          InstantArea  → ExecuteInstantArea()
          Projectile   → ExecuteProjectile()
          Dash         → ExecuteDash()
          AreaOverTime/Buff → 미구현 (경고 로그 1회)
-  ④ 성공 시 SpendMp / slot.StartCooldown / RaiseSkillUsed
+  ⑤ 성공 시 SpendMp / slot.StartCooldown / StartSkillRecovery(recoveryDelay)
+            / RaiseSkillUsed
 
 InstantArea:
   SkillTargetResolver.ResolveTargets(context)
@@ -571,6 +655,9 @@ ProjectileController:
   ├── DungeonManager 그리드 IsWalkable 기반 벽 검사 (Physics2D 미사용)
   ├── 매 프레임 IsOutOfDungeonBounds(nextPos) — 맵 범위(InBounds) 밖이면 즉시 Release
   ├── ProjectileWallHitMode: Destroy / PassThrough / Bounce
+  ├── ProjectileRotationMode: KeepPrefabRotation / FaceMoveDirection (기본)
+  │     FaceMoveDirection — Initialize 시 / 매 비행 프레임 / Bounce 후 RefreshVisualRotation
+  │     KeepPrefabRotation — 풀에서 꺼낼 때 prefab localRotation 복원
   ├── TargetMode = Player: 정적 캐시된 PlayerCombatController 거리 비교
   ├── TargetMode = Enemy : Physics2D.OverlapCircle → EnemyController.ApplyCombatImpact
   ├── ProjectileTargetHitMode: DestroyOnHit / Pierce / HitOncePerTarget
@@ -580,9 +667,10 @@ ProjectileController:
   │     Player projectile(TargetMode=Enemy)는 fog 토글 없이 항상 표시
   ├── PrepareFromPool / HideForPool — 컴포넌트 enabled 토글 + Animator "Fly" 재시작
   │     HideForPool 시 FogVisibilityRenderer.enabled = false 로 fog 평가 정지
+  ├── ReleaseForCleanup(reason) — 외부에서 강제 회수 (FloorTransition 등)
   └── lifetime 만료 / 벽 / 적중 / 맵 밖 → Release(reason) → 풀 콜백
         Reason: LifetimeExpired / PlayerHit / EnemyHit / WallHitDestroy /
-                BounceLimit / OutOfBounds / Manual / FallbackDestroy
+                BounceLimit / OutOfBounds / FloorTransition / Manual / FallbackDestroy
 ```
 
 **ProjectilePool — 두 가지 비활성화 모드**
@@ -710,6 +798,36 @@ true 를 반환하면 LOS/A* 흐름을 건너뜁니다.
 | `Chase`   | 기존 추격 동작과 동일 (LOS 직선 → A*) | — |
 | `Kiting`  | `preferredRange` 보다 멀면 접근, `kiteRetreatRange` 안쪽이면 후퇴 | preferredRange, kiteRetreatRange |
 | `Random`  | `randomMoveInterval[Min,Max]` 간격으로 `randomMoveRadius` 안의 새 목적지 선택 | randomMoveIntervalMin/Max, randomMoveRadius |
+
+**Kiting 다중 후퇴 방향 (s_KitingRotations)**
+
+후퇴 방향이 막혀 있어도 정지하지 않도록 5단계 우선순위로 시도합니다.
+
+```
+away(180°) → away+45° → away-45° → side(+90°) → side(-90°)
+```
+
+- 각 후보 방향마다 `data.preferredRange` 만큼의 가상 목적지를 계산하고 `MoveToward`로 1회 이동 시도
+- 4-corner footprint 검사를 통과하는 첫 후보를 채택
+- 모든 후보가 막히면 `TryApplyIdleSeparationStep` 으로 폴백
+
+**Random 목적지 minR 보호**
+
+`randomMoveRadius` 안의 새 목적지를 뽑을 때 너무 가까운 영역(자기 자신 위)에는 찍히지 않도록 `minR = max(radius * 0.25, footprintRadius + 0.1)` 으로 inner radius를 확보합니다. `randomMoveRadius` 가 footprint 보다도 작은 잘못된 설정이면 random 이동을 안전하게 skip.
+
+### 8-4-2. 정지 상태 separation 보강 (TryApplyIdleSeparationStep)
+
+Kiting의 "적정 거리 도달", Random의 "다음 목적지까지 대기"처럼 **정지하려는 순간**에도 이웃 적과 겹치면 살짝 산개하도록 보정합니다.
+
+```
+조건: enableSeparation && _smoothedSeparation.sqrMagnitude >= 0.01 (IdleSeparationActivationSqr)
+구현:
+  _separationBuffer / s_SeparationFilter / _smoothedSeparation 인프라 재사용 → 0 할당
+  separation 방향으로 self+1 의 가상 target 생성 후 MoveToward 1회
+효과:
+  - 다수의 Ranged 적이 같은 지점에 정지하지 않고 자연 산개
+  - LOS/A* 흐름은 그대로 skip (Ranged 분기 안에서 자체 처리)
+```
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
 
@@ -1054,6 +1172,8 @@ PlaceTilesChunked(data, chunkRows=8):
 
 ```
 FloorTransition(targetFloor):
+  0. ProjectilePool.ReleaseAllActiveProjectiles(FloorTransition)
+                                   ← 이전 층의 비행 중 투사체 일괄 회수
   1. LoadingScreen.Show()          ← 페이드 인
   2. GenerateChunked()             ← 던전 생성 (로딩 화면 뒤에서)
   3. yield return null             ← Unity Tilemap 처리 완료 대기
@@ -1117,6 +1237,15 @@ FloorTransition(targetFloor):
 | Fog 정적 Active 캐시 | `FogOfWarController.Active` | FogVisibilityRenderer 가 매 프레임 FindAnyObjectByType 없이 참조 |
 | 문 개폐 즉시 시야 갱신 | `OnRoomDoorsClosed`/`OnRoomDoorsOpened` → `FogOfWarController.ForceRefresh` | 닫힌 문이 시야 차단 결과로 반영되기까지 한 프레임 지연 없음 |
 | Layer 필터 정적 캐싱 | `CombatLayers.EnemyFilter`/`PlayerFilter` | LayerMask 빌드/이름 비교를 1회로 줄이고 OverlapCircle에 공유 |
+| 캐릭터 물리 셋업 공통화 | `CharacterPhysicsSetup.Configure` | Player/Enemy 가 동일한 Rigidbody2D/CircleCollider2D 규약 + NoFriction PhysicsMaterial2D static 1개 공유 |
+| 스킬 castDelay/recoveryDelay 잠금 | `PlayerCombatController.IsSkillBusy`/`BlocksPlayerMovement` | 캐스팅·후딜 동안 이동·기본공격·스킬 입력 차단 — 코루틴 1개 + float 1개로 처리 |
+| 층 이동 시 투사체 일괄 회수 | `ProjectilePool.ReleaseAllActiveProjectiles(FloorTransition)` | 이전 층 비행 중 투사체가 신생 던전에 잔존 / 새 fog 평가에 끼어드는 문제 방지 |
+| 투사체 회전 모드 분기 | `ProjectileRotationMode.FaceMoveDirection` | Bounce 후에도 sprite가 진행 방향 유지 — Atan2 1회 / 매 비행 프레임 RefreshVisualRotation |
+| PerfStage using-scope | `using (PerfStage.Begin(name))` | `RuntimePerfLogger.IsActive == false` 일 때 zero-alloc passthrough (string 조합/MarkEvent 모두 생략) |
+| Corridor carving 사전 검증 | `DrawLCorridor` interior/perim/perim+1 충돌 검사 + alternate axis 재시도 | path 후보를 한 번 emit해서 검증 후 carve — 다른 방을 뚫고 지나가는 통로를 사전에 차단 |
+| Kiting 다중 후퇴 방향 | `s_KitingRotations` (away → away±45° → side±90°) | 막혔을 때도 폴백 후보로 후퇴 시도, footprint 통과 첫 후보 채택 |
+| Random minR 안전판 | `MovementHandler.TickRandomMovement` | `minR = max(radius*0.25, footprintRadius+0.1)` — 자기 위치 위에 목적지 찍힘 방지 |
+| 정지 상태 separation step | `MovementHandler.TryApplyIdleSeparationStep` | Kiting/Random 대기 중에도 이웃이 가까우면 separation 인프라 재사용해 가상 target으로 1회 이동 (0 할당) |
 
 ---
 
@@ -1314,6 +1443,18 @@ case SkillExecutionType.AreaOverTime:
 | **적 투사체 Fog 통합** | `ProjectileController.ApplyFogVisibilityForTargetMode` — Enemy projectile에만 fog 토글, 풀 회수 시 잔존 visibility 정리 |
 | **문 개폐 이벤트 발행** | `DungeonEventChannel.OnRoomDoorsClosed/Opened` — FogOfWarController가 즉시 시야 재계산 |
 | **Combat Layer 정적 캐시** | `CombatLayers` — Enemy/Player ContactFilter2D 공유 |
+| **캐릭터 물리 공통화** | `CharacterPhysicsSetup.Configure(go, layer)` — Player/Enemy 동일 Rigidbody2D+CircleCollider2D 규약, NoFriction PhysicsMaterial2D static 캐시 |
+| **스킬 castDelay/recoveryDelay** | `PlayerCombatController.IsSkillBusy`/`BlocksPlayerMovement` — 선딜·후딜 동안 이동·기본공격·스킬 입력 잠금 |
+| **투사체 회전 모드** | `ProjectileRotationMode` — KeepPrefabRotation / FaceMoveDirection (기본). Bounce 이후에도 sprite가 진행 방향을 향함 |
+| **층 이동 시 투사체 정리** | `ProjectilePool.ReleaseAllActiveProjectiles(FloorTransition)` — FloorTransition reason 추가, 이전 층 잔존 투사체 일괄 회수 |
+| **Corridor carving 검증** | `DrawLCorridor` interior/perim/perim+1 충돌 검사 + primary/alternate axis 재시도 + mandatory(MST) vs optional(EXTRA) 분기 |
+| **Generator 디버그 hook** | `DungeonGenerator.DebugCorridorCarving` + `DebugSink` — MST/EXTRA 통로마다 src/dst Rect 와 path 결정 로그 |
+| **DungeonGenDebug 도구** | `Tools/DungeonGenDebug` — Unity 외부 .NET 콘솔로 던전 생성 결과를 standalone 검증 |
+| **PerfStage using-scope 측정** | `Tool/PerfStage.cs` — RuntimePerfLogger 비활성 시 zero-alloc passthrough, 활성 시 elapsedMs metadata 자동 기록 |
+| **Skill / Enemy CustomEditor** | `Editor/SkillDataEditor` (executionType 별 섹션), `Editor/EnemyDataEditor` (behaviorType / firePattern / rangedMovementType 별 섹션) — 비활성 필드는 Reserved foldout으로 분리 |
+| **Kiting 다중 후퇴 방향** | `s_KitingRotations` 5단계 폴백 (away → away±45° → side±90°) — 후퇴가 막혀도 첫 통과 후보로 이동 |
+| **Random 목적지 minR 보호** | `MovementHandler.TickRandomMovement` — `minR=max(radius*0.25, footprintRadius+0.1)` 로 자기 위 목적지 차단 |
+| **정지 시 separation step** | `MovementHandler.TryApplyIdleSeparationStep` — Kiting/Random 대기 상태에서도 이웃이 가까우면 산개 |
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 
 ### 미구현 (다음 단계)
@@ -1330,6 +1471,7 @@ case SkillExecutionType.AreaOverTime:
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
 | SkillData dash 툴팁 정정 | 낮음 | `dashDamageOnPath`/`OnContact` 인스펙터 툴팁이 아직 "first-pass implementation shares the same detection path"로 남아 있음 — 실제 구현은 분리됨 |
+| 시각적으로 끊긴 통로 케이스 | 낮음 | Seed=283321776792 Floor=3에서 통로가 시각적으로 끊겨 보이는 케이스가 있으나 generator 기준으로는 정상 MST 연결. 보류 (커밋 32eefd1c) |
 
 ---
 
