@@ -11,6 +11,8 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _executionType;
     private SerializedProperty _mpCost;
     private SerializedProperty _cooldown;
+    private SerializedProperty _castDelay;
+    private SerializedProperty _recoveryDelay;
     private SerializedProperty _damage;
 
     private SerializedProperty _attackPattern;
@@ -54,6 +56,8 @@ public sealed class SkillDataEditor : Editor
         _executionType = serializedObject.FindProperty("executionType");
         _mpCost = serializedObject.FindProperty("mpCost");
         _cooldown = serializedObject.FindProperty("cooldown");
+        _castDelay = serializedObject.FindProperty("castDelay");
+        _recoveryDelay = serializedObject.FindProperty("recoveryDelay");
         _damage = serializedObject.FindProperty("damage");
 
         _attackPattern = serializedObject.FindProperty("attackPattern");
@@ -143,6 +147,8 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_executionType);
         DrawProperty(_mpCost);
         DrawProperty(_cooldown);
+        DrawProperty(_castDelay);
+        DrawProperty(_recoveryDelay);
         DrawProperty(_damage);
     }
 
@@ -248,6 +254,8 @@ public sealed class SkillDataEditor : Editor
     {
         DrawNegativeWarning(_mpCost, "MP Cost");
         DrawNegativeWarning(_cooldown, "Cooldown");
+        DrawNegativeWarning(_castDelay, "Cast Delay");
+        DrawNegativeWarning(_recoveryDelay, "Recovery Delay");
         DrawNegativeWarning(_damage, "Damage");
 
         if (_executionType != null && _executionType.hasMultipleDifferentValues)

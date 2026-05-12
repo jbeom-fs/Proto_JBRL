@@ -11,11 +11,18 @@ public class ProjectileController : MonoBehaviour
     [SerializeField] private float hitRadius = 0.08f;
     [SerializeField] private float bounceExitOffset = 0.05f;
     [SerializeField] private bool disablePhysicsSimulation = true;
+    [SerializeField] private ProjectileRotationMode rotationMode = ProjectileRotationMode.FaceMoveDirection;
 
     public enum TargetMode
     {
         Player,
         Enemy
+    }
+
+    public enum ProjectileRotationMode
+    {
+        KeepPrefabRotation,
+        FaceMoveDirection
     }
 
     private static PlayerCombatController s_PlayerCombat;
@@ -42,6 +49,7 @@ public class ProjectileController : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private Animator _animator;
     private FogVisibilityRenderer _fogVisibility;
+    private Quaternion _initialLocalRotation;
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
     private DungeonManager _dungeon;
@@ -49,6 +57,7 @@ public class ProjectileController : MonoBehaviour
 
     private void Awake()
     {
+        _initialLocalRotation = transform.localRotation;
         _collider = GetComponent<Collider2D>();
         _rigidbody = GetComponent<Rigidbody2D>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
@@ -141,7 +150,7 @@ public class ProjectileController : MonoBehaviour
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
-        ApplyVisualRotation();
+        RefreshVisualRotation();
         _damage = Mathf.Max(0, damage);
         _knockbackForce = Mathf.Max(0f, knockbackForce);
         _knockbackDuration = Mathf.Max(0f, knockbackDuration);
@@ -336,7 +345,8 @@ public class ProjectileController : MonoBehaviour
         else
             _direction.Normalize();
 
-        ApplyVisualRotation();
+        if (rotationMode == ProjectileRotationMode.FaceMoveDirection)
+            RefreshVisualRotation();
         _currentBounceCount++;
 
         Vector2 correctedPosition = currentPosition + _direction * Mathf.Max(0.01f, bounceExitOffset);
@@ -347,10 +357,19 @@ public class ProjectileController : MonoBehaviour
         return true;
     }
 
-    private void ApplyVisualRotation()
+    private void RefreshVisualRotation()
     {
-        float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0f, 0f, angle);
+        switch (rotationMode)
+        {
+            case ProjectileRotationMode.KeepPrefabRotation:
+                transform.localRotation = _initialLocalRotation;
+                break;
+
+            case ProjectileRotationMode.FaceMoveDirection:
+                float angle = Mathf.Atan2(_direction.y, _direction.x) * Mathf.Rad2Deg;
+                transform.rotation = Quaternion.Euler(0f, 0f, angle);
+                break;
+        }
     }
 
     private void TryHitTarget()

@@ -763,7 +763,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Perfabs/Scriptable/Skill
+    - Assets/Perfabs/Scriptable/Enemy
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -773,21 +773,24 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Perfabs/Scriptable/Skill
+  - Assets/Perfabs/Scriptable/Enemy
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 107}
+    scrollPos: {x: 0, y: 104}
     m_SelectedIDs:
-    - m_Data: 54784
+    - m_Data: 54816
     m_LastClickedID:
-      m_Data: 54784
+      m_Data: 54816
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 54634
+    - m_Data: 54726
+    - m_Data: 54728
+    - m_Data: 54730
+    - m_Data: 54732
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -821,7 +824,10 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 54634
+    - m_Data: 54726
+    - m_Data: 54728
+    - m_Data: 54730
+    - m_Data: 54732
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -850,9 +856,9 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 57506
+    - m_Data: 65030
     m_LastClickedEntityId:
-      m_Data: 57506
+      m_Data: 65030
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 52286
@@ -940,7 +946,7 @@ MonoBehaviour:
     m_PrefName: Preview_InspectorPreview
   m_LastInspectedObjectEntityId:
     m_Data: 0
-  m_LastVerticalScrollValue: 0
+  m_LastVerticalScrollValue: 378
   m_GlobalObjectId: 
   m_InspectorMode: 0
   m_LockTracker:
@@ -991,10 +997,8 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -16952
-      - m_Data: -6410
+      - m_Data: -76778
       - m_Data: -1382
-      - m_Data: 57424
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1267,7 +1271,7 @@ MonoBehaviour:
       sizeOverridden: 0
     - dockPosition: 1
       containerId: overlay-container--right
-      displayed: 1
+      displayed: 0
       id: Scene View/Open Tile Palette
       index: 2
       contents: '{"m_Layout":4,"m_Collapsed":false,"m_Folded":false,"m_Floating":false,"m_FloatingSnapOffset":{"x":0.0,"y":25.0},"m_SnapOffsetDelta":{"x":0.0,"y":0.0},"m_FloatingSnapCorner":0,"m_Size":{"x":0.0,"y":0.0},"m_SizeOverridden":false}'
@@ -1518,9 +1522,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 8.635626, y: -30.405096, z: 0.006247996}
+    m_Target: {x: 56.338867, y: -45.102936, z: -0.4962238}
     speed: 2
-    m_Value: {x: 8.635626, y: -30.405096, z: 0.006247996}
+    m_Value: {x: 56.338867, y: -45.102936, z: -0.4962238}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1556,9 +1560,9 @@ MonoBehaviour:
       m_Size: {x: 1, y: 1}
     zGrid:
       m_Fade:
-        m_Target: 0
+        m_Target: 1
         speed: 2
-        m_Value: 0
+        m_Value: 1
       m_Color: {r: 0.5, g: 0.5, b: 0.5, a: 0.4}
       m_OffsetAlongAxis: {x: 0, y: 0, z: 0}
       m_Size: {x: 1, y: 1}
@@ -1571,9 +1575,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 9.3751335
+    m_Target: 50.332928
     speed: 2
-    m_Value: 9.3751335
+    m_Value: 50.332928
   m_Ortho:
     m_Target: 1
     speed: 2

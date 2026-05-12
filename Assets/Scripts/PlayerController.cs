@@ -208,6 +208,14 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
+        if (_combat != null && _combat.BlocksPlayerMovement)
+        {
+            if (_rb != null)
+                _rb.linearVelocity = Vector2.zero;
+            CheckRoomEntry();
+            return;
+        }
+
         Vector2 input = _inputReader.MoveInput;
         if (input != Vector2.zero)
         {

@@ -29,6 +29,14 @@ public class SkillData : ScriptableObject
     [Min(0f)]
     public float cooldown = 2f;
 
+    [Tooltip("Delay in seconds before the skill effect executes after input.")]
+    [Min(0f)]
+    public float castDelay = 0f;
+
+    [Tooltip("Delay in seconds after a successful skill execution before attacks or skills can be used again.")]
+    [Min(0f)]
+    public float recoveryDelay = 0f;
+
     [Tooltip("Base damage shared by InstantArea, Projectile, and Dash damage checks where applicable.")]
     [Min(0)]
     public int damage = 10;

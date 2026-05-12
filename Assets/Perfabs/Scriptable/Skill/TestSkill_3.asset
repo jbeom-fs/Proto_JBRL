@@ -18,6 +18,8 @@ MonoBehaviour:
   executionType: 2
   mpCost: 0
   cooldown: 0
+  castDelay: 0.1
+  recoveryDelay: 0.1
   damage: 1
   attackPattern: 1
   patternRange: 3

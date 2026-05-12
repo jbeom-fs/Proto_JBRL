@@ -14,6 +14,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -66,6 +67,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
     private Vector2Int _lastAimDirection = Vector2Int.down;
+    private bool _isSkillCasting;
+    private float _skillRecoveryTimer;
+    private Coroutine _skillCastRoutine;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -78,6 +82,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
+    public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f;
+    public bool BlocksPlayerMovement => IsSkillBusy;
 
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
@@ -131,6 +137,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (ReferenceEquals(Active, this))
             Active = null;
+    }
+
+    private void OnDisable()
+    {
+        ClearSkillTimingState();
     }
 
     private void RegisterAsActive()
@@ -212,12 +223,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
+        TickSkillRecovery(Time.deltaTime);
 
         if (_inputReader == null) return;
         RefreshAimDirection();
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
         if (IsDashing) return;
+        if (IsSkillBusy) return;
 
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
         if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
@@ -245,6 +258,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         if (IsDashing) return;
+        if (IsSkillBusy) return;
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
@@ -274,26 +288,106 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         if (IsDashing) return;
+        if (IsSkillBusy) return;
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
         if (!slot.CanUse(CurrentMp)) return;
 
         SkillData skill = slot.Data;
-        SkillExecutionContext context = CreateSkillExecutionContext(skill, slotIndex);
-        if (!_skillExecutor.Execute(context)) return;
+        float castDelay = Mathf.Max(0f, skill.castDelay);
+        if (castDelay > 0f)
+        {
+            BeginSkillCast(slotIndex, skill, castDelay);
+            return;
+        }
 
-        SpendMp(skill.mpCost);
-        slot.StartCooldown();
-        combatChannel?.RaiseSkillUsed(skill);
-#if UNITY_EDITOR
-        Debug.Log($"[Combat] 스킬 [{slotIndex + 1}] {skill.skillName} 사용");
-#endif
+        ExecuteSkillIfReady(slotIndex, skill);
     }
 
     // ══════════════════════════════════════════════════════════════
     //  공통 헬퍼
     // ══════════════════════════════════════════════════════════════
+
+    private void BeginSkillCast(int slotIndex, SkillData skill, float castDelay)
+    {
+        if (_skillCastRoutine != null)
+            StopCoroutine(_skillCastRoutine);
+
+        _isSkillCasting = true;
+        _skillCastRoutine = StartCoroutine(SkillCastRoutine(slotIndex, skill, castDelay));
+    }
+
+    private IEnumerator SkillCastRoutine(int slotIndex, SkillData skill, float castDelay)
+    {
+        float remaining = castDelay;
+        while (remaining > 0f)
+        {
+            if (IsDead || !isActiveAndEnabled)
+            {
+                _isSkillCasting = false;
+                _skillCastRoutine = null;
+                yield break;
+            }
+
+            remaining -= Time.deltaTime;
+            yield return null;
+        }
+
+        _isSkillCasting = false;
+        _skillCastRoutine = null;
+        ExecuteSkillIfReady(slotIndex, skill);
+    }
+
+    private bool ExecuteSkillIfReady(int slotIndex, SkillData expectedSkill)
+    {
+        if (IsDead) return false;
+        if (IsDashing) return false;
+        if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return false;
+
+        EnsureSkillSlotsBound();
+        SkillSlotRuntime slot = GetSkillSlot(slotIndex);
+        if (slot == null) return false;
+        if (!ReferenceEquals(slot.Data, expectedSkill)) return false;
+        if (!slot.CanUse(CurrentMp)) return false;
+
+        SkillData skill = slot.Data;
+        SkillExecutionContext context = CreateSkillExecutionContext(skill, slotIndex);
+        if (!_skillExecutor.Execute(context)) return false;
+
+        SpendMp(skill.mpCost);
+        slot.StartCooldown();
+        StartSkillRecovery(skill.recoveryDelay);
+        combatChannel?.RaiseSkillUsed(skill);
+#if UNITY_EDITOR
+        Debug.Log($"[Combat] Skill [{slotIndex + 1}] {skill.skillName} used");
+#endif
+
+        return true;
+    }
+
+    private void TickSkillRecovery(float deltaTime)
+    {
+        if (_skillRecoveryTimer > 0f)
+            _skillRecoveryTimer -= deltaTime;
+    }
+
+    private void StartSkillRecovery(float recoveryDelay)
+    {
+        _skillRecoveryTimer = Mathf.Max(_skillRecoveryTimer, Mathf.Max(0f, recoveryDelay));
+    }
+
+    private void ClearSkillTimingState()
+    {
+        if (_skillCastRoutine != null)
+        {
+            StopCoroutine(_skillCastRoutine);
+            _skillCastRoutine = null;
+        }
+
+        _isSkillCasting = false;
+        _skillRecoveryTimer = 0f;
+    }
 
     private List<Vector2Int> ResolveTargets(AttackPatternType pattern, int range, float coneHalfAngle = 45f)
     {
@@ -362,6 +456,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         IsDead = true;
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
+        ClearSkillTimingState();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
@@ -462,7 +557,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool CanUseSkill(int slotIndex)
     {
         EnsureSkillSlotsBound();
-        return !IsDead && (GetSkillSlot(slotIndex)?.CanUse(CurrentMp) ?? false);
+        return !IsDead && !IsSkillBusy && (GetSkillSlot(slotIndex)?.CanUse(CurrentMp) ?? false);
     }
 
     private static SkillSlotRuntime[] CreateSkillSlots()

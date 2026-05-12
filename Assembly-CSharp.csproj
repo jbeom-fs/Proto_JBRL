@@ -89,7 +89,6 @@
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
-    <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
@@ -127,6 +126,7 @@
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
+    <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />

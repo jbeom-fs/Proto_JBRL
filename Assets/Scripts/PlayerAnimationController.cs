@@ -48,6 +48,14 @@ public class PlayerAnimationController : MonoBehaviour
 
         animator.SetBool(IsDeadHash, false);
 
+        if (combat != null && combat.BlocksPlayerMovement)
+        {
+            animator.SetBool(IsMovingHash, false);
+            animator.SetFloat(MoveXHash, 0f);
+            animator.SetFloat(MoveYHash, 0f);
+            return;
+        }
+
         Vector2 input = inputReader.MoveInput;
         if (input.sqrMagnitude <= inputDeadZone * inputDeadZone)
         {
