@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-12  
+> 작성 기준일: 2026-05-13  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -75,7 +75,7 @@
 │  SkillSlotRuntime · SkillCooldownController                  │
 │  ProjectileFireService · ProjectileFireRequest               │
 │  AimDirectionUtility · CombatLayers · CharacterPhysicsSetup  │
-│  PerfStage                                                   │
+│  MovementBlockerQuery · DeterministicSeedUtility · PerfStage │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
@@ -124,7 +124,7 @@ Assets/Scripts/
 │
 ├── Generate/
 │   ├── DungeonGenerator.cs         # BSP + Prim MST 생성 알고리즘 (순수 C#)
-│   ├── DungeonTypes.cs             # 공유 타입 (RoomType, RoomInfo, 이벤트 인자)
+│   ├── DungeonTypes.cs             # 공유 타입 (RoomType, RoomInfo+StableRoomKey, DungeonTypeId, DeterministicSeedUtility, 이벤트 인자)
 │   ├── DungeonEventChannel.cs      # 던전 이벤트 버스 (ScriptableObject)
 │   ├── DungeonQueryService.cs      # 그리드 유틸리티 (IsWalkable, 좌표 변환)
 │   ├── SpawnPositionService.cs     # 플레이어 스폰 좌표 계산 서비스
@@ -142,7 +142,8 @@ Assets/Scripts/
 │   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용
 │   ├── AimDirectionUtility.cs      # 8방향 입력 양자화 + raw/정규화/카디널 변환 (Domain)
 │   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
-│   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시)
+│   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시, 기존 CircleCollider 보존)
+│   ├── MovementBlockerQuery.cs     # Player 이동/대시가 `EnemyData.blocksMovement=true` 적과 겹치는지 판정 (Collider2D→EnemyController 캐시)
 │   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간·8방향 조준·castDelay/recoveryDelay 잠금)
 │   ├── PlayerResource.cs           # HP·MP 상태 컨테이너 (Domain)
 │   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
@@ -201,7 +202,7 @@ Assets/Scripts/
 ```
 Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── SkillDataEditor.cs              # SkillData CustomEditor — Basic/InstantArea/Projectile/Dash 섹션 + Reserved foldout + 음수·non-positive 경고
-└── EnemyDataEditor.cs              # EnemyData CustomEditor — Behavior/FirePattern/RangedMovement 별 섹션 분기 + 비활성 필드 Reserved foldout
+└── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 ```
 
 ```
@@ -278,6 +279,8 @@ return mixed & 0x7FFFFFFF;
 | 같은 시드 + 같은 층 | 항상 동일한 지형 (재현 가능) |
 | 같은 시드 + 다른 층 | 다른 지형 |
 | 다른 시드 + 같은 층 | 다른 지형 |
+
+> 방별 적 스폰은 별도의 결정론 경로(`DeterministicSeedUtility.CreateSeed(globalSeed, dungeonType, floor, RoomInfo.StableRoomKey, "enemy_spawn")`)를 사용합니다. `DungeonManager.dungeonType`(`DungeonTypeId`) 으로 같은 시드라도 던전 종류별 스폰 RNG 를 분리할 수 있습니다. 자세한 내용은 [9-1-2. 결정론적 방 스폰 시드](#9-1-2-결정론적-방-스폰-시드-deterministicseedutility) 참조.
 
 ### 4-4. 방 연결 알고리즘 (Prim's MST + 추가 연결)
 
@@ -387,6 +390,7 @@ MoveWithCollision(input):
       플레이어 경계 사각형의 4 코너 좌표 계산
       각 코너를 그리드 좌표로 변환
       하나라도 IsWalkable == false → 이동 차단
+      + MovementBlockerQuery.IsPlayerMovementBlocked(next, radius) → 적 블로커 차단
   Y 이동 시도 → 동일 방식
 
   → X, Y를 독립 처리하므로 벽에 대해 슬라이딩 이동 가능
@@ -404,6 +408,23 @@ LateUpdate() — 최종 안전장치:
         Rigidbody velocity 초기화
   → 적과 Rigidbody 충돌로 벽 안에 밀려든 경우 차단
 ```
+
+### 6-2-1. 적 블로커 차단 (MovementBlockerQuery)
+
+`EnemyData.blocksMovement = true` 로 설정된 적은 플레이어의 일반 이동과 대시 모두를 물리적으로 막습니다. 적 AI 자체의 이동·넉백에는 영향이 없습니다.
+
+```
+MovementBlockerQuery.IsPlayerMovementBlocked(worldPos, radius):
+  Physics2D.OverlapCircle(worldPos, radius, CombatLayers.EnemyFilter, s_BlockerBuffer)
+  히트된 collider → Collider2D→EnemyController 정적 캐시(s_EnemyCache)로 해석
+  IsAlive && data.blocksMovement → true 반환
+
+사용처:
+  PlayerController.CanMoveTo       — 일반 이동 ⊃ Diagonal slide 후보
+  PlayerDashController.IsFootprintWalkable — 대시 경로 / 종착 위치
+```
+
+`s_BlockerBuffer`(크기 128) 와 `s_EnemyCache` 는 정적으로 재사용되며 매 호출 0 할당입니다. cache 는 Collider 가 destroy 되면 다음 lookup 시 lazy purge 됩니다.
 
 ### 6-3. 방 진입 감지 최적화
 
@@ -760,9 +781,9 @@ FindPath(start, goal, grid):
 |------|------|
 | 직선 시야 확보 시 직접 이동 | Bresenham 그리드 샘플링으로 Physics2D 대체 |
 | pathUpdateInterval 주기 갱신 | 매 프레임 A* 재탐색 방지 |
-| 군중 분리 벡터 | 인접 적 OverlapCircle + Lerp 보간으로 지터 감소 |
+| 군중 분리 벡터 | 인접 적 OverlapCircle(0.1s 캐시) + Lerp 보간으로 지터 감소 — `CombatLayers.EnemyFilter`로 벽/문/투사체 브로드페이즈 컬링 |
 | Footprint 4코너 검사 | CollisionFootprintRadius 기준 4코너 IsWalkable 통과 시에만 이동 |
-| LateUpdate 위치 복원 | 풋프린트가 벽에 끼면 _lastSafePosition으로 복귀 |
+| LateUpdate 위치 복원 | 풋프린트가 벽에 끼면 _lastSafePosition으로 복귀, 이전 프레임과 좌표 동일 시 4-corner 검사 skip |
 | Ranged 이동 분기 우선 처리 | `MovementHandler.TryTickRangedMovement` 가 Kiting/Random 활성 시 A*/LOS 흐름을 건너뜀 |
 
 ### 8-4. 행동 분기 (EnemyBehaviorType)
@@ -911,14 +932,51 @@ OnRoomEntered (이벤트 수신):
        플레이어가 방 내부에 있고 (9-포인트 샘플링)
        플레이어가 문 타일과 겹치지 않음
        → 실패 시 _pendingRoomStart에 저장, LateUpdate에서 재시도
-  ④ EnemyPoolManager에서 예산 기반 적 선택
+  ④ 방 전용 결정론적 RNG 생성:
+       roomSeed = FNV-1a(globalSeed, dungeonType, floor, room.StableRoomKey, "enemy_spawn")
+       roomRng  = new System.Random(roomSeed)
+  ⑤ EnemyPoolManager에서 예산 기반 적 선택 (roomRng.Next 사용)
        (방 면적 × densityFactor × 방 타입 배율)
-       (SpawnRegion 비트 필터링)
-  ⑤ 방 내부 걷기 가능 타일에 스폰
+       (SpawnRegion 비트 필터링, _poolEnemyTable 은 enemyName 기준 정렬 후 선택)
+  ⑥ 방 내부 걷기 가능 타일에 스폰
        (테두리 제외, 4-코너 발자국 검사로 벽 끼임 예방)
-  ⑥ 적 수 > 0 → DungeonManager.CloseCurrentRoomDoors()
+       (타일 후보는 row-then-column SortSpawnTiles → roomRng Shuffle)
+  ⑦ 적 수 > 0 → DungeonManager.CloseCurrentRoomDoors()
      적 수 = 0 → DungeonManager.OpenCurrentRoomDoors()
 ```
+
+### 9-1-2. 결정론적 방 스폰 시드 (DeterministicSeedUtility)
+
+방마다 결정론적이고 안정적인 적 구성을 보장합니다. 같은 던전 시드 + 같은 층 + 같은 방에 들어가면 항상 동일한 적 조합과 위치가 나옵니다.
+
+```
+DeterministicSeedUtility.CreateStableRoomKey(RoomRect):
+  FNV-1a 해시(X, Y, W, H, CenterX, CenterY) → 방의 위치·크기 기반 안정 키
+  RoomInfo.StableRoomKey 에 던전 생성 시 캐싱
+  (RoomSpawner.SameRoom / GetRoomKey 가 이 키로 방 동일성 판정)
+
+DeterministicSeedUtility.CreateSeed(globalSeed, dungeonType, floor, stableRoomKey, domain):
+  FNV-1a 해시(long globalSeed, int dungeonType, int floor, int stableRoomKey, string domain)
+  → 양수 int 시드 반환
+
+도메인 상수:
+  EnemySpawnDomain = "enemy_spawn"
+    → RoomSpawner.SpawnEnemiesInRoom 에서 사용
+    → 다른 결정론 시스템을 추가할 땐 새 도메인 문자열을 정의해 시드 충돌 방지
+```
+
+```
+DungeonTypeId (enum):
+  Default = 0
+  (DungeonManager.dungeonType 가 시드 입력에 포함 — 던전 종류별 RNG 분기 자리)
+
+RoomInfo.StableRoomKey:
+  DungeonManager.BuildRoomInfos 가 생성 시 CreateStableRoomKey 로 채움
+  Spawn/Stair 자동 분류 후에도 보존
+  RoomSpawner._spawnedRoomsByKey / _pendingRoomStart 도 이 키로 식별
+```
+
+UnityEngine.Random 대신 per-room `System.Random` 인스턴스를 사용해 다른 시스템(파티클·UI·물리 노이즈)이 RNG 상태를 오염시켜도 스폰 결과가 흔들리지 않습니다.
 
 ### 9-1-1. 지연 전투 시작 (Deferred Encounter)
 
@@ -1246,6 +1304,13 @@ FloorTransition(targetFloor):
 | Kiting 다중 후퇴 방향 | `s_KitingRotations` (away → away±45° → side±90°) | 막혔을 때도 폴백 후보로 후퇴 시도, footprint 통과 첫 후보 채택 |
 | Random minR 안전판 | `MovementHandler.TickRandomMovement` | `minR = max(radius*0.25, footprintRadius+0.1)` — 자기 위치 위에 목적지 찍힘 방지 |
 | 정지 상태 separation step | `MovementHandler.TryApplyIdleSeparationStep` | Kiting/Random 대기 중에도 이웃이 가까우면 separation 인프라 재사용해 가상 target으로 1회 이동 (0 할당) |
+| 결정론적 방 스폰 시드 | `DeterministicSeedUtility.CreateSeed` + `RoomInfo.StableRoomKey` | 방마다 globalSeed/dungeonType/floor/StableRoomKey/domain FNV-1a 해시로 `System.Random` 생성 — UnityEngine.Random 오염에 흔들리지 않음 |
+| 스폰 정렬 후 결정론 셔플 | `RoomSpawner.SortSpawnTiles` / `CompareEnemyDataDeterministic` | 타일·EnemyData 후보를 안정 정렬 후 `roomRng.Next` 로 선택, ScriptableObject 로드 순서에 무관한 재현성 |
+| 적 블로커 정적 캐시 | `MovementBlockerQuery.s_BlockerBuffer` + `s_EnemyCache` | OverlapCircle 결과를 Collider2D→EnemyController 사전 매핑으로 재사용, 매 이동 검사 0 할당 |
+| 분리 벡터 OverlapCircle throttle | `MovementHandler.SeparationQueryInterval=0.1s` | 결과만 캐시, Lerp 평활화는 매 프레임 유지 — N×N OverlapCircle 부담 감소 |
+| EnemyController LateUpdate 좌표 skip | `EnemyController.LateUpdate` | 이전 안전 좌표와 동일 시 4-corner footprint 검사 건너뜀 |
+| 슬로우 만료 시에만 재계산 | `EnemyController.TickSlowEffects` | Percentage 기반이므로 timer 감소만으로는 강도가 바뀌지 않음 — 만료/추가 시점에만 RecalculateStrongestSlow |
+| 기존 CircleCollider 보존 | `CharacterPhysicsSetup.Configure` | Circle 이 이미 있으면 radius/offset/material 을 덮어쓰지 않음 — 프리팹별 충돌 범위 커스터마이즈 가능 |
 
 ---
 
@@ -1451,10 +1516,18 @@ case SkillExecutionType.AreaOverTime:
 | **Generator 디버그 hook** | `DungeonGenerator.DebugCorridorCarving` + `DebugSink` — MST/EXTRA 통로마다 src/dst Rect 와 path 결정 로그 |
 | **DungeonGenDebug 도구** | `Tools/DungeonGenDebug` — Unity 외부 .NET 콘솔로 던전 생성 결과를 standalone 검증 |
 | **PerfStage using-scope 측정** | `Tool/PerfStage.cs` — RuntimePerfLogger 비활성 시 zero-alloc passthrough, 활성 시 elapsedMs metadata 자동 기록 |
-| **Skill / Enemy CustomEditor** | `Editor/SkillDataEditor` (executionType 별 섹션), `Editor/EnemyDataEditor` (behaviorType / firePattern / rangedMovementType 별 섹션) — 비활성 필드는 Reserved foldout으로 분리 |
+| **Skill / Enemy CustomEditor** | `Editor/SkillDataEditor` (executionType 별 섹션), `Editor/EnemyDataEditor` (Basic / Contact 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
 | **Kiting 다중 후퇴 방향** | `s_KitingRotations` 5단계 폴백 (away → away±45° → side±90°) — 후퇴가 막혀도 첫 통과 후보로 이동 |
 | **Random 목적지 minR 보호** | `MovementHandler.TickRandomMovement` — `minR=max(radius*0.25, footprintRadius+0.1)` 로 자기 위 목적지 차단 |
 | **정지 시 separation step** | `MovementHandler.TryApplyIdleSeparationStep` — Kiting/Random 대기 상태에서도 이웃이 가까우면 산개 |
+| **결정론적 방 적 스폰** | `DeterministicSeedUtility` + `RoomInfo.StableRoomKey` + `DungeonManager.dungeonType` — 방별 `System.Random` 으로 적 종류·위치 재현성 보장 |
+| **방 적 블로커 시스템** | `EnemyData.blocksMovement` + `MovementBlockerQuery` — `blocksMovement=true` 적이 플레이어 이동/대시를 막음 (AI·넉백 무관) |
+| **분리 벡터 throttle** | `MovementHandler.SeparationQueryInterval=0.1s` — OverlapCircle 결과 캐시, Lerp 평활화는 매 프레임 유지 |
+| **적 LateUpdate 좌표 skip** | `EnemyController.LateUpdate` — 이전 안전 좌표와 동일하면 4-corner 검사 생략 |
+| **슬로우 재계산 만료 시점만** | `EnemyController.TickSlowEffects` — 만료/추가 발생 프레임에만 RecalculateStrongestSlow 호출 |
+| **EnemyData 인스펙터 정리** | `EnemyDataEditor` 섹션 재편: Basic / Contact 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기 |
+| **CharacterPhysicsSetup 보존 모드** | 기존 CircleCollider 가 있으면 radius/offset/material 보존 — 프리팹별 충돌 범위 커스터마이즈 가능 |
+| **Ranged 적 03/04/05** | `RangedEnemy03/04/05` 프리팹 + RangeEnemy03/04/05.asset 추가 (FirePattern/이동 타입 별 변형) |
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 
 ### 미구현 (다음 단계)
