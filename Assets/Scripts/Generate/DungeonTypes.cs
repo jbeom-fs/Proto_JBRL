@@ -29,21 +29,113 @@ public enum RoomType
     MonsterDen,
 }
 
+public enum DungeonTypeId
+{
+    Default = 0,
+}
+
 // ── 방 정보 ──────────────────────────────────────────────────────────
 /// <summary>방의 위치·크기와 타입을 담는 구조체입니다.</summary>
 public struct RoomInfo
 {
     public DungeonGenerator.RoomRect Rect;
     public RoomType                  Type;
+    public int                       StableRoomKey;
 
     /// <summary>문 닫힘에서 면제되는지 여부 (Spawn/Stair는 면제).</summary>
     public bool IsExempt => Type == RoomType.Spawn || Type == RoomType.Stair;
 
     public int X      => Rect.X;
     public int Y      => Rect.Y;
+    public int W      => Rect.W;
+    public int H      => Rect.H;
     public int Right  => Rect.Right;
     public int Bottom => Rect.Bottom;
+    public int CenterX => Rect.X + Rect.W / 2;
+    public int CenterY => Rect.Y + Rect.H / 2;
     public bool Contains(int col, int row) => Rect.Contains(col, row);
+}
+
+public static class DeterministicSeedUtility
+{
+    private const uint FnvaOffset = 2166136261u;
+    private const uint FnvaPrime = 16777619u;
+
+    public const string EnemySpawnDomain = "enemy_spawn";
+
+    public static int CreateStableRoomKey(DungeonGenerator.RoomRect rect)
+    {
+        unchecked
+        {
+            uint hash = FnvaOffset;
+            AddInt(ref hash, rect.X);
+            AddInt(ref hash, rect.Y);
+            AddInt(ref hash, rect.W);
+            AddInt(ref hash, rect.H);
+            AddInt(ref hash, rect.X + rect.W / 2);
+            AddInt(ref hash, rect.Y + rect.H / 2);
+            return ToPositiveSeed(hash);
+        }
+    }
+
+    public static int CreateSeed(long globalSeed, int dungeonType, int floor, int stableRoomKey, string spawnDomain)
+    {
+        unchecked
+        {
+            uint hash = FnvaOffset;
+            AddLong(ref hash, globalSeed);
+            AddInt(ref hash, dungeonType);
+            AddInt(ref hash, floor);
+            AddInt(ref hash, stableRoomKey);
+            AddString(ref hash, spawnDomain);
+            return ToPositiveSeed(hash);
+        }
+    }
+
+    private static void AddLong(ref uint hash, long value)
+    {
+        AddInt(ref hash, (int)value);
+        AddInt(ref hash, (int)(value >> 32));
+    }
+
+    private static void AddInt(ref uint hash, int value)
+    {
+        unchecked
+        {
+            AddByte(ref hash, (byte)value);
+            AddByte(ref hash, (byte)(value >> 8));
+            AddByte(ref hash, (byte)(value >> 16));
+            AddByte(ref hash, (byte)(value >> 24));
+        }
+    }
+
+    private static void AddString(ref uint hash, string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            AddInt(ref hash, 0);
+            return;
+        }
+
+        AddInt(ref hash, value.Length);
+        for (int i = 0; i < value.Length; i++)
+            AddInt(ref hash, value[i]);
+    }
+
+    private static void AddByte(ref uint hash, byte value)
+    {
+        unchecked
+        {
+            hash ^= value;
+            hash *= FnvaPrime;
+        }
+    }
+
+    private static int ToPositiveSeed(uint hash)
+    {
+        int seed = (int)(hash & 0x7FFFFFFF);
+        return seed == 0 ? 1 : seed;
+    }
 }
 
 // ── 이벤트 인수 ───────────────────────────────────────────────────────

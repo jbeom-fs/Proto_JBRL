@@ -124,7 +124,16 @@ public class RoomSpawner : MonoBehaviour
         FilterUnsafeSpawnTiles(walkableTiles, room, dungeonManager);
         if (walkableTiles.Count == 0) return;
 
-        Shuffle(walkableTiles);
+        SortSpawnTiles(walkableTiles);
+
+        int roomSeed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)dungeonManager.dungeonType,
+            dungeonManager.floor,
+            room.StableRoomKey,
+            DeterministicSeedUtility.EnemySpawnDomain);
+        var roomRng = new System.Random(roomSeed);
+        Shuffle(walkableTiles, roomRng);
 
         BeginRoomSpawnTracking(room);
 
@@ -141,7 +150,7 @@ public class RoomSpawner : MonoBehaviour
                 break;
             }
 
-            EnemyData selected = _candidates[Random.Range(0, _candidates.Count)];
+            EnemyData selected = _candidates[roomRng.Next(_candidates.Count)];
             EnemyController enemy = EnemyPoolManager.Instance.Request(selected);
             if (enemy == null)
             {
@@ -228,20 +237,13 @@ public class RoomSpawner : MonoBehaviour
 
     private static bool IsSameRoom(RoomInfo a, RoomInfo b)
     {
-        return a.X == b.X && a.Y == b.Y && a.Right == b.Right && a.Bottom == b.Bottom;
+        return a.StableRoomKey == b.StableRoomKey &&
+               a.X == b.X && a.Y == b.Y && a.Right == b.Right && a.Bottom == b.Bottom;
     }
 
     private static int GetRoomKey(RoomInfo room)
     {
-        unchecked
-        {
-            int hash = 17;
-            hash = hash * 31 + room.X;
-            hash = hash * 31 + room.Y;
-            hash = hash * 31 + room.Right;
-            hash = hash * 31 + room.Bottom;
-            return hash;
-        }
+        return room.StableRoomKey;
     }
 
     private float CalculateBudget(RoomInfo room)
@@ -265,6 +267,7 @@ public class RoomSpawner : MonoBehaviour
         {
             // 인스펙터 enemyTable이 비어 있으면 풀에 등록된 EnemyData를 후보 테이블로 사용한다.
             EnemyPoolManager.Instance.GetRegisteredEnemyData(_poolEnemyTable);
+            _poolEnemyTable.Sort(CompareEnemyDataDeterministic);
             source = _poolEnemyTable;
         }
 
@@ -322,11 +325,34 @@ public class RoomSpawner : MonoBehaviour
         return dungeonManager.IsWalkable(grid.x, grid.y);
     }
 
-    private static void Shuffle<T>(IList<T> list)
+    private static void SortSpawnTiles(List<Vector2Int> tiles)
+    {
+        tiles.Sort(CompareTileByRowThenColumn);
+    }
+
+    private static int CompareTileByRowThenColumn(Vector2Int a, Vector2Int b)
+    {
+        int y = a.y.CompareTo(b.y);
+        return y != 0 ? y : a.x.CompareTo(b.x);
+    }
+
+    private static int CompareEnemyDataDeterministic(EnemyData a, EnemyData b)
+    {
+        if (ReferenceEquals(a, b)) return 0;
+        if (a == null) return 1;
+        if (b == null) return -1;
+
+        int nameCompare = string.CompareOrdinal(a.enemyName, b.enemyName);
+        if (nameCompare != 0) return nameCompare;
+
+        return string.CompareOrdinal(a.name, b.name);
+    }
+
+    private static void Shuffle<T>(IList<T> list, System.Random rng)
     {
         for (int i = list.Count - 1; i > 0; i--)
         {
-            int j = Random.Range(0, i + 1);
+            int j = rng.Next(i + 1);
             (list[i], list[j]) = (list[j], list[i]);
         }
     }

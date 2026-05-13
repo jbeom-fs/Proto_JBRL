@@ -39,6 +39,9 @@ public class DungeonManager : MonoBehaviour
     [Range(1, 100)]
     public int floor = 1;
 
+    [Tooltip("던전 종류. 스폰 시드 분리에 사용합니다.")]
+    public DungeonTypeId dungeonType = DungeonTypeId.Default;
+
     [Tooltip("맵 너비 (타일 수)")]
     public int mapWidth = 80;
 
@@ -477,7 +480,12 @@ public class DungeonManager : MonoBehaviour
     {
         var result = new RoomInfo[rawRooms.Length];
         for (int i = 0; i < rawRooms.Length; i++)
-            result[i] = new RoomInfo { Rect = rawRooms[i], Type = RoomType.Normal };
+            result[i] = new RoomInfo
+            {
+                Rect = rawRooms[i],
+                Type = RoomType.Normal,
+                StableRoomKey = DeterministicSeedUtility.CreateStableRoomKey(rawRooms[i])
+            };
         return result;
     }
 
