@@ -29,15 +29,21 @@ public static class CharacterPhysicsSetup
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
 
         CircleCollider2D circle = go.GetComponent<CircleCollider2D>();
-        if (circle == null)
+        bool addedCircle = circle == null;
+        if (addedCircle)
+        {
             circle = go.AddComponent<CircleCollider2D>();
-        circle.isTrigger = false;
-        circle.radius = 0.32f;
-        circle.offset = Vector2.zero;
-        circle.sharedMaterial = GetNoFrictionMaterial();
+            circle.isTrigger = false;
+            circle.radius = 0.32f;
+            circle.offset = Vector2.zero;
+            circle.sharedMaterial = GetNoFrictionMaterial();
+        }
 
-        foreach (BoxCollider2D box in go.GetComponents<BoxCollider2D>())
-            box.enabled = false;
+        if (addedCircle)
+        {
+            foreach (BoxCollider2D box in go.GetComponents<BoxCollider2D>())
+                box.enabled = false;
+        }
 
         int layer = LayerMask.NameToLayer(layerName);
         if (layer >= 0)

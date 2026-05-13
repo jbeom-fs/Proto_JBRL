@@ -100,8 +100,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 1.2
+  m_Offset: {x: 0, y: 1.5}
+  m_Radius: 1.4
 --- !u!114 &3448492780483144301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135,7 +135,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealthBar
   barWidth: 0.8
   barHeight: 0.08
-  yOffset: 0.55
+  yOffset: 1
   colorGradient: 1
   fillColorFull: {r: 0.2, g: 0.85, b: 0.2, a: 1}
   fillColorEmpty: {r: 1, g: 0, b: 0, a: 1}
@@ -200,7 +200,7 @@ MonoBehaviour:
   managedRenderers: []
   includeChildrenOnAutoCache: 1
   hideWhenFogControllerMissing: 0
-  updateInterval: 0
+  updateInterval: 0.05
 --- !u!1 &5313294262261449395
 GameObject:
   m_ObjectHideFlags: 0

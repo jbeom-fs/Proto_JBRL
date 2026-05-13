@@ -314,4 +314,4 @@ MonoBehaviour:
   managedRenderers: []
   includeChildrenOnAutoCache: 1
   hideWhenFogControllerMissing: 0
-  updateInterval: 0
+  updateInterval: 0.05

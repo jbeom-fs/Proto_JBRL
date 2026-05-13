@@ -26,6 +26,7 @@ MonoBehaviour:
   moveSpeed: 0
   isStationary: 1
   immuneToKnockback: 1
+  blocksMovement: 1
   attackCooldown: 2.6
   attackWindup: 0.4
   attackRecovery: 0.35

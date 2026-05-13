@@ -24,6 +24,8 @@ MonoBehaviour:
   detectRange: 50
   attackRange: 2
   moveSpeed: 2
+  isStationary: 0
+  immuneToKnockback: 0
   attackCooldown: 2
   attackWindup: 1
   attackRecovery: 0
@@ -40,3 +42,9 @@ MonoBehaviour:
   projectileWallHitMode: 0
   projectileMaxBounceCount: 1
   knockbackResistance: 0
+  rangedMovementType: 0
+  preferredRange: 5
+  kiteRetreatRange: 3
+  randomMoveIntervalMin: 0.8
+  randomMoveIntervalMax: 1.8
+  randomMoveRadius: 3

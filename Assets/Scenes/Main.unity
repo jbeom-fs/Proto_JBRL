@@ -1511,6 +1511,7 @@ MonoBehaviour:
   loadingScreen: {fileID: 877297039}
   seed: 283321776792
   floor: 1
+  dungeonType: 0
   mapWidth: 120
   mapHeight: 80
   minRoomSize: 10
@@ -42867,7 +42868,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   eventChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
   doorController: {fileID: 130866626}
-  moveSpeed: 10
+  moveSpeed: 5
   collisionRadius: 0.2
 --- !u!114 &1562452756
 MonoBehaviour:

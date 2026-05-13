@@ -156,7 +156,9 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private bool IsFootprintWalkable(Vector3 position)
     {
-        return _dungeonManager.IsFootprintWalkable(position, ResolveFootprintRadius());
+        float radius = ResolveFootprintRadius();
+        return _dungeonManager.IsFootprintWalkable(position, radius) &&
+               !MovementBlockerQuery.IsPlayerMovementBlocked(position, radius);
     }
 
     private float ResolveTileSize()

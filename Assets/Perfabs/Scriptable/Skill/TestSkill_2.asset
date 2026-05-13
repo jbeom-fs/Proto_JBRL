@@ -17,23 +17,25 @@ MonoBehaviour:
   description: Test
   executionType: 1
   mpCost: 0
-  cooldown: 0
-  damage: 10
+  cooldown: 1
+  castDelay: 0
+  recoveryDelay: 0
+  damage: 5
   attackPattern: 4
   patternRange: 10
   coneHalfAngle: 45
   isMultiTarget: 0
   canPenetrateWalls: 1
-  knockbackForce: 10
-  knockbackDuration: 1
+  knockbackForce: 1
+  knockbackDuration: 0.1
   slowPercentage: 0.8
   slowDuration: 3
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-  projectileSpeed: 25
+  projectileSpeed: 18
   projectileLifetime: 3
-  projectileCount: 10
+  projectileCount: 3
   projectileSpreadAngle: 15
-  projectileFirePattern: 3
+  projectileFirePattern: 2
   projectileWallHitMode: 0
   projectileTargetHitMode: 1
   projectileMaxBounceCount: 5

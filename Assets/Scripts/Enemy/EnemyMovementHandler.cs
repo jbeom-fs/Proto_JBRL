@@ -9,7 +9,17 @@ public class MovementHandler
 {
     private readonly EnemyBrain _brain;
     private readonly Collider2D[] _separationBuffer = new Collider2D[16];
-    private static readonly ContactFilter2D s_SeparationFilter = ContactFilter2D.noFilter;
+
+    // Enemy 레이어만 잡아 벽/문/프로젝타일/플레이어 콜라이더를 broadphase에서 컬링한다.
+    // CombatLayers.EnemyFilter는 useTriggers=false이며 Enemy CircleCollider는 non-trigger라 그대로 매칭된다.
+    private static ContactFilter2D s_SeparationFilter => CombatLayers.EnemyFilter;
+
+    // OverlapCircle을 매 프레임 돌리면 N마리 × N 호출이 되므로, 결과만 캐시해서 짧은 주기로 재질의한다.
+    // Lerp 평활화는 매 프레임 유지하므로 비주얼/조향 반응성은 그대로다.
+    private const float SeparationQueryInterval = 0.1f;
+    private Vector2 _cachedSeparationTarget;
+    private float _nextSeparationQueryTime;
+
     private float _tileSize = 1f;
     private Vector2 _smoothedSeparation;
 
@@ -60,6 +70,8 @@ public class MovementHandler
         _randomDestination = default;
         _randomTimer = 0f;
         _smoothedSeparation = default;
+        _cachedSeparationTarget = default;
+        _nextSeparationQueryTime = 0f;
     }
 
     public virtual bool MoveToward(Vector3 target)
@@ -174,6 +186,21 @@ public class MovementHandler
     {
         if (!_brain.enableSeparation) return Vector2.zero;
 
+        // Time.time 기준 throttle이라 한 프레임에 두 번 호출돼도(MoveToward + Idle step) 두 번째 호출은 캐시값을 쓴다.
+        if (Time.time >= _nextSeparationQueryTime)
+        {
+            _nextSeparationQueryTime = Time.time + SeparationQueryInterval;
+            _cachedSeparationTarget = ComputeSeparationTarget();
+        }
+
+        // 분리 벡터를 보간해 프레임마다 방향이 튀는 지터를 줄인다.
+        float t = 1f - Mathf.Exp(-_brain.separationSmoothing * Time.deltaTime);
+        _smoothedSeparation = Vector2.Lerp(_smoothedSeparation, _cachedSeparationTarget, t);
+        return _smoothedSeparation;
+    }
+
+    private Vector2 ComputeSeparationTarget()
+    {
         int neighborCount = Physics2D.OverlapCircle(
             _brain.transform.position,
             _brain.separationRadius,
@@ -199,12 +226,7 @@ public class MovementHandler
             count++;
         }
 
-        Vector2 targetSeparation = count > 0 ? (repel / count).normalized : Vector2.zero;
-
-        // 분리 벡터를 보간해 프레임마다 방향이 튀는 지터를 줄인다.
-        float t = 1f - Mathf.Exp(-_brain.separationSmoothing * Time.deltaTime);
-        _smoothedSeparation = Vector2.Lerp(_smoothedSeparation, targetSeparation, t);
-        return _smoothedSeparation;
+        return count > 0 ? (repel / count).normalized : Vector2.zero;
     }
 
     private bool CanMoveTo(Vector3 pos)

@@ -200,7 +200,7 @@ MonoBehaviour:
   managedRenderers: []
   includeChildrenOnAutoCache: 1
   hideWhenFogControllerMissing: 0
-  updateInterval: 0
+  updateInterval: 0.05
 --- !u!1 &5313294262261449395
 GameObject:
   m_ObjectHideFlags: 0

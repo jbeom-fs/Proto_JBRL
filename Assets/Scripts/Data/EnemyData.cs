@@ -68,6 +68,9 @@ public class EnemyData : ScriptableObject
     [Tooltip("If true, damage and status effects still apply, but knockback position movement is ignored.")]
     public bool immuneToKnockback = false;
 
+    [Tooltip("If true, this enemy blocks Player walking and dash movement. This does not affect AI movement or knockback by itself.")]
+    public bool blocksMovement = false;
+
     [Header("Attack")]
     [Tooltip("Ranged behavior cooldown between attacks.")]
     public float attackCooldown = 1.5f;

@@ -17,8 +17,8 @@ MonoBehaviour:
   description: Test
   executionType: 2
   mpCost: 0
-  cooldown: 0
-  castDelay: 0.1
+  cooldown: 0.1
+  castDelay: 0
   recoveryDelay: 0.1
   damage: 1
   attackPattern: 1
@@ -42,7 +42,7 @@ MonoBehaviour:
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
-  dashDistance: 8
+  dashDistance: 4
   dashDuration: 0.1
   dashStopOnWall: 1
   dashDamageOnPath: 1

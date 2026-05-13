@@ -325,7 +325,9 @@ public class PlayerController : MonoBehaviour
 
     private bool CanMoveTo(Vector3 pos)
     {
-        return dungeonManager.IsFootprintWalkable(pos, _tileSize * collisionRadius);
+        float radius = _tileSize * collisionRadius;
+        return dungeonManager.IsFootprintWalkable(pos, radius) &&
+               !MovementBlockerQuery.IsPlayerMovementBlocked(pos, radius);
     }
 
     private float GetWorldColliderRadius()

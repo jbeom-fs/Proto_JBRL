@@ -3,8 +3,8 @@ guid: 5bf18a27fabb03845b10b877d1aa4e79
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1880612661571430888
-    second: Red_Normal_ProjecTile_0
+      213: 4304117731240204380
+    second: Red_Normal_Projectile_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Red_Normal_ProjecTile_0
+      name: Red_Normal_Projectile_0
       rect:
         serializedVersion: 2
-        x: 94
-        y: 93
-        width: 704
-        height: 705
+        x: 279
+        y: 268
+        width: 699
+        height: 718
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 816deea8fb8b6e5e0800000000000000
-      internalID: -1880612661571430888
+      spriteID: c58580ab54c4bbb30800000000000000
+      internalID: 4304117731240204380
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Red_Normal_ProjecTile_0: -1880612661571430888
+      Red_Normal_Projectile_0: 4304117731240204380
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

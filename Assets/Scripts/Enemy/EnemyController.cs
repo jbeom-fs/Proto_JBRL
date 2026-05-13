@@ -159,9 +159,14 @@ public class EnemyController : MonoBehaviour, IDamageable
     {
         if (IsDead || !IsAlive) return;
 
-        if (IsFootprintWalkable(transform.position))
+        // 이전 프레임에서 walkable로 검증된 위치 그대로면 4-corner 그리드 룩업을 건너뛴다.
+        // _lastSafePosition은 walkable 분기에서만 갱신되므로 같은 좌표면 이미 안전이 보장돼 있다.
+        Vector3 currentPosition = transform.position;
+        if (currentPosition == _lastSafePosition) return;
+
+        if (IsFootprintWalkable(currentPosition))
         {
-            _lastSafePosition = transform.position;
+            _lastSafePosition = currentPosition;
             return;
         }
 
@@ -385,18 +390,25 @@ public class EnemyController : MonoBehaviour, IDamageable
     {
         if (_activeSlows.Count == 0) return;
 
+        bool anyExpired = false;
         for (int i = _activeSlows.Count - 1; i >= 0; i--)
         {
             SlowEffect effect = _activeSlows[i];
             effect.Timer -= deltaTime;
 
             if (effect.Timer <= 0f)
+            {
                 _activeSlows.RemoveAt(i);
+                anyExpired = true;
+            }
             else
                 _activeSlows[i] = effect;
         }
 
-        RecalculateStrongestSlow();
+        // 슬로우 강도는 Percentage 기준이며 timer 감소만으로는 바뀌지 않는다.
+        // 따라서 만료가 발생한 프레임에만 재계산하면 충분하고 ApplySlow가 신규 추가 케이스를 커버한다.
+        if (anyExpired)
+            RecalculateStrongestSlow();
     }
 
     private void RecalculateStrongestSlow()

@@ -18,8 +18,8 @@ public sealed class FogVisibilityRenderer : MonoBehaviour
     [Tooltip("FogOfWarController가 없을 때 숨길지 여부. 기본 false (테스트 씬에서 표시 유지).")]
     [SerializeField] private bool hideWhenFogControllerMissing = false;
 
-    [Tooltip("0이면 매 Update 평가. 양수이면 해당 초마다 평가.")]
-    [SerializeField, Min(0f)] private float updateInterval = 0f;
+    [Tooltip("0이면 매 Update 평가. 양수이면 해당 초마다 평가. 20Hz(=0.05)면 시야 경계 가시성도 시각적으로 거슬리지 않고 부담은 매 프레임 대비 1/3 수준이다.")]
+    [SerializeField, Min(0f)] private float updateInterval = 0.05f;
 
     private bool[] _rendererInitialEnabled;
     private bool _renderersResolved;

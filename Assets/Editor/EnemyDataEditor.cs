@@ -23,6 +23,7 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty _moveSpeed;
     private SerializedProperty _isStationary;
     private SerializedProperty _immuneToKnockback;
+    private SerializedProperty _blocksMovement;
     private SerializedProperty _attackCooldown;
     private SerializedProperty _attackWindup;
     private SerializedProperty _attackRecovery;
@@ -63,6 +64,7 @@ public sealed class EnemyDataEditor : Editor
         _moveSpeed = FindHandled(nameof(EnemyData.moveSpeed));
         _isStationary = FindHandled(nameof(EnemyData.isStationary));
         _immuneToKnockback = FindHandled(nameof(EnemyData.immuneToKnockback));
+        _blocksMovement = FindHandled(nameof(EnemyData.blocksMovement));
         _attackCooldown = FindHandled(nameof(EnemyData.attackCooldown));
         _attackWindup = FindHandled(nameof(EnemyData.attackWindup));
         _attackRecovery = FindHandled(nameof(EnemyData.attackRecovery));
@@ -139,6 +141,14 @@ public sealed class EnemyDataEditor : Editor
         DrawProperty(_behaviorType);
         DrawProperty(_isStationary);
         DrawProperty(_immuneToKnockback);
+        DrawProperty(_blocksMovement);
+
+        if (IsBoolEnabled(_blocksMovement))
+        {
+            EditorGUILayout.HelpBox(
+                "Blocks Movement only affects Player walking and dash movement. Stationary controls AI movement, and Immune To Knockback controls combat impact movement.",
+                MessageType.Info);
+        }
     }
 
     private void DrawContactSection()
