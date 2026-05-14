@@ -313,9 +313,11 @@ public static class DungeonGenerator
 
         // L corridor path 미리계산용 재사용 버퍼 (allocation 1회).
         var pathBuf = new List<(int x, int y)>(64);
+        int debugStep = 0;
 
         while (remaining.Count > 0)
         {
+            debugStep++;
             // ── 1st: MST — 가장 가까운 미연결 방 ──────────────────
             double bestDist = double.MaxValue;
             int srcIdx = -1, dstIdx = -1;
@@ -337,11 +339,23 @@ public static class DungeonGenerator
                           " W=" + rooms[srcIdx].W + " H=" + rooms[srcIdx].H);
                 DebugEmit("  dst.Rect: X=" + rooms[dstIdx].X + " Y=" + rooms[dstIdx].Y +
                           " W=" + rooms[dstIdx].W + " H=" + rooms[dstIdx].H);
+                DebugConnectState("  before step=" + debugStep + " type=MST",
+                    grid, rooms, connected, remaining, connectedPairs, s);
             }
-            DrawLCorridor(grid, rooms, srcIdx, dstIdx, corridorTiles, s, /*isMandatoryEdge*/ true, pathBuf);
+            bool mstCarved = DrawLCorridor(grid, rooms, srcIdx, dstIdx, corridorTiles, s, /*isMandatoryEdge*/ true, pathBuf);
+            if (!mstCarved && DebugCorridorCarving)
+                DebugEmit("  warning=MST returned false");
+            bool mstPairAlreadyConnected = connectedPairs.Contains((Math.Min(srcIdx, dstIdx), Math.Max(srcIdx, dstIdx)));
             connectedPairs.Add((Math.Min(srcIdx, dstIdx), Math.Max(srcIdx, dstIdx)));
             connected.Add(dstIdx);
             remaining.Remove(dstIdx);
+            if (DebugCorridorCarving)
+            {
+                DebugEmit("  state-update type=MST pairAdded=" + (!mstPairAlreadyConnected) +
+                          " connectedAdd=R" + dstIdx + " remainingRemove=R" + dstIdx);
+                DebugConnectState("  after  step=" + debugStep + " type=MST",
+                    grid, rooms, connected, remaining, connectedPairs, s);
+            }
 
             // ── 2nd: 추가 연결 — srcIdx 기준 진짜 2번째로 가까운 방 ──
             // 전체 방 탐색 (dstIdx 제외).
@@ -372,13 +386,30 @@ public static class DungeonGenerator
                                   " W=" + rooms[srcIdx].W + " H=" + rooms[srcIdx].H);
                         DebugEmit("  dst.Rect: X=" + rooms[bestK].X + " Y=" + rooms[bestK].Y +
                                   " W=" + rooms[bestK].W + " H=" + rooms[bestK].H);
+                        DebugConnectState("  before step=" + debugStep + " type=EXTRA",
+                            grid, rooms, connected, remaining, connectedPairs, s);
                     }
-                    DrawLCorridor(grid, rooms, srcIdx, bestK, corridorTiles, s, /*isMandatoryEdge*/ false, pathBuf);
-                    connectedPairs.Add((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
-                    if (remaining.Contains(bestK))
+                    bool extraCarved = DrawLCorridor(grid, rooms, srcIdx, bestK, corridorTiles, s, /*isMandatoryEdge*/ false, pathBuf);
+                    bool extraPairAlreadyConnected = connectedPairs.Contains((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
+                    bool extraDstWasRemaining = remaining.Contains(bestK);
+                    if (extraCarved)
                     {
-                        connected.Add(bestK);
-                        remaining.Remove(bestK);
+                        connectedPairs.Add((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
+                        if (remaining.Contains(bestK))
+                        {
+                            connected.Add(bestK);
+                            remaining.Remove(bestK);
+                        }
+                    }
+                    if (DebugCorridorCarving)
+                    {
+                        DebugEmit("  state-update type=EXTRA carved=" + extraCarved +
+                                  " pairAdded=" + (extraCarved && !extraPairAlreadyConnected) +
+                                  " dstWasRemaining=" + extraDstWasRemaining +
+                                  " connectedAdd=" + (extraCarved && extraDstWasRemaining ? ("R" + bestK) : "none") +
+                                  " remainingRemove=" + (extraCarved && extraDstWasRemaining ? ("R" + bestK) : "none"));
+                        DebugConnectState("  after  step=" + debugStep + " type=EXTRA",
+                            grid, rooms, connected, remaining, connectedPairs, s);
                     }
                 }
             }
@@ -399,6 +430,94 @@ public static class DungeonGenerator
     ///   - 계단은 통로(CORRIDOR)와 4방향으로 인접하지 않아야 함
     ///   - 방 내부(테두리 제외) 중 랜덤 위치에 배치
     /// </summary>
+    private static void DebugConnectState(
+        string prefix, int[,] grid, List<Room> rooms,
+        HashSet<int> connected, HashSet<int> remaining,
+        HashSet<(int, int)> connectedPairs, DungeonSettings s)
+    {
+        if (!DebugCorridorCarving) return;
+
+        var reachable = DebugReachableRoomsFromR0(grid, rooms, s);
+        DebugEmit(prefix +
+                  " connected=" + DebugFormatSet(connected) +
+                  " remaining=" + DebugFormatSet(remaining) +
+                  " reachable=" + DebugFormatSet(reachable) +
+                  " pairs=" + connectedPairs.Count +
+                  " logicalOnly=" + DebugFormatSetDifference(connected, reachable) +
+                  " gridOnly=" + DebugFormatSetDifference(reachable, connected));
+    }
+
+    private static HashSet<int> DebugReachableRoomsFromR0(
+        int[,] grid, List<Room> rooms, DungeonSettings s)
+    {
+        var reachableRooms = new HashSet<int>();
+        if (rooms.Count == 0) return reachableRooms;
+
+        var start = rooms[0];
+        int startX = start.Cx;
+        int startY = start.Cy;
+        if (!InBounds(s, startX, startY)) return reachableRooms;
+
+        var visited = new bool[s.MapHeight, s.MapWidth];
+        var queue = new Queue<(int x, int y)>();
+        visited[startY, startX] = true;
+        queue.Enqueue((startX, startY));
+
+        int[] dx = { 1, -1, 0, 0 };
+        int[] dy = { 0, 0, 1, -1 };
+
+        while (queue.Count > 0)
+        {
+            var p = queue.Dequeue();
+            for (int rIdx = 0; rIdx < rooms.Count; rIdx++)
+            {
+                var r = rooms[rIdx];
+                if (p.x >= r.X && p.x < r.X + r.W &&
+                    p.y >= r.Y && p.y < r.Y + r.H)
+                    reachableRooms.Add(rIdx);
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                int nx = p.x + dx[i];
+                int ny = p.y + dy[i];
+                if (!InBounds(s, nx, ny) || visited[ny, nx]) continue;
+                if (grid[ny, nx] == EMPTY) continue;
+
+                visited[ny, nx] = true;
+                queue.Enqueue((nx, ny));
+            }
+        }
+
+        return reachableRooms;
+    }
+
+    private static string DebugFormatSet(HashSet<int> values)
+    {
+        var sorted = new List<int>(values);
+        sorted.Sort();
+        if (sorted.Count == 0) return "{}";
+
+        string text = "{";
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            if (i > 0) text += ",";
+            text += "R" + sorted[i];
+        }
+
+        return text + "}";
+    }
+
+    private static string DebugFormatSetDifference(HashSet<int> left, HashSet<int> right)
+    {
+        var diff = new HashSet<int>();
+        foreach (int value in left)
+            if (!right.Contains(value))
+                diff.Add(value);
+
+        return DebugFormatSet(diff);
+    }
+
     private static void PlaceStairs(
         int[,] grid, List<Room> rooms,
         DungeonSettings s, Random rng)
@@ -517,7 +636,7 @@ public static class DungeonGenerator
     ///   5) src/dst side의 축 범위가 겹치면 같은 door 축을 재사용한다.
     ///      겹치지 않을 때만 기존 MinStraight 보정을 적용한다.
     /// </summary>
-    private static void DrawLCorridor(
+    private static bool DrawLCorridor(
         int[,] grid, List<Room> rooms, int srcIdx, int dstIdx,
         HashSet<(int, int)> corridorTiles,
         DungeonSettings s,
@@ -544,7 +663,7 @@ public static class DungeonGenerator
         {
             if (DebugCorridorCarving) DebugEmit("  carve=primary(clean) cells=" + pathBuf.Count);
             CarvePath(grid, corridorTiles, pathBuf, s);
-            return;
+            return true;
         }
 
         // 2) Alternate axis 재시도
@@ -555,7 +674,7 @@ public static class DungeonGenerator
         {
             if (DebugCorridorCarving) DebugEmit("  carve=alternate(clean) cells=" + pathBuf.Count);
             CarvePath(grid, corridorTiles, pathBuf, s);
-            return;
+            return true;
         }
 
         // 3) 둘 다 충돌 — mandatory면 connectivity 보장 위해 primary 강제 carve, optional은 skip.
@@ -564,10 +683,12 @@ public static class DungeonGenerator
             EmitLCorridorPath(grid, src, dst, s, primaryHorizFirst, pathBuf);
             if (DebugCorridorCarving) DebugEmit("  carve=primary FALLBACK(both-dirty,mandatory) cells=" + pathBuf.Count);
             CarvePath(grid, corridorTiles, pathBuf, s);
+            return true;
         }
         else
         {
             if (DebugCorridorCarving) DebugEmit("  carve=SKIP(both-dirty,extra)");
+            return false;
         }
     }
 
