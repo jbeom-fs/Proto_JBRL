@@ -1,15 +1,25 @@
+using System.Collections.Generic;
 using UnityEngine;
 
+internal enum EnemySpecialAttackPhase
+{
+    None,
+    Windup,
+    Rush,
+    Jump,
+    Recovery
+}
+
 /// <summary>
-/// 공격 쿨다운, 선딜레이, 피해 적용을 담당합니다.
-/// 보스는 이 핸들러를 상속해 패턴 큐, 페이즈 전환, 광역 공격 등을 추가할 수 있습니다.
-/// EnemyBrain.TriggerAttackAnimation은 protected internal로 노출되어 외부 파일에서도 호출 가능합니다.
+/// Handles enemy attack timing and damage application.
+/// Contact specials reuse the same AttackState entry point as ranged attacks.
 /// </summary>
 public class ActionHandler
 {
     private readonly EnemyBrain _brain;
     private float _attackRangeSqr;
     private float _contactDamageRangeSqr;
+    private float _specialAttackRangeSqr;
     private Collider2D _selfCollider;
     private float _attackCooldownTimer;
     private float _windupTimer;
@@ -18,6 +28,14 @@ public class ActionHandler
     private bool _windupFired;
     private bool _warnedMissingProjectile;
     private readonly ProjectileFireService _projectileFireService = new();
+    private readonly HashSet<IDamageable> _rushHitTargets = new();
+
+    private EnemySpecialAttackPhase _specialPhase;
+    private float _specialTimer;
+    private Vector2 _specialDirection = Vector2.down;
+    private Vector3 _jumpStartPosition;
+    private Vector3 _jumpTargetPosition;
+    private bool _jumpReady;
 
     public ActionHandler(EnemyBrain brain)
     {
@@ -29,6 +47,7 @@ public class ActionHandler
         if (_brain.Data == null) return;
         _attackRangeSqr = _brain.Data.attackRange * _brain.Data.attackRange;
         _contactDamageRangeSqr = _brain.Data.contactDamageRadius * _brain.Data.contactDamageRadius;
+        _specialAttackRangeSqr = _brain.Data.specialAttackRange * _brain.Data.specialAttackRange;
     }
 
     public virtual void TickCooldown(float deltaTime)
@@ -42,6 +61,14 @@ public class ActionHandler
         _windupTimer = 0f;
         _recoveryTimer = 0f;
         _windupFired = false;
+        _specialPhase = EnemySpecialAttackPhase.None;
+        _specialTimer = 0f;
+        _specialDirection = Vector2.down;
+        _jumpStartPosition = default;
+        _jumpTargetPosition = default;
+        _jumpReady = false;
+        _rushHitTargets.Clear();
+        _brain.UnlockSpecialFacing();
     }
 
     public virtual void TickBehavior(float sqrDistanceToTarget)
@@ -66,6 +93,9 @@ public class ActionHandler
 
     private void TickContactBehavior(float sqrDistanceToTarget)
     {
+        if (IsContactSpecialActive())
+            return;
+
         if (!_brain.ShouldKeepChasing(sqrDistanceToTarget))
             return;
 
@@ -105,15 +135,33 @@ public class ActionHandler
 
     public virtual bool CanAttack(float sqrDistanceToTarget)
     {
-        if (_brain.Data == null || _brain.Data.behaviorType == EnemyBehaviorType.Contact)
+        if (_brain.Data == null)
             return false;
 
-        return sqrDistanceToTarget <= _attackRangeSqr && _attackCooldownTimer <= 0f;
+        if (_brain.Data.behaviorType == EnemyBehaviorType.Ranged)
+            return sqrDistanceToTarget <= _attackRangeSqr && _attackCooldownTimer <= 0f;
+
+        if (_brain.Data.behaviorType != EnemyBehaviorType.Contact)
+            return false;
+
+        return _brain.Data.specialAttackType != EnemySpecialAttackType.None &&
+               _specialPhase == EnemySpecialAttackPhase.None &&
+               sqrDistanceToTarget <= _specialAttackRangeSqr &&
+               _attackCooldownTimer <= 0f;
     }
 
     public virtual void BeginAttack()
     {
-        if (_brain.Data == null || _brain.Data.behaviorType != EnemyBehaviorType.Ranged)
+        if (_brain.Data == null)
+            return;
+
+        if (_brain.Data.behaviorType == EnemyBehaviorType.Contact)
+        {
+            BeginContactSpecialAttack();
+            return;
+        }
+
+        if (_brain.Data.behaviorType != EnemyBehaviorType.Ranged)
             return;
 
         _windupTimer = Mathf.Max(0f, _brain.Data.attackWindup);
@@ -128,7 +176,13 @@ public class ActionHandler
 
     public virtual bool TickAttack(float sqrDistanceToTarget)
     {
-        if (_brain.Data == null || _brain.Data.behaviorType != EnemyBehaviorType.Ranged)
+        if (_brain.Data == null)
+            return true;
+
+        if (_brain.Data.behaviorType == EnemyBehaviorType.Contact)
+            return TickContactSpecialAttack();
+
+        if (_brain.Data.behaviorType != EnemyBehaviorType.Ranged)
             return true;
 
         if (!_windupFired)
@@ -155,6 +209,334 @@ public class ActionHandler
             _recoveryTimer -= Time.deltaTime;
             return _recoveryTimer <= 0f;
         }
+
+        return true;
+    }
+
+    private bool IsContactSpecialActive()
+    {
+        return _brain.Data != null &&
+               _brain.Data.behaviorType == EnemyBehaviorType.Contact &&
+               _specialPhase != EnemySpecialAttackPhase.None;
+    }
+
+    private void BeginContactSpecialAttack()
+    {
+        if (_brain.Data.specialAttackType == EnemySpecialAttackType.None)
+            return;
+
+        _specialDirection = ResolveAimDirection();
+        _specialTimer = Mathf.Max(0f, _brain.Data.specialAttackWindup);
+        _specialPhase = EnemySpecialAttackPhase.Windup;
+        _jumpReady = _brain.Data.specialAttackType != EnemySpecialAttackType.Jump ||
+                     TryResolveJumpTarget(out _jumpTargetPosition);
+        _jumpStartPosition = _brain.transform.position;
+        _rushHitTargets.Clear();
+        _brain.TriggerSpecialAnimation(EnemySpecialAnimationType.Charge);
+        _brain.StopMoving();
+
+        if (!_jumpReady)
+            CancelContactSpecialAttack();
+    }
+
+    private bool TickContactSpecialAttack()
+    {
+        switch (_specialPhase)
+        {
+            case EnemySpecialAttackPhase.Windup:
+                return TickSpecialWindup();
+
+            case EnemySpecialAttackPhase.Rush:
+                return TickRush();
+
+            case EnemySpecialAttackPhase.Jump:
+                return TickJump();
+
+            case EnemySpecialAttackPhase.Recovery:
+                return TickSpecialRecovery();
+
+            case EnemySpecialAttackPhase.None:
+            default:
+                return true;
+        }
+    }
+
+    private bool TickSpecialWindup()
+    {
+        _brain.StopMoving();
+
+        if (_specialTimer > 0f)
+        {
+            _specialTimer -= Time.deltaTime;
+            if (_specialTimer > 0f)
+                return false;
+        }
+
+        switch (_brain.Data.specialAttackType)
+        {
+            case EnemySpecialAttackType.Rush:
+                StartRush();
+                return false;
+
+            case EnemySpecialAttackType.Jump:
+                if (!_jumpReady)
+                {
+                    CancelContactSpecialAttack();
+                    return true;
+                }
+
+                StartJump();
+                return false;
+
+            case EnemySpecialAttackType.None:
+            default:
+                ClearContactSpecialAttack();
+                return true;
+        }
+    }
+
+    private void StartRush()
+    {
+        _specialDirection = _specialDirection.sqrMagnitude > 0.0001f
+            ? _specialDirection.normalized
+            : Vector2.down;
+        _specialTimer = Mathf.Max(0.01f, _brain.Data.rushDuration);
+        _attackCooldownTimer = Mathf.Max(0f, _brain.Data.specialAttackCooldown);
+        _rushHitTargets.Clear();
+        _specialPhase = EnemySpecialAttackPhase.Rush;
+        _brain.LockSpecialFacing(_specialDirection);
+        _brain.TriggerSpecialAnimation(EnemySpecialAnimationType.Rush);
+    }
+
+    private bool TickRush()
+    {
+        float deltaTime = Time.deltaTime;
+        _specialTimer -= deltaTime;
+
+        float speed = Mathf.Max(0.01f, _brain.Data.rushSpeed);
+        Vector3 next = _brain.transform.position + (Vector3)(_specialDirection * speed * deltaTime);
+        if (!CanOccupy(next))
+        {
+            StartSpecialRecovery();
+            return false;
+        }
+
+        _brain.transform.position = next;
+        TryApplyRushDamage();
+
+        if (_specialTimer <= 0f)
+            StartSpecialRecovery();
+
+        return false;
+    }
+
+    private void StartJump()
+    {
+        _jumpStartPosition = _brain.transform.position;
+        _specialDirection = (_jumpTargetPosition - _jumpStartPosition).sqrMagnitude > 0.0001f
+            ? ((Vector2)(_jumpTargetPosition - _jumpStartPosition)).normalized
+            : ResolveAimDirection();
+        _specialTimer = Mathf.Max(0.01f, _brain.Data.jumpDuration);
+        _attackCooldownTimer = Mathf.Max(0f, _brain.Data.specialAttackCooldown);
+        _specialPhase = EnemySpecialAttackPhase.Jump;
+        _brain.LockSpecialFacing(_specialDirection);
+        _brain.TriggerSpecialAnimation(EnemySpecialAnimationType.Jump);
+    }
+
+    private bool TickJump()
+    {
+        float duration = Mathf.Max(0.01f, _brain.Data.jumpDuration);
+        _specialTimer -= Time.deltaTime;
+        float t = 1f - Mathf.Clamp01(_specialTimer / duration);
+        _brain.transform.position = Vector3.Lerp(_jumpStartPosition, _jumpTargetPosition, t);
+
+        if (_specialTimer > 0f)
+            return false;
+
+        _brain.transform.position = _jumpTargetPosition;
+        ApplyJumpImpactDamage();
+        _brain.TriggerSpecialAnimation(EnemySpecialAnimationType.Land);
+        StartSpecialRecovery();
+        return false;
+    }
+
+    private bool TickSpecialRecovery()
+    {
+        _brain.StopMoving();
+
+        if (_specialTimer > 0f)
+        {
+            _specialTimer -= Time.deltaTime;
+            if (_specialTimer > 0f)
+                return false;
+        }
+
+        ClearContactSpecialAttack();
+        return true;
+    }
+
+    private void StartSpecialRecovery()
+    {
+        if (_specialPhase == EnemySpecialAttackPhase.Rush)
+            _brain.UnlockSpecialFacing();
+
+        _specialTimer = Mathf.Max(0f, _brain.Data.specialAttackRecovery);
+        _specialPhase = EnemySpecialAttackPhase.Recovery;
+        _brain.StopMoving();
+    }
+
+    private void CancelContactSpecialAttack()
+    {
+        _attackCooldownTimer = Mathf.Max(0.1f, _brain.Data.specialAttackCooldown);
+        ClearContactSpecialAttack();
+    }
+
+    private void ClearContactSpecialAttack()
+    {
+        _specialPhase = EnemySpecialAttackPhase.None;
+        _specialTimer = 0f;
+        _jumpReady = false;
+        _rushHitTargets.Clear();
+        _brain.UnlockSpecialFacing();
+    }
+
+    private void TryApplyRushDamage()
+    {
+        IDamageable target = _brain.Target.Damageable;
+        if (target == null || !target.IsAlive || _rushHitTargets.Contains(target))
+            return;
+
+        if (!IsTargetWithinRadius(_brain.Data.rushHitRadius))
+            return;
+
+        target.TakeDamage(GetSpecialDamage(_brain.Data.rushDamage));
+        _rushHitTargets.Add(target);
+    }
+
+    private void ApplyJumpImpactDamage()
+    {
+        IDamageable target = _brain.Target.Damageable;
+        if (target == null || !target.IsAlive)
+            return;
+
+        if (!IsTargetWithinRadius(_brain.Data.jumpImpactRadius))
+            return;
+
+        target.TakeDamage(GetSpecialDamage(_brain.Data.jumpDamage));
+    }
+
+    private bool IsTargetWithinRadius(float radius)
+    {
+        float r = Mathf.Max(0.01f, radius);
+        Collider2D self = ResolveSelfCollider();
+        Collider2D targetCollider = _brain.Target.TargetCollider;
+        if (self != null && targetCollider != null && self.enabled && targetCollider.enabled)
+        {
+            ColliderDistance2D distance = self.Distance(targetCollider);
+            return distance.isOverlapped || distance.distance <= r;
+        }
+
+        return (_brain.Target.TargetPosition - _brain.transform.position).sqrMagnitude <= r * r;
+    }
+
+    private int GetSpecialDamage(int configuredDamage)
+    {
+        return configuredDamage > 0 ? configuredDamage : _brain.Data.attack;
+    }
+
+    private bool CanOccupy(Vector3 position)
+    {
+        DungeonManager dungeon = _brain.dungeonManager;
+        if (dungeon == null) return true;
+
+        float radius = _brain.Enemy != null
+            ? _brain.Enemy.CollisionFootprintRadius
+            : Mathf.Max(0.01f, _brain.collisionRadius);
+
+        return dungeon.IsFootprintWalkable(position, radius);
+    }
+
+    private bool TryResolveJumpTarget(out Vector3 targetPosition)
+    {
+        targetPosition = _brain.transform.position;
+        DungeonManager dungeon = _brain.dungeonManager;
+        if (dungeon == null || dungeon.Data == null || !_brain.Target.HasTarget)
+            return false;
+
+        Vector2Int enemyGrid = dungeon.WorldToGrid(_brain.transform.position);
+        RoomInfo? currentRoom = dungeon.GetRoomAt(enemyGrid.x, enemyGrid.y);
+        if (_brain.Data.jumpStayInRoom && !currentRoom.HasValue)
+            return false;
+
+        Vector3 desired = ClampJumpDistance(_brain.Target.TargetPosition);
+        Vector2Int desiredGrid = dungeon.WorldToGrid(desired);
+        if (IsValidJumpGrid(dungeon, desiredGrid, currentRoom))
+        {
+            targetPosition = dungeon.GridToWorld(desiredGrid);
+            return CanOccupy(targetPosition);
+        }
+
+        return TryFindNearbyJumpTarget(dungeon, desiredGrid, currentRoom, out targetPosition);
+    }
+
+    private Vector3 ClampJumpDistance(Vector3 desired)
+    {
+        Vector3 origin = _brain.transform.position;
+        Vector3 delta = desired - origin;
+        float maxDistance = Mathf.Max(0.01f, _brain.Data.jumpMaxDistance);
+        if (delta.sqrMagnitude <= maxDistance * maxDistance)
+            return desired;
+
+        return origin + delta.normalized * maxDistance;
+    }
+
+    private bool TryFindNearbyJumpTarget(
+        DungeonManager dungeon,
+        Vector2Int center,
+        RoomInfo? room,
+        out Vector3 targetPosition)
+    {
+        targetPosition = _brain.transform.position;
+
+        const int MaxSearchRadius = 3;
+        for (int radius = 1; radius <= MaxSearchRadius; radius++)
+        {
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    if (Mathf.Abs(dx) != radius && Mathf.Abs(dy) != radius)
+                        continue;
+
+                    Vector2Int candidate = new Vector2Int(center.x + dx, center.y + dy);
+                    if (!IsValidJumpGrid(dungeon, candidate, room))
+                        continue;
+
+                    Vector3 world = dungeon.GridToWorld(candidate);
+                    if (!CanOccupy(world))
+                        continue;
+
+                    targetPosition = world;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private bool IsValidJumpGrid(DungeonManager dungeon, Vector2Int grid, RoomInfo? room)
+    {
+        if (!dungeon.IsWalkable(grid.x, grid.y))
+            return false;
+
+        Vector3 world = dungeon.GridToWorld(grid);
+        float maxDistance = Mathf.Max(0.01f, _brain.Data.jumpMaxDistance);
+        if ((world - _brain.transform.position).sqrMagnitude > maxDistance * maxDistance)
+            return false;
+
+        if (_brain.Data.jumpStayInRoom)
+            return room.HasValue && room.Value.Contains(grid.x, grid.y);
 
         return true;
     }

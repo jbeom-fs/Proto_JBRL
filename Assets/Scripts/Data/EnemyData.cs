@@ -28,6 +28,13 @@ public enum RangedMovementType
     Kiting
 }
 
+public enum EnemySpecialAttackType
+{
+    None,
+    Rush,
+    Jump
+}
+
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "JBLogLike/Enemy")]
 public class EnemyData : ScriptableObject
 {
@@ -87,6 +94,57 @@ public class EnemyData : ScriptableObject
 
     [Tooltip("Contact damage is applied when collider distance is less than or equal to this value.")]
     public float contactDamageSkin = 0.05f;
+
+    [Header("Contact Special Attack")]
+    [Tooltip("Optional Contact-only special attack pattern.")]
+    public EnemySpecialAttackType specialAttackType = EnemySpecialAttackType.None;
+
+    [Tooltip("Contact special attack trigger distance in world units.")]
+    [Min(0f)]
+    public float specialAttackRange = 3f;
+
+    [Tooltip("Contact special attack cooldown after the special action starts.")]
+    [Min(0f)]
+    public float specialAttackCooldown = 2f;
+
+    [Tooltip("Contact special attack windup. Enemy stops and stores the target direction or landing position.")]
+    [Min(0f)]
+    public float specialAttackWindup = 0.35f;
+
+    [Tooltip("Contact special attack recovery. Movement and contact damage remain disabled during recovery.")]
+    [Min(0f)]
+    public float specialAttackRecovery = 0.3f;
+
+    [Header("Rush Special Attack")]
+    [Min(0.01f)]
+    public float rushSpeed = 7f;
+
+    [Min(0.01f)]
+    public float rushDuration = 0.45f;
+
+    [Tooltip("Rush damage. If 0, this enemy's attack value is used.")]
+    [Min(0)]
+    public int rushDamage = 0;
+
+    [Min(0.01f)]
+    public float rushHitRadius = 0.45f;
+
+    [Header("Jump Special Attack")]
+    [Min(0.01f)]
+    public float jumpDuration = 0.35f;
+
+    [Tooltip("Landing impact damage. If 0, this enemy's attack value is used.")]
+    [Min(0)]
+    public int jumpDamage = 0;
+
+    [Min(0.01f)]
+    public float jumpImpactRadius = 1.1f;
+
+    [Min(0.01f)]
+    public float jumpMaxDistance = 4f;
+
+    [Tooltip("If true, jump landing candidates are restricted to the enemy's current room.")]
+    public bool jumpStayInRoom = true;
 
     [Header("Ranged Projectile")]
     public GameObject projectilePrefab;

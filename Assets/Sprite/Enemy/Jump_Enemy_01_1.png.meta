@@ -1,0 +1,1820 @@
+fileFormatVersion: 2
+guid: 467f081b860c4054f8145d9083380e94
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2019136676985264974
+    second: Jump_Enemy_01_1_0
+  - first:
+      213: -4170815954087651042
+    second: Jump_Enemy_01_1_1
+  - first:
+      213: -6260484243193549466
+    second: Jump_Enemy_01_1_2
+  - first:
+      213: 8652664586329036961
+    second: Jump_Enemy_01_1_3
+  - first:
+      213: 7547105280986655391
+    second: Jump_Enemy_01_1_4
+  - first:
+      213: 814230782059360154
+    second: Jump_Enemy_01_1_5
+  - first:
+      213: 952772265669452748
+    second: Jump_Enemy_01_1_6
+  - first:
+      213: 3299210232198887494
+    second: Jump_Enemy_01_1_7
+  - first:
+      213: 973931039816602217
+    second: Jump_Enemy_01_1_8
+  - first:
+      213: 1245200919803239716
+    second: Jump_Enemy_01_1_9
+  - first:
+      213: -5840082782659560263
+    second: Jump_Enemy_01_1_10
+  - first:
+      213: 8164653195082221923
+    second: Jump_Enemy_01_1_11
+  - first:
+      213: 243275213409141949
+    second: Jump_Enemy_01_1_12
+  - first:
+      213: -1659589832026402243
+    second: Jump_Enemy_01_1_13
+  - first:
+      213: -2924127786020802051
+    second: Jump_Enemy_01_1_14
+  - first:
+      213: 5654047968569399279
+    second: Jump_Enemy_01_1_15
+  - first:
+      213: 8579711937258708010
+    second: Jump_Enemy_01_1_16
+  - first:
+      213: 1764415915997446638
+    second: Jump_Enemy_01_1_17
+  - first:
+      213: 3123696703624991269
+    second: Jump_Enemy_01_1_18
+  - first:
+      213: -3427952719039822436
+    second: Jump_Enemy_01_1_19
+  - first:
+      213: 3378613846317703666
+    second: Jump_Enemy_01_1_20
+  - first:
+      213: 2204151775822085182
+    second: Jump_Enemy_01_1_21
+  - first:
+      213: 1634604450114078429
+    second: Jump_Enemy_01_1_22
+  - first:
+      213: 1050952823903257243
+    second: Jump_Enemy_01_1_23
+  - first:
+      213: 6571060671197469449
+    second: Jump_Enemy_01_1_24
+  - first:
+      213: 7880891895278996148
+    second: Jump_Enemy_01_1_25
+  - first:
+      213: -4220783363039321660
+    second: Jump_Enemy_01_1_26
+  - first:
+      213: -5922056015818806082
+    second: Jump_Enemy_01_1_27
+  - first:
+      213: 3713975250242403852
+    second: Jump_Enemy_01_1_28
+  - first:
+      213: 6900254051424966927
+    second: Jump_Enemy_01_1_29
+  - first:
+      213: -2302732688810822078
+    second: Jump_Enemy_01_1_30
+  - first:
+      213: -6738073396185823964
+    second: Jump_Enemy_01_1_31
+  - first:
+      213: -4906304210494761801
+    second: Jump_Enemy_01_1_32
+  - first:
+      213: 3455816438363628804
+    second: Jump_Enemy_01_1_33
+  - first:
+      213: 1492241633900750693
+    second: Jump_Enemy_01_1_34
+  - first:
+      213: -4733292277021787283
+    second: Jump_Enemy_01_1_35
+  - first:
+      213: -7769734510321262436
+    second: Jump_Enemy_01_1_36
+  - first:
+      213: 7507149519615855572
+    second: Jump_Enemy_01_1_37
+  - first:
+      213: -7645251276810908895
+    second: Jump_Enemy_01_1_38
+  - first:
+      213: 6541724902088098284
+    second: Jump_Enemy_01_1_39
+  - first:
+      213: 8660549745244393549
+    second: Jump_Enemy_01_1_40
+  - first:
+      213: 5199708232444607208
+    second: Jump_Enemy_01_1_41
+  - first:
+      213: 4216665942783542897
+    second: Jump_Enemy_01_1_42
+  - first:
+      213: 3090767093679827489
+    second: Jump_Enemy_01_1_43
+  - first:
+      213: 2732697805187714144
+    second: Jump_Enemy_01_1_44
+  - first:
+      213: 6400552921100442375
+    second: Jump_Enemy_01_1_45
+  - first:
+      213: 5252118037636721211
+    second: Jump_Enemy_01_1_46
+  - first:
+      213: 7661271052175039706
+    second: Jump_Enemy_01_1_47
+  - first:
+      213: -2731964016620174630
+    second: Jump_Enemy_01_1_48
+  - first:
+      213: -9128475153977742404
+    second: Jump_Enemy_01_1_49
+  - first:
+      213: 1124251324041823291
+    second: Jump_Enemy_01_1_50
+  - first:
+      213: -6342402333598176290
+    second: Jump_Enemy_01_1_51
+  - first:
+      213: -5085504411664432686
+    second: Jump_Enemy_01_1_52
+  - first:
+      213: 5382834208620537517
+    second: Jump_Enemy_01_1_53
+  - first:
+      213: 2784218347210966511
+    second: Jump_Enemy_01_1_54
+  - first:
+      213: -7434809578805628363
+    second: Jump_Enemy_01_1_55
+  - first:
+      213: -406276623878817410
+    second: Jump_Enemy_01_1_56
+  - first:
+      213: -789898238920903930
+    second: Jump_Enemy_01_1_57
+  - first:
+      213: 2356498936249135274
+    second: Jump_Enemy_01_1_58
+  - first:
+      213: -1523157304707118406
+    second: Jump_Enemy_01_1_59
+  - first:
+      213: 5395936969607586200
+    second: Jump_Enemy_01_1_60
+  - first:
+      213: 1636100072263492890
+    second: Jump_Enemy_01_1_61
+  - first:
+      213: -7177584122508568058
+    second: Jump_Enemy_01_1_62
+  - first:
+      213: 7709295897891545592
+    second: Jump_Enemy_01_1_63
+  - first:
+      213: -9095922659808090497
+    second: Jump_Enemy_01_1_64
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1064
+        width: 278
+        height: 190
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e4b5ba02c1a650c10800000000000000
+      internalID: 2019136676985264974
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_1
+      rect:
+        serializedVersion: 2
+        x: 174
+        y: 1211
+        width: 10
+        height: 12
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e19d219dcf84e16c0800000000000000
+      internalID: -4170815954087651042
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_2
+      rect:
+        serializedVersion: 2
+        x: 186
+        y: 1221
+        width: 16
+        height: 23
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66da48210ca4e19a0800000000000000
+      internalID: -6260484243193549466
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_3
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 1221
+        width: 9
+        height: 11
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a89eb4f890741870800000000000000
+      internalID: 8652664586329036961
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_4
+      rect:
+        serializedVersion: 2
+        x: 473
+        y: 1221
+        width: 17
+        height: 23
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f9a2fab4444bcb860800000000000000
+      internalID: 7547105280986655391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_5
+      rect:
+        serializedVersion: 2
+        x: 492
+        y: 1221
+        width: 10
+        height: 11
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9f26d1159abc4b00800000000000000
+      internalID: 814230782059360154
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_6
+      rect:
+        serializedVersion: 2
+        x: 753
+        y: 1212
+        width: 9
+        height: 10
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc3621fd35de83d00800000000000000
+      internalID: 952772265669452748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_7
+      rect:
+        serializedVersion: 2
+        x: 766
+        y: 1222
+        width: 16
+        height: 22
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6487c89e93629cd20800000000000000
+      internalID: 3299210232198887494
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_8
+      rect:
+        serializedVersion: 2
+        x: 784
+        y: 1221
+        width: 10
+        height: 11
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 962deffde19148d00800000000000000
+      internalID: 973931039816602217
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_9
+      rect:
+        serializedVersion: 2
+        x: 964
+        y: 1064
+        width: 290
+        height: 190
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42d9cd2a3a7d74110800000000000000
+      internalID: 1245200919803239716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_10
+      rect:
+        serializedVersion: 2
+        x: 1047
+        y: 1211
+        width: 9
+        height: 11
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9bcb3b8b6abd3fea0800000000000000
+      internalID: -5840082782659560263
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_11
+      rect:
+        serializedVersion: 2
+        x: 1061
+        y: 1222
+        width: 15
+        height: 22
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 369422f92dcae4170800000000000000
+      internalID: 8164653195082221923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_12
+      rect:
+        serializedVersion: 2
+        x: 1080
+        y: 1220
+        width: 7
+        height: 9
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db4c8e58489406300800000000000000
+      internalID: 243275213409141949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_13
+      rect:
+        serializedVersion: 2
+        x: 381
+        y: 1064
+        width: 184
+        height: 157
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d32573537d3f7f8e0800000000000000
+      internalID: -1659589832026402243
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_14
+      rect:
+        serializedVersion: 2
+        x: 671
+        y: 1064
+        width: 184
+        height: 157
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df1716475496b67d0800000000000000
+      internalID: -2924127786020802051
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_15
+      rect:
+        serializedVersion: 2
+        x: 31
+        y: 876
+        width: 150
+        height: 128
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe71995cba6377e40800000000000000
+      internalID: 5654047968569399279
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_16
+      rect:
+        serializedVersion: 2
+        x: 193
+        y: 876
+        width: 149
+        height: 127
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2cdb77bc82411770800000000000000
+      internalID: 8579711937258708010
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_17
+      rect:
+        serializedVersion: 2
+        x: 353
+        y: 876
+        width: 135
+        height: 127
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee1c2156de67c7810800000000000000
+      internalID: 1764415915997446638
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_18
+      rect:
+        serializedVersion: 2
+        x: 500
+        y: 876
+        width: 137
+        height: 129
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52250a51a99995b20800000000000000
+      internalID: 3123696703624991269
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_19
+      rect:
+        serializedVersion: 2
+        x: 650
+        y: 875
+        width: 142
+        height: 127
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c950cc20a277d60d0800000000000000
+      internalID: -3427952719039822436
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_20
+      rect:
+        serializedVersion: 2
+        x: 809
+        y: 876
+        width: 136
+        height: 122
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f1abfe746f33ee20800000000000000
+      internalID: 3378613846317703666
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_21
+      rect:
+        serializedVersion: 2
+        x: 954
+        y: 876
+        width: 136
+        height: 125
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e3cfbecac58b69e10800000000000000
+      internalID: 2204151775822085182
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_22
+      rect:
+        serializedVersion: 2
+        x: 1097
+        y: 876
+        width: 132
+        height: 124
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd6825d36184fa610800000000000000
+      internalID: 1634604450114078429
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_23
+      rect:
+        serializedVersion: 2
+        x: 74
+        y: 675
+        width: 190
+        height: 148
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b928270760cb59e00800000000000000
+      internalID: 1050952823903257243
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_24
+      rect:
+        serializedVersion: 2
+        x: 374
+        y: 675
+        width: 186
+        height: 148
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90bd3409dd8113b50800000000000000
+      internalID: 6571060671197469449
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_25
+      rect:
+        serializedVersion: 2
+        x: 670
+        y: 675
+        width: 173
+        height: 147
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ba0c5b8c6d8e5d60800000000000000
+      internalID: 7880891895278996148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_26
+      rect:
+        serializedVersion: 2
+        x: 955
+        y: 675
+        width: 173
+        height: 146
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c1a92cd4e3cc65c0800000000000000
+      internalID: -4220783363039321660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_27
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 499
+        width: 177
+        height: 162
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ebca7251e61a0dda0800000000000000
+      internalID: -5922056015818806082
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_28
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 550
+        width: 18
+        height: 26
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c0e7a4700d0ba8330800000000000000
+      internalID: 3713975250242403852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_29
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 507
+        width: 175
+        height: 154
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f09922b2080a2cf50800000000000000
+      internalID: 6900254051424966927
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_30
+      rect:
+        serializedVersion: 2
+        x: 557
+        y: 550
+        width: 18
+        height: 27
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24630c6e1dc0b00e0800000000000000
+      internalID: -2302732688810822078
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_31
+      rect:
+        serializedVersion: 2
+        x: 650
+        y: 510
+        width: 184
+        height: 149
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 42585dd22fd8d72a0800000000000000
+      internalID: -6738073396185823964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_32
+      rect:
+        serializedVersion: 2
+        x: 837
+        y: 550
+        width: 18
+        height: 26
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b4d475b05e49ebb0800000000000000
+      internalID: -4906304210494761801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_33
+      rect:
+        serializedVersion: 2
+        x: 937
+        y: 499
+        width: 180
+        height: 156
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 405ae91bdb685ff20800000000000000
+      internalID: 3455816438363628804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_34
+      rect:
+        serializedVersion: 2
+        x: 1123
+        y: 531
+        width: 19
+        height: 27
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 567e3bb1cd185b410800000000000000
+      internalID: 1492241633900750693
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_35
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 495
+        width: 17
+        height: 25
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d6b340a80c7ff4eb0800000000000000
+      internalID: -4733292277021787283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_36
+      rect:
+        serializedVersion: 2
+        x: 245
+        y: 508
+        width: 18
+        height: 26
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c902531f0ab5c2490800000000000000
+      internalID: -7769734510321262436
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_37
+      rect:
+        serializedVersion: 2
+        x: 433
+        y: 493
+        width: 17
+        height: 24
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4db8278a6b0ce2860800000000000000
+      internalID: 7507149519615855572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_38
+      rect:
+        serializedVersion: 2
+        x: 542
+        y: 503
+        width: 19
+        height: 28
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12b8513587c96e590800000000000000
+      internalID: -7645251276810908895
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_39
+      rect:
+        serializedVersion: 2
+        x: 715
+        y: 496
+        width: 18
+        height: 25
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce1c94f8320e8ca50800000000000000
+      internalID: 6541724902088098284
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_40
+      rect:
+        serializedVersion: 2
+        x: 825
+        y: 511
+        width: 19
+        height: 26
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4054e49b14703870800000000000000
+      internalID: 8660549745244393549
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_41
+      rect:
+        serializedVersion: 2
+        x: 999
+        y: 492
+        width: 16
+        height: 23
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8eaf8829613192840800000000000000
+      internalID: 5199708232444607208
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_42
+      rect:
+        serializedVersion: 2
+        x: 1108
+        y: 492
+        width: 19
+        height: 25
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 176c918855b948a30800000000000000
+      internalID: 4216665942783542897
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_43
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 448
+        width: 81
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12aa04ecb4c94ea20800000000000000
+      internalID: 3090767093679827489
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_44
+      rect:
+        serializedVersion: 2
+        x: 448
+        y: 448
+        width: 76
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 06c04b4ec2e7ce520800000000000000
+      internalID: 2732697805187714144
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_45
+      rect:
+        serializedVersion: 2
+        x: 737
+        y: 448
+        width: 75
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70bd74c58f453d850800000000000000
+      internalID: 6400552921100442375
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_46
+      rect:
+        serializedVersion: 2
+        x: 1022
+        y: 448
+        width: 73
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b3a22cf378543e840800000000000000
+      internalID: 5252118037636721211
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_47
+      rect:
+        serializedVersion: 2
+        x: 30
+        y: 239
+        width: 266
+        height: 132
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: adc50e84e6d425a60800000000000000
+      internalID: 7661271052175039706
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_48
+      rect:
+        serializedVersion: 2
+        x: 77
+        y: 346
+        width: 20
+        height: 33
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ad28432933d161ad0800000000000000
+      internalID: -2731964016620174630
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_49
+      rect:
+        serializedVersion: 2
+        x: 171
+        y: 356
+        width: 17
+        height: 26
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbb6d225634215180800000000000000
+      internalID: -9128475153977742404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_50
+      rect:
+        serializedVersion: 2
+        x: 365
+        y: 247
+        width: 208
+        height: 126
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b3486c76f942a9f00800000000000000
+      internalID: 1124251324041823291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_51
+      rect:
+        serializedVersion: 2
+        x: 655
+        y: 253
+        width: 192
+        height: 153
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: edba54b5ea24bf7a0800000000000000
+      internalID: -6342402333598176290
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_52
+      rect:
+        serializedVersion: 2
+        x: 946
+        y: 257
+        width: 177
+        height: 150
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2d14f078ea8ac69b0800000000000000
+      internalID: -5085504411664432686
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_53
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 311
+        height: 200
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da6e5a9713ba3ba40800000000000000
+      internalID: 5382834208620537517
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_54
+      rect:
+        serializedVersion: 2
+        x: 357
+        y: 45
+        width: 248
+        height: 118
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe582aad5d783a620800000000000000
+      internalID: 2784218347210966511
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_55
+      rect:
+        serializedVersion: 2
+        x: 416
+        y: 157
+        width: 16
+        height: 24
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5327e92541042d890800000000000000
+      internalID: -7434809578805628363
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_56
+      rect:
+        serializedVersion: 2
+        x: 704
+        y: 134
+        width: 8
+        height: 9
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e797829209d9c5af0800000000000000
+      internalID: -406276623878817410
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_57
+      rect:
+        serializedVersion: 2
+        x: 761
+        y: 120
+        width: 14
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 603b96c9cb7b905f0800000000000000
+      internalID: -789898238920903930
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_58
+      rect:
+        serializedVersion: 2
+        x: 809
+        y: 120
+        width: 14
+        height: 21
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa037b81c47f3b020800000000000000
+      internalID: 2356498936249135274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_59
+      rect:
+        serializedVersion: 2
+        x: 652
+        y: 44
+        width: 241
+        height: 84
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aba04eb5088acdae0800000000000000
+      internalID: -1523157304707118406
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_60
+      rect:
+        serializedVersion: 2
+        x: 698
+        y: 104
+        width: 20
+        height: 29
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 891abdfb51832ea40800000000000000
+      internalID: 5395936969607586200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_61
+      rect:
+        serializedVersion: 2
+        x: 953
+        y: 0
+        width: 301
+        height: 112
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a15a148e85894b610800000000000000
+      internalID: 1636100072263492890
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_62
+      rect:
+        serializedVersion: 2
+        x: 978
+        y: 101
+        width: 11
+        height: 14
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60a9460e449146c90800000000000000
+      internalID: -7177584122508568058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_63
+      rect:
+        serializedVersion: 2
+        x: 1028
+        y: 108
+        width: 13
+        height: 21
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f1a33606cbecfa60800000000000000
+      internalID: 7709295897891545592
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Jump_Enemy_01_1_64
+      rect:
+        serializedVersion: 2
+        x: 1096
+        y: 108
+        width: 14
+        height: 21
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7666bd788ac4c180800000000000000
+      internalID: -9095922659808090497
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Jump_Enemy_01_1_0: 2019136676985264974
+      Jump_Enemy_01_1_1: -4170815954087651042
+      Jump_Enemy_01_1_10: -5840082782659560263
+      Jump_Enemy_01_1_11: 8164653195082221923
+      Jump_Enemy_01_1_12: 243275213409141949
+      Jump_Enemy_01_1_13: -1659589832026402243
+      Jump_Enemy_01_1_14: -2924127786020802051
+      Jump_Enemy_01_1_15: 5654047968569399279
+      Jump_Enemy_01_1_16: 8579711937258708010
+      Jump_Enemy_01_1_17: 1764415915997446638
+      Jump_Enemy_01_1_18: 3123696703624991269
+      Jump_Enemy_01_1_19: -3427952719039822436
+      Jump_Enemy_01_1_2: -6260484243193549466
+      Jump_Enemy_01_1_20: 3378613846317703666
+      Jump_Enemy_01_1_21: 2204151775822085182
+      Jump_Enemy_01_1_22: 1634604450114078429
+      Jump_Enemy_01_1_23: 1050952823903257243
+      Jump_Enemy_01_1_24: 6571060671197469449
+      Jump_Enemy_01_1_25: 7880891895278996148
+      Jump_Enemy_01_1_26: -4220783363039321660
+      Jump_Enemy_01_1_27: -5922056015818806082
+      Jump_Enemy_01_1_28: 3713975250242403852
+      Jump_Enemy_01_1_29: 6900254051424966927
+      Jump_Enemy_01_1_3: 8652664586329036961
+      Jump_Enemy_01_1_30: -2302732688810822078
+      Jump_Enemy_01_1_31: -6738073396185823964
+      Jump_Enemy_01_1_32: -4906304210494761801
+      Jump_Enemy_01_1_33: 3455816438363628804
+      Jump_Enemy_01_1_34: 1492241633900750693
+      Jump_Enemy_01_1_35: -4733292277021787283
+      Jump_Enemy_01_1_36: -7769734510321262436
+      Jump_Enemy_01_1_37: 7507149519615855572
+      Jump_Enemy_01_1_38: -7645251276810908895
+      Jump_Enemy_01_1_39: 6541724902088098284
+      Jump_Enemy_01_1_4: 7547105280986655391
+      Jump_Enemy_01_1_40: 8660549745244393549
+      Jump_Enemy_01_1_41: 5199708232444607208
+      Jump_Enemy_01_1_42: 4216665942783542897
+      Jump_Enemy_01_1_43: 3090767093679827489
+      Jump_Enemy_01_1_44: 2732697805187714144
+      Jump_Enemy_01_1_45: 6400552921100442375
+      Jump_Enemy_01_1_46: 5252118037636721211
+      Jump_Enemy_01_1_47: 7661271052175039706
+      Jump_Enemy_01_1_48: -2731964016620174630
+      Jump_Enemy_01_1_49: -9128475153977742404
+      Jump_Enemy_01_1_5: 814230782059360154
+      Jump_Enemy_01_1_50: 1124251324041823291
+      Jump_Enemy_01_1_51: -6342402333598176290
+      Jump_Enemy_01_1_52: -5085504411664432686
+      Jump_Enemy_01_1_53: 5382834208620537517
+      Jump_Enemy_01_1_54: 2784218347210966511
+      Jump_Enemy_01_1_55: -7434809578805628363
+      Jump_Enemy_01_1_56: -406276623878817410
+      Jump_Enemy_01_1_57: -789898238920903930
+      Jump_Enemy_01_1_58: 2356498936249135274
+      Jump_Enemy_01_1_59: -1523157304707118406
+      Jump_Enemy_01_1_6: 952772265669452748
+      Jump_Enemy_01_1_60: 5395936969607586200
+      Jump_Enemy_01_1_61: 1636100072263492890
+      Jump_Enemy_01_1_62: -7177584122508568058
+      Jump_Enemy_01_1_63: 7709295897891545592
+      Jump_Enemy_01_1_64: -9095922659808090497
+      Jump_Enemy_01_1_7: 3299210232198887494
+      Jump_Enemy_01_1_8: 973931039816602217
+      Jump_Enemy_01_1_9: 1245200919803239716
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

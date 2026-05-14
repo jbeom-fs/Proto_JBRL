@@ -22,6 +22,14 @@ public interface IEnemyState
     void OnExit();
 }
 
+public enum EnemySpecialAnimationType
+{
+    Charge,
+    Rush,
+    Jump,
+    Land
+}
+
 /// <summary>
 /// 적 AI의 추상 베이스입니다.
 /// 이 클래스는 FSM 조율만 담당하고, 이동/타겟/액션은 Handler로 분리합니다.
@@ -130,6 +138,13 @@ public abstract class EnemyBrain : MonoBehaviour
             _currentStateId = EnemyAIStateId.Idle;
             _currentState.OnEnter();
         }
+    }
+
+    public virtual void HandleDeathStarted()
+    {
+        StopMoving();
+        Action?.ResetRuntimeState();
+        UnlockSpecialFacing();
     }
 
     protected virtual void Update()
@@ -301,6 +316,44 @@ public abstract class EnemyBrain : MonoBehaviour
         }
 
         SetAnimTrigger(ANIM_ATTACK);
+    }
+
+    protected internal virtual void TriggerSpecialAnimation(EnemySpecialAnimationType animationType)
+    {
+        switch (animationType)
+        {
+            case EnemySpecialAnimationType.Charge:
+                if (Target != null && Target.HasTarget)
+                    _animationController?.PlayCharge(Target.TargetPosition);
+                else
+                    _animationController?.PlayAttack();
+                break;
+
+            case EnemySpecialAnimationType.Rush:
+                _animationController?.PlayRush();
+                break;
+
+            case EnemySpecialAnimationType.Jump:
+                _animationController?.PlayJump();
+                break;
+
+            case EnemySpecialAnimationType.Land:
+                _animationController?.PlayLand();
+                break;
+        }
+
+        if (animationType == EnemySpecialAnimationType.Charge)
+            SetAnimTrigger(ANIM_ATTACK);
+    }
+
+    protected internal virtual void LockSpecialFacing(Vector2 direction)
+    {
+        _animationController?.LockFacing(direction);
+    }
+
+    protected internal virtual void UnlockSpecialFacing()
+    {
+        _animationController?.UnlockFacing();
     }
 
     private IEnemyState GetOrCreateState(EnemyAIStateId stateId)

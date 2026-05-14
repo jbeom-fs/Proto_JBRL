@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 668bddbc810a4ce4f8252f922bee8a14, type: 3}
+  m_Name: RushEnemy01
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: RushEnemy01
+  maxHp: 18
+  attack: 3
+  defense: 0
+  expReward: 12
+  deathDelay: 0.5
+  spawnCost: 5
+  allowedRegions: 1
+  behaviorType: 0
+  detectRange: 12
+  attackRange: 1.2
+  moveSpeed: 1.8
+  isStationary: 0
+  immuneToKnockback: 0
+  blocksMovement: 0
+  attackCooldown: 1.5
+  attackWindup: 0.4
+  attackRecovery: 0
+  contactDamageRadius: 0.45
+  contactDamageSkin: 0.05
+  specialAttackType: 1
+  specialAttackRange: 5
+  specialAttackCooldown: 3
+  specialAttackWindup: 0.55
+  specialAttackRecovery: 0.55
+  rushSpeed: 7.5
+  rushDuration: 0.55
+  rushDamage: 4
+  rushHitRadius: 0.55
+  jumpDuration: 0.55
+  jumpDamage: 0
+  jumpImpactRadius: 1.1
+  jumpMaxDistance: 5.5
+  jumpStayInRoom: 1
+  projectilePrefab: {fileID: 0}
+  projectileDamage: 0
+  projectileSpeed: 6
+  projectileLifetime: 3
+  firePattern: 0
+  projectileCount: 1
+  spreadAngle: 30
+  burstInterval: 0.12
+  projectileWallHitMode: 0
+  projectileMaxBounceCount: 1
+  knockbackResistance: 0
+  rangedMovementType: 0
+  preferredRange: 5
+  kiteRetreatRange: 3
+  randomMoveIntervalMin: 0.8
+  randomMoveIntervalMax: 1.8
+  randomMoveRadius: 3

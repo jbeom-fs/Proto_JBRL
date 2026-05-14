@@ -4,6 +4,10 @@ public class EnemyAnimationController : MonoBehaviour
 {
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
     private static readonly int AttackTriggerHash = Animator.StringToHash("AttackTrigger");
+    private static readonly int ChargeTriggerHash = Animator.StringToHash("ChargeTrigger");
+    private static readonly int RushTriggerHash = Animator.StringToHash("RushTrigger");
+    private static readonly int JumpTriggerHash = Animator.StringToHash("JumpTrigger");
+    private static readonly int LandTriggerHash = Animator.StringToHash("LandTrigger");
     private static readonly int DeathTriggerHash = Animator.StringToHash("DeathTrigger");
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
     private static readonly int MoveYHash = Animator.StringToHash("MoveY");
@@ -22,8 +26,14 @@ public class EnemyAnimationController : MonoBehaviour
     private Vector3 _previousPosition;
     private bool _isDead;
     private bool _targetFacingAppliedThisFrame;
+    private bool _facingLocked;
+    private bool _lockedFacingRight;
     private bool _hasIsMoving;
     private bool _hasAttackTrigger;
+    private bool _hasChargeTrigger;
+    private bool _hasRushTrigger;
+    private bool _hasJumpTrigger;
+    private bool _hasLandTrigger;
     private bool _hasDeathTrigger;
     private bool _hasMoveX;
     private bool _hasMoveY;
@@ -63,7 +73,7 @@ public class EnemyAnimationController : MonoBehaviour
                 SetFloat(LastMoveYHash, _hasLastMoveY, direction.y);
             }
 
-            if (!_isDead && faceMoveDirectionWhenMoving && !_targetFacingAppliedThisFrame)
+            if (!_isDead && !_facingLocked && faceMoveDirectionWhenMoving && !_targetFacingAppliedThisFrame)
                 FaceHorizontalDirection(delta.x);
         }
 
@@ -79,6 +89,7 @@ public class EnemyAnimationController : MonoBehaviour
         CacheAnimatorParameters();
         _isDead = false;
         _targetFacingAppliedThisFrame = false;
+        _facingLocked = false;
 
         if (spriteRenderer != null)
         {
@@ -90,6 +101,10 @@ public class EnemyAnimationController : MonoBehaviour
             return;
 
         animator.ResetTrigger(AttackTriggerHash);
+        ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
+        ResetTrigger(RushTriggerHash, _hasRushTrigger);
+        ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
+        ResetTrigger(LandTriggerHash, _hasLandTrigger);
         animator.ResetTrigger(DeathTriggerHash);
         SetBool(IsMovingHash, _hasIsMoving, false);
         SetFloat(MoveXHash, _hasMoveX, 0f);
@@ -131,6 +146,53 @@ public class EnemyAnimationController : MonoBehaviour
         PlayAttack();
     }
 
+    public void PlayCharge(Vector3 targetPosition)
+    {
+        if (faceTargetOnAttack)
+            FacePosition(targetPosition);
+
+        SetTriggerOrAttack(ChargeTriggerHash, _hasChargeTrigger);
+    }
+
+    public void PlayRush()
+    {
+        SetTriggerOrAttack(RushTriggerHash, _hasRushTrigger);
+    }
+
+    public void PlayJump()
+    {
+        SetTriggerOrAttack(JumpTriggerHash, _hasJumpTrigger);
+    }
+
+    public void PlayLand()
+    {
+        SetTriggerOrAttack(LandTriggerHash, _hasLandTrigger);
+    }
+
+    public void LockFacing(Vector2 direction)
+    {
+        if (_isDead)
+            return;
+
+        if (Mathf.Abs(direction.x) <= facingDeadZone)
+        {
+            _lockedFacingRight = spriteRenderer == null || spriteRenderer.flipX != defaultFacesRight;
+            _facingLocked = true;
+            _targetFacingAppliedThisFrame = true;
+            return;
+        }
+
+        _lockedFacingRight = direction.x > 0f;
+        _facingLocked = true;
+        SetFacingRight(_lockedFacingRight);
+        _targetFacingAppliedThisFrame = true;
+    }
+
+    public void UnlockFacing()
+    {
+        _facingLocked = false;
+    }
+
     public void TriggerDeath()
     {
         PlayDeath();
@@ -139,11 +201,16 @@ public class EnemyAnimationController : MonoBehaviour
     public void PlayDeath()
     {
         _isDead = true;
+        _facingLocked = false;
 
         if (animator == null || !_hasDeathTrigger)
             return;
 
-        animator.ResetTrigger(AttackTriggerHash);
+        ResetTrigger(AttackTriggerHash, _hasAttackTrigger);
+        ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
+        ResetTrigger(RushTriggerHash, _hasRushTrigger);
+        ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
+        ResetTrigger(LandTriggerHash, _hasLandTrigger);
         animator.SetTrigger(DeathTriggerHash);
     }
 
@@ -160,7 +227,7 @@ public class EnemyAnimationController : MonoBehaviour
 
     public void FacePosition(Vector3 targetPosition)
     {
-        if (_isDead)
+        if (_isDead || _facingLocked)
             return;
 
         if (faceTargetWhileChasing)
@@ -189,6 +256,10 @@ public class EnemyAnimationController : MonoBehaviour
     {
         _hasIsMoving = false;
         _hasAttackTrigger = false;
+        _hasChargeTrigger = false;
+        _hasRushTrigger = false;
+        _hasJumpTrigger = false;
+        _hasLandTrigger = false;
         _hasDeathTrigger = false;
         _hasMoveX = false;
         _hasMoveY = false;
@@ -202,6 +273,10 @@ public class EnemyAnimationController : MonoBehaviour
         {
             if (parameter.nameHash == IsMovingHash) _hasIsMoving = true;
             if (parameter.nameHash == AttackTriggerHash) _hasAttackTrigger = true;
+            if (parameter.nameHash == ChargeTriggerHash) _hasChargeTrigger = true;
+            if (parameter.nameHash == RushTriggerHash) _hasRushTrigger = true;
+            if (parameter.nameHash == JumpTriggerHash) _hasJumpTrigger = true;
+            if (parameter.nameHash == LandTriggerHash) _hasLandTrigger = true;
             if (parameter.nameHash == DeathTriggerHash) _hasDeathTrigger = true;
             if (parameter.nameHash == MoveXHash) _hasMoveX = true;
             if (parameter.nameHash == MoveYHash) _hasMoveY = true;
@@ -220,5 +295,26 @@ public class EnemyAnimationController : MonoBehaviour
     {
         if (hasParameter)
             animator.SetFloat(hash, value);
+    }
+
+    private void SetTriggerOrAttack(int hash, bool hasParameter)
+    {
+        if (animator == null)
+            return;
+
+        if (hasParameter)
+        {
+            animator.ResetTrigger(hash);
+            animator.SetTrigger(hash);
+            return;
+        }
+
+        PlayAttack();
+    }
+
+    private void ResetTrigger(int hash, bool hasParameter)
+    {
+        if (animator != null && hasParameter)
+            animator.ResetTrigger(hash);
     }
 }

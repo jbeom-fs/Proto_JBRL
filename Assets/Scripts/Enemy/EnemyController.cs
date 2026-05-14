@@ -188,6 +188,8 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (_circleCollider != null)
             _circleCollider.enabled = false;
 
+        if (TryGetComponent<EnemyBrain>(out var brain))
+            brain.HandleDeathStarted();
         _animationController?.TriggerDeath();
         combatChannel?.RaiseEnemyKilled(this);
         OnDied?.Invoke(this);

@@ -29,6 +29,20 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty _attackRecovery;
     private SerializedProperty _contactDamageRadius;
     private SerializedProperty _contactDamageSkin;
+    private SerializedProperty _specialAttackType;
+    private SerializedProperty _specialAttackRange;
+    private SerializedProperty _specialAttackCooldown;
+    private SerializedProperty _specialAttackWindup;
+    private SerializedProperty _specialAttackRecovery;
+    private SerializedProperty _rushSpeed;
+    private SerializedProperty _rushDuration;
+    private SerializedProperty _rushDamage;
+    private SerializedProperty _rushHitRadius;
+    private SerializedProperty _jumpDuration;
+    private SerializedProperty _jumpDamage;
+    private SerializedProperty _jumpImpactRadius;
+    private SerializedProperty _jumpMaxDistance;
+    private SerializedProperty _jumpStayInRoom;
     private SerializedProperty _projectilePrefab;
     private SerializedProperty _projectileDamage;
     private SerializedProperty _projectileSpeed;
@@ -70,6 +84,20 @@ public sealed class EnemyDataEditor : Editor
         _attackRecovery = FindHandled(nameof(EnemyData.attackRecovery));
         _contactDamageRadius = FindHandled(nameof(EnemyData.contactDamageRadius));
         _contactDamageSkin = FindHandled(nameof(EnemyData.contactDamageSkin));
+        _specialAttackType = FindHandled(nameof(EnemyData.specialAttackType));
+        _specialAttackRange = FindHandled(nameof(EnemyData.specialAttackRange));
+        _specialAttackCooldown = FindHandled(nameof(EnemyData.specialAttackCooldown));
+        _specialAttackWindup = FindHandled(nameof(EnemyData.specialAttackWindup));
+        _specialAttackRecovery = FindHandled(nameof(EnemyData.specialAttackRecovery));
+        _rushSpeed = FindHandled(nameof(EnemyData.rushSpeed));
+        _rushDuration = FindHandled(nameof(EnemyData.rushDuration));
+        _rushDamage = FindHandled(nameof(EnemyData.rushDamage));
+        _rushHitRadius = FindHandled(nameof(EnemyData.rushHitRadius));
+        _jumpDuration = FindHandled(nameof(EnemyData.jumpDuration));
+        _jumpDamage = FindHandled(nameof(EnemyData.jumpDamage));
+        _jumpImpactRadius = FindHandled(nameof(EnemyData.jumpImpactRadius));
+        _jumpMaxDistance = FindHandled(nameof(EnemyData.jumpMaxDistance));
+        _jumpStayInRoom = FindHandled(nameof(EnemyData.jumpStayInRoom));
         _projectilePrefab = FindHandled(nameof(EnemyData.projectilePrefab));
         _projectileDamage = FindHandled(nameof(EnemyData.projectileDamage));
         _projectileSpeed = FindHandled(nameof(EnemyData.projectileSpeed));
@@ -159,6 +187,51 @@ public sealed class EnemyDataEditor : Editor
             MessageType.Info);
         DrawProperty(_contactDamageRadius);
         DrawProperty(_contactDamageSkin);
+        DrawContactSpecialSection();
+    }
+
+    private void DrawContactSpecialSection()
+    {
+        DrawSectionHeader("Contact - Special Attack");
+        DrawProperty(_specialAttackType);
+
+        if (_specialAttackType != null && _specialAttackType.hasMultipleDifferentValues)
+        {
+            EditorGUILayout.HelpBox(
+                "Multiple EnemyData assets have different special attack types. Special-specific fields are hidden until the selection has one type.",
+                MessageType.Info);
+            return;
+        }
+
+        EnemySpecialAttackType specialType = GetSpecialAttackType();
+        if (specialType == EnemySpecialAttackType.None)
+        {
+            EditorGUILayout.HelpBox("None preserves existing Contact behavior.", MessageType.Info);
+            return;
+        }
+
+        DrawProperty(_specialAttackRange);
+        DrawProperty(_specialAttackWindup);
+        DrawProperty(_specialAttackRecovery);
+        DrawProperty(_specialAttackCooldown);
+
+        switch (specialType)
+        {
+            case EnemySpecialAttackType.Rush:
+                DrawProperty(_rushSpeed);
+                DrawProperty(_rushDuration);
+                DrawProperty(_rushDamage);
+                DrawProperty(_rushHitRadius);
+                break;
+
+            case EnemySpecialAttackType.Jump:
+                DrawProperty(_jumpDuration);
+                DrawProperty(_jumpDamage);
+                DrawProperty(_jumpImpactRadius);
+                DrawProperty(_jumpMaxDistance);
+                DrawProperty(_jumpStayInRoom);
+                break;
+        }
     }
 
     private void DrawRangedTimingSection()
@@ -326,6 +399,14 @@ public sealed class EnemyDataEditor : Editor
             return RangedMovementType.Chase;
 
         return (RangedMovementType)_rangedMovementType.enumValueIndex;
+    }
+
+    private EnemySpecialAttackType GetSpecialAttackType()
+    {
+        if (_specialAttackType == null || _specialAttackType.hasMultipleDifferentValues)
+            return EnemySpecialAttackType.None;
+
+        return (EnemySpecialAttackType)_specialAttackType.enumValueIndex;
     }
 
     private bool IsProjectileWallHitMode(ProjectileWallHitMode mode)

@@ -1,0 +1,1275 @@
+﻿fileFormatVersion: 2
+guid: 8c9fa1239038741439dba65f9f569cc7
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3362747753234806191
+    second: Rush_Enemy_01_0
+  - first:
+      213: 7637987564203430143
+    second: Rush_Enemy_01_1
+  - first:
+      213: -1460549260576162654
+    second: Rush_Enemy_01_2
+  - first:
+      213: 8972233739990609371
+    second: Rush_Enemy_01_3
+  - first:
+      213: 5803666516352414973
+    second: Rush_Enemy_01_4
+  - first:
+      213: 9116273523135460345
+    second: Rush_Enemy_01_5
+  - first:
+      213: -7244446260949235934
+    second: Rush_Enemy_01_6
+  - first:
+      213: -5228748583042518790
+    second: Rush_Enemy_01_7
+  - first:
+      213: 5345323510667913936
+    second: Rush_Enemy_01_8
+  - first:
+      213: -2239085067408731830
+    second: Rush_Enemy_01_9
+  - first:
+      213: 3955927608605194574
+    second: Rush_Enemy_01_10
+  - first:
+      213: 9072232790604569186
+    second: Rush_Enemy_01_11
+  - first:
+      213: -5003034118716240004
+    second: Rush_Enemy_01_12
+  - first:
+      213: 7478633121959593355
+    second: Rush_Enemy_01_13
+  - first:
+      213: -2375747521570528277
+    second: Rush_Enemy_01_14
+  - first:
+      213: -8306911977755059187
+    second: Rush_Enemy_01_15
+  - first:
+      213: -5444585523167906200
+    second: Rush_Enemy_01_16
+  - first:
+      213: 8711258628906923290
+    second: Rush_Enemy_01_17
+  - first:
+      213: -2635318679505877601
+    second: Rush_Enemy_01_18
+  - first:
+      213: 6664738256975706557
+    second: Rush_Enemy_01_19
+  - first:
+      213: 113867171181735063
+    second: Rush_Enemy_01_20
+  - first:
+      213: -6361293177171661643
+    second: Rush_Enemy_01_21
+  - first:
+      213: -196435627577948957
+    second: Rush_Enemy_01_22
+  - first:
+      213: 8438068936324682009
+    second: Rush_Enemy_01_23
+  - first:
+      213: -3300781094463043586
+    second: Rush_Enemy_01_24
+  - first:
+      213: -900594614037789839
+    second: Rush_Enemy_01_25
+  - first:
+      213: 5591362637128334815
+    second: Rush_Enemy_01_26
+  - first:
+      213: 7789233832632723017
+    second: Rush_Enemy_01_27
+  - first:
+      213: -7677807745864709806
+    second: Rush_Enemy_01_28
+  - first:
+      213: -6932584413213259036
+    second: Rush_Enemy_01_29
+  - first:
+      213: 4169544044562846419
+    second: Rush_Enemy_01_30
+  - first:
+      213: -9116231535903927755
+    second: Rush_Enemy_01_31
+  - first:
+      213: -5404289234770918162
+    second: Rush_Enemy_01_32
+  - first:
+      213: -8769198706699977653
+    second: Rush_Enemy_01_33
+  - first:
+      213: 7485395703492405018
+    second: Rush_Enemy_01_34
+  - first:
+      213: 3028996577850413647
+    second: Rush_Enemy_01_35
+  - first:
+      213: 5921672072734603461
+    second: Rush_Enemy_01_36
+  - first:
+      213: 12517160212520355
+    second: Rush_Enemy_01_37
+  - first:
+      213: -8092663131605239777
+    second: Rush_Enemy_01_38
+  - first:
+      213: -3591428696666328874
+    second: Rush_Enemy_01_39
+  - first:
+      213: -845816403679234207
+    second: Rush_Enemy_01_40
+  - first:
+      213: -4338895209822554594
+    second: Rush_Enemy_01_41
+  - first:
+      213: -6170010193851529155
+    second: Rush_Enemy_01_42
+  - first:
+      213: -8233418654488434985
+    second: Rush_Enemy_01_43
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Rush_Enemy_01_0
+      rect:
+        serializedVersion: 2
+        x: 52
+        y: 892
+        width: 289
+        height: 150
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15a423b2cbe1551d0800000000000000
+      internalID: -3362747753234806191
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_1
+      rect:
+        serializedVersion: 2
+        x: 393
+        y: 890
+        width: 274
+        height: 150
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ff0523bc8359ff960800000000000000
+      internalID: 7637987564203430143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_2
+      rect:
+        serializedVersion: 2
+        x: 718
+        y: 890
+        width: 283
+        height: 153
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2acf5629f261bbbe0800000000000000
+      internalID: -1460549260576162654
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_3
+      rect:
+        serializedVersion: 2
+        x: 1058
+        y: 890
+        width: 285
+        height: 144
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bdd2ae1bc07c38c70800000000000000
+      internalID: 8972233739990609371
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_4
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 685
+        width: 302
+        height: 143
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df4b30e82f3ca8050800000000000000
+      internalID: 5803666516352414973
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_5
+      rect:
+        serializedVersion: 2
+        x: 344
+        y: 685
+        width: 321
+        height: 138
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f3b9cd1872838e70800000000000000
+      internalID: 9116273523135460345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_6
+      rect:
+        serializedVersion: 2
+        x: 690
+        y: 685
+        width: 304
+        height: 141
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 227c6b5228e867b90800000000000000
+      internalID: -7244446260949235934
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_7
+      rect:
+        serializedVersion: 2
+        x: 1034
+        y: 685
+        width: 303
+        height: 136
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af07ce7edd0cf67b0800000000000000
+      internalID: -5228748583042518790
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_8
+      rect:
+        serializedVersion: 2
+        x: 1336
+        y: 690
+        width: 25
+        height: 22
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0daa7e689676e2a40800000000000000
+      internalID: 5345323510667913936
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_9
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 462
+        width: 276
+        height: 146
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a41983f8efb2de0e0800000000000000
+      internalID: -2239085067408731830
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_10
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 462
+        width: 256
+        height: 146
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e49b21c533746e630800000000000000
+      internalID: 3955927608605194574
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_11
+      rect:
+        serializedVersion: 2
+        x: 722
+        y: 462
+        width: 240
+        height: 139
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 26ad2a308ab07ed70800000000000000
+      internalID: 9072232790604569186
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_12
+      rect:
+        serializedVersion: 2
+        x: 845
+        y: 587
+        width: 17
+        height: 21
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7f42cae9f6a19ab0800000000000000
+      internalID: -5003034118716240004
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_13
+      rect:
+        serializedVersion: 2
+        x: 1053
+        y: 462
+        width: 260
+        height: 135
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b854fdf633179c760800000000000000
+      internalID: 7478633121959593355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_14
+      rect:
+        serializedVersion: 2
+        x: 1183
+        y: 587
+        width: 15
+        height: 16
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be326c46736a70fd0800000000000000
+      internalID: -2375747521570528277
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_15
+      rect:
+        serializedVersion: 2
+        x: 959
+        y: 503
+        width: 18
+        height: 17
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d0cd871719be7bc80800000000000000
+      internalID: -8306911977755059187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_16
+      rect:
+        serializedVersion: 2
+        x: 1302
+        y: 507
+        width: 12
+        height: 12
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 866b7563052f074b0800000000000000
+      internalID: -5444585523167906200
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_17
+      rect:
+        serializedVersion: 2
+        x: 18
+        y: 275
+        width: 325
+        height: 98
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a15bd8a919b94e870800000000000000
+      internalID: 8711258628906923290
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_18
+      rect:
+        serializedVersion: 2
+        x: 309
+        y: 359
+        width: 28
+        height: 19
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f95c91e9f977d6bd0800000000000000
+      internalID: -2635318679505877601
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_19
+      rect:
+        serializedVersion: 2
+        x: 345
+        y: 276
+        width: 329
+        height: 101
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db93ef72228ed7c50800000000000000
+      internalID: 6664738256975706557
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_20
+      rect:
+        serializedVersion: 2
+        x: 555
+        y: 359
+        width: 28
+        height: 19
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 79cadd1c699849100800000000000000
+      internalID: 113867171181735063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_21
+      rect:
+        serializedVersion: 2
+        x: 614
+        y: 369
+        width: 27
+        height: 19
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5bc21961f8528b7a0800000000000000
+      internalID: -6361293177171661643
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_22
+      rect:
+        serializedVersion: 2
+        x: 689
+        y: 277
+        width: 328
+        height: 106
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3e44cf466de164df0800000000000000
+      internalID: -196435627577948957
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_23
+      rect:
+        serializedVersion: 2
+        x: 1014
+        y: 277
+        width: 360
+        height: 101
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 91114e3adfa0a1570800000000000000
+      internalID: 8438068936324682009
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_24
+      rect:
+        serializedVersion: 2
+        x: 957
+        y: 344
+        width: 68
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef7843735154132d0800000000000000
+      internalID: -3300781094463043586
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_25
+      rect:
+        serializedVersion: 2
+        x: 1303
+        y: 330
+        width: 73
+        height: 14
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 173c5a758f17083f0800000000000000
+      internalID: -900594614037789839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_26
+      rect:
+        serializedVersion: 2
+        x: 57
+        y: 46
+        width: 264
+        height: 159
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fddfc64b1b2889d40800000000000000
+      internalID: 5591362637128334815
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_27
+      rect:
+        serializedVersion: 2
+        x: 464
+        y: 138
+        width: 15
+        height: 20
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9462782d6eae81c60800000000000000
+      internalID: 7789233832632723017
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_28
+      rect:
+        serializedVersion: 2
+        x: 530
+        y: 136
+        width: 21
+        height: 22
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 259cdfda882f27590800000000000000
+      internalID: -7677807745864709806
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_29
+      rect:
+        serializedVersion: 2
+        x: 795
+        y: 153
+        width: 14
+        height: 16
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ea8303e4338acf90800000000000000
+      internalID: -6932584413213259036
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_30
+      rect:
+        serializedVersion: 2
+        x: 391
+        y: 46
+        width: 269
+        height: 97
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d29383a7323dd930800000000000000
+      internalID: 4169544044562846419
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_31
+      rect:
+        serializedVersion: 2
+        x: 725
+        y: 45
+        width: 261
+        height: 89
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5329b3cc7b3ac7180800000000000000
+      internalID: -9116231535903927755
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_32
+      rect:
+        serializedVersion: 2
+        x: 797
+        y: 129
+        width: 12
+        height: 12
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ee4030af29b1005b0800000000000000
+      internalID: -5404289234770918162
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_33
+      rect:
+        serializedVersion: 2
+        x: 873
+        y: 121
+        width: 16
+        height: 19
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b4c355acc3c8d4680800000000000000
+      internalID: -8769198706699977653
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_34
+      rect:
+        serializedVersion: 2
+        x: 1103
+        y: 129
+        width: 13
+        height: 16
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a1766e5abb771e760800000000000000
+      internalID: 7485395703492405018
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_35
+      rect:
+        serializedVersion: 2
+        x: 1155
+        y: 123
+        width: 12
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f42d5a8d658290a20800000000000000
+      internalID: 3028996577850413647
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_36
+      rect:
+        serializedVersion: 2
+        x: 1053
+        y: 45
+        width: 242
+        height: 77
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c872b330610e2250800000000000000
+      internalID: 5921672072734603461
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_37
+      rect:
+        serializedVersion: 2
+        x: 1201
+        y: 105
+        width: 16
+        height: 18
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ad50187a487c2000800000000000000
+      internalID: 12517160212520355
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_38
+      rect:
+        serializedVersion: 2
+        x: 317
+        y: 46
+        width: 22
+        height: 20
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f18f4c132c511bf80800000000000000
+      internalID: -8092663131605239777
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_39
+      rect:
+        serializedVersion: 2
+        x: 667
+        y: 46
+        width: 20
+        height: 13
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6d03f0be0aea82ec0800000000000000
+      internalID: -3591428696666328874
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_40
+      rect:
+        serializedVersion: 2
+        x: 990
+        y: 46
+        width: 13
+        height: 11
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1673081567e0344f0800000000000000
+      internalID: -845816403679234207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_41
+      rect:
+        serializedVersion: 2
+        x: 1299
+        y: 56
+        width: 12
+        height: 12
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e16f1ec8bc529c3c0800000000000000
+      internalID: -4338895209822554594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_42
+      rect:
+        serializedVersion: 2
+        x: 1309
+        y: 46
+        width: 15
+        height: 11
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d38c0f63b68bf5aa0800000000000000
+      internalID: -6170010193851529155
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Rush_Enemy_01_43
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 6
+        height: 6
+      alignment: 7
+      pivot: {x: 0.5, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7d664243b550dbd80800000000000000
+      internalID: -8233418654488434985
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Rush_Enemy_01_0: -3362747753234806191
+      Rush_Enemy_01_1: 7637987564203430143
+      Rush_Enemy_01_10: 3955927608605194574
+      Rush_Enemy_01_11: 9072232790604569186
+      Rush_Enemy_01_12: -5003034118716240004
+      Rush_Enemy_01_13: 7478633121959593355
+      Rush_Enemy_01_14: -2375747521570528277
+      Rush_Enemy_01_15: -8306911977755059187
+      Rush_Enemy_01_16: -5444585523167906200
+      Rush_Enemy_01_17: 8711258628906923290
+      Rush_Enemy_01_18: -2635318679505877601
+      Rush_Enemy_01_19: 6664738256975706557
+      Rush_Enemy_01_2: -1460549260576162654
+      Rush_Enemy_01_20: 113867171181735063
+      Rush_Enemy_01_21: -6361293177171661643
+      Rush_Enemy_01_22: -196435627577948957
+      Rush_Enemy_01_23: 8438068936324682009
+      Rush_Enemy_01_24: -3300781094463043586
+      Rush_Enemy_01_25: -900594614037789839
+      Rush_Enemy_01_26: 5591362637128334815
+      Rush_Enemy_01_27: 7789233832632723017
+      Rush_Enemy_01_28: -7677807745864709806
+      Rush_Enemy_01_29: -6932584413213259036
+      Rush_Enemy_01_3: 8972233739990609371
+      Rush_Enemy_01_30: 4169544044562846419
+      Rush_Enemy_01_31: -9116231535903927755
+      Rush_Enemy_01_32: -5404289234770918162
+      Rush_Enemy_01_33: -8769198706699977653
+      Rush_Enemy_01_34: 7485395703492405018
+      Rush_Enemy_01_35: 3028996577850413647
+      Rush_Enemy_01_36: 5921672072734603461
+      Rush_Enemy_01_37: 12517160212520355
+      Rush_Enemy_01_38: -8092663131605239777
+      Rush_Enemy_01_39: -3591428696666328874
+      Rush_Enemy_01_4: 5803666516352414973
+      Rush_Enemy_01_40: -845816403679234207
+      Rush_Enemy_01_41: -4338895209822554594
+      Rush_Enemy_01_42: -6170010193851529155
+      Rush_Enemy_01_43: -8233418654488434985
+      Rush_Enemy_01_5: 9116273523135460345
+      Rush_Enemy_01_6: -7244446260949235934
+      Rush_Enemy_01_7: -5228748583042518790
+      Rush_Enemy_01_8: 5345323510667913936
+      Rush_Enemy_01_9: -2239085067408731830
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+
