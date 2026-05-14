@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-13  
+> 작성 기준일: 2026-05-14  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -40,8 +40,8 @@
 | 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair |
-| 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기 |
-| 적 전투 | 근접 접촉 피해 + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 |
+| 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기, Contact Special Attack(Rush/Jump) |
+| 적 전투 | 근접 접촉 피해 + Contact Special(Rush 돌진 / Jump 도약 + 착지 임팩트) + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 |
 | 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
 | 진행 방식 | 계단을 통한 층 이동 (무한 층 구조) |
 
@@ -120,7 +120,8 @@ Assets/Scripts/
 │   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드)
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
-│   └── EnemyData.cs                # 적 ScriptableObject (Contact/Ranged + 투사체 패턴)
+│   └── EnemyData.cs                # 적 ScriptableObject — Contact(+Special Rush/Jump) / Ranged + 투사체 패턴
+│                                    #   (EnemySpecialAttackType: None/Rush/Jump + 전용 파라미터 그룹)
 │
 ├── Generate/
 │   ├── DungeonGenerator.cs         # BSP + Prim MST 생성 알고리즘 (순수 C#)
@@ -165,8 +166,10 @@ Assets/Scripts/
 │   └── FogVisibilityRenderer.cs    # FogOfWar visible 상태에 따라 Renderer.enabled 토글 (적·적 투사체 공용)
 │
 ├── Enemy/
-│   ├── EnemyController.cs          # 적 HP·피해·사망·상태이상·넉백 벽 클램핑
+│   ├── EnemyController.cs          # 적 HP·피해·사망·상태이상·넉백 벽 클램핑 (Die 시 EnemyBrain.HandleDeathStarted 호출)
 │   ├── EnemyBrain.cs               # FSM 조율 추상 + MovementHandler/TargetHandler/ActionHandler
+│   │                               #   + EnemySpecialAnimationType(Charge/Rush/Jump/Land) 트리거 라우팅
+│   │                               #   + LockSpecialFacing/UnlockSpecialFacing/HandleDeathStarted
 │   │                               #   (상태 인스턴스는 EnemyStates.cs에 정의, BossEnemyBrain은 CreateState 오버라이드)
 │   ├── NormalEnemyBrain.cs         # 기본 몬스터용 경량 Brain (커스텀 상태 없음)
 │   ├── NormalEnemyAI.cs            # [Obsolete] NormalEnemyBrain을 상속만 하는 호환 래퍼 (기존 프리팹 유지용)
@@ -174,9 +177,12 @@ Assets/Scripts/
 │   ├── EnemyMovementHandler.cs     # A* 이동 + 군중 분리 + Ranged 이동 분기 (Chase/Kiting/Random)
 │   ├── EnemyTargetHandler.cs       # 플레이어 감지·시야 갱신
 │   ├── EnemyActionHandler.cs       # Contact/Ranged 행동 사이클·쿨다운
+│   │                               #   + Contact Special Attack 상태머신 (Windup→Rush/Jump→Recovery)
+│   │                               #   + Rush 경로 데미지(1회 제한 HashSet) / Jump 착지 임팩트
 │   ├── AStarPathfinder.cs          # GC 최소화 A* 탐색기
 │   ├── EnemyHealthBar.cs           # 머리 위 체력바 렌더러
 │   ├── EnemyAnimationController.cs # 적 이동/공격/사망 애니메이션 + 사격 방향 페이싱
+│   │                               #   + Charge/Rush/Jump/Land 트리거 + LockFacing/UnlockFacing (Special 중 페이싱 고정)
 │   └── EnemyPoolManager.cs         # 적 오브젝트 풀
 │
 ├── UI/
@@ -202,12 +208,14 @@ Assets/Scripts/
 ```
 Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── SkillDataEditor.cs              # SkillData CustomEditor — Basic/InstantArea/Projectile/Dash 섹션 + Reserved foldout + 음수·non-positive 경고
-└── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
+└── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 ```
 
 ```
 Tools/DungeonGenDebug/              # Unity 외부 standalone .NET 콘솔 (DungeonGenerator 검증용)
 └── Program.cs                      # seed/floor 별 던전을 그려 corridor carving·MST 연결 디버그 출력
+                                    #   --scene-settings 플래그로 실제 씬 설정(120×80, room 10–50) 시뮬레이션
+                                    #   RoomPerimeterCorridorScan / CornerDoorwayScan 으로 통로 위반 검출
                                     #   (Unity 측에서 DungeonGenerator.DebugSink + DebugCorridorCarving=true 로 동일 로그 활성 가능)
 ```
 
@@ -282,48 +290,65 @@ return mixed & 0x7FFFFFFF;
 
 > 방별 적 스폰은 별도의 결정론 경로(`DeterministicSeedUtility.CreateSeed(globalSeed, dungeonType, floor, RoomInfo.StableRoomKey, "enemy_spawn")`)를 사용합니다. `DungeonManager.dungeonType`(`DungeonTypeId`) 으로 같은 시드라도 던전 종류별 스폰 RNG 를 분리할 수 있습니다. 자세한 내용은 [9-1-2. 결정론적 방 스폰 시드](#9-1-2-결정론적-방-스폰-시드-deterministicseedutility) 참조.
 
-### 4-4. 방 연결 알고리즘 (Prim's MST + 추가 연결)
+### 4-4. 방 연결 알고리즘 (Prim's MST + EXTRA 다중 후보 점수화)
 
 ```
 ConnectAll():
   connected = { 방0 }
   remaining = { 방1, 방2, ... }
 
+  ── 1단계: MST (isMandatoryEdge=true) ────────────────────
   while remaining이 비지 않을 때:
-    ── MST 단계 (isMandatoryEdge=true) ─────────────────
     connected × remaining 쌍 중 유클리드 거리 최소 → src, dst
     DrawLCorridor(src, dst, mandatory=true, pathBuf)  ← L자형 통로 연결
-    connected ← dst 추가, remaining ← dst 제거
+    connectedPairs.Add((src,dst)) / connected ← dst / remaining ← dst 제거
 
-    ── 추가 연결 단계 (ExtraConnProb 확률) ─────────────
-    src 기준 dst를 제외한 가장 가까운 방 k 탐색
-    DrawLCorridor(src, k, mandatory=false, pathBuf)
+ConnectExtraCorridors():
+  ── 2단계: EXTRA (ExtraConnProb / ExtraCandidateCount) ───
+  for attemptIndex in [0 .. roomCount-1]:
+    if rng.NextDouble() >= ExtraConnProb → skip attempt
+    for 모든 (i,j) 미연결 방 pair:
+      pairCandidates = BuildExtraPathCandidatesForPair(...)   ← 최대 ExtraCandidateCount개
+        각 후보마다 primary/alternate axis L-path를 emit + 검증
+        (interior/perim/perim+1, perimeter-corridor, corner-doorway 충돌 모두 제외)
+      score(corridorOverlap, parallelRun, pathLength, centerDist) → 가장 깨끗한 후보 1개
+      pairBestCandidates.Add(best)
+    그 attempt에서 가장 점수 좋은 1쌍만 carve, DrawLCorridor(..., mandatory=false)
+    carve 성공 시에만 connectedPairs 갱신 (skip 시 connectedPairs 보존)
 ```
+
+- `DungeonSettings.ExtraCandidateCount` (기본 12): 한 방 pair마다 점수화할 EXTRA 후보 개수
+- `DungeonSettings.ExtraConnProb` (기본 0.5): MST 완료 후 각 EXTRA attempt에서 통로 생성을 시도할 확률 (※ 의미가 "두 번째로 가까운 방 추가 연결 확률"에서 attempt 단위 시도 확률로 변경됨)
+- `DrawLCorridor`는 `bool`을 반환해 EXTRA가 skip되면 호출자가 `connectedPairs`를 갱신하지 않음 (잘못된 logical 연결 상태 방지)
 
 ### 4-4-1. Corridor Carving 검증 (DrawLCorridor)
 
 `DrawLCorridor`는 L자형 2-segment 통로를 grid에 직접 그리지 않고, 한 번 path 후보를 cell list(`pathBuf`)에 emit해 검증 → carve 순서로 동작합니다.
 
 ```
-DrawLCorridor(src, dst, isMandatoryEdge, pathBuf):
+DrawLCorridor(src, dst, isMandatoryEdge, pathBuf) → bool:
   primaryHorizFirst = |dx| >= |dy|
 
   1) primary axis 로 path 후보 cell 미리 emit
-  2) src/dst 가 아닌 다른 방의 interior / perim(=0) / perim+1(벽 옆 1칸)
-     과 겹치는지 검사
-  3) 겹치면 alternate axis 로 1회 재시도
-  4) 둘 다 겹치면:
-       isMandatoryEdge == true  → connectivity 보장 위해 primary 로 강제 carve
-       isMandatoryEdge == false → 그냥 skip (EXTRA 연결은 포기 가능)
-  5) src/dst side 축 범위가 겹치면 동일 door 축을 재사용,
+  2) src/dst 가 아닌 다른 방의 interior / perim(=0) / perim+1(벽 옆 1칸) 과 겹치는지 검사
+  3) EXTRA(optional)에 한해 추가 검증:
+       PathCarvesRoomPerimeter — 방 perimeter 위의 ROOM 셀이 corridor 로 carving 되는지
+       PathUsesRoomCornerDoorway — 두 방의 모서리(코너) doorway 를 통로가 횡단하는지
+       하나라도 true → 후보 부적합
+  4) 겹치면 alternate axis 로 1회 재시도
+  5) 둘 다 충돌:
+       isMandatoryEdge == true  → connectivity 보장 위해 primary 강제 carve, return true
+       isMandatoryEdge == false → 그냥 skip, return false (EXTRA 연결은 포기 가능)
+  6) src/dst side 축 범위가 겹치면 동일 door 축을 재사용 (ClampDoorAxis 로 방 범위에 정렬),
      겹치지 않을 때만 기존 MinStraight 보정 적용
 
 재사용 버퍼: pathBuf (List<(int,int)>) — 통로 1회당 0 할당
 디버그 hook : DungeonGenerator.DebugCorridorCarving = true + DebugSink 구독 시
-              MST/EXTRA 통로마다 src/dst Rect 와 path 결정 사유를 로그
+              MST/EXTRA 통로마다 src/dst Rect, path 결정 사유, before/after connect-state 스냅샷 로그
+              DebugConnectState — connected / remaining / reachable(R0 BFS) 집합 비교로 logical-only / grid-only 불일치 검출
 ```
 
-> **알려진 미해결 항목 (보류)**: Seed=283321776792 Floor=3에서 시각적으로 통로가 끊긴 것처럼 보이는 케이스가 있으나, generator 기준으로는 정상 MST 연결이며 bad-door run / detached corridor / orphan door 모두 없음. 현재는 추가 수정하지 않고 유지.
+> **알려진 미해결 항목 (재현 시 보류)**: Seed=283321776792 Floor=3에서 시각적으로 통로가 끊긴 것처럼 보이는 케이스. corridor carving 검증(perimeter/corner-doorway/connectedPairs 보존)이 4-5월에 강화되어 동일 시드에서 상태가 달라졌을 수 있으나, 보수적으로 재검증 전까지 보류 상태 유지.
 
 ### 4-5. 타일 타입 상수
 
@@ -792,9 +817,13 @@ FindPath(start, goal, grid):
 
 ```
 Contact (근접):
+  Contact Special Attack 진행 중이 아닐 때만 접촉 피해를 적용
   ShouldKeepChasing && Collider 거리 ≤ contactDamageSkin
     → ApplyDamage()  ← 매 프레임 접촉 피해 적용
     (플레이어는 IsDamageInvincible 동안 데미지 무시)
+  CanAttack (Contact 분기): specialAttackType ≠ None &&
+                           sqrDistance ≤ specialAttackRange² &&
+                           attackCooldown ≤ 0 → AttackState 진입 → BeginContactSpecialAttack
 
 Ranged (원거리):
   CanAttack(사거리·쿨다운) → AttackState 진입
@@ -850,6 +879,41 @@ Kiting의 "적정 거리 도달", Random의 "다음 목적지까지 대기"처�
   - LOS/A* 흐름은 그대로 skip (Ranged 분기 안에서 자체 처리)
 ```
 
+### 8-4-3. Contact Special Attack (Rush / Jump)
+
+`EnemyData.specialAttackType`이 `Rush` 또는 `Jump`인 Contact 적은 일반 접촉 피해 외에 별도 사이클을 실행합니다. ActionHandler 내부 상태머신 `EnemySpecialAttackPhase` (None → Windup → Rush/Jump → Recovery)로 제어되며, 진행 중에는 일반 접촉 피해와 일반 이동이 모두 정지됩니다.
+
+```
+공통 흐름 (BeginContactSpecialAttack → TickContactSpecialAttack):
+  Windup   — specialAttackWindup 동안 정지, Charge 애니메이션 + 페이싱 잠금
+             (Jump는 windup 진입 시 TryResolveJumpTarget 으로 착지점 미리 결정;
+              실패하면 CancelContactSpecialAttack 으로 즉시 종료 + 짧은 쿨다운)
+  Rush     — 매 프레임 _specialDirection × rushSpeed × dt 만큼 transform 이동
+             CanOccupy 실패(벽/막힘) 시 즉시 Recovery 진입
+             경로 위 타겟에 rushDamage 적용 — _rushHitTargets(HashSet) 로 1회 제한
+             FacingLock 으로 sprite 가 진행 방향 고정
+  Jump     — Lerp(start, jumpTargetPosition, t) 보간 비행 (jumpDuration)
+             종료 프레임에 위치 스냅 + ApplyJumpImpactDamage(jumpImpactRadius)
+             Land 애니메이션 트리거 → Recovery
+  Recovery — specialAttackRecovery 동안 정지, 일반 사이클 복귀
+
+쿨다운: StartRush/StartJump 진입 시 _attackCooldownTimer = specialAttackCooldown
+        (Cancel 경로는 최소 0.1s 보호값)
+
+사망 시:
+  EnemyController.Die() → EnemyBrain.HandleDeathStarted() →
+    StopMoving + Action.ResetRuntimeState (specialPhase / timer / hit set 클리어) + UnlockSpecialFacing
+```
+
+| 파라미터 (EnemyData) | Rush | Jump |
+|---|---|---|
+| 공통 (specialAttack*) | Range / Cooldown / Windup / Recovery | 동일 |
+| 전용 속도 | `rushSpeed`, `rushDuration` | `jumpDuration` |
+| 전용 데미지 | `rushDamage`, `rushHitRadius` | `jumpDamage`, `jumpImpactRadius` |
+| 전용 위치 | — | `jumpMaxDistance`, `jumpStayInRoom` |
+
+> 데미지 값이 0이면 `EnemyData.attackPower` 가 사용됩니다 (`GetSpecialDamage`).
+
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
 
 | Pattern | 동작 |
@@ -889,7 +953,8 @@ TakeDamage → HP 0 도달 → Die():
   IsDead = true
   CircleCollider 비활성화 (이후 충돌·접촉 피해 차단)
   ResetStatusEffects() (넉백·슬로우 클리어)
-  EnemyAnimationController.TriggerDeath() → DeathTrigger
+  EnemyBrain.HandleDeathStarted()         ← Special Attack 상태머신 강제 종료, FSM 핸들러 ResetRuntimeState
+  EnemyAnimationController.TriggerDeath() → DeathTrigger (Attack/Charge/Rush/Jump/Land trigger 모두 reset)
   CombatEventChannel.RaiseEnemyKilled()  ← 방 클리어 판정 즉시 트리거
   OnDied?.Invoke()
   _deathTimer = EnemyData.deathDelay (기본 0.5초)
@@ -912,9 +977,12 @@ LateUpdate 기반 위치 변화를 감지해 Animator 파라미터를 자동 갱
 | `MoveX`, `MoveY` (float) | 이동 방향 정규화 벡터 |
 | `LastMoveX`, `LastMoveY` (float) | 마지막 이동 방향 (Idle 자세 유지) |
 | `AttackTrigger` (trigger) | `PlayAttack(targetPosition)` 호출 시 — 타겟 방향으로 페이싱 후 발동 |
+| `ChargeTrigger` / `RushTrigger` / `JumpTrigger` / `LandTrigger` (trigger) | Contact Special Attack 단계별 트리거. 해당 파라미터가 없으면 자동으로 `AttackTrigger` 폴백 (`SetTriggerOrAttack`) |
 | `DeathTrigger` (trigger) | 사망 시 Sprite flipX 페이싱 잠금 |
 
 `faceTargetWhileChasing` 옵션을 켜면 EnemyBrain이 매 프레임 `FacePosition(Target)`을 호출해 추격 중에도 항상 타겟을 바라보도록 보정합니다 (근접 적의 추적 방향 안정화). 이때 이동 방향 기반의 자동 페이싱(`faceMoveDirectionWhenMoving`)은 한 프레임 동안 억제됩니다.
+
+`LockFacing(direction)` / `UnlockFacing()` — Contact Special Attack 의 Rush/Jump 동안 sprite 가 진행 방향으로 고정되도록 사용. 잠금 중에는 `faceMoveDirectionWhenMoving` / `faceTargetWhileChasing` 모두 무시됩니다.
 
 ResetAnimationState()에서 `Animator.Rebind()` + `Play("Idle", 0, 0f)`로 풀 재사용 시 잔여 상태를 초기화합니다 (`gameObject.activeInHierarchy`가 false인 경우 Rebind를 건너뜁니다).
 
@@ -1311,6 +1379,13 @@ FloorTransition(targetFloor):
 | EnemyController LateUpdate 좌표 skip | `EnemyController.LateUpdate` | 이전 안전 좌표와 동일 시 4-corner footprint 검사 건너뜀 |
 | 슬로우 만료 시에만 재계산 | `EnemyController.TickSlowEffects` | Percentage 기반이므로 timer 감소만으로는 강도가 바뀌지 않음 — 만료/추가 시점에만 RecalculateStrongestSlow |
 | 기존 CircleCollider 보존 | `CharacterPhysicsSetup.Configure` | Circle 이 이미 있으면 radius/offset/material 을 덮어쓰지 않음 — 프리팹별 충돌 범위 커스터마이즈 가능 |
+| EXTRA 통로 다중 후보 점수화 | `BuildExtraPathCandidatesForPair` + `ConnectExtraCorridors` | pair 마다 `ExtraCandidateCount` 후보를 생성·검증한 뒤 corridor overlap/parallel run/path length/center distance 기반 점수로 가장 깨끗한 1개만 채택 — 외곽 우회·평행 통로·끊긴 통로 발생률 감소 |
+| EXTRA skip 시 connectedPairs 보존 | `DrawLCorridor` 의 bool 반환 + 호출자 분기 | optional skip 시 잘못된 logical 연결 상태 누적 방지 |
+| 통로의 방 perimeter/모서리 검증 | `PathCarvesRoomPerimeter` / `PathUsesRoomCornerDoorway` | EXTRA 통로가 다른 방 테두리 ROOM 셀이나 모서리 doorway 를 횡단하지 못하도록 사전 차단 |
+| Door 축 ClampDoorAxis | `DrawHorizontalCorridor` / `DrawVerticalCorridor` | 동일 door 축 재사용 시 sy/ey/sx/ex 를 방 범위에 강제 정렬 — 통로가 방 밖으로 새는 케이스 방지 |
+| Contact Special Attack 상태머신 | `EnemyActionHandler` `_specialPhase` (None→Windup→Rush/Jump→Recovery) | Rush 경로 1회 제한 (`_rushHitTargets` HashSet), Jump 착지점 사전 결정 (`TryResolveJumpTarget`), 사망 시 `HandleDeathStarted` 로 일괄 정리 |
+| Special Attack 페이싱 잠금 | `EnemyAnimationController.LockFacing` / `UnlockFacing` | Rush/Jump 진행 방향으로 sprite 고정, `faceMoveDirection`/`faceTargetWhileChasing` 무시 — Special 종료 시 자동 해제 |
+| Special Animator 트리거 폴백 | `SetTriggerOrAttack` + `_hasChargeTrigger`/`Rush`/`Jump`/`Land` 사전 캐싱 | Animator 에 Charge/Rush/Jump/Land 파라미터가 없는 적은 자동으로 AttackTrigger 폴백 — 기존 프리팹 호환 |
 
 ---
 
@@ -1417,8 +1492,12 @@ case SkillExecutionType.AreaOverTime:
 ### 새 적 타입 추가
 
 1. `EnemyData` ScriptableObject 생성 (수치 입력)
+   - `behaviorType`: Contact / Ranged
+   - Contact 적에 Rush/Jump 특수 공격을 부여하려면 `specialAttackType` 설정 + 전용 파라미터 입력
+   - Ranged 적은 `rangedMovementType`(Chase/Kiting/Random) + 투사체 패턴 설정
 2. 프리팹에 `EnemyController` + `EnemyHealthBar` + `Collider2D` 부착
 3. `NormalEnemyBrain` 부착 또는 `EnemyBrain` 상속 후 커스텀 FSM 구현
+   - Charge/Rush/Jump/Land Animator 트리거가 없는 프리팹은 자동으로 AttackTrigger 폴백 (호환)
 4. `EnemyPoolManager`에 프리팹 등록
 
 ### 새 이벤트 추가
@@ -1512,11 +1591,11 @@ case SkillExecutionType.AreaOverTime:
 | **스킬 castDelay/recoveryDelay** | `PlayerCombatController.IsSkillBusy`/`BlocksPlayerMovement` — 선딜·후딜 동안 이동·기본공격·스킬 입력 잠금 |
 | **투사체 회전 모드** | `ProjectileRotationMode` — KeepPrefabRotation / FaceMoveDirection (기본). Bounce 이후에도 sprite가 진행 방향을 향함 |
 | **층 이동 시 투사체 정리** | `ProjectilePool.ReleaseAllActiveProjectiles(FloorTransition)` — FloorTransition reason 추가, 이전 층 잔존 투사체 일괄 회수 |
-| **Corridor carving 검증** | `DrawLCorridor` interior/perim/perim+1 충돌 검사 + primary/alternate axis 재시도 + mandatory(MST) vs optional(EXTRA) 분기 |
+| **Corridor carving 검증** | `DrawLCorridor` interior/perim/perim+1 충돌 검사 + EXTRA 전용 PathCarvesRoomPerimeter / PathUsesRoomCornerDoorway 검증 + primary/alternate axis 재시도 + mandatory(MST) vs optional(EXTRA) 분기 + bool 반환으로 connectedPairs 보존 |
 | **Generator 디버그 hook** | `DungeonGenerator.DebugCorridorCarving` + `DebugSink` — MST/EXTRA 통로마다 src/dst Rect 와 path 결정 로그 |
 | **DungeonGenDebug 도구** | `Tools/DungeonGenDebug` — Unity 외부 .NET 콘솔로 던전 생성 결과를 standalone 검증 |
 | **PerfStage using-scope 측정** | `Tool/PerfStage.cs` — RuntimePerfLogger 비활성 시 zero-alloc passthrough, 활성 시 elapsedMs metadata 자동 기록 |
-| **Skill / Enemy CustomEditor** | `Editor/SkillDataEditor` (executionType 별 섹션), `Editor/EnemyDataEditor` (Basic / Contact 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
+| **Skill / Enemy CustomEditor** | `Editor/SkillDataEditor` (executionType 별 섹션), `Editor/EnemyDataEditor` (Basic / Contact + Contact-Special(Rush/Jump) 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
 | **Kiting 다중 후퇴 방향** | `s_KitingRotations` 5단계 폴백 (away → away±45° → side±90°) — 후퇴가 막혀도 첫 통과 후보로 이동 |
 | **Random 목적지 minR 보호** | `MovementHandler.TickRandomMovement` — `minR=max(radius*0.25, footprintRadius+0.1)` 로 자기 위 목적지 차단 |
 | **정지 시 separation step** | `MovementHandler.TryApplyIdleSeparationStep` — Kiting/Random 대기 상태에서도 이웃이 가까우면 산개 |
@@ -1528,6 +1607,19 @@ case SkillExecutionType.AreaOverTime:
 | **EnemyData 인스펙터 정리** | `EnemyDataEditor` 섹션 재편: Basic / Contact 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기 |
 | **CharacterPhysicsSetup 보존 모드** | 기존 CircleCollider 가 있으면 radius/offset/material 보존 — 프리팹별 충돌 범위 커스터마이즈 가능 |
 | **Ranged 적 03/04/05** | `RangedEnemy03/04/05` 프리팹 + RangeEnemy03/04/05.asset 추가 (FirePattern/이동 타입 별 변형) |
+| **Contact Special Attack (Rush)** | `EnemySpecialAttackType.Rush` — Windup→Rush→Recovery 상태머신, 경로 위 타겟 1회 데미지(`_rushHitTargets`), 페이싱 잠금, CanOccupy 실패 시 즉시 Recovery |
+| **Contact Special Attack (Jump)** | `EnemySpecialAttackType.Jump` — Windup 진입 시 `TryResolveJumpTarget`으로 착지점 사전 결정(`jumpStayInRoom` 옵션), Lerp 보간 비행, 착지 시 `jumpImpactRadius` 임팩트 데미지 + Land 애니메이션 |
+| **Contact Special 적 프리팹** | `RushEnemy01`, `JumpEnemy01` 프리팹 + 전용 Animator(Charge/Rush/Jump/Land 트리거) + EnemyData 에셋 |
+| **Special Animator 폴백** | `EnemyAnimationController.SetTriggerOrAttack` — Charge/Rush/Jump/Land 파라미터 없는 적은 AttackTrigger 폴백 |
+| **Special Facing Lock** | `EnemyAnimationController.LockFacing/UnlockFacing` — Rush/Jump 진행 방향으로 sprite 고정, 자동 페이싱 보정 무시 |
+| **사망 시 Brain 정리** | `EnemyBrain.HandleDeathStarted` — Special 상태머신/페이싱 잠금/핸들러 런타임 상태를 사망 즉시 정리, `EnemyController.Die`에서 호출 |
+| **EnemyData Contact-Special 인스펙터** | `EnemyDataEditor.DrawContactSpecialSection` — `specialAttackType` 별로 Rush/Jump 전용 필드 그룹만 노출 |
+| **EXTRA 통로 다중 후보 점수화** | `BuildExtraPathCandidatesForPair` + `ConnectExtraCorridors` — pair 마다 `ExtraCandidateCount`(기본 12) 후보를 검증·점수화하여 가장 깨끗한 1개 채택 |
+| **EXTRA 통로 외곽 우회 방지** | `DrawLCorridor`가 EXTRA(optional)에서는 primary/alternate 모두 충돌 시 skip + bool 반환 — `connectedPairs` 보존으로 잘못된 logical 상태 누적 차단 |
+| **방 perimeter / 모서리 doorway 검증** | `PathCarvesRoomPerimeter`, `PathUsesRoomCornerDoorway` — 통로가 다른 방 테두리 ROOM 셀이나 모서리 doorway 를 횡단하지 못하도록 사전 차단 |
+| **DungeonGenDebug `--scene-settings`** | Unity 외부 콘솔에서도 실제 씬 설정(120×80, room 10–50)으로 시뮬레이션 가능, `RoomPerimeterCorridorScan`/`CornerDoorwayScan` 출력 추가 |
+| **Generator 디버그 connect-state 로그** | `DebugConnectState` + `DebugReachableRoomsFromR0` — 단계마다 connected/remaining/reachable(BFS) 비교로 logical-only / grid-only 불일치 추적 |
+| **DungeonSettings.ExtraCandidateCount** | 인스펙터 `DungeonManager.extraCandidateCount` (기본 12) — pair 당 EXTRA 후보 생성·점수화 개수 노출 |
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 
 ### 미구현 (다음 단계)
