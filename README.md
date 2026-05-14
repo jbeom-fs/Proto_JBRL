@@ -348,8 +348,6 @@ DrawLCorridor(src, dst, isMandatoryEdge, pathBuf) → bool:
               DebugConnectState — connected / remaining / reachable(R0 BFS) 집합 비교로 logical-only / grid-only 불일치 검출
 ```
 
-> **알려진 미해결 항목 (재현 시 보류)**: Seed=283321776792 Floor=3에서 시각적으로 통로가 끊긴 것처럼 보이는 케이스. corridor carving 검증(perimeter/corner-doorway/connectedPairs 보존)이 4-5월에 강화되어 동일 시드에서 상태가 달라졌을 수 있으나, 보수적으로 재검증 전까지 보류 상태 유지.
-
 ### 4-5. 타일 타입 상수
 
 | 값 | 상수 | 의미 |
@@ -1636,7 +1634,6 @@ case SkillExecutionType.AreaOverTime:
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
 | SkillData dash 툴팁 정정 | 낮음 | `dashDamageOnPath`/`OnContact` 인스펙터 툴팁이 아직 "first-pass implementation shares the same detection path"로 남아 있음 — 실제 구현은 분리됨 |
-| 시각적으로 끊긴 통로 케이스 | 낮음 | Seed=283321776792 Floor=3에서 통로가 시각적으로 끊겨 보이는 케이스가 있으나 generator 기준으로는 정상 MST 연결. 보류 (커밋 32eefd1c) |
 
 ---
 
