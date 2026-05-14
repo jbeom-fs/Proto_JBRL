@@ -685,6 +685,13 @@ public static class DungeonGenerator
         if (PathCreatesBadDoorRun(grid, path, rooms, s)) return false;
         if (PathCreatesOrphanDoorStub(grid, path, rooms, s)) return false;
 
+        if (!isMandatoryEdge &&
+            PathCreatesOutwardRoomStub(path, rooms[srcIdx], rooms[dstIdx], s))
+        {
+            if (DebugCorridorCarving) DebugEmit("  reject=outward-room-stub");
+            return false;
+        }
+
         // Extra corridors are optional, so reject long side-parallel runs near
         // third rooms while still allowing short perpendicular door stubs.
         if (!isMandatoryEdge &&
@@ -725,6 +732,66 @@ public static class DungeonGenerator
                 if (topBot1 || leftRt1) return true;
             }
         }
+        return false;
+    }
+
+    private static bool PathCreatesOutwardRoomStub(
+        List<(int x, int y)> path, Room src, Room dst, DungeonSettings s)
+    {
+        int overlapX = OverlapLength(src.X, src.X + src.W, dst.X, dst.X + dst.W);
+        int overlapY = OverlapLength(src.Y, src.Y + src.H, dst.Y, dst.Y + dst.H);
+
+        bool separatedX = src.X + src.W <= dst.X || dst.X + dst.W <= src.X;
+        bool separatedY = src.Y + src.H <= dst.Y || dst.Y + dst.H <= src.Y;
+        int minUsefulOverlap = Math.Max(1, s.MinStraight);
+
+        if (separatedX && overlapY >= minUsefulOverlap)
+        {
+            bool srcUsesVerticalDetourSide = PathTouchesTopOrBottomSide(path, src);
+            bool dstUsesVerticalDetourSide = PathTouchesTopOrBottomSide(path, dst);
+            if (srcUsesVerticalDetourSide && dstUsesVerticalDetourSide)
+                return true;
+        }
+
+        if (separatedY && overlapX >= minUsefulOverlap)
+        {
+            bool srcUsesHorizontalDetourSide = PathTouchesLeftOrRightSide(path, src);
+            bool dstUsesHorizontalDetourSide = PathTouchesLeftOrRightSide(path, dst);
+            if (srcUsesHorizontalDetourSide && dstUsesHorizontalDetourSide)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static int OverlapLength(int aStart, int aEnd, int bStart, int bEnd)
+        => Math.Max(0, Math.Min(aEnd, bEnd) - Math.Max(aStart, bStart));
+
+    private static bool PathTouchesTopOrBottomSide(List<(int x, int y)> path, Room room)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            bool onTopOrBottom = y == room.Y - 1 || y == room.Y + room.H;
+            if (onTopOrBottom && x >= room.X && x < room.X + room.W)
+                return true;
+        }
+
+        return false;
+    }
+
+    private static bool PathTouchesLeftOrRightSide(List<(int x, int y)> path, Room room)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            bool onLeftOrRight = x == room.X - 1 || x == room.X + room.W;
+            if (onLeftOrRight && y >= room.Y && y < room.Y + room.H)
+                return true;
+        }
+
         return false;
     }
 

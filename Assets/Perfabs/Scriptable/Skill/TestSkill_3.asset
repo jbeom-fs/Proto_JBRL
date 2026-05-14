@@ -42,8 +42,8 @@ MonoBehaviour:
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
-  dashDistance: 4
-  dashDuration: 0.1
+  dashDistance: 3
+  dashDuration: 0.2
   dashStopOnWall: 1
   dashDamageOnPath: 1
   dashDamageOnContact: 0

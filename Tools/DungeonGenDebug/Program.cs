@@ -8,37 +8,39 @@ internal static class Program
         long seedLong = 283321776792L;
         int floor = 3;
         bool dumpAll = false;
+        bool sceneSettings = false;
         for (int i = 0; i < args.Length; i++)
         {
             if (args[i] == "--seed" && i + 1 < args.Length) seedLong = long.Parse(args[++i]);
             else if (args[i] == "--floor" && i + 1 < args.Length) floor = int.Parse(args[++i]);
             else if (args[i] == "--all") dumpAll = true;
+            else if (args[i] == "--scene-settings") sceneSettings = true;
         }
 
         if (dumpAll)
         {
             for (int f = 1; f <= 5; f++)
-                RunOne(seedLong, f, verbose: false);
+                RunOne(seedLong, f, verbose: false, sceneSettings);
             long[] otherSeeds = { 111111111111L, 999999999999L, 424242424242L };
             for (int i = 0; i < otherSeeds.Length; i++)
-                RunOne(otherSeeds[i], 3, verbose: false);
+                RunOne(otherSeeds[i], 3, verbose: false, sceneSettings);
             return 0;
         }
 
-        RunOne(seedLong, floor, verbose: true);
+        RunOne(seedLong, floor, verbose: true, sceneSettings);
         return 0;
     }
 
-    static void RunOne(long seedLong, int floor, bool verbose)
+    static void RunOne(long seedLong, int floor, bool verbose, bool sceneSettings)
     {
         DungeonGenerator.DebugSink = verbose ? Console.WriteLine : null;
         DungeonGenerator.DebugCorridorCarving = verbose;
 
         var s = DungeonSettings.Default;
-        s.MapWidth = 80;
-        s.MapHeight = 50;
-        s.MinRoomSize = 5;
-        s.MaxRoomSize = 14;
+        s.MapWidth = sceneSettings ? 120 : 80;
+        s.MapHeight = sceneSettings ? 80 : 50;
+        s.MinRoomSize = sceneSettings ? 10 : 5;
+        s.MaxRoomSize = sceneSettings ? 50 : 14;
         s.BspDepth = 4;
         s.ExtraConnProb = 0.5f;
         s.Floor = floor;
@@ -48,6 +50,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("==================================================");
         Console.WriteLine($"Seed(long)={seedLong} Settings.Seed={s.Seed} Floor={s.Floor} DerivedSeed={s.DeriveSeed()}");
+        Console.WriteLine($"Settings={s.MapWidth}x{s.MapHeight} RoomSize={s.MinRoomSize}-{s.MaxRoomSize}");
         Console.WriteLine("==================================================");
 
         var grid = DungeonGenerator.GenerateDungeon(s, out var rooms);
