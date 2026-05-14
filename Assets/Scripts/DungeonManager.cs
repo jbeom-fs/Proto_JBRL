@@ -58,9 +58,13 @@ public class DungeonManager : MonoBehaviour
     [Range(1, 7)]
     public int bspDepth = 4;
 
-    [Tooltip("2번째 가까운 방 추가 연결 확률")]
+    [Tooltip("MST 완료 후 각 EXTRA attempt에서 통로 생성을 시도할 확률")]
     [Range(0f, 1f)]
     public float extraConnProb = 0.5f;
+
+    [Tooltip("각 방 pair마다 생성/점수화할 EXTRA path 후보 수")]
+    [Min(0)]
+    public int extraCandidateCount = 12;
 
     [Header("Spawn Region")]
     public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
@@ -466,6 +470,7 @@ public class DungeonManager : MonoBehaviour
         s.MaxRoomSize   = maxRoomSize;
         s.BspDepth      = bspDepth;
         s.ExtraConnProb = extraConnProb;
+        s.ExtraCandidateCount = extraCandidateCount;
         s.Floor         = floor;
         s.MaxFloor      = 100;
         s.Seed          = (int)(seed % int.MaxValue);

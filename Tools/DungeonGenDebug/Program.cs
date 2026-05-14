@@ -77,6 +77,14 @@ internal static class Program
         DoorRunScan(grid, s, rooms);
 
         Console.WriteLine();
+        Console.WriteLine("=== Room perimeter corridor scan (ROOM border cells must stay ROOM) ===");
+        RoomPerimeterCorridorScan(grid, rooms);
+
+        Console.WriteLine();
+        Console.WriteLine("=== Corner doorway scan (side endpoints must not connect) ===");
+        CornerDoorwayScan(grid, s, rooms);
+
+        Console.WriteLine();
         Console.WriteLine("=== Door candidates per room (perimeter CORRIDOR cells) ===");
         for (int i = 0; i < rooms.Length; i++)
         {
@@ -125,6 +133,60 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("=== Alongside corridor scan (CORRIDOR run at perim+1 distance spanning >=3 cells along a room side) ===");
         AlongsideCorridorScan(grid, s, rooms);
+    }
+
+    static void RoomPerimeterCorridorScan(int[,] grid, DungeonGenerator.RoomRect[] rooms)
+    {
+        int hits = 0;
+        for (int i = 0; i < rooms.Length; i++)
+        {
+            var r = rooms[i];
+            for (int row = r.Y; row < r.Bottom; row++)
+            {
+                for (int col = r.X; col < r.Right; col++)
+                {
+                    bool onBorder = col == r.X || col == r.Right - 1 ||
+                                    row == r.Y || row == r.Bottom - 1;
+                    if (!onBorder || grid[row, col] != DungeonGenerator.CORRIDOR)
+                        continue;
+
+                    hits++;
+                    Console.WriteLine($"  BORDER-CORRIDOR R{i} cell=({col},{row})");
+                }
+            }
+        }
+
+        Console.WriteLine($"  total room perimeter corridor cells = {hits}");
+    }
+
+    static void CornerDoorwayScan(int[,] grid, DungeonSettings s, DungeonGenerator.RoomRect[] rooms)
+    {
+        int hits = 0;
+        for (int i = 0; i < rooms.Length; i++)
+        {
+            var r = rooms[i];
+            hits += CheckCornerDoorway(grid, s, i, r.X - 1, r.Y, "LEFT", r.X, r.Y);
+            hits += CheckCornerDoorway(grid, s, i, r.X - 1, r.Bottom - 1, "LEFT", r.X, r.Bottom - 1);
+            hits += CheckCornerDoorway(grid, s, i, r.Right, r.Y, "RIGHT", r.Right - 1, r.Y);
+            hits += CheckCornerDoorway(grid, s, i, r.Right, r.Bottom - 1, "RIGHT", r.Right - 1, r.Bottom - 1);
+            hits += CheckCornerDoorway(grid, s, i, r.X, r.Y - 1, "TOP", r.X, r.Y);
+            hits += CheckCornerDoorway(grid, s, i, r.Right - 1, r.Y - 1, "TOP", r.Right - 1, r.Y);
+            hits += CheckCornerDoorway(grid, s, i, r.X, r.Bottom, "BOTTOM", r.X, r.Bottom - 1);
+            hits += CheckCornerDoorway(grid, s, i, r.Right - 1, r.Bottom, "BOTTOM", r.Right - 1, r.Bottom - 1);
+        }
+
+        Console.WriteLine($"  total corner doorway cells = {hits}");
+    }
+
+    static int CheckCornerDoorway(
+        int[,] grid, DungeonSettings s, int roomIdx, int x, int y,
+        string side, int anchorX, int anchorY)
+    {
+        if (!InBounds(s, x, y) || grid[y, x] != DungeonGenerator.CORRIDOR)
+            return 0;
+
+        Console.WriteLine($"  CORNER-DOORWAY R{roomIdx} side={side} anchor=({anchorX},{anchorY}) cell=({x},{y})");
+        return 1;
     }
 
     static void DualDoorSliverScan(int[,] grid, DungeonSettings s, DungeonGenerator.RoomRect[] rooms)

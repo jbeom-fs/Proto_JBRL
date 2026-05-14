@@ -29,6 +29,9 @@ public struct DungeonSettings
     /// <summary>2번째로 가까운 방에 추가 통로를 연결할 확률 (0.0 ~ 1.0)</summary>
     public float ExtraConnProb;
 
+    /// <summary>각 방 pair마다 생성/점수화할 EXTRA path 후보 수</summary>
+    public int ExtraCandidateCount;
+
     /// <summary>
     /// 던전 시드. null 이면 실행마다 다른 결과.
     /// 정수 지정 시 → 같은 Seed + 같은 Floor = 항상 동일한 지형.
@@ -57,6 +60,7 @@ public struct DungeonSettings
         BspDepth      = 4,
         Padding       = 2,
         ExtraConnProb = 0.5f,
+        ExtraCandidateCount = 12,
         Seed          = null,
         Floor         = 1,
         MaxFloor      = 100,
@@ -142,6 +146,28 @@ public static class DungeonGenerator
     {
         public int Cx, Cy;
         public int X, Y, W, H;
+    }
+
+    private struct ExtraRoomPair
+    {
+        public int A;
+        public int B;
+        public int CenterDistanceSq;
+    }
+
+    private struct ExtraCorridorCandidate
+    {
+        public int RoomAIndex;
+        public int RoomBIndex;
+        public int ExtraAttemptIndex;
+        public int CandidateIndex;
+        public bool PrimaryPath;
+        public List<(int x, int y)> Path;
+        public int PathLength;
+        public int CenterDistanceSq;
+        public int CorridorOverlapCount;
+        public int LongestParallelCorridorRun;
+        public int Score;
     }
 
     private class BSPNode
@@ -357,63 +383,400 @@ public static class DungeonGenerator
                     grid, rooms, connected, remaining, connectedPairs, s);
             }
 
-            // ── 2nd: 추가 연결 — srcIdx 기준 진짜 2번째로 가까운 방 ──
-            // 전체 방 탐색 (dstIdx 제외).
-            // 단, 이미 직접 연결된 쌍은 제외 → 중복/병렬 통로 방지
-            if (rng.NextDouble() < s.ExtraConnProb)
+        }
+
+        ConnectExtraCorridors(grid, rooms, corridorTiles, connectedPairs, s, rng, pathBuf);
+    }
+
+    private static void ConnectExtraCorridors(
+        int[,] grid, List<Room> rooms,
+        HashSet<(int, int)> corridorTiles,
+        HashSet<(int, int)> connectedPairs,
+        DungeonSettings s, Random rng,
+        List<(int x, int y)> pathBuf)
+    {
+        if (s.ExtraConnProb <= 0f || s.ExtraCandidateCount <= 0) return;
+
+        var pairBestCandidates = new List<ExtraCorridorCandidate>();
+        var pairCandidates = new List<ExtraCorridorCandidate>(s.ExtraCandidateCount);
+        int maxAttempts = Math.Max(0, rooms.Count - 1);
+
+        for (int attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex++)
+        {
+            if (rng.NextDouble() >= s.ExtraConnProb)
             {
-                double bestDist2 = double.MaxValue;
-                int bestK = -1;
+                if (DebugCorridorCarving)
+                    DebugEmit("--- EXTRA attempt=" + attemptIndex + " roll=skip ---");
+                continue;
+            }
 
-                for (int k = 0; k < n; k++)
+            pairBestCandidates.Clear();
+            for (int i = 0; i < rooms.Count - 1; i++)
+            {
+                for (int j = i + 1; j < rooms.Count; j++)
                 {
-                    if (k == srcIdx || k == dstIdx) continue;
-                    var pair = (Math.Min(srcIdx, k), Math.Max(srcIdx, k));
-                    if (connectedPairs.Contains(pair)) continue; // 이미 직접 연결 → 스킵
-                    double d = EuclideanDist(rooms[srcIdx], rooms[k]);
-                    if (d < bestDist2) { bestDist2 = d; bestK = k; }
-                }
+                    var pairKey = (i, j);
+                    if (connectedPairs.Contains(pairKey)) continue;
 
-                if (bestK >= 0)
-                {
+                    var pair = new ExtraRoomPair
+                    {
+                        A = i,
+                        B = j,
+                        CenterDistanceSq = CenterDistanceSq(rooms[i], rooms[j]),
+                    };
+
+                    pairCandidates.Clear();
+                    BuildExtraPathCandidatesForPair(grid, rooms, pair, s, attemptIndex, pathBuf, pairCandidates);
+                    if (pairCandidates.Count == 0)
+                    {
+                        if (DebugCorridorCarving)
+                            DebugEmit("  extra-pair attempt=" + attemptIndex +
+                                      " src=R" + i + " dst=R" + j +
+                                      " requested=" + s.ExtraCandidateCount +
+                                      " clean=0 best=none");
+                        continue;
+                    }
+
+                    int pairBestIndex = SelectBestExtraCorridorCandidate(pairCandidates);
                     if (DebugCorridorCarving)
                     {
-                        _debugRooms = rooms;
-                        _debugSrcIdx = srcIdx;
-                        _debugDstIdx = bestK;
-                        DebugEmit("--- EXTRA corridor: src=R" + srcIdx + " dst=R" + bestK + " ---");
-                        DebugEmit("  src.Rect: X=" + rooms[srcIdx].X + " Y=" + rooms[srcIdx].Y +
-                                  " W=" + rooms[srcIdx].W + " H=" + rooms[srcIdx].H);
-                        DebugEmit("  dst.Rect: X=" + rooms[bestK].X + " Y=" + rooms[bestK].Y +
-                                  " W=" + rooms[bestK].W + " H=" + rooms[bestK].H);
-                        DebugConnectState("  before step=" + debugStep + " type=EXTRA",
-                            grid, rooms, connected, remaining, connectedPairs, s);
+                        var pairBest = pairCandidates[pairBestIndex];
+                        DebugEmit("  extra-pair attempt=" + attemptIndex +
+                                  " src=R" + i + " dst=R" + j +
+                                  " requested=" + s.ExtraCandidateCount +
+                                  " clean=" + pairCandidates.Count +
+                                  " bestCandidate=" + pairBest.CandidateIndex +
+                                  " score=" + pairBest.Score);
                     }
-                    bool extraCarved = DrawLCorridor(grid, rooms, srcIdx, bestK, corridorTiles, s, /*isMandatoryEdge*/ false, pathBuf);
-                    bool extraPairAlreadyConnected = connectedPairs.Contains((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
-                    bool extraDstWasRemaining = remaining.Contains(bestK);
-                    if (extraCarved)
-                    {
-                        connectedPairs.Add((Math.Min(srcIdx, bestK), Math.Max(srcIdx, bestK)));
-                        if (remaining.Contains(bestK))
-                        {
-                            connected.Add(bestK);
-                            remaining.Remove(bestK);
-                        }
-                    }
-                    if (DebugCorridorCarving)
-                    {
-                        DebugEmit("  state-update type=EXTRA carved=" + extraCarved +
-                                  " pairAdded=" + (extraCarved && !extraPairAlreadyConnected) +
-                                  " dstWasRemaining=" + extraDstWasRemaining +
-                                  " connectedAdd=" + (extraCarved && extraDstWasRemaining ? ("R" + bestK) : "none") +
-                                  " remainingRemove=" + (extraCarved && extraDstWasRemaining ? ("R" + bestK) : "none"));
-                        DebugConnectState("  after  step=" + debugStep + " type=EXTRA",
-                            grid, rooms, connected, remaining, connectedPairs, s);
-                    }
+                    pairBestCandidates.Add(pairCandidates[pairBestIndex]);
                 }
             }
+
+            if (pairBestCandidates.Count == 0)
+            {
+                if (DebugCorridorCarving)
+                    DebugEmit("--- EXTRA attempt=" + attemptIndex + " selected=none(pair-best-candidates=0) ---");
+                continue;
+            }
+
+            int bestIndex = SelectBestExtraCorridorCandidate(pairBestCandidates);
+            var selected = pairBestCandidates[bestIndex];
+            if (DebugCorridorCarving)
+            {
+                DebugEmit("--- EXTRA corridor selected: attempt=" + attemptIndex +
+                          " src=R" + selected.RoomAIndex +
+                          " dst=R" + selected.RoomBIndex +
+                          " candidate=" + selected.CandidateIndex +
+                          " path=" + (selected.PrimaryPath ? "primary" : "alternate") +
+                          " score=" + selected.Score +
+                          " pairBestCount=" + pairBestCandidates.Count +
+                          " cells=" + selected.PathLength +
+                          " overlap=" + selected.CorridorOverlapCount +
+                          " parallel=" + selected.LongestParallelCorridorRun + " ---");
+            }
+
+            _debugRooms = rooms;
+            _debugSrcIdx = selected.RoomAIndex;
+            _debugDstIdx = selected.RoomBIndex;
+            CarvePath(grid, corridorTiles, selected.Path, s);
+            connectedPairs.Add((selected.RoomAIndex, selected.RoomBIndex));
         }
+    }
+
+    private static void BuildExtraPathCandidatesForPair(
+        int[,] grid, List<Room> rooms, ExtraRoomPair pair,
+        DungeonSettings s, int attemptIndex, List<(int x, int y)> pathBuf,
+        List<ExtraCorridorCandidate> candidates)
+    {
+        var a = rooms[pair.A];
+        var b = rooms[pair.B];
+        bool primaryHorizFirst = Math.Abs(b.Cx - a.Cx) >= Math.Abs(b.Cy - a.Cy);
+
+        for (int candidateIndex = 0; candidateIndex < s.ExtraCandidateCount; candidateIndex++)
+        {
+            bool primaryPath = (candidateIndex % 2) == 0;
+            bool horizFirst = primaryPath ? primaryHorizFirst : !primaryHorizFirst;
+            EmitExtraPathCandidate(rooms[pair.A], rooms[pair.B], s, horizFirst, candidateIndex, pathBuf);
+            TryAddExtraCandidate(grid, rooms, pair, s, primaryPath, attemptIndex, candidateIndex, pathBuf, candidates);
+        }
+    }
+
+    private static void TryAddExtraCandidate(
+        int[,] grid, List<Room> rooms, ExtraRoomPair pair,
+        DungeonSettings s, bool primaryPath, int attemptIndex, int candidateIndex,
+        List<(int x, int y)> pathBuf,
+        List<ExtraCorridorCandidate> candidates)
+    {
+        if (!IsCorridorCandidateClean(grid, pathBuf, rooms, pair.A, pair.B, s, false))
+            return;
+
+        if (ExtraCandidatePathAlreadyAdded(candidates, pathBuf))
+            return;
+
+        int pathLength = pathBuf.Count;
+        int overlap = CountCorridorOverlap(grid, pathBuf, s);
+        int parallelRun = LongestParallelCorridorRun(grid, pathBuf, s);
+        int score = ScoreExtraCorridorCandidate(pathLength, pair.CenterDistanceSq, overlap, parallelRun);
+        var pathCopy = new List<(int x, int y)>(pathLength);
+        for (int i = 0; i < pathBuf.Count; i++)
+            pathCopy.Add(pathBuf[i]);
+
+        candidates.Add(new ExtraCorridorCandidate
+        {
+            RoomAIndex = pair.A,
+            RoomBIndex = pair.B,
+            ExtraAttemptIndex = attemptIndex,
+            CandidateIndex = candidateIndex,
+            PrimaryPath = primaryPath,
+            Path = pathCopy,
+            PathLength = pathLength,
+            CenterDistanceSq = pair.CenterDistanceSq,
+            CorridorOverlapCount = overlap,
+            LongestParallelCorridorRun = parallelRun,
+            Score = score,
+        });
+    }
+
+    private static int SelectBestExtraCorridorCandidate(List<ExtraCorridorCandidate> candidates)
+    {
+        int best = 0;
+        for (int i = 1; i < candidates.Count; i++)
+        {
+            if (IsBetterExtraCorridorCandidate(candidates[i], candidates[best]))
+                best = i;
+        }
+
+        return best;
+    }
+
+    private static bool IsBetterExtraCorridorCandidate(
+        ExtraCorridorCandidate a, ExtraCorridorCandidate b)
+    {
+        if (a.Score != b.Score) return a.Score > b.Score;
+        if (a.PathLength != b.PathLength) return a.PathLength < b.PathLength;
+        if (a.CorridorOverlapCount != b.CorridorOverlapCount)
+            return a.CorridorOverlapCount > b.CorridorOverlapCount;
+        if (a.CenterDistanceSq != b.CenterDistanceSq) return a.CenterDistanceSq < b.CenterDistanceSq;
+        if (a.RoomAIndex != b.RoomAIndex) return a.RoomAIndex < b.RoomAIndex;
+        if (a.RoomBIndex != b.RoomBIndex) return a.RoomBIndex < b.RoomBIndex;
+        if (a.CandidateIndex != b.CandidateIndex) return a.CandidateIndex < b.CandidateIndex;
+        if (a.ExtraAttemptIndex != b.ExtraAttemptIndex) return a.ExtraAttemptIndex < b.ExtraAttemptIndex;
+        if (a.PrimaryPath != b.PrimaryPath) return a.PrimaryPath;
+
+        return false;
+    }
+
+    private static void EmitExtraPathCandidate(
+        Room src, Room dst, DungeonSettings s, bool horizFirst,
+        int candidateIndex, List<(int x, int y)> path)
+    {
+        int variant = candidateIndex / 2;
+        if (variant == 0)
+        {
+            EmitLCorridorPath(null, src, dst, s, horizFirst, path);
+            return;
+        }
+
+        if (horizFirst)
+        {
+            int sy = PickExtraAxis(src.Y, src.Y + src.H, src.Cy, dst.Cy,
+                dst.Y, dst.Y + dst.H, variant);
+            int ey = PickExtraAxis(dst.Y, dst.Y + dst.H, dst.Cy, src.Cy,
+                src.Y, src.Y + src.H, variant);
+            EmitLCorridorPathWithAxes(src, dst, s, true, sy, ey, path);
+        }
+        else
+        {
+            int sx = PickExtraAxis(src.X, src.X + src.W, src.Cx, dst.Cx,
+                dst.X, dst.X + dst.W, variant);
+            int ex = PickExtraAxis(dst.X, dst.X + dst.W, dst.Cx, src.Cx,
+                src.X, src.X + src.W, variant);
+            EmitLCorridorPathWithAxes(src, dst, s, false, sx, ex, path);
+        }
+    }
+
+    private static int PickExtraAxis(
+        int start, int end, int center, int targetCenter,
+        int otherStart, int otherEnd, int variant)
+    {
+        int overlapStart = Math.Max(start, otherStart);
+        int overlapEnd = Math.Min(end, otherEnd);
+        if (variant == 1 && overlapStart < overlapEnd)
+            return ClampInt((overlapStart + overlapEnd - 1) / 2, start, end - 1);
+
+        switch (variant % 6)
+        {
+            case 1:
+                return ClampInt(targetCenter, start, end - 1);
+            case 2:
+                return ClampInt(center - Math.Max(1, (end - start) / 4), start, end - 1);
+            case 3:
+                return ClampInt(center + Math.Max(1, (end - start) / 4), start, end - 1);
+            case 4:
+                return start;
+            case 5:
+                return end - 1;
+            default:
+                return center;
+        }
+    }
+
+    private static void EmitLCorridorPathWithAxes(
+        Room src, Room dst, DungeonSettings s, bool horizFirst,
+        int srcAxis, int dstAxis, List<(int x, int y)> path)
+    {
+        path.Clear();
+        int min = s.MinStraight;
+        int dx = dst.Cx - src.Cx;
+        int dy = dst.Cy - src.Cy;
+
+        if (horizFirst)
+        {
+            int doorSX, farSX, doorEX, farEX, stepS, stepE;
+            if (dx >= 0)
+            {
+                doorSX = src.X + src.W - 1; farSX = src.X + src.W + min - 1;
+                doorEX = dst.X;             farEX = dst.X - min;
+                stepS = 1; stepE = -1;
+            }
+            else
+            {
+                doorSX = src.X;             farSX = src.X - min;
+                doorEX = dst.X + dst.W - 1; farEX = dst.X + dst.W + min - 1;
+                stepS = -1; stepE = 1;
+            }
+
+            int sy = ClampDoorAxis(srcAxis, src.Y, src.Y + src.H);
+            int ey = ClampDoorAxis(dstAxis, dst.Y, dst.Y + dst.H);
+            EmitH(doorSX + stepS, farSX, sy, path);
+            EmitH(doorEX + stepE, farEX, ey, path);
+            EmitH(farSX, farEX, sy, path);
+            EmitV(sy, ey, farEX, path);
+        }
+        else
+        {
+            int doorSY, farSY, doorEY, farEY, stepS, stepE;
+            if (dy >= 0)
+            {
+                doorSY = src.Y + src.H - 1; farSY = src.Y + src.H + min - 1;
+                doorEY = dst.Y;             farEY = dst.Y - min;
+                stepS = 1; stepE = -1;
+            }
+            else
+            {
+                doorSY = src.Y;             farSY = src.Y - min;
+                doorEY = dst.Y + dst.H - 1; farEY = dst.Y + dst.H + min - 1;
+                stepS = -1; stepE = 1;
+            }
+
+            int sx = ClampDoorAxis(srcAxis, src.X, src.X + src.W);
+            int ex = ClampDoorAxis(dstAxis, dst.X, dst.X + dst.W);
+            EmitV(doorSY + stepS, farSY, sx, path);
+            EmitV(doorEY + stepE, farEY, ex, path);
+            EmitV(farSY, farEY, sx, path);
+            EmitH(sx, ex, farEY, path);
+        }
+    }
+
+    private static bool ExtraCandidatePathAlreadyAdded(
+        List<ExtraCorridorCandidate> candidates, List<(int x, int y)> path)
+    {
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            var existing = candidates[i].Path;
+            if (existing.Count != path.Count) continue;
+
+            bool same = true;
+            for (int j = 0; j < path.Count; j++)
+            {
+                if (existing[j] != path[j])
+                {
+                    same = false;
+                    break;
+                }
+            }
+
+            if (same) return true;
+        }
+
+        return false;
+    }
+
+    private static int ClampInt(int value, int min, int max)
+        => Math.Max(min, Math.Min(max, value));
+
+    private static int ClampDoorAxis(int value, int start, int end)
+    {
+        if (end - start <= 2)
+            return ClampInt(value, start, end - 1);
+
+        return ClampInt(value, start + 1, end - 2);
+    }
+
+    private static int ScoreExtraCorridorCandidate(
+        int pathLength, int centerDistanceSq, int corridorOverlapCount,
+        int longestParallelCorridorRun)
+    {
+        return corridorOverlapCount * 60
+             - pathLength * 8
+             - centerDistanceSq / 20
+             - longestParallelCorridorRun * 25;
+    }
+
+    private static int CountCorridorOverlap(
+        int[,] grid, List<(int x, int y)> path, DungeonSettings s)
+    {
+        int count = 0;
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            if (InBounds(s, x, y) && grid[y, x] == CORRIDOR)
+                count++;
+        }
+
+        return count;
+    }
+
+    private static int LongestParallelCorridorRun(
+        int[,] grid, List<(int x, int y)> path, DungeonSettings s)
+    {
+        int longest = 0;
+        int current = 0;
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            bool parallel = InBounds(s, x, y) &&
+                            grid[y, x] != CORRIDOR &&
+                            HasAdjacentCorridor(grid, x, y, s);
+            if (parallel)
+            {
+                current++;
+                if (current > longest) longest = current;
+            }
+            else
+            {
+                current = 0;
+            }
+        }
+
+        return longest;
+    }
+
+    private static bool HasAdjacentCorridor(int[,] grid, int x, int y, DungeonSettings s)
+    {
+        return (InBounds(s, x + 1, y) && grid[y, x + 1] == CORRIDOR) ||
+               (InBounds(s, x - 1, y) && grid[y, x - 1] == CORRIDOR) ||
+               (InBounds(s, x, y + 1) && grid[y + 1, x] == CORRIDOR) ||
+               (InBounds(s, x, y - 1) && grid[y - 1, x] == CORRIDOR);
+    }
+
+    private static int CenterDistanceSq(Room a, Room b)
+    {
+        int dx = b.Cx - a.Cx;
+        int dy = b.Cy - a.Cy;
+        return dx * dx + dy * dy;
     }
 
     // ══════════════════════════════════════════════════════════
@@ -729,9 +1092,9 @@ public static class DungeonGenerator
                 if (Math.Abs(sy - ey) < MIN)
                     sy = Math.Max(src.Y, Math.Min(src.Y + src.H - 1, ey - eyDir * MIN));
             }
+            sy = ClampDoorAxis(sy, src.Y, src.Y + src.H);
+            ey = ClampDoorAxis(ey, dst.Y, dst.Y + dst.H);
 
-            path.Add((doorSX, sy));
-            path.Add((doorEX, ey));
             EmitH(doorSX + stepS, farSX, sy, path);
             EmitH(doorEX + stepE, farEX, ey, path);
             EmitH(farSX, farEX, sy, path);
@@ -764,9 +1127,9 @@ public static class DungeonGenerator
                 if (Math.Abs(sx - ex) < MIN)
                     sx = Math.Max(src.X, Math.Min(src.X + src.W - 1, ex - exDir * MIN));
             }
+            sx = ClampDoorAxis(sx, src.X, src.X + src.W);
+            ex = ClampDoorAxis(ex, dst.X, dst.X + dst.W);
 
-            path.Add((sx, doorSY));
-            path.Add((ex, doorEY));
             EmitV(doorSY + stepS, farSY, sx, path);
             EmitV(doorEY + stepE, farEY, ex, path);
             EmitV(farSY, farEY, sx, path);
@@ -802,6 +1165,14 @@ public static class DungeonGenerator
         int[,] grid, List<(int x, int y)> path, List<Room> rooms,
         int srcIdx, int dstIdx, DungeonSettings s, bool isMandatoryEdge)
     {
+        if (!isMandatoryEdge &&
+            PathCarvesRoomPerimeter(path, rooms, srcIdx, dstIdx))
+            return false;
+
+        if (!isMandatoryEdge &&
+            PathUsesRoomCornerDoorway(path, rooms, srcIdx, dstIdx))
+            return false;
+
         if (PathHitsThirdRoom(path, rooms, srcIdx, dstIdx)) return false;
         if (PathCreatesBadDoorRun(grid, path, rooms, s)) return false;
         if (PathCreatesOrphanDoorStub(grid, path, rooms, s)) return false;
@@ -827,6 +1198,127 @@ public static class DungeonGenerator
             return false;
 
         return true;
+    }
+
+    private static bool PathCarvesRoomPerimeter(
+        List<(int x, int y)> path, List<Room> rooms, int srcIdx, int dstIdx)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            for (int rIdx = 0; rIdx < rooms.Count; rIdx++)
+            {
+                var r = rooms[rIdx];
+                if (!IsRoomPerimeterCell(x, y, r)) continue;
+
+                if (DebugCorridorCarving)
+                {
+                    string role = rIdx == srcIdx ? "src" : (rIdx == dstIdx ? "dst" : "third");
+                    DebugEmit("  reject=room-perimeter-corridor room=R" + rIdx +
+                              " role=" + role +
+                              " cell=(" + x + "," + y + ")" +
+                              " src=R" + srcIdx +
+                              " dst=R" + dstIdx);
+                }
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsRoomPerimeterCell(int x, int y, Room room)
+    {
+        if (x < room.X || x >= room.X + room.W ||
+            y < room.Y || y >= room.Y + room.H)
+            return false;
+
+        return x == room.X || x == room.X + room.W - 1 ||
+               y == room.Y || y == room.Y + room.H - 1;
+    }
+
+    private static bool PathUsesRoomCornerDoorway(
+        List<(int x, int y)> path, List<Room> rooms, int srcIdx, int dstIdx)
+    {
+        return PathUsesRoomCornerDoorway(path, rooms[srcIdx], srcIdx, "src") ||
+               PathUsesRoomCornerDoorway(path, rooms[dstIdx], dstIdx, "dst");
+    }
+
+    private static bool PathUsesRoomCornerDoorway(
+        List<(int x, int y)> path, Room room, int roomIdx, string role)
+    {
+        for (int i = 0; i < path.Count; i++)
+        {
+            int x = path[i].x;
+            int y = path[i].y;
+            string side;
+            int anchorX;
+            int anchorY;
+            if (!TryGetDoorAnchorFromAdjacentCell(x, y, room, out side, out anchorX, out anchorY))
+                continue;
+
+            if (!IsCornerDoorAnchor(anchorX, anchorY, room, side))
+                continue;
+
+            if (DebugCorridorCarving)
+                DebugEmit("  reject=corner-doorway room=R" + roomIdx +
+                          " role=" + role +
+                          " side=" + side +
+                          " anchor=(" + anchorX + "," + anchorY + ")");
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool TryGetDoorAnchorFromAdjacentCell(
+        int x, int y, Room room, out string side, out int anchorX, out int anchorY)
+    {
+        if (x == room.X - 1 && y >= room.Y && y < room.Y + room.H)
+        {
+            side = "left";
+            anchorX = room.X;
+            anchorY = y;
+            return true;
+        }
+
+        if (x == room.X + room.W && y >= room.Y && y < room.Y + room.H)
+        {
+            side = "right";
+            anchorX = room.X + room.W - 1;
+            anchorY = y;
+            return true;
+        }
+
+        if (y == room.Y - 1 && x >= room.X && x < room.X + room.W)
+        {
+            side = "top";
+            anchorX = x;
+            anchorY = room.Y;
+            return true;
+        }
+
+        if (y == room.Y + room.H && x >= room.X && x < room.X + room.W)
+        {
+            side = "bottom";
+            anchorX = x;
+            anchorY = room.Y + room.H - 1;
+            return true;
+        }
+
+        side = "";
+        anchorX = 0;
+        anchorY = 0;
+        return false;
+    }
+
+    private static bool IsCornerDoorAnchor(int anchorX, int anchorY, Room room, string side)
+    {
+        if (side == "left" || side == "right")
+            return anchorY == room.Y || anchorY == room.Y + room.H - 1;
+
+        return anchorX == room.X || anchorX == room.X + room.W - 1;
     }
 
     /// <summary>
@@ -1190,5 +1682,6 @@ public static class DungeonGenerator
         if (s.MaxFloor < 1)     s.MaxFloor = 100;
         s.Floor         = Math.Max(1, Math.Min(s.MaxFloor, s.Floor));
         s.ExtraConnProb = Math.Max(0f, Math.Min(1f, s.ExtraConnProb));
+        s.ExtraCandidateCount = Math.Max(0, s.ExtraCandidateCount);
     }
 }
