@@ -813,6 +813,13 @@ public static class DungeonGenerator
             return false;
         }
 
+        if (!isMandatoryEdge &&
+            PathCreatesDiagonalRoomStub(path, rooms[srcIdx], rooms[dstIdx]))
+        {
+            if (DebugCorridorCarving) DebugEmit("  reject=diagonal-room-stub");
+            return false;
+        }
+
         // Extra corridors are optional, so reject long side-parallel runs near
         // third rooms while still allowing short perpendicular door stubs.
         if (!isMandatoryEdge &&
@@ -853,6 +860,24 @@ public static class DungeonGenerator
                 if (topBot1 || leftRt1) return true;
             }
         }
+        return false;
+    }
+
+    private static bool PathCreatesDiagonalRoomStub(
+        List<(int x, int y)> path, Room src, Room dst)
+    {
+        bool separatedX = src.X + src.W <= dst.X || dst.X + dst.W <= src.X;
+        bool separatedY = src.Y + src.H <= dst.Y || dst.Y + dst.H <= src.Y;
+        if (!separatedX || !separatedY) return false;
+
+        if (PathTouchesTopOrBottomSide(path, src) &&
+            PathTouchesLeftOrRightSide(path, src))
+            return true;
+
+        if (PathTouchesTopOrBottomSide(path, dst) &&
+            PathTouchesLeftOrRightSide(path, dst))
+            return true;
+
         return false;
     }
 
