@@ -308,7 +308,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (knockbackBlockLayers.value != 0)
             return knockbackBlockLayers.value;
 
-        return LayerMask.GetMask("Wall", "Obstacle", "Obstacles");
+        return CombatLayers.WallMask;
     }
 
     private float ClampKnockbackForceAgainstWalkableGrid(

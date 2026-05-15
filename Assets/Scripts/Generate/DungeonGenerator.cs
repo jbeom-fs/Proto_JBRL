@@ -32,6 +32,15 @@ public struct DungeonSettings
     /// <summary>각 방 pair마다 생성/점수화할 EXTRA path 후보 수</summary>
     public int ExtraCandidateCount;
 
+    /// <summary>EXTRA score bonus per cell overlapping an existing corridor.</summary>
+    public int ExtraOverlapScoreWeight;
+
+    /// <summary>EXTRA score penalty per path cell.</summary>
+    public int ExtraPathLengthPenaltyWeight;
+
+    /// <summary>EXTRA score divisor for squared room-center distance penalty.</summary>
+    public int ExtraCenterDistancePenaltyDivisor;
+
     /// <summary>
     /// 던전 시드. null 이면 실행마다 다른 결과.
     /// 정수 지정 시 → 같은 Seed + 같은 Floor = 항상 동일한 지형.
@@ -61,6 +70,9 @@ public struct DungeonSettings
         Padding       = 2,
         ExtraConnProb = 0.5f,
         ExtraCandidateCount = 12,
+        ExtraOverlapScoreWeight = 20,
+        ExtraPathLengthPenaltyWeight = 8,
+        ExtraCenterDistancePenaltyDivisor = 20,
         Seed          = null,
         Floor         = 1,
         MaxFloor      = 100,
@@ -166,7 +178,6 @@ public static class DungeonGenerator
         public int PathLength;
         public int CenterDistanceSq;
         public int CorridorOverlapCount;
-        public int LongestParallelCorridorRun;
         public int Score;
     }
 
@@ -471,8 +482,7 @@ public static class DungeonGenerator
                           " score=" + selected.Score +
                           " pairBestCount=" + pairBestCandidates.Count +
                           " cells=" + selected.PathLength +
-                          " overlap=" + selected.CorridorOverlapCount +
-                          " parallel=" + selected.LongestParallelCorridorRun + " ---");
+                          " overlap=" + selected.CorridorOverlapCount + " ---");
             }
 
             _debugRooms = rooms;
@@ -515,8 +525,7 @@ public static class DungeonGenerator
 
         int pathLength = pathBuf.Count;
         int overlap = CountCorridorOverlap(grid, pathBuf, s);
-        int parallelRun = LongestParallelCorridorRun(grid, pathBuf, s);
-        int score = ScoreExtraCorridorCandidate(pathLength, pair.CenterDistanceSq, overlap, parallelRun);
+        int score = ScoreExtraCorridorCandidate(pathLength, pair.CenterDistanceSq, overlap, s);
         var pathCopy = new List<(int x, int y)>(pathLength);
         for (int i = 0; i < pathBuf.Count; i++)
             pathCopy.Add(pathBuf[i]);
@@ -532,7 +541,6 @@ public static class DungeonGenerator
             PathLength = pathLength,
             CenterDistanceSq = pair.CenterDistanceSq,
             CorridorOverlapCount = overlap,
-            LongestParallelCorridorRun = parallelRun,
             Score = score,
         });
     }
@@ -715,12 +723,12 @@ public static class DungeonGenerator
 
     private static int ScoreExtraCorridorCandidate(
         int pathLength, int centerDistanceSq, int corridorOverlapCount,
-        int longestParallelCorridorRun)
+        DungeonSettings s)
     {
-        return corridorOverlapCount * 60
-             - pathLength * 8
-             - centerDistanceSq / 20
-             - longestParallelCorridorRun * 25;
+        int distanceDivisor = Math.Max(1, s.ExtraCenterDistancePenaltyDivisor);
+        return corridorOverlapCount * s.ExtraOverlapScoreWeight
+             - pathLength * s.ExtraPathLengthPenaltyWeight
+             - centerDistanceSq / distanceDivisor;
     }
 
     private static int CountCorridorOverlap(
@@ -736,40 +744,6 @@ public static class DungeonGenerator
         }
 
         return count;
-    }
-
-    private static int LongestParallelCorridorRun(
-        int[,] grid, List<(int x, int y)> path, DungeonSettings s)
-    {
-        int longest = 0;
-        int current = 0;
-        for (int i = 0; i < path.Count; i++)
-        {
-            int x = path[i].x;
-            int y = path[i].y;
-            bool parallel = InBounds(s, x, y) &&
-                            grid[y, x] != CORRIDOR &&
-                            HasAdjacentCorridor(grid, x, y, s);
-            if (parallel)
-            {
-                current++;
-                if (current > longest) longest = current;
-            }
-            else
-            {
-                current = 0;
-            }
-        }
-
-        return longest;
-    }
-
-    private static bool HasAdjacentCorridor(int[,] grid, int x, int y, DungeonSettings s)
-    {
-        return (InBounds(s, x + 1, y) && grid[y, x + 1] == CORRIDOR) ||
-               (InBounds(s, x - 1, y) && grid[y, x - 1] == CORRIDOR) ||
-               (InBounds(s, x, y + 1) && grid[y + 1, x] == CORRIDOR) ||
-               (InBounds(s, x, y - 1) && grid[y - 1, x] == CORRIDOR);
     }
 
     private static int CenterDistanceSq(Room a, Room b)
@@ -1683,5 +1657,8 @@ public static class DungeonGenerator
         s.Floor         = Math.Max(1, Math.Min(s.MaxFloor, s.Floor));
         s.ExtraConnProb = Math.Max(0f, Math.Min(1f, s.ExtraConnProb));
         s.ExtraCandidateCount = Math.Max(0, s.ExtraCandidateCount);
+        s.ExtraOverlapScoreWeight = Math.Max(0, s.ExtraOverlapScoreWeight);
+        s.ExtraPathLengthPenaltyWeight = Math.Max(0, s.ExtraPathLengthPenaltyWeight);
+        s.ExtraCenterDistancePenaltyDivisor = Math.Max(1, s.ExtraCenterDistancePenaltyDivisor);
     }
 }

@@ -31,6 +31,9 @@ public class DungeonManager : MonoBehaviour
     [Tooltip("층 이동 시 표시할 로딩 화면 (선택)")]
     public LoadingScreenController loadingScreen;
 
+    [SerializeField, Tooltip("방 전투 시작/초기화 상태를 관리하는 RoomSpawner")]
+    private RoomSpawner roomSpawner;
+
     [Header("Dungeon Settings")]
     [Tooltip("시드. 0이면 매 생성마다 랜덤 생성 후 저장.")]
     public long seed = 0;
@@ -65,6 +68,18 @@ public class DungeonManager : MonoBehaviour
     [Tooltip("각 방 pair마다 생성/점수화할 EXTRA path 후보 수")]
     [Min(0)]
     public int extraCandidateCount = 12;
+
+    [Tooltip("기존 corridor와 겹치는 cell 1개당 EXTRA 후보 점수 보너스")]
+    [Min(0)]
+    public int extraOverlapScoreWeight = 20;
+
+    [Tooltip("path cell 1개당 EXTRA 후보 점수 감점")]
+    [Min(0)]
+    public int extraPathLengthPenaltyWeight = 8;
+
+    [Tooltip("두 방 중심 거리 제곱 감점 divisor. 값이 클수록 거리 감점이 약해집니다.")]
+    [Min(1)]
+    public int extraCenterDistancePenaltyDivisor = 20;
 
     [Header("Spawn Region")]
     public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
@@ -107,6 +122,7 @@ public class DungeonManager : MonoBehaviour
 
     // 층 전환 중복 방지 — 코루틴 실행 중 추가 요청을 차단
     private bool _isTransitioning = false;
+    private bool _warnedMissingRoomSpawner;
 
     // 그리드 캐싱
     int[,] _originGrid;
@@ -383,14 +399,36 @@ public class DungeonManager : MonoBehaviour
 
     private void ClearPendingRoomStart()
     {
-        RoomSpawner roomSpawner = FindAnyObjectByType<RoomSpawner>();
-        roomSpawner?.ClearPendingRoomStart();
+        if (!TryGetRoomSpawner(out RoomSpawner spawner))
+            return;
+
+        spawner.ClearPendingRoomStart();
     }
 
     private void ResetRoomEncounterState()
     {
-        RoomSpawner roomSpawner = FindAnyObjectByType<RoomSpawner>();
-        roomSpawner?.ResetRoomEncounterState();
+        if (!TryGetRoomSpawner(out RoomSpawner spawner))
+            return;
+
+        spawner.ResetRoomEncounterState();
+    }
+
+    private bool TryGetRoomSpawner(out RoomSpawner spawner)
+    {
+        spawner = roomSpawner;
+        if (spawner != null)
+            return true;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!_warnedMissingRoomSpawner)
+        {
+            Debug.LogWarning(
+                "[DungeonManager] roomSpawner 참조가 없습니다. Room encounter 상태 초기화/대기 해제가 생략됩니다.",
+                this);
+            _warnedMissingRoomSpawner = true;
+        }
+#endif
+        return false;
     }
 
     // ── 내부 빌더 ────────────────────────────────────────────────────
@@ -471,6 +509,9 @@ public class DungeonManager : MonoBehaviour
         s.BspDepth      = bspDepth;
         s.ExtraConnProb = extraConnProb;
         s.ExtraCandidateCount = extraCandidateCount;
+        s.ExtraOverlapScoreWeight = extraOverlapScoreWeight;
+        s.ExtraPathLengthPenaltyWeight = extraPathLengthPenaltyWeight;
+        s.ExtraCenterDistancePenaltyDivisor = extraCenterDistancePenaltyDivisor;
         s.Floor         = floor;
         s.MaxFloor      = 100;
         s.Seed          = (int)(seed % int.MaxValue);
