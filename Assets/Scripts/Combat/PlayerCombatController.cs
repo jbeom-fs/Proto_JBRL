@@ -74,6 +74,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private readonly List<PlayerSlowEffect> _enemySlows = new();
     private float _enemySlowMultiplier = 1f;
     private float _stunTimer;
+    private float _slowTotalDurationForUi;
+    private float _stunTotalDurationForUi;
 
     private struct PlayerSlowEffect
     {
@@ -93,7 +95,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
     public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f;
+    public bool IsSlowed => _enemySlows.Count > 0;
+    public float SlowRemainingTime => GetSlowRemainingTime();
+    public float SlowTotalDurationForUi => _slowTotalDurationForUi;
+    public float SlowRemainingRatio =>
+        _slowTotalDurationForUi > 0f ? Mathf.Clamp01(SlowRemainingTime / _slowTotalDurationForUi) : 0f;
     public bool IsStunned => _stunTimer > 0f;
+    public float StunRemainingTime => _stunTimer;
+    public float StunTotalDurationForUi => _stunTotalDurationForUi;
+    public float StunRemainingRatio =>
+        _stunTotalDurationForUi > 0f ? Mathf.Clamp01(_stunTimer / _stunTotalDurationForUi) : 0f;
     public bool BlocksPlayerMovement => IsSkillBusy;
     public float MoveSpeedMultiplier => IsStunned ? 0f : _enemySlowMultiplier;
 
@@ -110,6 +121,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0);
 
     public event Action<PlayerCombatController> OnDied;
+    public event Action<PlayerStatusEffectType> OnStatusEffectApplied;
+    public event Action<PlayerStatusEffectType> OnStatusEffectEnded;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화
@@ -414,6 +427,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void ClearEnemyImpactState()
     {
+        bool wasSlowed = IsSlowed;
+        bool wasStunned = IsStunned;
+
         if (_enemyKnockbackRoutine != null)
         {
             StopCoroutine(_enemyKnockbackRoutine);
@@ -422,7 +438,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         _enemySlows.Clear();
         _enemySlowMultiplier = 1f;
+        _slowTotalDurationForUi = 0f;
         _stunTimer = 0f;
+        _stunTotalDurationForUi = 0f;
+
+        if (wasSlowed)
+            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Slow);
+        if (wasStunned)
+            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Stun);
     }
 
     private List<Vector2Int> ResolveTargets(AttackPatternType pattern, int range, float coneHalfAngle = 45f)
@@ -479,6 +502,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (!TryApplyDamage(damage))
             return false;
+        if (IsDead)
+            return true;
 
         ApplyEnemyKnockback(hitDirection, knockbackForce, knockbackDuration);
         ApplyEnemySlow(slowMultiplier, slowDuration);
@@ -556,12 +581,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (duration <= 0f || multiplier <= 0f || multiplier >= 1f)
             return;
 
+        _slowTotalDurationForUi = Mathf.Max(_slowTotalDurationForUi, duration);
         _enemySlows.Add(new PlayerSlowEffect
         {
             Multiplier = Mathf.Clamp01(multiplier),
             Timer = duration
         });
         RecalculateEnemySlowMultiplier();
+        OnStatusEffectApplied?.Invoke(PlayerStatusEffectType.Slow);
     }
 
     private void ApplyEnemyStun(float duration)
@@ -570,6 +597,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             return;
 
         _stunTimer = Mathf.Max(_stunTimer, duration);
+        _stunTotalDurationForUi = Mathf.Max(_stunTotalDurationForUi, duration);
+        OnStatusEffectApplied?.Invoke(PlayerStatusEffectType.Stun);
     }
 
     private void TickEnemyStun(float deltaTime)
@@ -578,6 +607,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             return;
 
         _stunTimer = Mathf.Max(0f, _stunTimer - deltaTime);
+        if (_stunTimer <= 0f)
+        {
+            _stunTotalDurationForUi = 0f;
+            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Stun);
+        }
     }
 
     private void TickEnemySlowEffects(float deltaTime)
@@ -586,6 +620,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             return;
 
         bool changed = false;
+        bool wasSlowed = _enemySlows.Count > 0;
         for (int i = _enemySlows.Count - 1; i >= 0; i--)
         {
             PlayerSlowEffect effect = _enemySlows[i];
@@ -603,6 +638,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         if (changed)
             RecalculateEnemySlowMultiplier();
+
+        if (wasSlowed && _enemySlows.Count == 0)
+        {
+            _slowTotalDurationForUi = 0f;
+            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Slow);
+        }
     }
 
     private void RecalculateEnemySlowMultiplier()
@@ -612,6 +653,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             multiplier = Mathf.Min(multiplier, _enemySlows[i].Multiplier);
 
         _enemySlowMultiplier = multiplier;
+    }
+
+    private float GetSlowRemainingTime()
+    {
+        float remaining = 0f;
+        for (int i = 0; i < _enemySlows.Count; i++)
+            remaining = Mathf.Max(remaining, _enemySlows[i].Timer);
+
+        return remaining;
     }
 
     private void Die()

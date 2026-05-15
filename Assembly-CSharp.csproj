@@ -56,6 +56,7 @@
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
+    <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\AnimatedObjectsGroup.cs" />
     <Compile Include="Assets\Scripts\Combat\Projectile.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
@@ -109,6 +110,7 @@
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
+    <Compile Include="Assets\Scripts\Combat\PlayerStatusEffectType.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
@@ -128,6 +130,7 @@
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
+    <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
