@@ -42,6 +42,7 @@ public struct EnemyAttackImpactData
     public float knockbackDuration;
     public float slowMultiplier;
     public float slowDuration;
+    public float stunDuration;
 
     public static EnemyAttackImpactData Default => new EnemyAttackImpactData
     {

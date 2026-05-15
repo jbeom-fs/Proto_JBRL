@@ -24,4 +24,5 @@ public sealed class ProjectileFireRequest
     public float KnockbackDuration;
     public float SlowPercentage;
     public float SlowDuration;
+    public float StunDuration;
 }

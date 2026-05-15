@@ -37,6 +37,7 @@ public class ProjectileController : MonoBehaviour
     private float _knockbackDuration;
     private float _slowPercentage;
     private float _slowDuration;
+    private float _stunDuration;
     private float _lifetime = 3f;
     private ProjectileWallHitMode _wallHitMode = ProjectileWallHitMode.Destroy;
     private TargetMode _targetMode = TargetMode.Player;
@@ -130,6 +131,7 @@ public class ProjectileController : MonoBehaviour
             0f,
             0f,
             0f,
+            0f,
             0f);
     }
 
@@ -146,7 +148,8 @@ public class ProjectileController : MonoBehaviour
         float knockbackForce,
         float knockbackDuration,
         float slowPercentage,
-        float slowDuration)
+        float slowDuration,
+        float stunDuration)
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
@@ -156,6 +159,7 @@ public class ProjectileController : MonoBehaviour
         _knockbackDuration = Mathf.Max(0f, knockbackDuration);
         _slowPercentage = Mathf.Clamp01(slowPercentage);
         _slowDuration = Mathf.Max(0f, slowDuration);
+        _stunDuration = Mathf.Max(0f, stunDuration);
         _speed = Mathf.Max(0f, speed);
         _lifetime = Mathf.Max(0.01f, lifetime);
         _wallHitMode = wallHitMode;
@@ -404,7 +408,8 @@ public class ProjectileController : MonoBehaviour
             _knockbackForce,
             _knockbackDuration,
             _slowPercentage,
-            _slowDuration);
+            _slowDuration,
+            _stunDuration);
         Release(ProjectileReleaseReason.PlayerHit);
     }
 

@@ -195,6 +195,14 @@ public class PlayerController : MonoBehaviour
 
         if (_inputReader == null) return;
 
+        if (_combat != null && _combat.IsStunned)
+        {
+            if (_rb != null)
+                _rb.linearVelocity = Vector2.zero;
+            CheckRoomEntry();
+            return;
+        }
+
         if (_inputReader.WasStairPressed && _stairCooldown <= 0f)
         {
             TryInteractStair();

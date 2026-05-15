@@ -46,6 +46,7 @@ MonoBehaviour:
     knockbackDuration: 0
     slowMultiplier: 1
     slowDuration: 0
+    stunDuration: 0
   jumpDuration: 0.55
   jumpDamage: 4
   jumpImpactRadius: 1.1
@@ -54,8 +55,9 @@ MonoBehaviour:
   jumpImpact:
     knockbackForce: 5
     knockbackDuration: 0.1
-    slowMultiplier: 0
-    slowDuration: 0
+    slowMultiplier: 0.5
+    slowDuration: 2
+    stunDuration: 1
   projectilePrefab: {fileID: 0}
   projectileDamage: 0
   projectileSpeed: 6
@@ -71,6 +73,7 @@ MonoBehaviour:
     knockbackDuration: 0
     slowMultiplier: 1
     slowDuration: 0
+    stunDuration: 0
   knockbackResistance: 0
   rangedMovementType: 0
   preferredRange: 5

@@ -53,6 +53,7 @@ public sealed class PlayerDashController : MonoBehaviour
     {
         if (_dashRoutine != null) return false;
         if (caster == null || caster.IsDead || !caster.isActiveAndEnabled) return false;
+        if (caster.IsStunned) return false;
         if (!gameObject.activeInHierarchy || !enabled) return false;
 
         direction = ResolveDirection(direction);

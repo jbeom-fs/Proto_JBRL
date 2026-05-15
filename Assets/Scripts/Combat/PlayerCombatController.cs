@@ -73,6 +73,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private Coroutine _enemyKnockbackRoutine;
     private readonly List<PlayerSlowEffect> _enemySlows = new();
     private float _enemySlowMultiplier = 1f;
+    private float _stunTimer;
 
     private struct PlayerSlowEffect
     {
@@ -92,8 +93,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
     public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f;
+    public bool IsStunned => _stunTimer > 0f;
     public bool BlocksPlayerMovement => IsSkillBusy;
-    public float MoveSpeedMultiplier => _enemySlowMultiplier;
+    public float MoveSpeedMultiplier => IsStunned ? 0f : _enemySlowMultiplier;
 
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
@@ -231,6 +233,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
 
+        TickEnemyStun(Time.deltaTime);
         TickEnemySlowEffects(Time.deltaTime);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
@@ -238,11 +241,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         TickSkillRecovery(Time.deltaTime);
 
         if (_inputReader == null) return;
-        RefreshAimDirection();
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
         if (IsDashing) return;
+        if (IsStunned) return;
         if (IsSkillBusy) return;
+
+        RefreshAimDirection();
 
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
         if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
@@ -270,6 +275,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         if (IsDashing) return;
+        if (IsStunned) return;
         if (IsSkillBusy) return;
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
@@ -300,6 +306,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (IsDead) return;
         if (IsDashing) return;
+        if (IsStunned) return;
         if (IsSkillBusy) return;
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
@@ -355,6 +362,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     {
         if (IsDead) return false;
         if (IsDashing) return false;
+        if (IsStunned) return false;
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return false;
 
         EnsureSkillSlotsBound();
@@ -411,6 +419,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         _enemySlows.Clear();
         _enemySlowMultiplier = 1f;
+        _stunTimer = 0f;
     }
 
     private List<Vector2Int> ResolveTargets(AttackPatternType pattern, int range, float coneHalfAngle = 45f)
@@ -462,13 +471,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         float knockbackForce,
         float knockbackDuration,
         float slowMultiplier,
-        float slowDuration)
+        float slowDuration,
+        float stunDuration)
     {
         if (!TryApplyDamage(damage))
             return false;
 
         ApplyEnemyKnockback(hitDirection, knockbackForce, knockbackDuration);
         ApplyEnemySlow(slowMultiplier, slowDuration);
+        ApplyEnemyStun(stunDuration);
         return true;
     }
 
@@ -548,6 +559,22 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             Timer = duration
         });
         RecalculateEnemySlowMultiplier();
+    }
+
+    private void ApplyEnemyStun(float duration)
+    {
+        if (duration <= 0f)
+            return;
+
+        _stunTimer = Mathf.Max(_stunTimer, duration);
+    }
+
+    private void TickEnemyStun(float deltaTime)
+    {
+        if (_stunTimer <= 0f)
+            return;
+
+        _stunTimer = Mathf.Max(0f, _stunTimer - deltaTime);
     }
 
     private void TickEnemySlowEffects(float deltaTime)

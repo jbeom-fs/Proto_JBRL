@@ -44,8 +44,8 @@ MonoBehaviour:
   rushImpact:
     knockbackForce: 5
     knockbackDuration: 0.1
-    slowMultiplier: 1
-    slowDuration: 0
+    slowMultiplier: 0.5
+    slowDuration: 2
   jumpDuration: 0.55
   jumpDamage: 0
   jumpImpactRadius: 1.1

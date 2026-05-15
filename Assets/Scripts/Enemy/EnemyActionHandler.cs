@@ -448,7 +448,8 @@ public class ActionHandler
                 impact.knockbackForce,
                 impact.knockbackDuration,
                 impact.EffectiveSlowMultiplier,
-                impact.slowDuration);
+                impact.slowDuration,
+                impact.stunDuration);
             return;
         }
 
@@ -636,7 +637,8 @@ public class ActionHandler
             KnockbackForce = _brain.Data.projectileImpact.knockbackForce,
             KnockbackDuration = _brain.Data.projectileImpact.knockbackDuration,
             SlowPercentage = _brain.Data.projectileImpact.EffectiveSlowMultiplier,
-            SlowDuration = _brain.Data.projectileImpact.slowDuration
+            SlowDuration = _brain.Data.projectileImpact.slowDuration,
+            StunDuration = _brain.Data.projectileImpact.stunDuration
         };
     }
 

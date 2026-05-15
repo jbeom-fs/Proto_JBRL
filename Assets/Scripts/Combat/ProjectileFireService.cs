@@ -150,7 +150,8 @@ public sealed class ProjectileFireService
             request.KnockbackForce,
             request.KnockbackDuration,
             request.SlowPercentage,
-            request.SlowDuration);
+            request.SlowDuration,
+            request.StunDuration);
         return true;
     }
 
