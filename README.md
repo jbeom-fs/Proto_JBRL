@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-14  
+> 작성 기준일: 2026-05-15  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -39,9 +39,10 @@
 | 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
 | 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
+| 플레이어 상태이상 | 적 공격에서 받는 넉백·슬로우·스턴 (`ApplyEnemyCombatImpact` 단일 진입점, `EnemyAttackImpactData`) |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair |
-| 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기, Contact Special Attack(Rush/Jump) |
-| 적 전투 | 근접 접촉 피해 + Contact Special(Rush 돌진 / Jump 도약 + 착지 임팩트) + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 |
+| 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기, Contact Special Attack(Rush/Jump), `isStationary`/`immuneToKnockback` 플래그 |
+| 적 전투 | 근접 접촉 피해 + Contact Special(Rush 돌진 / Jump 도약 + 착지 임팩트) + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 — Rush/Jump/Projectile 은 `EnemyAttackImpactData`(knockback·slow·stun) 적용 |
 | 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
 | 진행 방식 | 계단을 통한 층 이동 (무한 층 구조) |
 
@@ -81,6 +82,7 @@
 │  DungeonTilemapRenderer · DoorController                     │
 │  EnemyHealthBar · PlayerStatusBarUI                          │
 │  SkillSlotUI · SkillUIManager · SkillRangePreviewer          │
+│  PlayerStatusEffectUI · StatusEffectIconView                 │
 │  HitFlashFeedback · PlayerInvincibilityFlashFeedback         │
 │  EnemyAnimationController · FogVisibilityRenderer            │
 │  GameOverUIController                                        │
@@ -98,6 +100,8 @@
 - **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀 계산 제공
 - **공유 투사체 발사**: ProjectileFireService가 적 원거리·플레이어 스킬 모두에 동일한 패턴(Single/Burst/Spread/Circle) 처리
 - **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용)
+- **적 공격 임팩트 통합**: `EnemyAttackImpactData`(knockback·slow·stun) 구조로 Rush·Jump·Projectile 의 부가 효과를 동일하게 관리, `PlayerCombatController.ApplyEnemyCombatImpact()` 단일 진입점으로 데미지·넉백·슬로우·스턴 적용
+- **런타임 탐색 캐싱**: `DungeonManager` 가 `RoomSpawner` 참조를 SerializeField + 1회 경고로 캐싱, 매 `FindAnyObjectByType` 호출 회피 (다른 컨트롤러도 동일 패턴 사용)
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 
 ---
@@ -122,6 +126,8 @@ Assets/Scripts/
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
 │   └── EnemyData.cs                # 적 ScriptableObject — Contact(+Special Rush/Jump) / Ranged + 투사체 패턴
 │                                    #   (EnemySpecialAttackType: None/Rush/Jump + 전용 파라미터 그룹)
+│                                    #   (EnemyAttackImpactData struct: knockback/slow/stun — rushImpact/jumpImpact/projectileImpact 공용)
+│                                    #   (isStationary: AI 이동/분리/넉백 위치 변화 정지 + Rigidbody FreezeAll, immuneToKnockback: 데미지·상태이상은 적용되나 임펄스만 무시)
 │
 ├── Generate/
 │   ├── DungeonGenerator.cs         # BSP + Prim MST 생성 알고리즘 (순수 C#)
@@ -146,6 +152,10 @@ Assets/Scripts/
 │   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시, 기존 CircleCollider 보존)
 │   ├── MovementBlockerQuery.cs     # Player 이동/대시가 `EnemyData.blocksMovement=true` 적과 겹치는지 판정 (Collider2D→EnemyController 캐시)
 │   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간·8방향 조준·castDelay/recoveryDelay 잠금)
+│   │                               #   + ApplyEnemyCombatImpact(damage, hitDir, knockback, slow, stun) 단일 진입점
+│   │                               #   + 슬로우(_enemySlows 강도 최대값) / 스턴(_stunTimer) / 넉백(EnemyKnockbackRoutine → playerMovement.TryApplyExternalDisplacement)
+│   │                               #   + IsSlowed/IsStunned/MoveSpeedMultiplier · OnStatusEffectApplied/Ended(PlayerStatusEffectType)
+│   ├── PlayerStatusEffectType.cs   # 플레이어 상태이상 enum (Slow, Stun)
 │   ├── PlayerResource.cs           # HP·MP 상태 컨테이너 (Domain)
 │   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
 │   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기)
@@ -187,11 +197,13 @@ Assets/Scripts/
 │
 ├── UI/
 │   ├── PlayerStatusBarUI.cs        # 플레이어 HP·MP 상태바 (슬라이더 + 텍스트)
+│   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임
+│   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
 │   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
-│   ├── GameOverUIController.cs     # 게임오버 UI 빌드·페이드 인/아웃·확인 버튼
+│   ├── GameOverUIController.cs     # 게임오버 UI 페이드 인/아웃·확인 버튼 (UI 참조 누락 시 1회 경고 후 표시 skip)
 │   ├── GameOverRestartHandler.cs   # IGameOverRestartHandler 인터페이스
 │   └── GameOverSceneReloadRestartHandler.cs # 활성 씬 재로드로 재시작
 │
@@ -311,15 +323,21 @@ ConnectExtraCorridors():
       pairCandidates = BuildExtraPathCandidatesForPair(...)   ← 최대 ExtraCandidateCount개
         각 후보마다 primary/alternate axis L-path를 emit + 검증
         (interior/perim/perim+1, perimeter-corridor, corner-doorway 충돌 모두 제외)
-      score(corridorOverlap, parallelRun, pathLength, centerDist) → 가장 깨끗한 후보 1개
-      pairBestCandidates.Add(best)
+      score = corridorOverlap * ExtraOverlapScoreWeight
+            - pathLength      * ExtraPathLengthPenaltyWeight
+            - centerDistanceSq / ExtraCenterDistancePenaltyDivisor
+      pairBestCandidates.Add(가장 점수 높은 후보 1개)
     그 attempt에서 가장 점수 좋은 1쌍만 carve, DrawLCorridor(..., mandatory=false)
     carve 성공 시에만 connectedPairs 갱신 (skip 시 connectedPairs 보존)
 ```
 
 - `DungeonSettings.ExtraCandidateCount` (기본 12): 한 방 pair마다 점수화할 EXTRA 후보 개수
 - `DungeonSettings.ExtraConnProb` (기본 0.5): MST 완료 후 각 EXTRA attempt에서 통로 생성을 시도할 확률 (※ 의미가 "두 번째로 가까운 방 추가 연결 확률"에서 attempt 단위 시도 확률로 변경됨)
+- `DungeonSettings.ExtraOverlapScoreWeight` (기본 20): 기존 corridor와 겹치는 cell 1개당 후보 점수 보너스 (= 통로 재사용 권장)
+- `DungeonSettings.ExtraPathLengthPenaltyWeight` (기본 8): 후보 path cell 1개당 점수 감점
+- `DungeonSettings.ExtraCenterDistancePenaltyDivisor` (기본 20): 두 방 중심 거리 제곱 감점의 divisor — 클수록 거리 감점이 약해짐
 - `DrawLCorridor`는 `bool`을 반환해 EXTRA가 skip되면 호출자가 `connectedPairs`를 갱신하지 않음 (잘못된 logical 연결 상태 방지)
+- 과거에 사용하던 `LongestParallelCorridorRun` 점수 항목은 제거되었습니다 (overlap·length·centerDistance 3축으로 단순화).
 
 ### 4-4-1. Corridor Carving 검증 (DrawLCorridor)
 
@@ -387,6 +405,15 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 | `OnPlayerMpChanged(cur, max)` | PlayerCombatController | PlayerStatusBarUI |
 | `OnPlayerDied(PlayerCombatController)` | PlayerCombatController | GameOverFlowController |
 | `OnSkillUsed(SkillData)` | PlayerCombatController | SkillSlotUI (쿨다운 표시) |
+
+> 플레이어 상태이상(슬로우/스턴) 알림은 채널이 아닌 `PlayerCombatController` 직접 이벤트로 발행됩니다.
+>
+> | 이벤트 | 발행자 | 구독자 |
+> |--------|--------|--------|
+> | `OnStatusEffectApplied(PlayerStatusEffectType)` | PlayerCombatController | PlayerStatusEffectUI |
+> | `OnStatusEffectEnded(PlayerStatusEffectType)` | PlayerCombatController | PlayerStatusEffectUI |
+>
+> UI는 `PlayerCombatController.Active` 정적 참조로 1회 바인딩 후 enable 토글 시 자동 재바인딩(`TryBindCombat`)합니다.
 
 ---
 
@@ -470,6 +497,27 @@ CheckRoomEntry():
 | Space | 기본 공격 (홀드 시 범위 미리보기) — Facing 4방향 기준 |
 | Q / W / E / R | 스킬 슬롯 1~4 — InstantArea / Projectile / Dash 라우팅 (홀드 시 범위 미리보기) |
 
+### 6-4-1. 적 상태이상에 의한 이동/입력 제어
+
+플레이어가 적 공격으로 상태이상에 걸리면 `PlayerController.Update` / `PlayerCombatController.Update` 가 우선순위에 따라 입력·이동을 가로챕니다.
+
+```
+PlayerController.Update 우선순위:
+  IsDead          → velocity=0, 입력 무시
+  IsTransitioning → 입력 무시 (층 이동 중)
+  IsDashing       → CheckRoomEntry 만 수행
+  IsStunned       → velocity=0, CheckRoomEntry 만 수행 (이동/방향 전환/스킬 전부 차단)
+  BlocksPlayerMovement(스킬 castDelay/recoveryDelay) → velocity=0
+  통상 이동: MoveWithCollision(input * _combat.MoveSpeedMultiplier)
+
+MoveSpeedMultiplier:
+  IsStunned        → 0          (실제 이동 자체가 Update 단계에서 막힘)
+  IsSlowed         → min(activeSlowMultiplier...)   ← _enemySlows 중 가장 강한 감속 적용
+  외 기본          → 1
+```
+
+스턴 동안 `PlayerCombatController.RefreshAimDirection()` 도 입력을 무시해 8방향 조준 캐시가 갱신되지 않습니다(스턴 직전 방향이 유지). 슬로우는 적의 `EnemyAttackImpactData.slowDuration` 동안만 적용되며, 만료 시 `_enemySlows.RemoveAt` 후 `RecalculateEnemySlowMultiplier`로 즉시 재계산합니다.
+
 ### 6-5. 스킬 castDelay / recoveryDelay 중 이동 잠금
 
 `SkillData.castDelay`(선딜레이)와 `SkillData.recoveryDelay`(후딜레이)가 활성인 동안 플레이어는 이동·기본 공격·스킬 입력이 잠깁니다.
@@ -547,12 +595,22 @@ PlayerCombatController
   ├── _lastAimDirection (Vector2Int) — 8방향 raw 조준 캐시 (입력 없을 때 폴백)
   ├── _isSkillCasting / _skillRecoveryTimer / _skillCastRoutine — 스킬 선/후딜 상태
   ├── IsSkillBusy / BlocksPlayerMovement — 캐스팅·후딜 중 이동·입력 잠금
+  ├── 상태이상 (적 공격 → ApplyEnemyCombatImpact 진입):
+  │     _enemySlows (List<PlayerSlowEffect>) — 가장 강한 감속을 _enemySlowMultiplier 로 반영
+  │     _stunTimer / _stunTotalDurationForUi — Update 단계 TickEnemyStun
+  │     _enemyKnockbackRoutine — playerMovement.TryApplyExternalDisplacement 로 매 프레임 변위
+  │     IsSlowed / IsStunned / MoveSpeedMultiplier(IsStunned ? 0 : _enemySlowMultiplier)
+  │     SlowRemainingTime/Ratio · StunRemainingTime/Ratio — UI 갱신용
+  │     OnStatusEffectApplied / OnStatusEffectEnded(PlayerStatusEffectType) 이벤트
+  │     ClearEnemyImpactState() — 사망 / OnDisable 시 모든 효과 해제
   ├── CurrentAimDirection / CurrentAimRawDirection — 정규화·raw 8방향 조준
-  ├── RefreshAimDirection() — Update 매 프레임 + 스킬 사용 직전 갱신
+  ├── RefreshAimDirection() — Update 매 프레임 + 스킬 사용 직전 갱신 (스턴 중에는 입력 무시 → 캐시 유지)
   ├── PlayerCombatController.Active (정적) — Projectile 등에서 거리 비교용 캐시 활용
   ├── IsDamageInvincible / HasExternalInvincibility / IsDashing
   ├── IsDead / OnDied(player) — HP 0 도달 시 단발 사망 처리
   ├── BeginExternalInvincibility(visualDuration) / EndExternalInvincibility()
+  ├── ApplyEnemyCombatImpact(damage, hitDir, knockback, knockbackDur, slow, slowDur, stunDur)
+  │      — 적 Contact Special / Jump 임팩트 / Projectile 적중이 호출하는 단일 진입점
   ├── Die() → CombatEventChannel.RaisePlayerDied()
   ├── Space → TryBasicAttack()
   └── Q/W/E/R → TryUseSkill(index)
@@ -811,6 +869,8 @@ FindPath(start, goal, grid):
 
 ### 8-4. 행동 분기 (EnemyBehaviorType)
 
+> **이동 플래그**: `EnemyData.isStationary = true` 이면 `EnemyBrain.CurrentMoveSpeed = 0`, MovementHandler의 일반 이동·Ranged 이동(Kiting/Random)·idle separation 이 모두 정지하고 `EnemyController`가 `Rigidbody2D.constraints = FreezeAll` 로 잠급니다 (타겟 갱신·공격 사이클은 정상). `immuneToKnockback = true` 이면 `ApplyKnockback`이 즉시 velocity=0 후 return하며, 데미지·슬로우·스턴은 정상 적용됩니다.
+
 `EnemyData.behaviorType`에 따라 ActionHandler가 다른 사이클을 돕니다.
 
 ```
@@ -909,8 +969,11 @@ Kiting의 "적정 거리 도달", Random의 "다음 목적지까지 대기"처�
 | 전용 속도 | `rushSpeed`, `rushDuration` | `jumpDuration` |
 | 전용 데미지 | `rushDamage`, `rushHitRadius` | `jumpDamage`, `jumpImpactRadius` |
 | 전용 위치 | — | `jumpMaxDistance`, `jumpStayInRoom` |
+| 임팩트 | `rushImpact` (EnemyAttackImpactData) | `jumpImpact` (EnemyAttackImpactData) |
 
-> 데미지 값이 0이면 `EnemyData.attackPower` 가 사용됩니다 (`GetSpecialDamage`).
+> 데미지 값이 0이면 `EnemyData.attack` 이 사용됩니다 (`GetSpecialDamage`).
+>
+> Rush 경로 데미지 / Jump 착지 임팩트는 `ApplyEnemyImpactToTarget` → `PlayerCombatController.ApplyEnemyCombatImpact` 로 라우팅되어, EnemyAttackImpactData 의 knockback·slow·stun 이 한 번에 적용됩니다 (다른 IDamageable 타깃은 단순히 `TakeDamage(damage)`만 호출).
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
 
@@ -940,9 +1003,11 @@ Bounce:      X/Y 축별로 차단된 축의 방향만 반전
 
 | 상태이상 | 처리 |
 |--------|------|
-| 넉백 | 방향 × 힘 임펄스, `knockbackResistance`로 감쇠. CircleCast + 그리드 IsWalkable 양면 클램핑으로 벽 안 끼임 방지 |
+| 넉백 | 방향 × 힘 임펄스, `knockbackResistance`로 감쇠. CircleCast + 그리드 IsWalkable 양면 클램핑으로 벽 안 끼임 방지. `immuneToKnockback=true` 이면 즉시 velocity=0 후 무시 |
 | 슬로우 | `_activeSlows` 리스트에서 가장 강한 감속만 moveSpeed 승수에 반영, 지속시간 후 자동 제거 |
 | 피격 점멸 | `HitFlashFeedback.Play()` — SpriteRenderer 색상 N회 점멸 |
+
+> 적이 플레이어에게 가하는 부가 효과는 `EnemyAttackImpactData`(knockback·slow·stun) 구조로 EnemyData 인스펙터에 노출됩니다. Rush/Jump/Projectile 각자 `rushImpact`/`jumpImpact`/`projectileImpact` 필드를 보유하며 일반 Contact 접촉 피해는 단순 데미지(`TakeDamage(attack)`)만 적용합니다.
 
 **사망 처리 (IsDead → OnDeathFinished)**
 
@@ -1092,6 +1157,27 @@ PlayerStatusBarUI:
   OnPlayerMpChanged(cur, max) → MP 슬라이더 + 텍스트 갱신
 ```
 
+### 10-1-1. 플레이어 상태이상 아이콘 UI (PlayerStatusEffectUI)
+
+슬로우·스턴 활성 동안 아이콘과 잔여 시간을 표시합니다.
+
+```
+PlayerStatusEffectUI:
+  ├── slowIconView / stunIconView (StatusEffectIconView)
+  ├── PlayerCombatController.Active 가 준비될 때까지 OnEnable + Update 에서 TryBindCombat
+  ├── 구독: OnStatusEffectApplied(Slow/Stun) → SetVisible(true) + MoveToLast
+  │         OnStatusEffectEnded(Slow/Stun)  → SetVisible(false)
+  └── Update: 활성 상태이면 RefreshIcon → SetTime(remainingTime, ratio)
+
+StatusEffectIconView (슬롯 1개):
+  ├── iconImage      — 정적 스프라이트
+  ├── fillImage      — fillAmount = remaining / total (역으로 줄어드는 게이지)
+  ├── timeText (TMP) — remaining > 0 일 때만 "0.0" 포맷 표시
+  └── MoveToLast()   — 새로 활성된 효과를 컨테이너 마지막에 정렬
+```
+
+상태이상 발행은 `CombatEventChannel` 이 아니라 `PlayerCombatController` 의 직접 이벤트(`OnStatusEffectApplied`/`Ended`) — UI 한 곳만 구독하면 충분하기 때문입니다.
+
 ### 10-2. 스킬 슬롯 UI
 
 ```
@@ -1170,7 +1256,7 @@ GameOverFlowController.HandlePlayerDied()
 | PlayerAnimationController | `IsDead` Animator 파라미터 true 고정, MoveX/Y 0 |
 | SkillRangePreviewer | 활성 미리보기 모두 숨김, 입력 처리 중단 |
 
-`GameOverUIController`는 인스펙터에 UI가 비어 있으면 `BuildDefaultUi()`로 패널·이미지·확인 버튼을 런타임 자동 생성합니다 (Time.timeScale에 영향받지 않도록 unscaled 페이드 사용).
+`GameOverUIController`는 패널·확인 버튼·이미지를 모두 인스펙터로 사전 연결한다는 전제로 동작합니다. 참조가 비어 있으면 `_warnedMissingReferences` 로 1회 경고를 출력하고 표시를 skip 합니다 (이전 버전의 `BuildDefaultUi()` 런타임 자동 생성 경로는 제거되었습니다). 페이드는 항상 `unscaledDeltaTime` 기반이라 `Time.timeScale=0` 의 일시정지에도 정상 동작합니다.
 
 ---
 
@@ -1377,13 +1463,24 @@ FloorTransition(targetFloor):
 | EnemyController LateUpdate 좌표 skip | `EnemyController.LateUpdate` | 이전 안전 좌표와 동일 시 4-corner footprint 검사 건너뜀 |
 | 슬로우 만료 시에만 재계산 | `EnemyController.TickSlowEffects` | Percentage 기반이므로 timer 감소만으로는 강도가 바뀌지 않음 — 만료/추가 시점에만 RecalculateStrongestSlow |
 | 기존 CircleCollider 보존 | `CharacterPhysicsSetup.Configure` | Circle 이 이미 있으면 radius/offset/material 을 덮어쓰지 않음 — 프리팹별 충돌 범위 커스터마이즈 가능 |
-| EXTRA 통로 다중 후보 점수화 | `BuildExtraPathCandidatesForPair` + `ConnectExtraCorridors` | pair 마다 `ExtraCandidateCount` 후보를 생성·검증한 뒤 corridor overlap/parallel run/path length/center distance 기반 점수로 가장 깨끗한 1개만 채택 — 외곽 우회·평행 통로·끊긴 통로 발생률 감소 |
+| EXTRA 통로 다중 후보 점수화 | `BuildExtraPathCandidatesForPair` + `ConnectExtraCorridors` | pair 마다 `ExtraCandidateCount` 후보를 생성·검증한 뒤 `ExtraOverlapScoreWeight`·`ExtraPathLengthPenaltyWeight`·`ExtraCenterDistancePenaltyDivisor` 기반 점수로 가장 깨끗한 1개만 채택 — 외곽 우회·끊긴 통로 발생률 감소 (과거의 parallel run 항목은 단순화로 제거) |
 | EXTRA skip 시 connectedPairs 보존 | `DrawLCorridor` 의 bool 반환 + 호출자 분기 | optional skip 시 잘못된 logical 연결 상태 누적 방지 |
 | 통로의 방 perimeter/모서리 검증 | `PathCarvesRoomPerimeter` / `PathUsesRoomCornerDoorway` | EXTRA 통로가 다른 방 테두리 ROOM 셀이나 모서리 doorway 를 횡단하지 못하도록 사전 차단 |
 | Door 축 ClampDoorAxis | `DrawHorizontalCorridor` / `DrawVerticalCorridor` | 동일 door 축 재사용 시 sy/ey/sx/ex 를 방 범위에 강제 정렬 — 통로가 방 밖으로 새는 케이스 방지 |
 | Contact Special Attack 상태머신 | `EnemyActionHandler` `_specialPhase` (None→Windup→Rush/Jump→Recovery) | Rush 경로 1회 제한 (`_rushHitTargets` HashSet), Jump 착지점 사전 결정 (`TryResolveJumpTarget`), 사망 시 `HandleDeathStarted` 로 일괄 정리 |
 | Special Attack 페이싱 잠금 | `EnemyAnimationController.LockFacing` / `UnlockFacing` | Rush/Jump 진행 방향으로 sprite 고정, `faceMoveDirection`/`faceTargetWhileChasing` 무시 — Special 종료 시 자동 해제 |
 | Special Animator 트리거 폴백 | `SetTriggerOrAttack` + `_hasChargeTrigger`/`Rush`/`Jump`/`Land` 사전 캐싱 | Animator 에 Charge/Rush/Jump/Land 파라미터가 없는 적은 자동으로 AttackTrigger 폴백 — 기존 프리팹 호환 |
+| 적 공격 임팩트 통합 진입점 | `PlayerCombatController.ApplyEnemyCombatImpact` + `EnemyActionHandler.ApplyEnemyImpactToTarget` | Rush 경로 / Jump 임팩트 / 적 projectile 적중이 단일 메서드로 데미지·넉백·슬로우·스턴을 일괄 적용 — IDamageable 캐스팅 한 번으로 분기 |
+| 적 공격 임팩트 데이터 구조화 | `EnemyAttackImpactData` (knockback·slow·stun) | EnemyData 의 rush/jump/projectile 각 임팩트 그룹이 같은 struct 를 공유, `EffectiveSlowMultiplier` 로 보호 검사 |
+| 슬로우 다중 적용 → 최대 강도 1개만 | `PlayerCombatController._enemySlows` + `RecalculateEnemySlowMultiplier` | 여러 적이 동시에 슬로우를 가해도 가장 강한 multiplier 하나만 반영, 만료 시점에만 재계산 |
+| 스턴 중 입력·조준 캐시 동결 | `PlayerCombatController.RefreshAimDirection` + `PlayerController.Update` 분기 | 스턴 동안 `_lastAimDirection` 을 유지하고 이동/공격/방향 전환을 차단 |
+| 플레이어 넉백 코루틴 1개 | `EnemyKnockbackRoutine` + `PlayerController.TryApplyExternalDisplacement` | 중복 적용 시 이전 코루틴 stop 후 재시작, Lerp 변위는 `MoveWithCollision` 과 동일한 footprint 검사 통과 |
+| `isStationary` 적 이동 정지 | `EnemyData.isStationary` + `EnemyBrain.CurrentMoveSpeed=0` + `Rigidbody.FreezeAll` | AI 추적·공격은 정상 동작하나 위치 변화 / Separation / Kiting / Random 모두 zero-cost path |
+| `immuneToKnockback` 임펄스 skip | `EnemyController.ApplyKnockback` 게이트 | 데미지·슬로우·스턴은 그대로 적용하고 velocity=0 후 return — clamp/CircleCast 비용 0 |
+| RoomSpawner 참조 SerializeField 캐싱 | `DungeonManager.roomSpawner` + `TryGetRoomSpawner` 1회 경고 | `ResetRoomEncounterState` / `ClearPendingRoomStart` 가 매번 `FindAnyObjectByType` 호출하던 비용 제거 |
+| Wall 레이어 마스크 캐시 | `CombatLayers.WallMask`/`WallFilter` (`Wall`/`Obstacle` 이름 폴백) | `EnemyController.ClampKnockbackForceAgainstWall` 등이 매 호출마다 `LayerMask.GetMask` 호출 없이 정적 마스크 재사용 |
+| GameOver 자동 빌드 fallback 제거 | `GameOverUIController._warnedMissingReferences` | 인스펙터 미설정 시 1회 경고만 출력하고 표시 skip — 런타임에 새 GameObject 생성 코드(~66줄) 삭제 |
+| 상태이상 UI 정적 액티브 바인딩 | `PlayerStatusEffectUI.TryBindCombat` + `PlayerCombatController.Active` | 매 프레임 FindAnyObjectByType 없이 OnEnable / 첫 Update 에서 1회 바인딩, OnDisable 시 자동 unsubscribe |
 
 ---
 
@@ -1493,10 +1590,28 @@ case SkillExecutionType.AreaOverTime:
    - `behaviorType`: Contact / Ranged
    - Contact 적에 Rush/Jump 특수 공격을 부여하려면 `specialAttackType` 설정 + 전용 파라미터 입력
    - Ranged 적은 `rangedMovementType`(Chase/Kiting/Random) + 투사체 패턴 설정
+   - `rushImpact` / `jumpImpact` / `projectileImpact` (`EnemyAttackImpactData`) — knockback / slow / stun 부가 효과 입력
+   - 필요 시 이동 플래그 토글: `isStationary` (위치 고정), `immuneToKnockback` (임펄스 무시)
 2. 프리팹에 `EnemyController` + `EnemyHealthBar` + `Collider2D` 부착
 3. `NormalEnemyBrain` 부착 또는 `EnemyBrain` 상속 후 커스텀 FSM 구현
    - Charge/Rush/Jump/Land Animator 트리거가 없는 프리팹은 자동으로 AttackTrigger 폴백 (호환)
 4. `EnemyPoolManager`에 프리팹 등록
+
+### 새 플레이어 상태이상 추가
+
+```csharp
+// PlayerStatusEffectType.cs
+public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
+
+// PlayerCombatController:
+//   ① 전용 타이머/리스트 필드와 IsBurning/Remaining/Ratio 프로퍼티 추가
+//   ② ApplyEnemyCombatImpact 시그니처 또는 EnemyAttackImpactData 에 burnDuration 추가
+//   ③ TickEnemyBurn(deltaTime) 호출 + 만료 시 OnStatusEffectEnded 발행
+//   ④ ClearEnemyImpactState 에서 해제
+//
+// PlayerStatusEffectUI:
+//   ⑤ SerializeField StatusEffectIconView burnIconView 추가 + GetView/SyncIcon/RefreshIcon switch 분기
+```
 
 ### 새 이벤트 추가
 
@@ -1573,7 +1688,7 @@ case SkillExecutionType.AreaOverTime:
 | **성능 트레이스 로깅** | `RuntimePerfTraceLogger` — 투사체/풀 호출 마이크로 타이밍 기록 |
 | **플레이어 사망 처리** | `IsDead` 단발 처리, 입력·이동·미리보기 차단, `OnDied`/`OnPlayerDied` 이벤트 |
 | **게임오버 UI 흐름** | `GameOverFlowController` → 지연 후 `GameOverUIController` 페이드 인 → 확인 시 씬 재로드 |
-| **게임오버 UI 자동 빌드** | `GameOverUIController.BuildDefaultUi` — 인스펙터 미설정 시 패널·이미지·확인 버튼 런타임 생성 |
+| ~~**게임오버 UI 자동 빌드**~~ | (제거됨) `BuildDefaultUi` 자동 생성 경로는 삭제되어 이제 인스펙터 참조 누락 시 경고 후 표시 skip |
 | **적 사망 지연 처리** | `EnemyData.deathDelay` + `OnDeathFinished` — 사망 모션 종료 후 풀 반납, 방 클리어 판정은 즉시 |
 | **추격 중 타겟 페이싱** | `EnemyAnimationController.faceTargetWhileChasing` — 근접 적의 추적 방향 흔들림 보정 |
 | **Ranged 이동 분기** | `RangedMovementType.Chase/Kiting/Random` — `MovementHandler.TryTickRangedMovement`가 LOS/A* 흐름 전에 이동을 가로챔 |
@@ -1613,6 +1728,14 @@ case SkillExecutionType.AreaOverTime:
 | **사망 시 Brain 정리** | `EnemyBrain.HandleDeathStarted` — Special 상태머신/페이싱 잠금/핸들러 런타임 상태를 사망 즉시 정리, `EnemyController.Die`에서 호출 |
 | **EnemyData Contact-Special 인스펙터** | `EnemyDataEditor.DrawContactSpecialSection` — `specialAttackType` 별로 Rush/Jump 전용 필드 그룹만 노출 |
 | **EXTRA 통로 다중 후보 점수화** | `BuildExtraPathCandidatesForPair` + `ConnectExtraCorridors` — pair 마다 `ExtraCandidateCount`(기본 12) 후보를 검증·점수화하여 가장 깨끗한 1개 채택 |
+| **EXTRA 점수 weight 인스펙터화** | `DungeonManager.extraOverlapScoreWeight`/`extraPathLengthPenaltyWeight`/`extraCenterDistancePenaltyDivisor` — 점수 함수 가중치를 인스펙터로 노출, 과거 `LongestParallelCorridorRun` 항목은 단순화로 제거 |
+| **플레이어 상태이상 시스템** | `PlayerStatusEffectType`(Slow/Stun) + `PlayerCombatController.ApplyEnemyCombatImpact` — 적 공격에서 받는 데미지·넉백·슬로우·스턴을 단일 진입점으로 처리, 슬로우는 활성 효과 중 가장 강한 강도만 적용, 스턴 중 이동·방향 전환·스킬 입력 차단 |
+| **플레이어 상태이상 아이콘 UI** | `PlayerStatusEffectUI` + `StatusEffectIconView` — 슬로우/스턴 아이콘과 잔여 시간 게이지·텍스트 표시, `OnStatusEffectApplied/Ended` 이벤트 구독 |
+| **적 공격 임팩트 데이터화** | `EnemyAttackImpactData`(knockback·slow·stun) struct — `rushImpact`/`jumpImpact`/`projectileImpact` 가 공유, `EnemyActionHandler.ApplyEnemyImpactToTarget` 단일 라우팅 |
+| **`isStationary` / `immuneToKnockback` 플래그** | `EnemyData` — 위치 고정 적과 넉백 면역 적 구현 (데미지·상태이상은 그대로 적용) |
+| **CombatLayers Wall 마스크 추가** | `WallMask`/`WallFilter`/`HasWallLayer` — `Wall`/`Obstacle` 이름 자동 폴백으로 knockback clamp 등의 LayerMask 호출 정적 캐시화 |
+| **RoomSpawner 참조 SerializeField 캐싱** | `DungeonManager.roomSpawner` + `TryGetRoomSpawner` — `FindAnyObjectByType` 제거, 누락 시 1회 경고 |
+| **GameOver UI 자동 빌드 제거** | `BuildDefaultUi` 경로 삭제, 인스펙터 미설정 시 1회 경고만 출력하고 표시 skip |
 | **EXTRA 통로 외곽 우회 방지** | `DrawLCorridor`가 EXTRA(optional)에서는 primary/alternate 모두 충돌 시 skip + bool 반환 — `connectedPairs` 보존으로 잘못된 logical 상태 누적 차단 |
 | **방 perimeter / 모서리 doorway 검증** | `PathCarvesRoomPerimeter`, `PathUsesRoomCornerDoorway` — 통로가 다른 방 테두리 ROOM 셀이나 모서리 doorway 를 횡단하지 못하도록 사전 차단 |
 | **DungeonGenDebug `--scene-settings`** | Unity 외부 콘솔에서도 실제 씬 설정(120×80, room 10–50)으로 시뮬레이션 가능, `RoomPerimeterCorridorScan`/`CornerDoorwayScan` 출력 추가 |
