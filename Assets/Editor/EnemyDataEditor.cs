@@ -38,11 +38,13 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty _rushDuration;
     private SerializedProperty _rushDamage;
     private SerializedProperty _rushHitRadius;
+    private SerializedProperty _rushImpact;
     private SerializedProperty _jumpDuration;
     private SerializedProperty _jumpDamage;
     private SerializedProperty _jumpImpactRadius;
     private SerializedProperty _jumpMaxDistance;
     private SerializedProperty _jumpStayInRoom;
+    private SerializedProperty _jumpImpact;
     private SerializedProperty _projectilePrefab;
     private SerializedProperty _projectileDamage;
     private SerializedProperty _projectileSpeed;
@@ -53,6 +55,7 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty _burstInterval;
     private SerializedProperty _projectileWallHitMode;
     private SerializedProperty _projectileMaxBounceCount;
+    private SerializedProperty _projectileImpact;
     private SerializedProperty _knockbackResistance;
     private SerializedProperty _rangedMovementType;
     private SerializedProperty _preferredRange;
@@ -93,11 +96,13 @@ public sealed class EnemyDataEditor : Editor
         _rushDuration = FindHandled(nameof(EnemyData.rushDuration));
         _rushDamage = FindHandled(nameof(EnemyData.rushDamage));
         _rushHitRadius = FindHandled(nameof(EnemyData.rushHitRadius));
+        _rushImpact = FindHandled(nameof(EnemyData.rushImpact));
         _jumpDuration = FindHandled(nameof(EnemyData.jumpDuration));
         _jumpDamage = FindHandled(nameof(EnemyData.jumpDamage));
         _jumpImpactRadius = FindHandled(nameof(EnemyData.jumpImpactRadius));
         _jumpMaxDistance = FindHandled(nameof(EnemyData.jumpMaxDistance));
         _jumpStayInRoom = FindHandled(nameof(EnemyData.jumpStayInRoom));
+        _jumpImpact = FindHandled(nameof(EnemyData.jumpImpact));
         _projectilePrefab = FindHandled(nameof(EnemyData.projectilePrefab));
         _projectileDamage = FindHandled(nameof(EnemyData.projectileDamage));
         _projectileSpeed = FindHandled(nameof(EnemyData.projectileSpeed));
@@ -108,6 +113,7 @@ public sealed class EnemyDataEditor : Editor
         _burstInterval = FindHandled(nameof(EnemyData.burstInterval));
         _projectileWallHitMode = FindHandled(nameof(EnemyData.projectileWallHitMode));
         _projectileMaxBounceCount = FindHandled(nameof(EnemyData.projectileMaxBounceCount));
+        _projectileImpact = FindHandled(nameof(EnemyData.projectileImpact));
         _knockbackResistance = FindHandled(nameof(EnemyData.knockbackResistance));
         _rangedMovementType = FindHandled(nameof(EnemyData.rangedMovementType));
         _preferredRange = FindHandled(nameof(EnemyData.preferredRange));
@@ -222,6 +228,7 @@ public sealed class EnemyDataEditor : Editor
                 DrawProperty(_rushDuration);
                 DrawProperty(_rushDamage);
                 DrawProperty(_rushHitRadius);
+                DrawProperty(_rushImpact, "Rush Impact");
                 break;
 
             case EnemySpecialAttackType.Jump:
@@ -230,6 +237,7 @@ public sealed class EnemyDataEditor : Editor
                 DrawProperty(_jumpImpactRadius);
                 DrawProperty(_jumpMaxDistance);
                 DrawProperty(_jumpStayInRoom);
+                DrawProperty(_jumpImpact, "Jump Landing Impact");
                 break;
         }
     }
@@ -305,6 +313,7 @@ public sealed class EnemyDataEditor : Editor
         DrawProperty(_projectileWallHitMode);
         if (IsProjectileWallHitMode(ProjectileWallHitMode.Bounce))
             DrawProperty(_projectileMaxBounceCount);
+        DrawProperty(_projectileImpact, "Projectile Impact");
     }
 
     private void DrawFirePatternFields()
@@ -433,5 +442,13 @@ public sealed class EnemyDataEditor : Editor
             return;
 
         EditorGUILayout.PropertyField(property, true);
+    }
+
+    private static void DrawProperty(SerializedProperty property, string label)
+    {
+        if (property == null)
+            return;
+
+        EditorGUILayout.PropertyField(property, new GUIContent(label), true);
     }
 }

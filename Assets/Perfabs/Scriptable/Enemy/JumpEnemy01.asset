@@ -41,11 +41,21 @@ MonoBehaviour:
   rushDuration: 0.55
   rushDamage: 0
   rushHitRadius: 0.55
+  rushImpact:
+    knockbackForce: 0
+    knockbackDuration: 0
+    slowMultiplier: 1
+    slowDuration: 0
   jumpDuration: 0.55
   jumpDamage: 4
   jumpImpactRadius: 1.1
   jumpMaxDistance: 5.5
   jumpStayInRoom: 1
+  jumpImpact:
+    knockbackForce: 5
+    knockbackDuration: 0.1
+    slowMultiplier: 0
+    slowDuration: 0
   projectilePrefab: {fileID: 0}
   projectileDamage: 0
   projectileSpeed: 6
@@ -56,6 +66,11 @@ MonoBehaviour:
   burstInterval: 0.12
   projectileWallHitMode: 0
   projectileMaxBounceCount: 1
+  projectileImpact:
+    knockbackForce: 0
+    knockbackDuration: 0
+    slowMultiplier: 1
+    slowDuration: 0
   knockbackResistance: 0
   rangedMovementType: 0
   preferredRange: 5

@@ -409,7 +409,11 @@ public class ActionHandler
         if (!IsTargetWithinRadius(_brain.Data.rushHitRadius))
             return;
 
-        target.TakeDamage(GetSpecialDamage(_brain.Data.rushDamage));
+        ApplyEnemyImpactToTarget(
+            target,
+            GetSpecialDamage(_brain.Data.rushDamage),
+            _specialDirection,
+            _brain.Data.rushImpact);
         _rushHitTargets.Add(target);
     }
 
@@ -422,7 +426,33 @@ public class ActionHandler
         if (!IsTargetWithinRadius(_brain.Data.jumpImpactRadius))
             return;
 
-        target.TakeDamage(GetSpecialDamage(_brain.Data.jumpDamage));
+        Vector2 hitDirection = _brain.Target.TargetPosition - _brain.transform.position;
+        ApplyEnemyImpactToTarget(
+            target,
+            GetSpecialDamage(_brain.Data.jumpDamage),
+            hitDirection,
+            _brain.Data.jumpImpact);
+    }
+
+    private static void ApplyEnemyImpactToTarget(
+        IDamageable target,
+        int damage,
+        Vector2 hitDirection,
+        EnemyAttackImpactData impact)
+    {
+        if (target is PlayerCombatController player)
+        {
+            player.ApplyEnemyCombatImpact(
+                damage,
+                hitDirection,
+                impact.knockbackForce,
+                impact.knockbackDuration,
+                impact.EffectiveSlowMultiplier,
+                impact.slowDuration);
+            return;
+        }
+
+        target.TakeDamage(damage);
     }
 
     private bool IsTargetWithinRadius(float radius)
@@ -602,7 +632,11 @@ public class ActionHandler
             TargetMode = ProjectileController.TargetMode.Player,
             MaxBounceCount = _brain.Data.projectileMaxBounceCount,
             SpawnOffset = 0f,
-            BurstInterval = _brain.Data.burstInterval
+            BurstInterval = _brain.Data.burstInterval,
+            KnockbackForce = _brain.Data.projectileImpact.knockbackForce,
+            KnockbackDuration = _brain.Data.projectileImpact.knockbackDuration,
+            SlowPercentage = _brain.Data.projectileImpact.EffectiveSlowMultiplier,
+            SlowDuration = _brain.Data.projectileImpact.slowDuration
         };
     }
 

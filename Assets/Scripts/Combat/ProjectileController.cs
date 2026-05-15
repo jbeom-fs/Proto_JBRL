@@ -398,7 +398,13 @@ public class ProjectileController : MonoBehaviour
         if (delta.sqrMagnitude > hitDistance * hitDistance)
             return;
 
-        s_PlayerCombat.TakeDamage(_damage);
+        s_PlayerCombat.ApplyEnemyCombatImpact(
+            _damage,
+            delta,
+            _knockbackForce,
+            _knockbackDuration,
+            _slowPercentage,
+            _slowDuration);
         Release(ProjectileReleaseReason.PlayerHit);
     }
 

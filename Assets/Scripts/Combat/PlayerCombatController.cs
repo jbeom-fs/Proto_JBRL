@@ -70,6 +70,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
     private Coroutine _skillCastRoutine;
+    private Coroutine _enemyKnockbackRoutine;
+    private readonly List<PlayerSlowEffect> _enemySlows = new();
+    private float _enemySlowMultiplier = 1f;
+
+    private struct PlayerSlowEffect
+    {
+        public float Multiplier;
+        public float Timer;
+    }
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -84,6 +93,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
     public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f;
     public bool BlocksPlayerMovement => IsSkillBusy;
+    public float MoveSpeedMultiplier => _enemySlowMultiplier;
 
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
@@ -142,6 +152,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void OnDisable()
     {
         ClearSkillTimingState();
+        ClearEnemyImpactState();
     }
 
     private void RegisterAsActive()
@@ -220,6 +231,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
 
+        TickEnemySlowEffects(Time.deltaTime);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
@@ -389,6 +401,18 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _skillRecoveryTimer = 0f;
     }
 
+    private void ClearEnemyImpactState()
+    {
+        if (_enemyKnockbackRoutine != null)
+        {
+            StopCoroutine(_enemyKnockbackRoutine);
+            _enemyKnockbackRoutine = null;
+        }
+
+        _enemySlows.Clear();
+        _enemySlowMultiplier = 1f;
+    }
+
     private List<Vector2Int> ResolveTargets(AttackPatternType pattern, int range, float coneHalfAngle = 45f)
     {
         var dungeonManager = DungeonManager.Instance;
@@ -429,23 +453,135 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     public void TakeDamage(int incomingDamage)
     {
-        if (IsDead || !IsAlive) return;
-        if (IsDamageInvincible) return;
+        TryApplyDamage(incomingDamage);
+    }
+
+    public bool ApplyEnemyCombatImpact(
+        int damage,
+        Vector2 hitDirection,
+        float knockbackForce,
+        float knockbackDuration,
+        float slowMultiplier,
+        float slowDuration)
+    {
+        if (!TryApplyDamage(damage))
+            return false;
+
+        ApplyEnemyKnockback(hitDirection, knockbackForce, knockbackDuration);
+        ApplyEnemySlow(slowMultiplier, slowDuration);
+        return true;
+    }
+
+    private bool TryApplyDamage(int incomingDamage)
+    {
+        if (IsDead || !IsAlive) return false;
+        if (IsDamageInvincible) return false;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
         int hpBefore = CurrentHp;
         _resource.TakeDamage(actual);
-        if (CurrentHp < hpBefore)
-        {
-            _damageInvincibleTimer = damageInvincibleDuration;
-            _hitFlash?.Play();
-        }
+        if (CurrentHp >= hpBefore)
+            return false;
+
+        _damageInvincibleTimer = damageInvincibleDuration;
+        _hitFlash?.Play();
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
 #if UNITY_EDITOR
-        Debug.Log($"[Combat] 플레이어 -{actual} HP → {CurrentHp}/{maxHp}");
+        Debug.Log($"[Combat] Player -{actual} HP -> {CurrentHp}/{maxHp}");
 #endif
         if (CurrentHp == 0)
             Die();
+
+        return true;
+    }
+
+    private void ApplyEnemyKnockback(Vector2 hitDirection, float force, float duration)
+    {
+        if (playerMovement == null || force <= 0f || duration <= 0f)
+            return;
+
+        if (_enemyKnockbackRoutine != null)
+            StopCoroutine(_enemyKnockbackRoutine);
+
+        _enemyKnockbackRoutine = StartCoroutine(EnemyKnockbackRoutine(
+            ResolveEnemyImpactDirection(hitDirection),
+            force,
+            duration));
+    }
+
+    private IEnumerator EnemyKnockbackRoutine(Vector2 direction, float distance, float duration)
+    {
+        float remaining = Mathf.Max(0.01f, duration);
+        float speed = Mathf.Max(0f, distance) / remaining;
+
+        while (remaining > 0f && !IsDead && playerMovement != null)
+        {
+            float deltaTime = Time.deltaTime;
+            remaining -= deltaTime;
+            playerMovement.TryApplyExternalDisplacement(direction * (speed * deltaTime));
+            yield return null;
+        }
+
+        _enemyKnockbackRoutine = null;
+    }
+
+    private Vector2 ResolveEnemyImpactDirection(Vector2 hitDirection)
+    {
+        if (hitDirection.sqrMagnitude > 0.0001f)
+            return hitDirection.normalized;
+
+        Vector2 fallback = CurrentAimDirection;
+        if (fallback.sqrMagnitude <= 0.0001f)
+            fallback = Vector2.down;
+
+        return -fallback.normalized;
+    }
+
+    private void ApplyEnemySlow(float multiplier, float duration)
+    {
+        if (duration <= 0f || multiplier <= 0f || multiplier >= 1f)
+            return;
+
+        _enemySlows.Add(new PlayerSlowEffect
+        {
+            Multiplier = Mathf.Clamp01(multiplier),
+            Timer = duration
+        });
+        RecalculateEnemySlowMultiplier();
+    }
+
+    private void TickEnemySlowEffects(float deltaTime)
+    {
+        if (_enemySlows.Count == 0)
+            return;
+
+        bool changed = false;
+        for (int i = _enemySlows.Count - 1; i >= 0; i--)
+        {
+            PlayerSlowEffect effect = _enemySlows[i];
+            effect.Timer -= deltaTime;
+            if (effect.Timer <= 0f)
+            {
+                _enemySlows.RemoveAt(i);
+                changed = true;
+            }
+            else
+            {
+                _enemySlows[i] = effect;
+            }
+        }
+
+        if (changed)
+            RecalculateEnemySlowMultiplier();
+    }
+
+    private void RecalculateEnemySlowMultiplier()
+    {
+        float multiplier = 1f;
+        for (int i = 0; i < _enemySlows.Count; i++)
+            multiplier = Mathf.Min(multiplier, _enemySlows[i].Multiplier);
+
+        _enemySlowMultiplier = multiplier;
     }
 
     private void Die()
@@ -457,6 +593,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
         ClearSkillTimingState();
+        ClearEnemyImpactState();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);

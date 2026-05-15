@@ -259,7 +259,8 @@ public class PlayerController : MonoBehaviour
 
     private void MoveWithCollision(Vector2 input)
     {
-        float   step   = moveSpeed * Time.deltaTime;
+        float   speedMultiplier = _combat != null ? _combat.MoveSpeedMultiplier : 1f;
+        float   step   = moveSpeed * speedMultiplier * Time.deltaTime;
         Vector3 origin = transform.position;
         Vector3 current = origin;
         bool movedX = false;
@@ -328,6 +329,22 @@ public class PlayerController : MonoBehaviour
         float radius = _tileSize * collisionRadius;
         return dungeonManager.IsFootprintWalkable(pos, radius) &&
                !MovementBlockerQuery.IsPlayerMovementBlocked(pos, radius);
+    }
+
+    public bool TryApplyExternalDisplacement(Vector2 delta)
+    {
+        if (delta.sqrMagnitude <= 0.000001f)
+            return false;
+        if (dungeonManager == null || dungeonManager.Data == null)
+            return false;
+
+        Vector3 origin = transform.position;
+        Vector3 next = origin + new Vector3(delta.x, delta.y, 0f);
+        if (!CanMoveTo(next))
+            return false;
+
+        transform.position = next;
+        return true;
     }
 
     private float GetWorldColliderRadius()

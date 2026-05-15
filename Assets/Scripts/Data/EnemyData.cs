@@ -35,6 +35,25 @@ public enum EnemySpecialAttackType
     Jump
 }
 
+[System.Serializable]
+public struct EnemyAttackImpactData
+{
+    public float knockbackForce;
+    public float knockbackDuration;
+    public float slowMultiplier;
+    public float slowDuration;
+
+    public static EnemyAttackImpactData Default => new EnemyAttackImpactData
+    {
+        slowMultiplier = 1f
+    };
+
+    public float EffectiveSlowMultiplier =>
+        slowDuration > 0f && slowMultiplier > 0f && slowMultiplier < 1f
+            ? slowMultiplier
+            : 1f;
+}
+
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "JBLogLike/Enemy")]
 public class EnemyData : ScriptableObject
 {
@@ -129,6 +148,8 @@ public class EnemyData : ScriptableObject
     [Min(0.01f)]
     public float rushHitRadius = 0.45f;
 
+    public EnemyAttackImpactData rushImpact = EnemyAttackImpactData.Default;
+
     [Header("Jump Special Attack")]
     [Min(0.01f)]
     public float jumpDuration = 0.35f;
@@ -145,6 +166,8 @@ public class EnemyData : ScriptableObject
 
     [Tooltip("If true, jump landing candidates are restricted to the enemy's current room.")]
     public bool jumpStayInRoom = true;
+
+    public EnemyAttackImpactData jumpImpact = EnemyAttackImpactData.Default;
 
     [Header("Ranged Projectile")]
     public GameObject projectilePrefab;
@@ -175,6 +198,8 @@ public class EnemyData : ScriptableObject
     [Tooltip("Maximum wall bounces for Bounce mode. 0 means the projectile is released on the first wall hit.")]
     [Min(0)]
     public int projectileMaxBounceCount = 1;
+
+    public EnemyAttackImpactData projectileImpact = EnemyAttackImpactData.Default;
 
     [Header("Status Resistance")]
     [Range(0f, 1f)]
