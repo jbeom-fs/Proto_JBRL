@@ -258,6 +258,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     public Vector2 RefreshAimDirection()
     {
+        if (IsStunned)
+            return CurrentAimDirection;
+
         if (_inputReader != null &&
             AimDirectionUtility.TryGetEightWayRaw(_inputReader.MoveInput, out Vector2Int rawDirection))
         {

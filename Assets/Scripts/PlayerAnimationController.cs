@@ -48,7 +48,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         animator.SetBool(IsDeadHash, false);
 
-        if (combat != null && combat.BlocksPlayerMovement)
+        if (combat != null && (combat.IsStunned || combat.BlocksPlayerMovement))
         {
             animator.SetBool(IsMovingHash, false);
             animator.SetFloat(MoveXHash, 0f);
