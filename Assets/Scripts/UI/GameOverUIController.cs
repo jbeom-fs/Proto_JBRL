@@ -19,6 +19,7 @@ public class GameOverUIController : MonoBehaviour
     private Coroutine _fadeRoutine;
     private bool _isVisible;
     private UnityAction _confirmAction;
+    private bool _warnedMissingReferences;
 
     public bool IsVisible => _isVisible;
 
@@ -126,72 +127,13 @@ public class GameOverUIController : MonoBehaviour
             return;
         }
 
-        if (targetCanvas == null)
-            targetCanvas = FindAnyObjectByType<Canvas>();
-
-        if (targetCanvas == null)
-            return;
-
-        BuildDefaultUi(targetCanvas.transform);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!_warnedMissingReferences)
+        {
+            Debug.LogWarning("[GameOverUIController] UI Ï∞∏Ï°∞Í∞Ä ?ÑÏ†Ñ???∞Í≤∞?òÏ? ?äÏïò?µÎãà?? ?êÎèô UI ?ùÏÑ± ?ÜÏù¥ ?úÏãúÎ•?Í±¥ÎÑà?ÅÎãà??", this);
+            _warnedMissingReferences = true;
+        }
+#endif
     }
 
-    private void BuildDefaultUi(Transform parent)
-    {
-        GameObject rootObject = new GameObject("GameOver UI Root", typeof(RectTransform), typeof(CanvasGroup));
-        rootObject.transform.SetParent(parent, false);
-        root = rootObject.GetComponent<RectTransform>();
-        root.anchorMin = Vector2.zero;
-        root.anchorMax = Vector2.one;
-        root.offsetMin = Vector2.zero;
-        root.offsetMax = Vector2.zero;
-        rootGroup = rootObject.GetComponent<CanvasGroup>();
-
-        GameObject panelObject = new GameObject("Panel", typeof(RectTransform), typeof(Image));
-        panelObject.transform.SetParent(root, false);
-        RectTransform panelRect = panelObject.GetComponent<RectTransform>();
-        panelRect.anchorMin = Vector2.zero;
-        panelRect.anchorMax = Vector2.one;
-        panelRect.offsetMin = Vector2.zero;
-        panelRect.offsetMax = Vector2.zero;
-        Image panelImage = panelObject.GetComponent<Image>();
-        panelImage.color = new Color(0f, 0f, 0f, 0.72f);
-
-        GameObject imageObject = new GameObject("GameOverScene Image", typeof(RectTransform), typeof(Image));
-        imageObject.transform.SetParent(root, false);
-        RectTransform imageRect = imageObject.GetComponent<RectTransform>();
-        imageRect.anchorMin = new Vector2(0.5f, 0.5f);
-        imageRect.anchorMax = new Vector2(0.5f, 0.5f);
-        imageRect.pivot = new Vector2(0.5f, 0.5f);
-        imageRect.anchoredPosition = new Vector2(0f, 70f);
-        imageRect.sizeDelta = new Vector2(720f, 405f);
-        gameOverImage = imageObject.GetComponent<Image>();
-        gameOverImage.sprite = gameOverSprite;
-        gameOverImage.preserveAspect = true;
-
-        GameObject buttonObject = new GameObject("Confirm Button", typeof(RectTransform), typeof(Image), typeof(Button));
-        buttonObject.transform.SetParent(root, false);
-        RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
-        buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
-        buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
-        buttonRect.pivot = new Vector2(0.5f, 0.5f);
-        buttonRect.anchoredPosition = new Vector2(0f, -190f);
-        buttonRect.sizeDelta = new Vector2(180f, 54f);
-        Image buttonImage = buttonObject.GetComponent<Image>();
-        buttonImage.color = new Color(0.12f, 0.1f, 0.16f, 0.94f);
-        confirmButton = buttonObject.GetComponent<Button>();
-
-        GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(Text));
-        textObject.transform.SetParent(buttonObject.transform, false);
-        RectTransform textRect = textObject.GetComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-        Text buttonText = textObject.GetComponent<Text>();
-        buttonText.text = "ÌôïÏù∏";
-        buttonText.alignment = TextAnchor.MiddleCenter;
-        buttonText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-        buttonText.fontSize = 26;
-        buttonText.color = Color.white;
-    }
 }

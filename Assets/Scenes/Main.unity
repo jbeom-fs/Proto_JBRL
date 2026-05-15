@@ -44541,8 +44541,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillRangePreviewer
   combat: {fileID: 1562452756}
   movement: {fileID: 1562452755}
-  dungeonManager: {fileID: 0}
-  inputReader: {fileID: 0}
+  dungeonManager: {fileID: 411232467}
+  inputReader: {fileID: 1562452762}
   circleSegments: 50
   lineWidth: 0.1
   previewColor: {r: 1, g: 0.12319462, b: 0, a: 0.75}
@@ -44752,7 +44752,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationController
   inputReader: {fileID: 1562452762}
   animator: {fileID: 2005918157}
-  combat: {fileID: 0}
+  combat: {fileID: 1562452756}
   inputDeadZone: 0.01
 --- !u!114 &1562452770
 MonoBehaviour:

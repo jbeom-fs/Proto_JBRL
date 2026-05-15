@@ -127,7 +127,11 @@ public sealed class ProjectileFireService
         direction = NormalizeDirection(direction);
         Vector3 spawnPosition = request.OriginTransform.position
             + (Vector3)(direction * Mathf.Max(0f, request.SpawnOffset));
-        ProjectileController projectile = ProjectilePool.Instance.Get(
+        ProjectilePool pool = ProjectilePool.Instance;
+        if (pool == null)
+            return false;
+
+        ProjectileController projectile = pool.Get(
             request.ProjectilePrefab,
             spawnPosition,
             Quaternion.identity);

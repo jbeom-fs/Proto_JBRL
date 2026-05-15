@@ -20,29 +20,32 @@ public static class CharacterPhysicsSetup
     {
         Rigidbody2D rb = go.GetComponent<Rigidbody2D>();
         if (rb == null)
-            rb = go.AddComponent<Rigidbody2D>();
-        rb.bodyType = RigidbodyType2D.Dynamic;
-        rb.gravityScale = 0f;
-        rb.freezeRotation = true;
-        rb.sharedMaterial = GetNoFrictionMaterial();
-        rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-        rb.interpolation = RigidbodyInterpolation2D.Interpolate;
-
-        CircleCollider2D circle = go.GetComponent<CircleCollider2D>();
-        bool addedCircle = circle == null;
-        if (addedCircle)
         {
-            circle = go.AddComponent<CircleCollider2D>();
-            circle.isTrigger = false;
-            circle.radius = 0.32f;
-            circle.offset = Vector2.zero;
-            circle.sharedMaterial = GetNoFrictionMaterial();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[CharacterPhysicsSetup] {go.name}: Rigidbody2D가 없습니다. 자동 생성하지 않습니다.", go);
+#endif
+        }
+        else
+        {
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.gravityScale = 0f;
+            rb.freezeRotation = true;
+            rb.sharedMaterial = GetNoFrictionMaterial();
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
         }
 
-        if (addedCircle)
+        CircleCollider2D circle = go.GetComponent<CircleCollider2D>();
+        if (circle == null)
         {
-            foreach (BoxCollider2D box in go.GetComponents<BoxCollider2D>())
-                box.enabled = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning($"[CharacterPhysicsSetup] {go.name}: CircleCollider2D가 없습니다. 자동 생성하지 않습니다.", go);
+#endif
+        }
+        else
+        {
+            circle.isTrigger = false;
+            circle.sharedMaterial = GetNoFrictionMaterial();
         }
 
         int layer = LayerMask.NameToLayer(layerName);

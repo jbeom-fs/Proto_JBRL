@@ -19,6 +19,10 @@ public class ProjectilePool : MonoBehaviour
     }
 
     private static ProjectilePool _instance;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private static bool s_WarnedMissingInstance;
+    private static readonly HashSet<GameObject> s_WarnedInvalidPrefabs = new();
+#endif
 
     [SerializeField] private ProjectilePoolEntry[] prewarmEntries;
 
@@ -47,9 +51,14 @@ public class ProjectilePool : MonoBehaviour
             if (_instance != null)
                 return _instance;
 
-            GameObject poolObject = new GameObject(nameof(ProjectilePool));
-            _instance = poolObject.AddComponent<ProjectilePool>();
-            return _instance;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!s_WarnedMissingInstance)
+            {
+                UnityEngine.Debug.LogWarning("[ProjectilePool] Scene에 ProjectilePool이 없습니다. Projectile 발사를 건너뜁니다.");
+                s_WarnedMissingInstance = true;
+            }
+#endif
+            return null;
         }
     }
 
@@ -95,6 +104,8 @@ public class ProjectilePool : MonoBehaviour
         if (projectile == null)
         {
             projectile = CreateProjectile(prefab, position, rotation, true);
+            if (projectile == null)
+                return null;
         }
         else
         {
@@ -129,6 +140,11 @@ public class ProjectilePool : MonoBehaviour
             long instantiateStart = Stopwatch.GetTimestamp();
             projectile = CreateProjectile(prefab, position, rotation, true);
             instantiateTicks = Stopwatch.GetTimestamp() - instantiateStart;
+            if (projectile == null)
+            {
+                s_GetMarker.End();
+                return null;
+            }
             instantiated = true;
         }
         else
@@ -406,7 +422,14 @@ public class ProjectilePool : MonoBehaviour
         GameObject projectileObject = Instantiate(prefab, position, rotation, transform);
         ProjectileController projectile = projectileObject.GetComponent<ProjectileController>();
         if (projectile == null)
-            projectile = projectileObject.AddComponent<ProjectileController>();
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (s_WarnedInvalidPrefabs.Add(prefab))
+                UnityEngine.Debug.LogWarning($"[ProjectilePool] Projectile prefab '{prefab.name}'에 ProjectileController가 없습니다. Spawn을 건너뜁니다.", prefab);
+#endif
+            Destroy(projectileObject);
+            return null;
+        }
 
         projectile.SetReleaseAction(Return);
         _prefabByProjectile[projectile] = prefab;

@@ -35,6 +35,8 @@ public class FogOfWarController : MonoBehaviour
     private Vector2Int _lastPlayerGrid;
     private bool _hasLastPlayerGrid;
     private bool _needsFullInitialize = true;
+    private bool _warnedMissingDungeonManager;
+    private bool _warnedMissingPlayer;
 
     private HashSet<Vector2Int> _previousVisibleCells = new HashSet<Vector2Int>();
     private HashSet<Vector2Int> _currentVisibleCells = new HashSet<Vector2Int>();
@@ -168,7 +170,7 @@ public class FogOfWarController : MonoBehaviour
     private void ResolveDependencies()
     {
         if (dungeonManager == null)
-            dungeonManager = DungeonManager.Instance != null ? DungeonManager.Instance : FindAnyObjectByType<DungeonManager>();
+            dungeonManager = DungeonManager.Instance;
 
         if (eventChannel == null && dungeonManager != null)
             eventChannel = dungeonManager.eventChannel;
@@ -179,6 +181,20 @@ public class FogOfWarController : MonoBehaviour
             if (active != null)
                 player = active.transform;
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (dungeonManager == null && !_warnedMissingDungeonManager)
+        {
+            Debug.LogWarning("[FogOfWarController] DungeonManager 참조가 없습니다. FogOfWar 갱신을 건너뜁니다.", this);
+            _warnedMissingDungeonManager = true;
+        }
+
+        if (player == null && !_warnedMissingPlayer)
+        {
+            Debug.LogWarning("[FogOfWarController] Player 참조가 없습니다. FogOfWar 갱신을 건너뜁니다.", this);
+            _warnedMissingPlayer = true;
+        }
+#endif
     }
 
     private void SubscribeEvents()

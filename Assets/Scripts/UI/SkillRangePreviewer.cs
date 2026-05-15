@@ -83,6 +83,13 @@ public class SkillRangePreviewer : MonoBehaviour
         _lr.enabled = false;
 
         if (combat == null)
+            combat = PlayerCombatController.Active;
+        if (movement == null)
+            movement = PlayerController.Active;
+        if (dungeonManager == null)
+            dungeonManager = DungeonManager.Instance;
+
+        if (combat == null)
             Debug.LogWarning("[SkillRangePreviewer] PlayerCombatController가 연결되지 않아 스킬 미리보기를 표시할 수 없습니다.");
         if (movement == null)
             Debug.LogWarning("[SkillRangePreviewer] PlayerController가 연결되지 않아 방향성 미리보기가 기본 방향을 사용합니다.");
@@ -91,8 +98,6 @@ public class SkillRangePreviewer : MonoBehaviour
 
         if (inputReader == null && movement != null)
             inputReader = movement.GetComponent<PlayerInputReader>();
-        if (inputReader == null)
-            inputReader = FindAnyObjectByType<PlayerInputReader>();
         if (inputReader == null)
             Debug.LogWarning("[SkillRangePreviewer] PlayerInputReader를 찾을 수 없습니다.");
     }

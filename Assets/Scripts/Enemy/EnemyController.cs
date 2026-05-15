@@ -40,6 +40,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private float _deathTimer;
     private bool _deathFinished;
     private Vector3 _lastSafePosition;
+    private bool _warnedMissingHitFlash;
     private readonly List<SlowEffect> _activeSlows = new();
 
     private struct SlowEffect
@@ -233,7 +234,17 @@ public class EnemyController : MonoBehaviour, IDamageable
     private HitFlashFeedback ResolveHitFlashFeedback()
     {
         HitFlashFeedback feedback = GetComponentInChildren<HitFlashFeedback>(true);
-        return feedback != null ? feedback : gameObject.AddComponent<HitFlashFeedback>();
+        if (feedback != null)
+            return feedback;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!_warnedMissingHitFlash)
+        {
+            Debug.LogWarning("[EnemyController] HitFlashFeedback 참조가 없어 피격 플래시를 생략합니다.", this);
+            _warnedMissingHitFlash = true;
+        }
+#endif
+        return null;
     }
 
     private void ApplyKnockback(Vector2 attackerPosition, float force, float duration)
