@@ -108,15 +108,19 @@ public class PlayerController : MonoBehaviour
         if (doorController == null)
             Debug.LogWarning("[PlayerController] DoorController 없음 — 문 열기 입력이 동작하지 않습니다.");
 
-        if (dungeonManager.Data == null)
+        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        if (dungeonManager.Data == null && (locationManager == null || !locationManager.StartsInTown))
             dungeonManager.Generate();
 
-        _tileSize = dungeonManager.dungeonRenderer.tilemap.cellSize.x;
+        _tileSize = dungeonManager.dungeonRenderer != null && dungeonManager.dungeonRenderer.tilemap != null
+            ? dungeonManager.dungeonRenderer.tilemap.cellSize.x
+            : 1f;
 
         // 층 변경 완료(던전 생성 후) 시 스폰 → 이벤트로 타이밍 보장
         eventChannel.OnFloorChanged += OnFloorChangedHandler;
 
-        SpawnAtStart();
+        if (ShouldUseDungeonSystems())
+            SpawnAtStart();
     }
 
     private void OnDestroy()
@@ -155,10 +159,7 @@ public class PlayerController : MonoBehaviour
     public void SpawnAtStart()
     {
         Vector2Int gridPos = dungeonManager.GetSpawnTilePos();
-        transform.position = dungeonManager.GridToWorld(gridPos);
-        _lastSafePosition = transform.position;
-        if (_rb != null)
-            _rb.linearVelocity = Vector2.zero;
+        TeleportTo(dungeonManager.GridToWorld(gridPos));
         _stairCooldown          = STAIR_COOLDOWN;
         _currentRoom            = null;
         _visitedRooms.Clear();
@@ -167,6 +168,14 @@ public class PlayerController : MonoBehaviour
         var spawnRoom = dungeonManager.GetRoomAt(gridPos.x, gridPos.y);
         if (spawnRoom.HasValue)
             dungeonManager.SetRoomType(spawnRoom.Value, RoomType.Spawn);
+    }
+
+    public void TeleportTo(Vector3 worldPosition)
+    {
+        transform.position = worldPosition;
+        _lastSafePosition = transform.position;
+        if (_rb != null)
+            _rb.linearVelocity = Vector2.zero;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -189,7 +198,8 @@ public class PlayerController : MonoBehaviour
 
         if (_dashController != null && _dashController.IsDashing)
         {
-            CheckRoomEntry();
+            if (ShouldUseDungeonSystems())
+                CheckRoomEntry();
             return;
         }
 
@@ -199,13 +209,15 @@ public class PlayerController : MonoBehaviour
         {
             if (_rb != null)
                 _rb.linearVelocity = Vector2.zero;
-            CheckRoomEntry();
+            if (ShouldUseDungeonSystems())
+                CheckRoomEntry();
             return;
         }
 
         if (_inputReader.WasStairPressed && _stairCooldown <= 0f)
         {
-            TryInteractStair();
+            if (ShouldUseDungeonSystems())
+                TryInteractStair();
             return;
         }
 
@@ -220,7 +232,8 @@ public class PlayerController : MonoBehaviour
         {
             if (_rb != null)
                 _rb.linearVelocity = Vector2.zero;
-            CheckRoomEntry();
+            if (ShouldUseDungeonSystems())
+                CheckRoomEntry();
             return;
         }
 
@@ -237,12 +250,13 @@ public class PlayerController : MonoBehaviour
             MoveWithCollision(input);
         }
 
-        CheckRoomEntry();
+        if (ShouldUseDungeonSystems())
+            CheckRoomEntry();
     }
 
     private void LateUpdate()
     {
-        if (dungeonManager == null || dungeonManager.Data == null) return;
+        if (!ShouldUseDungeonSystems()) return;
 
         Vector2 positionDelta = (Vector2)transform.position - (Vector2)_lastSafePosition;
         if (positionDelta.sqrMagnitude < POSITION_RECHECK_EPSILON_SQR)
@@ -334,6 +348,10 @@ public class PlayerController : MonoBehaviour
 
     private bool CanMoveTo(Vector3 pos)
     {
+        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        if (locationManager != null && locationManager.IsInTown)
+            return !MovementBlockerQuery.IsPlayerMovementBlocked(pos, GetWorldColliderRadius());
+
         float radius = _tileSize * collisionRadius;
         return dungeonManager.IsFootprintWalkable(pos, radius) &&
                !MovementBlockerQuery.IsPlayerMovementBlocked(pos, radius);
@@ -373,6 +391,9 @@ public class PlayerController : MonoBehaviour
 
     private void CheckRoomEntry()
     {
+        if (!ShouldUseDungeonSystems())
+            return;
+
         Vector2Int centerGrid = dungeonManager.WorldToGrid(transform.position);
         if (!TryResolveRoomEntry(out RoomInfo room, out Vector2Int gridPos))
         {
@@ -477,6 +498,9 @@ public class PlayerController : MonoBehaviour
 
     private void TryInteractStair()
     {
+        if (!ShouldUseDungeonSystems())
+            return;
+
         if (dungeonManager.IsTransitioning)
             return;
 
@@ -497,5 +521,14 @@ public class PlayerController : MonoBehaviour
             Debug.Log($"[Player] 계단 사용 → {dungeonManager.floor + 1}층으로 이동 중...");
 #endif
         }
+    }
+
+    private bool ShouldUseDungeonSystems()
+    {
+        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        if (locationManager != null && !locationManager.IsInDungeon)
+            return false;
+
+        return dungeonManager != null && dungeonManager.Data != null;
     }
 }

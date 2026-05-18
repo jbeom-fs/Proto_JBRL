@@ -19,6 +19,11 @@ public class EnemyPoolManager : MonoBehaviour
     private readonly Dictionary<EnemyData, Queue<EnemyController>> _pools = new();
     private readonly Dictionary<EnemyController, EnemyData> _activeData = new();
 
+    public static void ReleaseAllActiveEnemiesForLocationChange()
+    {
+        Instance?.ReleaseAllActive();
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -115,5 +120,35 @@ public class EnemyPoolManager : MonoBehaviour
         }
 
         queue.Enqueue(enemy);
+    }
+
+    private void ReleaseAllActive()
+    {
+        if (_activeData.Count == 0)
+            return;
+
+        List<EnemyController> activeEnemies = new List<EnemyController>(_activeData.Keys);
+        for (int i = 0; i < activeEnemies.Count; i++)
+        {
+            EnemyController enemy = activeEnemies[i];
+            if (enemy == null)
+                continue;
+
+            if (!_activeData.TryGetValue(enemy, out EnemyData data))
+                continue;
+
+            _activeData.Remove(enemy);
+            enemy.OnDeathFinished -= Release;
+            enemy.transform.SetParent(transform);
+            enemy.gameObject.SetActive(false);
+
+            if (!_pools.TryGetValue(data, out Queue<EnemyController> queue))
+            {
+                queue = new Queue<EnemyController>();
+                _pools.Add(data, queue);
+            }
+
+            queue.Enqueue(enemy);
+        }
     }
 }

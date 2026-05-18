@@ -78,6 +78,14 @@ public class RoomSpawner : MonoBehaviour
         _startedRoomKeys.Clear();
     }
 
+    public void ClearRuntimeEncounterState()
+    {
+        ClearPendingRoomStart();
+        UnsubscribeActiveEnemies();
+        activeEnemies.Clear();
+        _activeRoom = null;
+    }
+
     private void SetPendingRoomStart(RoomInfo room)
     {
         if (_startedRoomKeys.Contains(GetRoomKey(room)))

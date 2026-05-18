@@ -256,6 +256,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (_inputReader == null) return;
 
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
+        if (IsCombatBlockedByLocation()) return;
         if (IsDashing) return;
         if (IsStunned) return;
         if (IsSkillBusy) return;
@@ -380,6 +381,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (IsDashing) return false;
         if (IsStunned) return false;
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return false;
+        if (IsCombatBlockedByLocation()) return false;
 
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
@@ -774,7 +776,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool CanUseSkill(int slotIndex)
     {
         EnsureSkillSlotsBound();
-        return !IsDead && !IsSkillBusy && (GetSkillSlot(slotIndex)?.CanUse(CurrentMp) ?? false);
+        return !IsDead && !IsSkillBusy && !IsCombatBlockedByLocation() && (GetSkillSlot(slotIndex)?.CanUse(CurrentMp) ?? false);
+    }
+
+    private static bool IsCombatBlockedByLocation()
+    {
+        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        return locationManager != null && locationManager.ShouldBlockCombat;
     }
 
     private static SkillSlotRuntime[] CreateSkillSlots()

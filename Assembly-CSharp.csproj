@@ -55,6 +55,7 @@
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
+    <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Tree.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\AnimatedObjectsGroup.cs" />
@@ -77,6 +78,7 @@
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonQueryService.cs" />
+    <Compile Include="Assets\Scripts\GameLocationType.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackExecutor.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyTargetHandler.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\CameraFollow2D.cs" />
@@ -96,8 +98,10 @@
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
     <Compile Include="Assets\Scripts\Combat\AimDirectionUtility.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
+    <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_GrassLong.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
+    <Compile Include="Assets\Scripts\TownDungeonTransitionManager.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CollectedCoin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
@@ -108,15 +112,18 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
+    <Compile Include="Assets\Scripts\DungeonPortal.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerStatusEffectType.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
+    <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Pillar.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
+    <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Flower.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CoinDisplay.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Statue.cs" />
@@ -131,9 +138,11 @@
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
+    <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Cattail.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\MinimapController.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
+    <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Creeper.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
@@ -147,6 +156,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile-2-Pass.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap.shader" />
+    <None Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Sprites\Tileset\River\Waterfall\WaterfalTilesInfo.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Mobile.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF SSD.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Surface-Mobile.shader" />
@@ -157,6 +167,7 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile SSD.shader" />
     <None Include="Assets\TextMesh Pro\Resources\LineBreaking Leading Characters.txt" />
+    <None Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\FP Documentation.txt" />
     <None Include="Assets\ExtendPack\2D Dungeon Tilemap\Documentation\Third-Party Notices.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Properties.cginc" />
     <None Include="Assets\TextMesh Pro\Shaders\TMPro_Surface.cginc" />
@@ -165,6 +176,8 @@
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF Overlay.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Bitmap-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Fonts\LiberationSans - OFL.txt" />
+    <None Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Sprites\Tileset\River\RiverTilesInfo.txt" />
+    <None Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Sprites\Tileset\WaterTilesInfo.txt" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_SDF-Mobile.shader" />
     <None Include="Assets\TextMesh Pro\Shaders\TMP_Sprite.shader" />
   </ItemGroup>
