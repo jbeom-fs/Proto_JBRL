@@ -350,7 +350,11 @@ public class PlayerController : MonoBehaviour
     {
         TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
         if (locationManager != null && locationManager.IsInTown)
-            return !MovementBlockerQuery.IsPlayerMovementBlocked(pos, GetWorldColliderRadius());
+        {
+            float townRadius = GetWorldColliderRadius();
+            return Physics2D.OverlapCircle(pos, townRadius, CombatLayers.WallMask) == null
+                && !MovementBlockerQuery.IsPlayerMovementBlocked(pos, townRadius);
+        }
 
         float radius = _tileSize * collisionRadius;
         return dungeonManager.IsFootprintWalkable(pos, radius) &&
