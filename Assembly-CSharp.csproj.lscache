@@ -159,6 +159,7 @@ Assets/Scripts/
   GameOverRestartHandler.cs
   GameOverSceneReloadRestartHandler.cs
   GameOverUIController.cs
+  LocationMinimapRegistry.cs
   MinimapController.cs
   PlayerStatusBarUI.cs
   PlayerStatusEffectUI.cs
@@ -166,6 +167,7 @@ Assets/Scripts/
   SkillSlotUI.cs
   SkillUIManager.cs
   StatusEffectIconView.cs
+  TilemapMinimapSource.cs
  Visual/FogVisibilityRenderer.cs
 Temp/obj/Assembly-CSharp/.NETStandard,Version=v2.1.AssemblyAttributes.cs
 

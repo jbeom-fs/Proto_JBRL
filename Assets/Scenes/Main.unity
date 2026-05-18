@@ -3811,6 +3811,7 @@ MonoBehaviour:
   dungeonManager: {fileID: 411232467}
   fogOfWar: {fileID: 2090000010}
   roomSpawner: {fileID: 1736969809}
+  minimap: {fileID: 900100002}
   generateNewDungeonOnEnter: 1
   resetFloorOnNewDungeonRun: 1
   disableCombatInTown: 1
@@ -46920,6 +46921,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1525631517}
   - component: {fileID: 1525631518}
+  - component: {fileID: 1525631550}
   m_Layer: 0
   m_Name: TownRoot
   m_TagString: Untagged
@@ -46959,6 +46961,23 @@ Grid:
   m_CellGap: {x: 0, y: 0, z: 0}
   m_CellLayout: 0
   m_CellSwizzle: 0
+--- !u!114 &1525631550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1525631516}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bab441a45097ecc45aa4bf6f9f030ae7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::TilemapMinimapSource
+  locationId: town
+  groundTilemap: {fileID: 1711711470}
+  wallTilemap: {fileID: 1309604883}
+  groundColor: {r: 0.75, g: 0.82, b: 0.95, a: 0.92}
+  wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 0.95}
 --- !u!1 &1562452752
 GameObject:
   m_ObjectHideFlags: 0

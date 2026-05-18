@@ -21,6 +21,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
     [SerializeField] private DungeonManager dungeonManager;
     [SerializeField] private FogOfWarController fogOfWar;
     [SerializeField] private RoomSpawner roomSpawner;
+    [SerializeField] private MinimapController minimap;
 
     [Header("Flow")]
     [SerializeField] private bool generateNewDungeonOnEnter = true;
@@ -97,9 +98,16 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
         bool hasPoint = TeleportDestinationRegistry.TryGetPoint(destinationId, out TeleportDestinationPoint point);
         if (enteringDungeon)
+        {
+            minimap?.SetDungeonSource();
             StartNewDungeonRun(targetPlayer);
-        else if (hasPoint)
-            targetPlayer.TeleportTo(point.transform.position);
+        }
+        else
+        {
+            minimap?.SetTilemapSource(destination.MinimapLocationId);
+            if (hasPoint)
+                targetPlayer.TeleportTo(point.transform.position);
+        }
 
         _isChangingLocation = false;
     }
@@ -170,7 +178,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
         bool isDungeon = locationType == GameLocationType.Dungeon;
         SetRootActive(townRoot, !isDungeon);
         SetRootActive(dungeonRoot, isDungeon);
-        SetRootActive(minimapRoot, isDungeon);
+        SetRootActive(minimapRoot, true); // always visible — source switches on teleport
     }
 
     private static void SetRootActive(GameObject root, bool active)

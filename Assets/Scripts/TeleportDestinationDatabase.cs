@@ -86,9 +86,20 @@ public sealed class TeleportLocationData
     [SerializeField] private string displayName;
     [SerializeField, TextArea] private string description;
     [SerializeField] private GameLocationType locationType;
+    [SerializeField, Tooltip("LocationMinimapRegistry の登録 ID と一致させる。空欄の場合は id をそのまま使用する。")]
+    private string minimapLocationId;
 
     public string Id => id;
     public string DisplayName => displayName;
     public string Description => description;
     public GameLocationType LocationType => locationType;
+
+    /// <summary>
+    /// TilemapMinimapSource に設定した locationId と合わせる。
+    /// 複数の destination (town_start / town_return) が同じ場所を指す場合、
+    /// 同一の minimapLocationId を設定することでテクスチャを共有できる。
+    /// 空欄時は id フォールバック。
+    /// </summary>
+    public string MinimapLocationId =>
+        string.IsNullOrWhiteSpace(minimapLocationId) ? id : minimapLocationId;
 }
