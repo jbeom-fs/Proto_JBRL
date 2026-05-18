@@ -300,10 +300,8 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private static EnemyController ResolveEnemy(Collider2D hit)
     {
-        if (hit.TryGetComponent(out EnemyController enemy))
-            return enemy;
-
-        return hit.GetComponentInParent<EnemyController>();
+        hit.TryGetComponent(out EnemyController enemy);
+        return enemy;
     }
 }
 

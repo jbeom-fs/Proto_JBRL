@@ -421,10 +421,7 @@ public class ProjectileController : MonoBehaviour
             Collider2D col = s_EnemyHitBuffer[i];
             if (col == null) continue;
 
-            EnemyController enemy = col.GetComponent<EnemyController>();
-            if (enemy == null)
-                enemy = col.GetComponentInParent<EnemyController>();
-            if (enemy == null || !enemy.IsAlive) continue;
+            if (!col.TryGetComponent(out EnemyController enemy) || !enemy.IsAlive) continue;
             if (ReferenceEquals(enemy, _owner)) continue;
             if (_targetHitMode != ProjectileTargetHitMode.DestroyOnHit && _hitEnemies.Contains(enemy)) continue;
 
