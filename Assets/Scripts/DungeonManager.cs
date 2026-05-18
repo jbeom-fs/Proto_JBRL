@@ -42,9 +42,6 @@ public class DungeonManager : MonoBehaviour
     [Range(1, 100)]
     public int floor = 1;
 
-    [Tooltip("던전 종류. 스폰 시드 분리에 사용합니다.")]
-    public DungeonTypeId dungeonType = DungeonTypeId.Default;
-
     [Tooltip("맵 너비 (타일 수)")]
     public int mapWidth = 80;
 
@@ -82,6 +79,7 @@ public class DungeonManager : MonoBehaviour
     public int extraCenterDistancePenaltyDivisor = 20;
 
     [Header("Spawn Region")]
+    [Tooltip("현재 층/스테이지 지역입니다. EnemyData.allowedRegions는 여러 지역을 허용할 수 있지만, 이 값은 단일 지역만 사용합니다.")]
     public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
 
     [Header("Floor Transition Stabilization")]
@@ -135,6 +133,8 @@ public class DungeonManager : MonoBehaviour
 
     private void Awake()
     {
+        WarnIfInvalidCurrentStageRegion();
+
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -471,6 +471,7 @@ public class DungeonManager : MonoBehaviour
         // 4. DungeonData 생성
         stageStart = Time.realtimeSinceStartupAsDouble;
         _data = new DungeonData(grid, roomInfos);
+        WarnIfInvalidCurrentStageRegion();
         _data.currentStageRegion = currentStageRegion;
         // CountWalkableTiles는 O(W*H) 비용 — 가드 안에서만 호출해 OFF 상태에서 회피합니다.
         if (RuntimePerfLogger.IsActive)
@@ -576,6 +577,39 @@ public class DungeonManager : MonoBehaviour
         if (_transitionService == null)
             _transitionService = new FloorTransitionService();
     }
+
+    private void WarnIfInvalidCurrentStageRegion()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (currentStageRegion == SpawnRegion.None)
+        {
+            Debug.LogWarning(
+                "[DungeonManager] currentStageRegion이 None입니다. Enemy spawn region 필터가 후보를 찾지 못할 수 있습니다.",
+                this);
+            return;
+        }
+
+        if (!IsSingleSpawnRegion(currentStageRegion))
+        {
+            Debug.LogWarning(
+                $"[DungeonManager] currentStageRegion은 단일 SpawnRegion을 권장합니다. 현재 값: {currentStageRegion}",
+                this);
+        }
+#endif
+    }
+
+    private static bool IsSingleSpawnRegion(SpawnRegion region)
+    {
+        int value = (int)region;
+        return value != 0 && (value & (value - 1)) == 0;
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        WarnIfInvalidCurrentStageRegion();
+    }
+#endif
 
 #if UNITY_EDITOR
     // ── Editor 버튼 ──────────────────────────────────────────────────

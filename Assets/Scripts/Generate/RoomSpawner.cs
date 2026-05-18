@@ -126,9 +126,10 @@ public class RoomSpawner : MonoBehaviour
 
         SortSpawnTiles(walkableTiles);
 
+        SpawnRegion region = dungeonManager.Data.currentStageRegion;
         int roomSeed = DeterministicSeedUtility.CreateSeed(
             dungeonManager.seed,
-            (int)dungeonManager.dungeonType,
+            (int)region,
             dungeonManager.floor,
             room.StableRoomKey,
             DeterministicSeedUtility.EnemySpawnDomain);
@@ -138,7 +139,6 @@ public class RoomSpawner : MonoBehaviour
         BeginRoomSpawnTracking(room);
 
         float budget = CalculateBudget(room);
-        SpawnRegion region = dungeonManager.Data.currentStageRegion;
         int tileIndex = 0;
 
         while (budget > 0f && tileIndex < walkableTiles.Count)

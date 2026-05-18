@@ -29,11 +29,6 @@ public enum RoomType
     MonsterDen,
 }
 
-public enum DungeonTypeId
-{
-    Default = 0,
-}
-
 // ── 방 정보 ──────────────────────────────────────────────────────────
 /// <summary>방의 위치·크기와 타입을 담는 구조체입니다.</summary>
 public struct RoomInfo
@@ -78,13 +73,13 @@ public static class DeterministicSeedUtility
         }
     }
 
-    public static int CreateSeed(long globalSeed, int dungeonType, int floor, int stableRoomKey, string spawnDomain)
+    public static int CreateSeed(long globalSeed, int spawnRegion, int floor, int stableRoomKey, string spawnDomain)
     {
         unchecked
         {
             uint hash = FnvaOffset;
             AddLong(ref hash, globalSeed);
-            AddInt(ref hash, dungeonType);
+            AddInt(ref hash, spawnRegion);
             AddInt(ref hash, floor);
             AddInt(ref hash, stableRoomKey);
             AddString(ref hash, spawnDomain);
