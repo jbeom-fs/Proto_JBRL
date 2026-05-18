@@ -144,6 +144,10 @@ Assets/Scripts/
  PlayerAnimationController.cs
  PlayerController.cs
  PlayerInputReader.cs
+ TeleportDestinationDatabase.cs
+ TeleportDestinationPoint.cs
+ TeleportDestinationRegistry.cs
+ TeleportService.cs
  Tool/
   LoadingScreenController.cs
   PerfStage.cs

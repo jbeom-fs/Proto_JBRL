@@ -10,9 +10,11 @@ public class TownDungeonTransitionManager : MonoBehaviour
     [SerializeField] private GameObject dungeonRoot;
     [SerializeField] private GameObject minimapRoot;
 
-    [Header("Spawn Points")]
-    [SerializeField] private Transform townSpawnPoint;
-    [SerializeField] private Transform townReturnSpawnPoint;
+    [Header("Destinations")]
+    [SerializeField] private TeleportDestinationDatabase destinationDatabase;
+    [SerializeField] private string startDestinationId = "town_start";
+    [SerializeField] private string debugDungeonEntranceDestinationId = "dungeon_entrance";
+    [SerializeField] private string debugReturnDestinationId = "town_return";
 
     [Header("Dependencies")]
     [SerializeField] private PlayerController player;
@@ -21,7 +23,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
     [SerializeField] private RoomSpawner roomSpawner;
 
     [Header("Flow")]
-    [SerializeField] private GameLocationType startLocation = GameLocationType.Town;
     [SerializeField] private bool generateNewDungeonOnEnter = true;
     [SerializeField] private bool resetFloorOnNewDungeonRun = true;
     [SerializeField] private bool disableCombatInTown = true;
@@ -34,7 +35,8 @@ public class TownDungeonTransitionManager : MonoBehaviour
     public bool IsInTown => CurrentLocation == GameLocationType.Town;
     public bool IsInDungeon => CurrentLocation == GameLocationType.Dungeon;
     public bool ShouldBlockCombat => disableCombatInTown && IsInTown;
-    public bool StartsInTown => startLocation == GameLocationType.Town;
+    public bool StartsInTown => !TryGetLocation(startDestinationId, out TeleportLocationData startLocation) ||
+                                startLocation.LocationType == GameLocationType.Town;
 
     private void Awake()
     {
@@ -50,10 +52,10 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     private void Start()
     {
-        if (startLocation == GameLocationType.Town)
-            EnterTown(spawnAtReturnPoint: false);
+        if (!string.IsNullOrWhiteSpace(startDestinationId))
+            TeleportPlayer(player, startDestinationId);
         else
-            EnterDungeon();
+            EnterLocationWithoutPoint(GameLocationType.Town);
     }
 
     private void Update()
@@ -63,7 +65,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.tKey.wasPressedThisFrame)
-            EnterTown(spawnAtReturnPoint: true);
+            TeleportPlayer(player, debugReturnDestinationId);
     }
 
     private void OnDestroy()
@@ -72,17 +74,79 @@ public class TownDungeonTransitionManager : MonoBehaviour
             Active = null;
     }
 
-    public void EnterDungeon()
+    public void TeleportPlayer(PlayerController targetPlayer, string destinationId)
     {
-        if (_isChangingLocation)
+        if (targetPlayer == null || _isChangingLocation)
             return;
 
-        _isChangingLocation = true;
-        CurrentLocation = GameLocationType.Dungeon;
-        SetRootActive(townRoot, false);
-        SetRootActive(dungeonRoot, true);
-        SetRootActive(minimapRoot, true);
+        if (!TryGetLocation(destinationId, out TeleportLocationData destination))
+            return;
 
+        GameLocationType from = CurrentLocation;
+        GameLocationType to = destination.LocationType;
+        bool enteringDungeon = from != GameLocationType.Dungeon && to == GameLocationType.Dungeon;
+        bool leavingDungeon = from == GameLocationType.Dungeon && to != GameLocationType.Dungeon;
+
+        _isChangingLocation = true;
+
+        if (leavingDungeon)
+            CleanupDungeonRuntime();
+
+        ApplyLocationRoots(to);
+        CurrentLocation = to;
+
+        bool hasPoint = TeleportDestinationRegistry.TryGetPoint(destinationId, out TeleportDestinationPoint point);
+        if (enteringDungeon)
+            StartNewDungeonRun(targetPlayer);
+        else if (hasPoint)
+            targetPlayer.TeleportTo(point.transform.position);
+
+        _isChangingLocation = false;
+    }
+
+    public void EnterDungeon()
+    {
+        TeleportPlayer(player, debugDungeonEntranceDestinationId);
+    }
+
+    public void EnterTown()
+    {
+        TeleportPlayer(player, debugReturnDestinationId);
+    }
+
+    private bool TryGetLocation(string destinationId, out TeleportLocationData location)
+    {
+        location = null;
+
+        if (destinationDatabase == null)
+        {
+            Warn("Destination database is missing.");
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(destinationId))
+        {
+            Warn("Destination id is empty.");
+            return false;
+        }
+
+        if (destinationDatabase.TryGetLocation(destinationId, out location))
+            return true;
+
+        Warn("Destination id not found in database: " + destinationId);
+        return false;
+    }
+
+    private void EnterLocationWithoutPoint(GameLocationType locationType)
+    {
+        _isChangingLocation = true;
+        ApplyLocationRoots(locationType);
+        CurrentLocation = locationType;
+        _isChangingLocation = false;
+    }
+
+    private void StartNewDungeonRun(PlayerController targetPlayer)
+    {
         if (generateNewDungeonOnEnter && resetFloorOnNewDungeonRun)
             dungeonManager.floor = 1;
 
@@ -91,47 +155,22 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
         fogOfWar?.RequestFullInitialize();
         roomSpawner?.ResetRoomEncounterState();
-        player?.SpawnAtStart();
-        _isChangingLocation = false;
+        targetPlayer?.SpawnAtStart();
     }
 
-    public void EnterTown()
+    private void CleanupDungeonRuntime()
     {
-        EnterTown(spawnAtReturnPoint: true);
-    }
-
-    private void EnterTown(bool spawnAtReturnPoint)
-    {
-        if (_isChangingLocation)
-            return;
-
-        _isChangingLocation = true;
-        CurrentLocation = GameLocationType.Town;
-
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
         roomSpawner?.ClearRuntimeEncounterState();
-
-        SetRootActive(dungeonRoot, false);
-        SetRootActive(townRoot, true);
-        SetRootActive(minimapRoot, false);
-
-        MovePlayerToTownSpawn(spawnAtReturnPoint);
-        _isChangingLocation = false;
     }
 
-    private void MovePlayerToTownSpawn(bool spawnAtReturnPoint)
+    private void ApplyLocationRoots(GameLocationType locationType)
     {
-        if (player == null)
-            return;
-
-        Transform spawn = spawnAtReturnPoint && townReturnSpawnPoint != null
-            ? townReturnSpawnPoint
-            : townSpawnPoint;
-        if (spawn == null)
-            return;
-
-        player.TeleportTo(spawn.position);
+        bool isDungeon = locationType == GameLocationType.Dungeon;
+        SetRootActive(townRoot, !isDungeon);
+        SetRootActive(dungeonRoot, isDungeon);
+        SetRootActive(minimapRoot, isDungeon);
     }
 
     private static void SetRootActive(GameObject root, bool active)
@@ -148,13 +187,21 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
         if (townRoot != null &&
             dungeonRoot != null &&
-            townSpawnPoint != null &&
+            destinationDatabase != null &&
+            !string.IsNullOrWhiteSpace(startDestinationId) &&
             player != null &&
             dungeonManager != null)
             return;
 
-        Debug.LogWarning("[TownDungeonTransitionManager] Required references are incomplete.", this);
+        Warn("Required references are incomplete.");
         _warnedMissingReferences = true;
+#endif
+    }
+
+    private void Warn(string message)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning("[TownDungeonTransitionManager] " + message, this);
 #endif
     }
 }

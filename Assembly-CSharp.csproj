@@ -55,6 +55,7 @@
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
+    <Compile Include="Assets\Scripts\TeleportDestinationDatabase.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Tree.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
@@ -66,6 +67,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_AnimatedCharacterSelection.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverUIController.cs" />
     <Compile Include="Assets\Scripts\Visual\FogVisibilityRenderer.cs" />
+    <Compile Include="Assets\Scripts\TeleportDestinationPoint.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Chair.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
@@ -93,6 +95,7 @@
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
+    <Compile Include="Assets\Scripts\TeleportService.cs" />
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
@@ -102,6 +105,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
     <Compile Include="Assets\Scripts\TownDungeonTransitionManager.cs" />
+    <Compile Include="Assets\Scripts\TeleportDestinationRegistry.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CollectedCoin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
