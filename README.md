@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-15  
+> 작성 기준일: 2026-05-18  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -20,6 +20,7 @@
 9. [시스템 6 — 방 스폰 및 클리어](#9-시스템-6--방-스폰-및-클리어)
 10. [시스템 7 — UI 및 스킬 미리보기](#10-시스템-7--ui-및-스킬-미리보기)
 11. [시스템 8 — 렌더링 및 로딩](#11-시스템-8--렌더링-및-로딩)
+11a. [시스템 9 — 마을·던전 전환 및 미니맵](#11a-시스템-9--마을던전-전환-및-미니맵)
 12. [성능 전략](#12-성능-전략)
 13. [데이터 흐름](#13-데이터-흐름)
 14. [확장 포인트](#14-확장-포인트)
@@ -36,6 +37,7 @@
 | 장르 | 로그라이크 던전 탐색 |
 | 시점 | 탑다운 2D |
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
+| 거점 구조 | 마을(Town) ↔ 던전(Dungeon) 전환 (`TownDungeonTransitionManager`) — 마을은 Tilemap 고정 맵, 던전은 절차적 생성 |
 | 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
 | 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
@@ -59,6 +61,7 @@
 │  PlayerCombatController · PlayerDashController               │
 │  PlayerAnimationController                                   │
 │  DungeonManager · FloorTransitionService                     │
+│  TownDungeonTransitionManager                                │
 │  EnemyBrain · NormalEnemyBrain · RoomSpawner                 │
 │  ProjectilePool · ProjectileController                       │
 │  FogOfWarController                                          │
@@ -77,6 +80,9 @@
 │  ProjectileFireService · ProjectileFireRequest               │
 │  AimDirectionUtility · CombatLayers · CharacterPhysicsSetup  │
 │  MovementBlockerQuery · DeterministicSeedUtility · PerfStage │
+│  TeleportService · TeleportDestinationDatabase               │
+│  TeleportDestinationRegistry · TeleportDestinationPoint      │
+│  LocationMinimapRegistry                                     │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
@@ -85,6 +91,7 @@
 │  PlayerStatusEffectUI · StatusEffectIconView                 │
 │  HitFlashFeedback · PlayerInvincibilityFlashFeedback         │
 │  EnemyAnimationController · FogVisibilityRenderer            │
+│  MinimapController · TilemapMinimapSource                    │
 │  GameOverUIController                                        │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -102,6 +109,8 @@
 - **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용)
 - **적 공격 임팩트 통합**: `EnemyAttackImpactData`(knockback·slow·stun) 구조로 Rush·Jump·Projectile 의 부가 효과를 동일하게 관리, `PlayerCombatController.ApplyEnemyCombatImpact()` 단일 진입점으로 데미지·넉백·슬로우·스턴 적용
 - **런타임 탐색 캐싱**: `DungeonManager` 가 `RoomSpawner` 참조를 SerializeField + 1회 경고로 캐싱, 매 `FindAnyObjectByType` 호출 회피 (다른 컨트롤러도 동일 패턴 사용)
+- **위치 기반 미니맵 전환**: `LocationMinimapRegistry`(static Dict) + `TilemapMinimapSource.OnEnable/OnDisable` 자동 등록으로, `MinimapController`가 씬 계층을 직접 탐색하지 않고 locationId 조회만으로 소스 전환
+- **텔레포트 데이터 드리븐**: `TeleportDestinationDatabase` ScriptableObject에 목적지를 선언하고 `TeleportDestinationRegistry`에 씬 마커가 자동 등록 — 코드 수정 없이 새 목적지 추가 가능
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 
 ---
@@ -117,6 +126,16 @@ Assets/Scripts/
 │
 ├── DungeonManager.cs               # 던전 생애주기 조율 (Facade)
 ├── DoorController.cs               # 문 열기 위임 (DungeonManager로 라우팅)
+│
+├── TownDungeonTransitionManager.cs # 마을↔던전 전환 조율 (TeleportDestinationDatabase 기반)
+│                                    #   SetDungeonSource/SetTilemapSource → MinimapController 라우팅
+│                                    #   CleanupDungeonRuntime (투사체·적 일괄 회수) / StartNewDungeonRun
+│
+├── TeleportService.cs              # 텔레포트 실행 서비스 (목적지 조회 + 플레이어 위치 적용)
+├── TeleportDestinationDatabase.cs  # 텔레포트 목적지 ScriptableObject DB
+│                                    #   (TeleportLocationData: id · displayName · locationType · minimapLocationId)
+├── TeleportDestinationRegistry.cs  # 씬 내 TeleportDestinationPoint 런타임 레지스트리 (static Dict)
+└── TeleportDestinationPoint.cs     # 씬에 배치하는 목적지 마커 MonoBehaviour (OnEnable/OnDisable 자동 등록)
 │
 ├── Data/
 │   ├── DungeonData.cs              # 타일 그리드 + 방 목록 (Domain)
@@ -196,6 +215,13 @@ Assets/Scripts/
 │   └── EnemyPoolManager.cs         # 적 오브젝트 풀
 │
 ├── UI/
+│   ├── MinimapController.cs        # 이중 모드 미니맵 — Dungeon(DungeonData 기반) / Tilemap(TilemapMinimapSource 기반)
+│   │                                #   SetDungeonSource() / SetTilemapSource(locationId) 공개 API
+│   │                                #   Texture2D → RawImage 렌더링, 플레이어 마커 오버레이
+│   │                                #   Dungeon: Y축 뒤집기(row0=top) / Tilemap: Y축 그대로(Y↑=Y↑)
+│   ├── TilemapMinimapSource.cs     # 위치별 Tilemap 미니맵 소스 MonoBehaviour (groundTilemap·wallTilemap·색상)
+│   │                                #   OnEnable/OnDisable → LocationMinimapRegistry 자동 등록
+│   ├── LocationMinimapRegistry.cs  # 씬 내 TilemapMinimapSource를 locationId로 조회하는 정적 레지스트리
 │   ├── PlayerStatusBarUI.cs        # 플레이어 HP·MP 상태바 (슬라이더 + 텍스트)
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트)
@@ -1395,6 +1421,82 @@ FloorTransition(targetFloor):
 
 ---
 
+## 11a. 시스템 9 — 마을·던전 전환 및 미니맵
+
+### 11a-1. 마을·던전 전환 (TownDungeonTransitionManager)
+
+마을(Town)과 던전(Dungeon) 사이의 전환을 조율합니다. TeleportDestinationDatabase(ScriptableObject)에 등록된 목적지 ID로 이동 대상을 결정합니다.
+
+```
+TownDungeonTransitionManager.TeleportPlayer(player, destinationId):
+  ① TeleportDestinationDatabase에서 TeleportLocationData 조회
+  ② CurrentLocation → destination.LocationType 방향 판별
+       enteringDungeon: 현재 위치가 Dungeon이 아닌데 목적지가 Dungeon
+       leavingDungeon : 현재 위치가 Dungeon인데 목적지가 Dungeon이 아님
+  ③ leavingDungeon → CleanupDungeonRuntime():
+       ProjectilePool.ReleaseAllActiveProjectiles(Manual)
+       EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange()
+       roomSpawner.ClearRuntimeEncounterState()
+  ④ ApplyLocationRoots(to):
+       townRoot  active = !isDungeon
+       dungeonRoot active = isDungeon
+       minimapRoot active = true  ← 항상 표시, 소스만 전환
+  ⑤ CurrentLocation = to
+  ⑥ enteringDungeon:
+       minimap.SetDungeonSource()
+       StartNewDungeonRun() — 필요 시 dungeonManager.Generate() + fogOfWar + roomSpawner.Reset + player.SpawnAtStart
+     else:
+       minimap.SetTilemapSource(destination.MinimapLocationId)
+       TeleportDestinationRegistry에서 씬 마커 조회 → player.TeleportTo(point.position)
+```
+
+**목적지 데이터 (TeleportLocationData)**
+
+| 필드 | 설명 |
+|------|------|
+| `id` | 고유 문자열 키 (예: `town_start`, `dungeon_entrance`) |
+| `locationType` | `GameLocationType.Town` / `Dungeon` |
+| `minimapLocationId` | 미니맵 소스 ID — 비어 있으면 `id` 폴백 |
+
+기본 등록 목적지: `town_start`, `town_return` (Town), `dungeon_entrance` (Dungeon)
+
+**씬 배치 마커 (TeleportDestinationPoint)**
+
+씬에 배치하는 마커 MonoBehaviour. `OnEnable`/`OnDisable`에서 `TeleportDestinationRegistry`(static Dict)에 자동 등록/해제합니다. `TeleportPlayer`는 등록된 마커 위치로 플레이어를 이동시킵니다.
+
+### 11a-2. 이중 모드 미니맵 (MinimapController)
+
+```
+MinimapMode:
+  Dungeon  — DungeonData(int[,] 그리드) 기반 픽셀 텍스처
+  Tilemap  — TilemapMinimapSource(ground/wall Tilemap) 기반 픽셀 텍스처
+
+SetDungeonSource():
+  _mode = Dungeon, StartInitialInitializeRoutine (최대 60프레임 폴링)
+  DungeonData + FogOfWar 갱신 구독 복원
+
+SetTilemapSource(locationId):
+  minimapImage.texture = null  ← 이전 텍스처 즉시 클리어 (스테일 방지)
+  _mode = Tilemap
+  LocationMinimapRegistry.TryGet(locationId) → 즉시 초기화
+  실패 시 pendingTilemapLocationId 저장 + 폴링 루틴 시작 (레지스트리 등록 대기)
+```
+
+**좌표계 차이**
+
+| 모드 | Y축 | 처리 |
+|------|-----|------|
+| Dungeon | DungeonData row 0 = 맵 상단 (Y↓) | 픽셀 배열 Y 뒤집기 적용 |
+| Tilemap | Unity Tilemap Y↑ = Texture2D Y↑ | 뒤집기 없음 |
+
+플레이어 마커도 같은 규칙으로 좌표 계산이 분기됩니다 (`UpdateDungeonPlayerMarker` / `UpdateTilemapPlayerMarker`).
+
+**TilemapMinimapSource 레지스트리 패턴**
+
+`TilemapMinimapSource` MonoBehaviour를 TownRoot(또는 위치 루트)에 부착하면, `OnEnable` 시 `LocationMinimapRegistry`(static Dictionary)에 `locationId`로 자동 등록됩니다. `MinimapController.SetTilemapSource`는 이 레지스트리를 조회해 즉시 또는 폴링으로 소스를 획득합니다.
+
+---
+
 ## 12. 성능 전략
 
 | 전략 | 적용 위치 | 효과 |
@@ -1731,6 +1833,10 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **EXTRA 점수 weight 인스펙터화** | `DungeonManager.extraOverlapScoreWeight`/`extraPathLengthPenaltyWeight`/`extraCenterDistancePenaltyDivisor` — 점수 함수 가중치를 인스펙터로 노출, 과거 `LongestParallelCorridorRun` 항목은 단순화로 제거 |
 | **플레이어 상태이상 시스템** | `PlayerStatusEffectType`(Slow/Stun) + `PlayerCombatController.ApplyEnemyCombatImpact` — 적 공격에서 받는 데미지·넉백·슬로우·스턴을 단일 진입점으로 처리, 슬로우는 활성 효과 중 가장 강한 강도만 적용, 스턴 중 이동·방향 전환·스킬 입력 차단 |
 | **플레이어 상태이상 아이콘 UI** | `PlayerStatusEffectUI` + `StatusEffectIconView` — 슬로우/스턴 아이콘과 잔여 시간 게이지·텍스트 표시, `OnStatusEffectApplied/Ended` 이벤트 구독 |
+| **마을·던전 전환 시스템** | `TownDungeonTransitionManager` — `TeleportDestinationDatabase` ScriptableObject 기반 목적지 관리, 진입/이탈 시 CleanupDungeonRuntime + StartNewDungeonRun, minimapRoot 항상 표시 |
+| **텔레포트 시스템** | `TeleportService` + `TeleportDestinationDatabase` + `TeleportDestinationRegistry` + `TeleportDestinationPoint` — DB 조회·씬 마커 자동 등록·위치 적용 파이프라인 |
+| **이중 모드 미니맵** | `MinimapController` — Dungeon(DungeonData 그리드) / Tilemap(TilemapMinimapSource) 두 모드 전환, `SetDungeonSource()` / `SetTilemapSource(id)` 공개 API, 전환 시 스테일 텍스처 즉시 클리어 |
+| **Town Tilemap 미니맵** | `TilemapMinimapSource` + `LocationMinimapRegistry` — 위치별 Tilemap 소스 자동 등록 레지스트리, Texture2D 픽셀 렌더링 (Y↑ 뒤집기 없음, Dungeon과 좌표계 분리) |
 | **적 공격 임팩트 데이터화** | `EnemyAttackImpactData`(knockback·slow·stun) struct — `rushImpact`/`jumpImpact`/`projectileImpact` 가 공유, `EnemyActionHandler.ApplyEnemyImpactToTarget` 단일 라우팅 |
 | **`isStationary` / `immuneToKnockback` 플래그** | `EnemyData` — 위치 고정 적과 넉백 면역 적 구현 (데미지·상태이상은 그대로 적용) |
 | **CombatLayers Wall 마스크 추가** | `WallMask`/`WallFilter`/`HasWallLayer` — `Wall`/`Obstacle` 이름 자동 폴백으로 knockback clamp 등의 LayerMask 호출 정적 캐시화 |
