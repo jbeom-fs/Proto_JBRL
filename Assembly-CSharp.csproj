@@ -132,6 +132,7 @@
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
+    <Compile Include="Assets\Scripts\UI\MinimapController.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />

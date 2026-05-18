@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -61,6 +62,16 @@ public class FogOfWarController : MonoBehaviour
     public bool ClosedDoorsBlockVision => closedDoorsBlockVision;
 
     public static FogOfWarController Active { get; private set; }
+    public bool HasInitialized => _data != null && _explored != null;
+    public event Action VisibilityChanged;
+
+    public bool IsExploredCell(Vector2Int gridPos)
+    {
+        if (_explored == null || _data == null || !_data.InBounds(gridPos.x, gridPos.y))
+            return false;
+
+        return _explored[gridPos.x, gridPos.y];
+    }
 
     public bool IsVisibleCell(Vector2Int gridPos)
     {
@@ -302,6 +313,7 @@ public class FogOfWarController : MonoBehaviour
         MarkCurrentVisibleExplored();
         ApplyVisibilityDelta();
         SwapVisibleSets();
+        VisibilityChanged?.Invoke();
     }
 
     private void AddVisionRadiusCells(Vector2Int center)
