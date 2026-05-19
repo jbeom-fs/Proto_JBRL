@@ -220,7 +220,7 @@ public class PlayerController : MonoBehaviour
             return;
         }
 
-        if (_inputReader.WasStairPressed && _stairCooldown <= 0f)
+        if (_inputReader.InteractConfirmPressedThisFrame && _stairCooldown <= 0f)
         {
             if (ShouldUseDungeonSystems())
                 TryInteractStair();

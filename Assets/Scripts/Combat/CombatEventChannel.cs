@@ -3,9 +3,9 @@ using UnityEngine;
 
 /// <summary>
 /// 전투 이벤트 채널 — 기존 DungeonEventChannel 패턴과 동일한 ScriptableObject 방식.
-/// Assets > Create > JBLogLike > Events > CombatEventChannel 로 생성합니다.
+/// Assets > Create > JBRogLike > Events > CombatEventChannel 로 생성합니다.
 /// </summary>
-[CreateAssetMenu(fileName = "CombatEventChannel", menuName = "JBLogLike/Events/CombatEventChannel")]
+[CreateAssetMenu(fileName = "CombatEventChannel", menuName = "JBRogLike/Events/CombatEventChannel")]
 public class CombatEventChannel : ScriptableObject
 {
     public event Action<EnemyController> OnEnemyKilled;

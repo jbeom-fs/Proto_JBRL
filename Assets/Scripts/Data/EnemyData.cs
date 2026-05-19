@@ -55,7 +55,7 @@ public struct EnemyAttackImpactData
             : 1f;
 }
 
-[CreateAssetMenu(fileName = "NewEnemy", menuName = "JBLogLike/Enemy")]
+[CreateAssetMenu(fileName = "NewEnemy", menuName = "JBRogLike/Enemy")]
 public class EnemyData : ScriptableObject
 {
     [Header("Basic")]

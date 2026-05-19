@@ -2,9 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// Skill data assigned from WeaponData.skills[].
-/// Create from Assets > Create > JBLogLike > Combat > Skill.
+/// Create from Assets > Create > JBRogLike > Combat > Skill.
 /// </summary>
-[CreateAssetMenu(fileName = "NewSkill", menuName = "JBLogLike/Combat/Skill")]
+[CreateAssetMenu(fileName = "NewSkill", menuName = "JBRogLike/Combat/Skill")]
 public class SkillData : ScriptableObject
 {
     [Header("Basic Info")]

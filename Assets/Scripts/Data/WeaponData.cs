@@ -2,9 +2,9 @@ using UnityEngine;
 
 /// <summary>
 /// 무기 데이터 — Inspector에서 드래그만 하면 기본 공격·스킬·스탯 보정이 즉시 반영됩니다.
-/// Assets > Create > JBLogLike > Combat > Weapon 으로 생성합니다.
+/// Assets > Create > JBRogLike > Combat > Weapon 으로 생성합니다.
 /// </summary>
-[CreateAssetMenu(fileName = "NewWeapon", menuName = "JBLogLike/Combat/Weapon")]
+[CreateAssetMenu(fileName = "NewWeapon", menuName = "JBRogLike/Combat/Weapon")]
 public class WeaponData : ScriptableObject
 {
     [Header("기본 정보")]

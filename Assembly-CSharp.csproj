@@ -99,6 +99,7 @@
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
     <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
+    <Compile Include="Assets\Scripts\PlayerInputKeySettings.cs" />
     <Compile Include="Assets\Scripts\TeleportService.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
