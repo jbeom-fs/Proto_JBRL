@@ -12,9 +12,9 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     [Header("Destinations")]
     [SerializeField] private TeleportDestinationDatabase destinationDatabase;
-    [SerializeField] private string startDestinationId = "town_start";
-    [SerializeField] private string debugDungeonEntranceDestinationId = "dungeon_entrance";
-    [SerializeField] private string debugReturnDestinationId = "town_return";
+    [SerializeField, TeleportDestinationId] private string startDestinationId = "town_start";
+    [SerializeField, TeleportDestinationId] private string debugDungeonEntranceDestinationId = "dungeon_entrance";
+    [SerializeField, TeleportDestinationId] private string debugReturnDestinationId = "town_return";
 
     [Header("Dependencies")]
     [SerializeField] private PlayerController player;
@@ -96,17 +96,22 @@ public class TownDungeonTransitionManager : MonoBehaviour
         ApplyLocationRoots(to);
         CurrentLocation = to;
 
-        bool hasPoint = TeleportDestinationRegistry.TryGetPoint(destinationId, out TeleportDestinationPoint point);
-        if (enteringDungeon)
+        if (to == GameLocationType.Dungeon)
         {
-            minimap?.SetDungeonSource();
-            StartNewDungeonRun(targetPlayer);
+            if (enteringDungeon)
+            {
+                minimap?.SetDungeonSource();
+                StartNewDungeonRun(targetPlayer);
+            }
+            else
+            {
+                TryMovePlayerToDestination(targetPlayer, destination);
+            }
         }
         else
         {
             minimap?.SetTilemapSource(destination.MinimapLocationId);
-            if (hasPoint)
-                targetPlayer.TeleportTo(point.transform.position);
+            TryMovePlayerToDestination(targetPlayer, destination);
         }
 
         _isChangingLocation = false;
@@ -151,6 +156,19 @@ public class TownDungeonTransitionManager : MonoBehaviour
         ApplyLocationRoots(locationType);
         CurrentLocation = locationType;
         _isChangingLocation = false;
+    }
+
+    private bool TryMovePlayerToDestination(PlayerController targetPlayer, TeleportLocationData destination)
+    {
+        if (targetPlayer == null || destination == null)
+            return false;
+
+        if (!LocationRootRegistry.TryGet(destination.LocationRootId, out LocationRoot root))
+            return false;
+
+        Vector3 worldPosition = root.transform.TransformPoint(destination.LocalSpawnPosition);
+        targetPlayer.TeleportTo(worldPosition);
+        return true;
     }
 
     private void StartNewDungeonRun(PlayerController targetPlayer)

@@ -63,11 +63,11 @@
     <Compile Include="Assets\Scripts\Combat\Projectile.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
+    <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\Coin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_AnimatedCharacterSelection.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverUIController.cs" />
     <Compile Include="Assets\Scripts\Visual\FogVisibilityRenderer.cs" />
-    <Compile Include="Assets\Scripts\TeleportDestinationPoint.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Chair.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
@@ -95,6 +95,7 @@
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
+    <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
     <Compile Include="Assets\Scripts\TeleportService.cs" />
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
@@ -106,7 +107,6 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
     <Compile Include="Assets\Scripts\TownDungeonTransitionManager.cs" />
-    <Compile Include="Assets\Scripts\TeleportDestinationRegistry.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CollectedCoin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
@@ -141,6 +141,7 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyActionHandler.cs" />
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
+    <Compile Include="Assets\Scripts\LocationRootRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />

@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JBRogLike Project Architecture Overview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #171d25;
+      --panel-2: #1f2732;
+      --line: #303b49;
+      --text: #edf2f7;
+      --muted: #aab6c5;
+      --accent: #5fd1b3;
+      --accent-2: #84a9ff;
+      --warn: #ffd166;
+      --danger: #ff7b7b;
+      --code: #0c1015;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.65 "Segoe UI", "Noto Sans KR", Arial, sans-serif;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover { text-decoration: underline; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+      padding: 28px 22px;
+      border-right: 1px solid var(--line);
+      background: #0d1015;
+    }
+
+    aside h2 {
+      margin: 0 0 18px;
+      font-size: 15px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    nav a {
+      display: block;
+      padding: 7px 0;
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    main {
+      max-width: 1180px;
+      padding: 44px 44px 80px;
+    }
+
+    header {
+      margin-bottom: 34px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 38px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin: 42px 0 16px;
+      padding-top: 8px;
+      font-size: 25px;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 18px;
+      color: var(--accent);
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0 0 14px;
+      color: var(--muted);
+    }
+
+    ul {
+      margin: 10px 0 18px;
+      padding-left: 20px;
+      color: var(--muted);
+    }
+
+    li { margin: 5px 0; }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: var(--code);
+      color: #d7e2ee;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      overflow: auto;
+      margin: 14px 0 22px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--code);
+      color: #d7e2ee;
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 14px 0 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    th, td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      color: var(--text);
+      background: var(--panel-2);
+      font-weight: 600;
+    }
+
+    td {
+      color: var(--muted);
+    }
+
+    .lead {
+      max-width: 860px;
+      font-size: 17px;
+      color: #cfdae7;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      margin: 18px 0 24px;
+    }
+
+    .card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .card h3 {
+      margin-top: 0;
+      color: var(--text);
+    }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+      margin: 16px 0 24px;
+    }
+
+    .step {
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--muted);
+    }
+
+    .note {
+      margin: 16px 0 24px;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 209, 102, 0.35);
+      border-radius: 8px;
+      background: rgba(255, 209, 102, 0.08);
+      color: #ffe1a0;
+    }
+
+    .ok {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .tag {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #243242;
+      color: #d5e0ed;
+      font-size: 12px;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        position: static;
+        height: auto;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      main {
+        padding: 30px 20px 64px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <h2>문서 목차</h2>
+      <nav>
+        <a href="#overview">1. 프로젝트 개요</a>
+        <a href="#architecture">2. 전체 아키텍처</a>
+        <a href="#scene">3. 씬과 루트 구조</a>
+        <a href="#dungeon">4. 던전 생성/층 이동</a>
+        <a href="#town">5. 마을/던전 전환</a>
+        <a href="#teleport">6. 텔레포트 목적지 시스템</a>
+        <a href="#player">7. 플레이어 시스템</a>
+        <a href="#combat">8. 전투/스킬/투사체</a>
+        <a href="#enemy">9. 적 AI와 스폰</a>
+        <a href="#fog">10. Fog of War</a>
+        <a href="#minimap">11. 미니맵/UI</a>
+        <a href="#data">12. 데이터 에셋</a>
+        <a href="#performance">13. 성능 전략</a>
+        <a href="#extension">14. 확장 포인트</a>
+        <a href="#filemap">15. 주요 파일 지도</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header>
+        <h1>JBRogLike 프로젝트 아키텍처 및 기능 소개</h1>
+        <p class="lead">
+          JBRogLike는 Unity 2D Tilemap 기반의 탑다운 로그라이트 프로젝트입니다.
+          고정 마을과 절차 생성 던전을 하나의 Main 씬 안에서 전환하며, 방 단위 전투,
+          Fog of War, 직접 렌더링 미니맵, ScriptableObject 기반 전투 데이터를 중심으로 구성됩니다.
+        </p>
+        <div class="meta">
+          <span class="pill">Engine: Unity 2D</span>
+          <span class="pill">Language: C#</span>
+          <span class="pill">Scene: Main.unity</span>
+          <span class="pill">Map: Tilemap + Procedural Grid</span>
+          <span class="pill">Updated: 2026-05-18</span>
+        </div>
+      </header>
+
+      <section id="overview">
+        <h2>1. 프로젝트 개요</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>핵심 게임 루프</h3>
+            <p>플레이어는 마을에서 시작해 던전 포탈로 입장하고, 절차 생성된 방과 통로를 탐험합니다. 방 진입 시 적이 스폰되고, 적 처치 후 문이 열리며, 계단을 통해 다음 층으로 진행합니다.</p>
+          </div>
+          <div class="card">
+            <h3>월드 구성</h3>
+            <p>Main 씬 안에 <code>TownRoot</code>와 <code>DungeonRoot</code>가 공존합니다. 마을은 고정 Tilemap, 던전은 <code>DungeonManager.Generate()</code>로 생성되는 런타임 Tilemap입니다.</p>
+          </div>
+          <div class="card">
+            <h3>전투 구성</h3>
+            <p>플레이어는 기본 공격, 4개 스킬 슬롯, 대시, 투사체 스킬을 사용합니다. 적은 Contact/Ranged 행동과 Rush/Jump 같은 특수 공격을 가질 수 있습니다.</p>
+          </div>
+          <div class="card">
+            <h3>시야와 정보 표시</h3>
+            <p><code>FogOfWarController</code>가 탐험/가시 셀을 관리하고, <code>MinimapController</code>가 카메라 RenderTexture 없이 Texture2D/Tilemap 데이터를 직접 그립니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="architecture">
+        <h2>2. 전체 아키텍처</h2>
+        <p>
+          구조는 MonoBehaviour가 런타임 흐름을 조율하고, 순수 C# 서비스와 ScriptableObject 데이터가
+          세부 규칙을 담당하는 형태입니다. 대부분의 시스템은 Inspector 참조, Singleton성 active reference,
+          Registry, EventChannel로 연결됩니다.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>계층</th>
+              <th>주요 책임</th>
+              <th>대표 타입</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Application / Orchestration</td>
+              <td>게임 흐름, 씬 루트 전환, 던전 생성, 플레이어 입력/상태 조율</td>
+              <td><code>DungeonManager</code>, <code>TownDungeonTransitionManager</code>, <code>PlayerController</code>, <code>PlayerCombatController</code></td>
+            </tr>
+            <tr>
+              <td>Domain / Services</td>
+              <td>던전 생성 알고리즘, 좌표 변환, 스폰 위치 계산, 공격 패턴, 스킬 실행 로직</td>
+              <td><code>DungeonGenerator</code>, <code>DungeonQueryService</code>, <code>SpawnPositionService</code>, <code>AttackPattern</code>, <code>SkillExecutor</code></td>
+            </tr>
+            <tr>
+              <td>Data</td>
+              <td>무기, 스킬, 적, 텔레포트 목적지, 던전 셀 데이터</td>
+              <td><code>WeaponData</code>, <code>SkillData</code>, <code>EnemyData</code>, <code>TeleportDestinationDatabase</code>, <code>DungeonData</code></td>
+            </tr>
+            <tr>
+              <td>Presentation</td>
+              <td>Tilemap 표시, UI, 미니맵, 체력바, 피격/무적 피드백</td>
+              <td><code>DungeonTilemapRenderer</code>, <code>MinimapController</code>, <code>SkillUIManager</code>, <code>EnemyHealthBar</code></td>
+            </tr>
+            <tr>
+              <td>Messaging / Registry</td>
+              <td>직접 참조를 줄이는 이벤트/등록 기반 연결</td>
+              <td><code>DungeonEventChannel</code>, <code>CombatEventChannel</code>, <code>TeleportDestinationRegistry</code>, <code>LocationMinimapRegistry</code></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <pre>입력/플레이어
+  -> PlayerController / PlayerCombatController
+  -> DungeonManager, Combat Services, ProjectilePool
+  -> DungeonEventChannel / CombatEventChannel
+  -> Door, RoomSpawner, UI, Fog, Minimap</pre>
+      </section>
+
+      <section id="scene">
+        <h2>3. 씬과 루트 구조</h2>
+        <p>
+          현재 전환 구조는 Main 씬 단일 운영을 전제로 합니다. Player, Camera, Canvas, Manager류는 공통 루트에 두고,
+          지역별 Tilemap/Collider/Portal만 <code>TownRoot</code>와 <code>DungeonRoot</code> 아래에 둡니다.
+        </p>
+        <pre>Main
+├─ TownRoot
+│  ├─ Town Tilemap Grid
+│  ├─ TownSpawnPoint + TeleportDestinationPoint("town_start")
+│  ├─ TownReturnSpawnPoint + TeleportDestinationPoint("town_return")
+│  └─ DungeonEntrancePortal + TeleportService("dungeon_entrance")
+├─ DungeonRoot
+│  ├─ Dungeon Tilemap Grid
+│  └─ DungeonEntrancePoint + TeleportDestinationPoint("dungeon_entrance")
+├─ Player
+├─ Main Camera
+├─ Canvas / UI
+└─ Managers</pre>
+        <p>
+          루트 활성화는 <code>TownDungeonTransitionManager</code>가 담당합니다. 현재 위치 타입에 따라 Town/Dungeon
+          오브젝트를 켜고 끄며, 미니맵은 지역에 맞는 소스를 사용합니다.
+        </p>
+      </section>
+
+      <section id="dungeon">
+        <h2>4. 던전 생성/층 이동</h2>
+        <p>
+          <code>DungeonManager</code>는 던전 생애주기 Facade입니다. 실제 생성 알고리즘과 좌표/스폰/전환 보조 로직은
+          전담 서비스로 분리되어 있습니다.
+        </p>
+        <div class="flow">
+          <div class="step"><strong>1. 설정 구성</strong> - 맵 크기, BSP 깊이, 방 크기, seed/floor 값을 <code>DungeonSettings</code>로 구성합니다.</div>
+          <div class="step"><strong>2. 절차 생성</strong> - <code>DungeonGenerator</code>가 BSP 기반 방 배치와 MST/추가 연결 통로를 생성합니다.</div>
+          <div class="step"><strong>3. 데이터화</strong> - grid와 room rect를 <code>DungeonData</code>, <code>RoomInfo</code>, <code>RoomRegistry</code>로 변환합니다.</div>
+          <div class="step"><strong>4. 스폰 위치 계산</strong> - <code>SpawnPositionService</code>가 시작 방 기준 위치를 계산하고 캐시합니다.</div>
+          <div class="step"><strong>5. Tilemap 렌더링</strong> - <code>DungeonTilemapRenderer</code>가 바닥/벽/문/계단을 Tilemap에 배치합니다.</div>
+          <div class="step"><strong>6. 층 이동</strong> - <code>FloorTransitionService</code>와 로딩 화면을 통해 생성 비용을 흡수하고 이벤트를 발행합니다.</div>
+        </div>
+        <table>
+          <thead>
+            <tr><th>타입</th><th>설명</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>ROOM</code></td><td>방 바닥. 일반 방, 스폰 방, 몬스터 방, 계단 방 등으로 분류됩니다.</td></tr>
+            <tr><td><code>CORRIDOR</code></td><td>방 사이 연결 통로입니다.</td></tr>
+            <tr><td><code>DOOR_CLOSED</code></td><td>전투 중 통로를 막는 문입니다. 방 클리어 후 열립니다.</td></tr>
+            <tr><td><code>STAIR_UP</code></td><td>다음 층 이동 트리거입니다.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="town">
+        <h2>5. 마을/던전 전환</h2>
+        <p>
+          <code>TownDungeonTransitionManager</code>가 현재 <code>GameLocationType</code>을 관리합니다.
+          시작 시 <code>town_start</code> 목적지로 이동하며, 던전 입장과 귀환도 동일한 텔레포트 요청 경로를 탑니다.
+        </p>
+        <table>
+          <thead>
+            <tr><th>전환</th><th>처리</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Town -> Dungeon</td>
+              <td>DungeonRoot 활성화, TownRoot 비활성화, 새 run 생성, floor 1 초기화, Fog 초기화, RoomSpawner 상태 reset, Player를 던전 시작 위치에 배치</td>
+            </tr>
+            <tr>
+              <td>Dungeon -> Town</td>
+              <td>Projectile release, active enemy pool 반환, RoomSpawner runtime 상태 clear, TownRoot 활성화, Player를 <code>town_return</code> 위치에 배치</td>
+            </tr>
+            <tr>
+              <td>동일 LocationType 이동</td>
+              <td>root 전환 없이 목적지 point 위치로 Player만 이동</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="teleport">
+        <h2>6. 텔레포트 목적지 시스템</h2>
+        <p>
+          목적지는 개별 ScriptableObject가 아니라 하나의 <code>TeleportDestinationDatabase</code>에 여러
+          <code>TeleportLocationData</code>를 등록하는 방식입니다. 씬 안의 실제 위치는
+          <code>TeleportDestinationPoint</code>가 ID로 registry에 등록합니다.
+        </p>
+        <pre>TeleportService("dungeon_entrance")
+  -> TownDungeonTransitionManager.TeleportPlayer(player, "dungeon_entrance")
+  -> TeleportDestinationDatabase.TryGetLocation(id)
+  -> GameLocationType 비교
+  -> TeleportDestinationRegistry.TryGetPoint(id)
+  -> 위치 이동 또는 던전 run 생성</pre>
+        <div class="note">
+          <strong>확장 방식:</strong> 새 장소를 추가할 때는 Database에 ID/이름/설명/LocationType을 추가하고,
+          씬에 같은 ID를 가진 <code>TeleportDestinationPoint</code>와 <code>TeleportService</code>를 배치하면 됩니다.
+        </div>
+      </section>
+
+      <section id="player">
+        <h2>7. 플레이어 시스템</h2>
+        <p>
+          <code>PlayerController</code>는 이동, 던전 좌표 변환, 방 진입, 계단 상호작용을 담당합니다.
+          던전에서는 <code>DungeonManager.IsFootprintWalkable</code>을 사용하고, 마을에서는 일반 movement blocker
+          중심으로 이동 가능 여부를 판단합니다.
+        </p>
+        <table>
+          <thead>
+            <tr><th>컴포넌트</th><th>책임</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>PlayerInputReader</code></td><td>입력 값을 한 곳에서 읽어 이동/공격/스킬 시스템에 제공합니다.</td></tr>
+            <tr><td><code>PlayerController</code></td><td>이동, 충돌 검사, grid/world 변환, 방 진입 및 층 이동 감지를 담당합니다.</td></tr>
+            <tr><td><code>PlayerCombatController</code></td><td>HP/MP, 기본 공격, 스킬, 피격, 상태 이상, 전투 이벤트를 관리합니다.</td></tr>
+            <tr><td><code>PlayerDashController</code></td><td>대시 이동, 대시 중 충돌/피해/무적 처리를 담당합니다.</td></tr>
+            <tr><td><code>PlayerAnimationController</code></td><td>이동 방향과 마지막 방향을 Animator에 반영합니다.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="combat">
+        <h2>8. 전투/스킬/투사체</h2>
+        <p>
+          전투는 데이터 주도형입니다. <code>WeaponData</code>가 기본 공격과 스킬 목록을 제공하고,
+          <code>SkillData</code>가 실행 방식, 비용, 쿨다운, 공격 범위, 투사체, 대시 정보를 정의합니다.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h3>공격 판정</h3>
+            <p><code>AttackPattern</code>이 Cross, Line, Cone 등 타일 기반 범위를 계산하고, <code>AttackExecutor</code>가 대상 탐지와 피해 적용을 수행합니다.</p>
+          </div>
+          <div class="card">
+            <h3>스킬 실행</h3>
+            <p><code>SkillExecutor</code>는 <code>SkillExecutionType</code>에 따라 InstantArea, Projectile, Dash 흐름을 분기합니다.</p>
+          </div>
+          <div class="card">
+            <h3>투사체</h3>
+            <p><code>ProjectileFireService</code>가 Single/Burst/Spread/Circle 패턴을 만들고, <code>ProjectilePool</code>이 생성/반환 비용을 줄입니다.</p>
+          </div>
+          <div class="card">
+            <h3>상태 이상</h3>
+            <p>적 공격은 knockback, slow, stun을 줄 수 있고, 플레이어 UI는 <code>PlayerStatusEffectUI</code>로 상태를 표시합니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="enemy">
+        <h2>9. 적 AI와 스폰</h2>
+        <p>
+          적은 <code>EnemyData</code>로 행동/스탯/스폰 비용을 정의하고, <code>EnemyPoolManager</code>에서 재사용됩니다.
+          AI는 <code>EnemyBrain</code> 기반 FSM이며, 이동/타겟/행동 책임이 Handler로 나뉩니다.
+        </p>
+        <table>
+          <thead>
+            <tr><th>시스템</th><th>설명</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>RoomSpawner</code></td><td>방 최초 진입 이벤트를 받고, 예산 기반으로 적 후보를 선택해 안전한 타일에 배치합니다.</td></tr>
+            <tr><td><code>EnemyBrain</code></td><td>Idle, Chase, Attack 상태 전환을 관리합니다. 보스/특수 적은 상태 확장 가능 구조입니다.</td></tr>
+            <tr><td><code>MovementHandler</code></td><td>A* 경로 이동, separation, ranged movement를 담당합니다.</td></tr>
+            <tr><td><code>ActionHandler</code></td><td>Contact/Ranged 공격과 Rush/Jump 특수 공격 쿨다운/타이밍을 담당합니다.</td></tr>
+            <tr><td><code>EnemyController</code></td><td>HP, 피해, 사망, 피격 효과, 상태 이상을 관리합니다.</td></tr>
+          </tbody>
+        </table>
+        <p>
+          방 전투 중 적이 남아 있으면 <code>DungeonManager.CloseCurrentRoomDoors</code>가 문을 닫고,
+          모든 적이 사망하면 <code>OpenCurrentRoomDoors</code>로 문을 다시 엽니다.
+        </p>
+      </section>
+
+      <section id="fog">
+        <h2>10. Fog of War</h2>
+        <p>
+          <code>FogOfWarController</code>는 던전 셀별 explored/visible 상태를 관리합니다.
+          플레이어 위치가 바뀌거나 방/문 상태가 변하면 시야를 다시 계산하고, 변경된 셀만 Tilemap에 반영합니다.
+        </p>
+        <ul>
+          <li><code>IsExploredCell(Vector2Int)</code>와 <code>IsVisibleCell(Vector2Int)</code>로 다른 UI 시스템이 읽기 전용 조회를 할 수 있습니다.</li>
+          <li>현재 방 reveal, 방 경계 reveal, 벽/문 시야 차단 옵션을 Inspector에서 조절합니다.</li>
+          <li><code>VisibilityChanged</code> 이벤트로 미니맵 갱신 타이밍을 제공합니다.</li>
+        </ul>
+      </section>
+
+      <section id="minimap">
+        <h2>11. 미니맵/UI</h2>
+        <p>
+          미니맵은 추가 Camera나 RenderTexture를 쓰지 않습니다. 던전 모드에서는 <code>DungeonData</code>와
+          Fog 상태를 기준으로 <code>Texture2D</code>를 직접 생성하고, 마을 같은 고정 지역은
+          <code>TilemapMinimapSource</code>를 통해 Tilemap 기반 미니맵을 그립니다.
+        </p>
+        <table>
+          <thead>
+            <tr><th>UI</th><th>역할</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>MinimapController</code></td><td>던전/타일맵 소스를 전환하고, Texture2D와 PlayerMarker 위치를 갱신합니다.</td></tr>
+            <tr><td><code>TilemapMinimapSource</code></td><td>마을 등 고정 Tilemap의 ground/wall 정보를 미니맵 source로 등록합니다.</td></tr>
+            <tr><td><code>SkillUIManager</code></td><td>스킬 슬롯 아이콘, 쿨다운, 사용 가능 상태를 표시합니다.</td></tr>
+            <tr><td><code>PlayerStatusBarUI</code></td><td>HP/MP 상태를 CombatEventChannel 기반으로 갱신합니다.</td></tr>
+            <tr><td><code>GameOverFlowController</code></td><td>플레이어 사망 후 게임오버 UI 흐름을 제어합니다.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="data">
+        <h2>12. 데이터 에셋</h2>
+        <p>
+          밸런싱 가능한 값은 최대한 ScriptableObject로 분리되어 있습니다. 코드 변경 없이 적, 무기, 스킬,
+          텔레포트 목적지를 추가/조정할 수 있는 구조입니다.
+        </p>
+        <table>
+          <thead>
+            <tr><th>데이터</th><th>포함 정보</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>WeaponData</code></td><td>무기 이름, 아이콘, 기본 공격, 장착 스킬 목록</td></tr>
+            <tr><td><code>SkillData</code></td><td>MP, 쿨다운, cast/recovery, 범위, 투사체, 대시, 상태 이상</td></tr>
+            <tr><td><code>EnemyData</code></td><td>스탯, 스폰 비용, 행동 타입, 원거리/근접 공격, 특수 공격, 보상</td></tr>
+            <tr><td><code>TeleportDestinationDatabase</code></td><td>목적지 ID, 표시 이름, 설명, LocationType, 미니맵 location ID</td></tr>
+            <tr><td><code>DungeonEventChannel</code></td><td>방 진입, 층 변경, 문 열림/닫힘 이벤트</td></tr>
+            <tr><td><code>CombatEventChannel</code></td><td>HP/MP 변경, 스킬 사용, 적 사망, 플레이어 사망 이벤트</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="performance">
+        <h2>13. 성능 전략</h2>
+        <ul>
+          <li><span class="ok">풀링:</span> 투사체와 적은 Pool을 통해 재사용하고, 층 이동/지역 이동 때 활성 오브젝트를 회수합니다.</li>
+          <li><span class="ok">이벤트 기반:</span> 방 진입, 층 이동, Fog 변경 시점에만 관련 시스템을 갱신합니다.</li>
+          <li><span class="ok">캐싱:</span> DungeonManager는 스폰 위치, 서비스 인스턴스, query service를 캐시합니다.</li>
+          <li><span class="ok">미니맵 최적화:</span> 전체 texture scan은 Fog/층 변경 등 필요한 시점에만 수행하고, 매 프레임은 player marker 이동 감지만 합니다.</li>
+          <li><span class="ok">Tilemap chunking:</span> 층 전환 시 Tilemap 배치를 여러 row chunk로 나눠 프레임 hitch를 줄일 수 있습니다.</li>
+          <li><span class="ok">Registry:</span> 텔레포트/미니맵 source는 Find 계열 반복 탐색 대신 등록/해제 방식으로 조회합니다.</li>
+        </ul>
+      </section>
+
+      <section id="extension">
+        <h2>14. 확장 포인트</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>새 지역 추가</h3>
+            <p><code>GameLocationType</code> 확장, Database location 추가, 새 Root/Tilemap/TeleportDestinationPoint 배치로 시작할 수 있습니다.</p>
+          </div>
+          <div class="card">
+            <h3>새 적 추가</h3>
+            <p><code>EnemyData</code> asset을 만들고 RoomSpawner enemy table에 등록합니다. 필요하면 <code>EnemyBrain</code> 상속으로 특수 상태를 추가합니다.</p>
+          </div>
+          <div class="card">
+            <h3>새 스킬 추가</h3>
+            <p><code>SkillData</code>를 만들고 execution type을 선택합니다. 범위/투사체/대시 값은 Inspector에서 조정합니다.</p>
+          </div>
+          <div class="card">
+            <h3>새 미니맵 소스</h3>
+            <p>고정 장소는 <code>TilemapMinimapSource</code>를 배치하고 location ID를 Database의 minimapLocationId와 맞춥니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="filemap">
+        <h2>15. 주요 파일 지도</h2>
+        <table>
+          <thead>
+            <tr><th>경로</th><th>역할</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>Assets/Scripts/DungeonManager.cs</code></td><td>던전 생성, 층 이동, query API, 문 제어 Facade</td></tr>
+            <tr><td><code>Assets/Scripts/Generate/DungeonGenerator.cs</code></td><td>BSP/MST 기반 절차 생성 알고리즘</td></tr>
+            <tr><td><code>Assets/Scripts/Generate/DungeonTilemapRenderer.cs</code></td><td>DungeonData를 Tilemap에 렌더링</td></tr>
+            <tr><td><code>Assets/Scripts/Generate/FogOfWarController.cs</code></td><td>던전 시야, explored/visible 상태 관리</td></tr>
+            <tr><td><code>Assets/Scripts/Generate/RoomSpawner.cs</code></td><td>방 진입 기반 적 스폰과 문 개폐 연동</td></tr>
+            <tr><td><code>Assets/Scripts/TownDungeonTransitionManager.cs</code></td><td>마을/던전 전환, 텔레포트 요청 처리, 런타임 정리</td></tr>
+            <tr><td><code>Assets/Scripts/TeleportDestinationDatabase.cs</code></td><td>목적지 ID 사전과 LocationData 정의</td></tr>
+            <tr><td><code>Assets/Scripts/TeleportService.cs</code></td><td>트리거 기반 텔레포트 요청</td></tr>
+            <tr><td><code>Assets/Scripts/PlayerController.cs</code></td><td>플레이어 이동, 방 감지, 계단 사용</td></tr>
+            <tr><td><code>Assets/Scripts/Combat/PlayerCombatController.cs</code></td><td>플레이어 전투, HP/MP, 스킬, 상태 이상</td></tr>
+            <tr><td><code>Assets/Scripts/Enemy/EnemyBrain.cs</code></td><td>적 FSM과 Handler 조율</td></tr>
+            <tr><td><code>Assets/Scripts/UI/MinimapController.cs</code></td><td>던전/마을 미니맵 Texture 렌더링</td></tr>
+          </tbody>
+        </table>
+
+        <p>
+          이 문서는 현재 코드 기준의 소개 문서입니다. 구현이 바뀌면 특히 Teleport Database,
+          Minimap Source, Dungeon transition 흐름 섹션을 함께 갱신하는 것을 권장합니다.
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

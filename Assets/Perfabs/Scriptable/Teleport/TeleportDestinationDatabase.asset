@@ -17,13 +17,20 @@ MonoBehaviour:
     displayName: Town Start
     description: Town center spawn point.
     locationType: 0
+    locationRootId: town
+    localSpawnPosition: {x: 0, y: 0, z: 0}
     minimapLocationId: town
   - id: town_return
     displayName: Town Return
     description: Return point used when leaving the dungeon.
     locationType: 0
+    locationRootId: town
+    localSpawnPosition: {x: 0, y: -1, z: 0}
     minimapLocationId: town
   - id: dungeon_entrance
     displayName: Dungeon Entrance
     description: Entry destination for starting a new dungeon run.
     locationType: 1
+    locationRootId: dungeon
+    localSpawnPosition: {x: 0, y: 0, z: 0}
+    minimapLocationId: ""
