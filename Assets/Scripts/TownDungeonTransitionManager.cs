@@ -191,6 +191,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
         ResetEliteKey(player);
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
+        DropItemSpawner.Instance?.ClearAllActiveDrops();
         roomSpawner?.ClearRuntimeEncounterState();
     }
 

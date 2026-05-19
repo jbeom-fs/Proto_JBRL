@@ -75,6 +75,7 @@ public class EnemyPoolManager : MonoBehaviour
 
         _activeData[enemy] = data;
         enemy.ClearEliteKeyHolder();
+        enemy.ClearDropInventory();
         enemy.OnDeathFinished -= Release;
         enemy.OnDeathFinished += Release;
         if (enemy.TryGetComponent<EnemyBrain>(out var brain))
@@ -112,6 +113,8 @@ public class EnemyPoolManager : MonoBehaviour
 
         _activeData.Remove(enemy);
         enemy.OnDeathFinished -= Release;
+        enemy.ClearEliteKeyHolder();
+        enemy.ClearDropInventory();
         enemy.transform.SetParent(transform);
 
         if (!_pools.TryGetValue(data, out var queue))
@@ -141,6 +144,7 @@ public class EnemyPoolManager : MonoBehaviour
             _activeData.Remove(enemy);
             enemy.OnDeathFinished -= Release;
             enemy.ClearEliteKeyHolder();
+            enemy.ClearDropInventory();
             enemy.transform.SetParent(transform);
             enemy.gameObject.SetActive(false);
 

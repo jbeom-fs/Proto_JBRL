@@ -54,6 +54,7 @@
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
+    <Compile Include="Assets\Scripts\Items\ItemType.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationDatabase.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Tree.cs" />
@@ -76,6 +77,7 @@
     <Compile Include="Assets\Scripts\Generate\FloorTransitionService.cs" />
     <Compile Include="Assets\Scripts\Generate\FogOfWarController.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomSpawner.cs" />
+    <Compile Include="Assets\Scripts\Items\ItemData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
@@ -98,9 +100,11 @@
     <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
     <Compile Include="Assets\Scripts\TeleportService.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
+    <Compile Include="Assets\Scripts\Items\DropItemSpawner.cs" />
     <Compile Include="Assets\Scripts\Combat\AimDirectionUtility.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_GrassLong.cs" />
@@ -116,10 +120,12 @@
     <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
+    <Compile Include="Assets\Scripts\Items\DroppedItem.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\DungeonPortal.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
+    <Compile Include="Assets\Scripts\Items\ItemDatabase.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerStatusEffectType.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />

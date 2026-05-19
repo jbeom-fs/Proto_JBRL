@@ -1,0 +1,78 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "ItemDatabase", menuName = "JBRogLike/Items/Item Database")]
+public sealed class ItemDatabase : ScriptableObject
+{
+    [SerializeField] private List<ItemData> items = new List<ItemData>();
+
+    private readonly Dictionary<string, ItemData> _itemsByCode = new Dictionary<string, ItemData>();
+
+    public bool TryGetItem(string itemCode, out ItemData item)
+    {
+        EnsureCache();
+        return _itemsByCode.TryGetValue(itemCode, out item);
+    }
+
+    private void OnEnable()
+    {
+        RebuildCache();
+    }
+
+    private void OnValidate()
+    {
+        RebuildCache();
+        ValidateItems();
+    }
+
+    private void EnsureCache()
+    {
+        if (_itemsByCode.Count == 0 && items != null && items.Count > 0)
+            RebuildCache();
+    }
+
+    private void RebuildCache()
+    {
+        _itemsByCode.Clear();
+        if (items == null) return;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemData item = items[i];
+            if (item == null || string.IsNullOrWhiteSpace(item.ItemCode))
+                continue;
+            if (_itemsByCode.ContainsKey(item.ItemCode))
+                continue;
+
+            _itemsByCode.Add(item.ItemCode, item);
+        }
+    }
+
+    private void ValidateItems()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (items == null) return;
+
+        var seen = new HashSet<string>();
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemData item = items[i];
+            if (item == null)
+                continue;
+
+            string code = item.ItemCode;
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                Debug.LogWarning("[ItemDatabase] Empty itemCode at index " + i + ".", this);
+                continue;
+            }
+
+            if (code.Trim() != code)
+                Debug.LogWarning("[ItemDatabase] itemCode has leading/trailing whitespace: '" + code + "'.", this);
+
+            if (!seen.Add(code))
+                Debug.LogWarning("[ItemDatabase] Duplicate itemCode: '" + code + "'.", this);
+        }
+#endif
+    }
+}

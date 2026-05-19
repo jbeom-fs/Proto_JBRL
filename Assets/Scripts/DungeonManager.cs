@@ -219,6 +219,7 @@ public class DungeonManager : MonoBehaviour
                 "from=" + floor + " target=" + targetFloor);
 
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.FloorTransition);
+        DropItemSpawner.Instance?.ClearAllActiveDrops();
 
         int prev = floor;
         floor = Mathf.Clamp(targetFloor, 1, 100);

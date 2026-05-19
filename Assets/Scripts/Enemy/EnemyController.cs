@@ -14,6 +14,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(CircleCollider2D))]
+[RequireComponent(typeof(EnemyInventory))]
 public class EnemyController : MonoBehaviour, IDamageable
 {
     [Header("Data")]
@@ -33,6 +34,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private EnemyHealthBar  _healthBar;
     private Rigidbody2D     _rb;
     private CircleCollider2D _circleCollider;
+    private EnemyInventory _inventory;
     private HitFlashFeedback _hitFlash;
     private EnemyAnimationController _animationController;
     private float _knockbackLockTimer;
@@ -63,6 +65,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private void Awake()
     {
         (_rb, _circleCollider) = CharacterPhysicsSetup.Configure(gameObject, "Enemy");
+        _inventory = GetComponent<EnemyInventory>();
         _healthBar = GetComponent<EnemyHealthBar>();
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
@@ -83,6 +86,9 @@ public class EnemyController : MonoBehaviour, IDamageable
     public void Initialize(EnemyData enemyData)
     {
         data       = enemyData;
+        if (_inventory == null)
+            _inventory = GetComponent<EnemyInventory>();
+        _inventory?.Clear();
         _currentHp = data.maxHp;
         IsDead = false;
         _holdsEliteKey = false;
@@ -126,11 +132,21 @@ public class EnemyController : MonoBehaviour, IDamageable
     public void MarkAsEliteKeyHolder()
     {
         _holdsEliteKey = true;
+        if (_inventory == null)
+            _inventory = GetComponent<EnemyInventory>();
+        _inventory?.AddDropItem("elite_key");
     }
 
     public void ClearEliteKeyHolder()
     {
         _holdsEliteKey = false;
+    }
+
+    public void ClearDropInventory()
+    {
+        if (_inventory == null)
+            _inventory = GetComponent<EnemyInventory>();
+        _inventory?.Clear();
     }
 
     public void ApplyCombatImpact(
@@ -204,7 +220,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         if (TryGetComponent<EnemyBrain>(out var brain))
             brain.HandleDeathStarted();
-        GrantEliteKeyIfNeeded();
+        DropInventoryItems();
         _animationController?.TriggerDeath();
         combatChannel?.RaiseEnemyKilled(this);
         OnDied?.Invoke(this);
@@ -216,18 +232,25 @@ public class EnemyController : MonoBehaviour, IDamageable
             FinishDeath();
     }
 
-    private void GrantEliteKeyIfNeeded()
+    private void DropInventoryItems()
     {
-        if (!_holdsEliteKey)
+        if (_inventory == null)
+            _inventory = GetComponent<EnemyInventory>();
+        if (_inventory == null)
             return;
 
         _holdsEliteKey = false;
-        PlayerController player = PlayerController.Active;
-        if (player == null)
-            return;
-
-        PlayerEliteKeyInventory inventory = player.GetComponent<PlayerEliteKeyInventory>();
-        inventory?.GrantEliteKey();
+        if (DropItemSpawner.Instance != null)
+        {
+            DropItemSpawner.Instance.SpawnDrops(_inventory, transform.position);
+        }
+        else
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[EnemyController] DropItemSpawner.Instance is missing; enemy drops were skipped.", this);
+#endif
+        }
+        _inventory.Clear();
     }
 
     private void TickDeathDelay()
