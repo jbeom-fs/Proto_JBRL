@@ -36,9 +36,10 @@ public struct RoomInfo
     public DungeonGenerator.RoomRect Rect;
     public RoomType                  Type;
     public int                       StableRoomKey;
+    public bool                      IsElite;
 
     /// <summary>문 닫힘에서 면제되는지 여부 (Spawn/Stair는 면제).</summary>
-    public bool IsExempt => Type == RoomType.Spawn || Type == RoomType.Stair;
+    public bool IsExempt => Type == RoomType.Spawn || Type == RoomType.Stair || IsElite;
 
     public int X      => Rect.X;
     public int Y      => Rect.Y;
@@ -57,6 +58,7 @@ public static class DeterministicSeedUtility
     private const uint FnvaPrime = 16777619u;
 
     public const string EnemySpawnDomain = "enemy_spawn";
+    public const string EliteKeyDomain = "elite_key";
 
     public static int CreateStableRoomKey(DungeonGenerator.RoomRect rect)
     {

@@ -10,11 +10,15 @@ public class PlayerStatusBarUI : MonoBehaviour
     [SerializeField] private Slider mpSlider;
     [SerializeField] private TextMeshProUGUI hpText;
     [SerializeField] private TextMeshProUGUI mpText;
+    [SerializeField] private PlayerEliteKeyInventory keyInventory;
+    [SerializeField] private GameObject keyIcon;
 
     private void Awake()
     {
         if (combat == null)
             combat = PlayerCombatController.Active;
+        if (keyInventory == null && combat != null)
+            keyInventory = combat.GetComponent<PlayerEliteKeyInventory>();
 
         if (combat == null)
             Debug.LogWarning("[PlayerStatusBarUI] PlayerCombatController is missing. Initial HP/MP UI refresh will be skipped.");
@@ -39,18 +43,24 @@ public class PlayerStatusBarUI : MonoBehaviour
 
     private void OnEnable()
     {
-        if (combatChannel == null) return;
-
-        combatChannel.OnPlayerHpChanged += UpdateHp;
-        combatChannel.OnPlayerMpChanged += UpdateMp;
+        if (combatChannel != null)
+        {
+            combatChannel.OnPlayerHpChanged += UpdateHp;
+            combatChannel.OnPlayerMpChanged += UpdateMp;
+        }
+        if (keyInventory != null)
+            keyInventory.EliteKeyChanged += UpdateEliteKey;
     }
 
     private void OnDisable()
     {
-        if (combatChannel == null) return;
-
-        combatChannel.OnPlayerHpChanged -= UpdateHp;
-        combatChannel.OnPlayerMpChanged -= UpdateMp;
+        if (combatChannel != null)
+        {
+            combatChannel.OnPlayerHpChanged -= UpdateHp;
+            combatChannel.OnPlayerMpChanged -= UpdateMp;
+        }
+        if (keyInventory != null)
+            keyInventory.EliteKeyChanged -= UpdateEliteKey;
     }
 
     private void Start()
@@ -59,6 +69,7 @@ public class PlayerStatusBarUI : MonoBehaviour
 
         UpdateHp(combat.CurrentHp, combat.MaxHp);
         UpdateMp(combat.CurrentMp, combat.MaxMp);
+        UpdateEliteKey(keyInventory != null && keyInventory.HasEliteKey);
     }
 
     private void UpdateHp(int current, int max)
@@ -75,5 +86,11 @@ public class PlayerStatusBarUI : MonoBehaviour
 
         if (mpText != null)
             mpText.text = $"{current}/{max}";
+    }
+
+    private void UpdateEliteKey(bool hasKey)
+    {
+        if (keyIcon != null)
+            keyIcon.SetActive(hasKey);
     }
 }

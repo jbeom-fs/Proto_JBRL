@@ -173,6 +173,8 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     private void StartNewDungeonRun(PlayerController targetPlayer)
     {
+        ResetEliteKey(targetPlayer);
+
         if (generateNewDungeonOnEnter && resetFloorOnNewDungeonRun)
             dungeonManager.floor = 1;
 
@@ -186,9 +188,18 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     private void CleanupDungeonRuntime()
     {
+        ResetEliteKey(player);
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
         roomSpawner?.ClearRuntimeEncounterState();
+    }
+
+    private static void ResetEliteKey(PlayerController targetPlayer)
+    {
+        if (targetPlayer == null) return;
+
+        PlayerEliteKeyInventory inventory = targetPlayer.GetComponent<PlayerEliteKeyInventory>();
+        inventory?.ResetEliteKey();
     }
 
     private void ApplyLocationRoots(GameLocationType locationType)

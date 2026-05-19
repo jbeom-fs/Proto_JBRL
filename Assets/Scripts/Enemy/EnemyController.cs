@@ -39,6 +39,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private float _activeSlowPercentage;
     private float _deathTimer;
     private bool _deathFinished;
+    private bool _holdsEliteKey;
     private Vector3 _lastSafePosition;
     private bool _warnedMissingHitFlash;
     private readonly List<SlowEffect> _activeSlows = new();
@@ -51,6 +52,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     public bool IsAlive => _currentHp > 0 && !IsDead;
     public bool IsDead { get; private set; }
+    public bool HoldsEliteKey => _holdsEliteKey;
     public bool IsKnockbackLocked => _knockbackLockTimer > 0f;
     public float MoveSpeedMultiplier => Mathf.Clamp01(1f - _activeSlowPercentage);
     public float CollisionFootprintRadius => GetWorldColliderRadius();
@@ -83,6 +85,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         data       = enemyData;
         _currentHp = data.maxHp;
         IsDead = false;
+        _holdsEliteKey = false;
         _deathFinished = false;
         _deathTimer = 0f;
         _healthBar?.SetHp(_currentHp, data.maxHp);
@@ -118,6 +121,16 @@ public class EnemyController : MonoBehaviour, IDamageable
 #endif
 
         if (_currentHp == 0) Die();
+    }
+
+    public void MarkAsEliteKeyHolder()
+    {
+        _holdsEliteKey = true;
+    }
+
+    public void ClearEliteKeyHolder()
+    {
+        _holdsEliteKey = false;
     }
 
     public void ApplyCombatImpact(
@@ -191,6 +204,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         if (TryGetComponent<EnemyBrain>(out var brain))
             brain.HandleDeathStarted();
+        GrantEliteKeyIfNeeded();
         _animationController?.TriggerDeath();
         combatChannel?.RaiseEnemyKilled(this);
         OnDied?.Invoke(this);
@@ -200,6 +214,20 @@ public class EnemyController : MonoBehaviour, IDamageable
 #endif
         if (_deathTimer <= 0f)
             FinishDeath();
+    }
+
+    private void GrantEliteKeyIfNeeded()
+    {
+        if (!_holdsEliteKey)
+            return;
+
+        _holdsEliteKey = false;
+        PlayerController player = PlayerController.Active;
+        if (player == null)
+            return;
+
+        PlayerEliteKeyInventory inventory = player.GetComponent<PlayerEliteKeyInventory>();
+        inventory?.GrantEliteKey();
     }
 
     private void TickDeathDelay()

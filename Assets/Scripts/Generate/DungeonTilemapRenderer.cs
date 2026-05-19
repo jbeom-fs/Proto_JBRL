@@ -44,6 +44,9 @@ public class DungeonTilemapRenderer : MonoBehaviour
     [Tooltip("닫힌 문 타일. doorTilemap에 사전 배치 후 색상으로 on/off됩니다.")]
     public TileBase doorTile;
 
+    [Tooltip("Elite Door tile. Uses doorTile as fallback when this is null.")]
+    public TileBase eliteDoorTile;
+
     [Tooltip("벽 / 빈 공간 (EMPTY = 0). null 이면 빈 칸.")]
     public TileBase wallTile;
 
@@ -58,6 +61,9 @@ public class DungeonTilemapRenderer : MonoBehaviour
         = new Dictionary<Vector3Int, Vector2Int>();
 
     private readonly HashSet<Vector3Int> _closedDoorPositions
+        = new HashSet<Vector3Int>();
+
+    private readonly HashSet<Vector3Int> _eliteDoorPositions
         = new HashSet<Vector3Int>();
 
     private readonly List<Vector3Int> _renderedDoorPositions
@@ -125,6 +131,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
 
         stageStart = Time.realtimeSinceStartupAsDouble;
         CacheDoorPositions(data);
+        PlaceEliteDoors(data);
         if (RuntimePerfLogger.IsActive)
         {
             RuntimePerfLogger.MarkEvent("place_tiles_stage_cache_doors",
@@ -211,6 +218,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
 
         stageStart = Time.realtimeSinceStartupAsDouble;
         CacheDoorPositions(data);
+        PlaceEliteDoors(data);
         if (RuntimePerfLogger.IsActive)
         {
             RuntimePerfLogger.MarkEvent("place_tiles_stage_cache_doors",
@@ -225,6 +233,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
         _data = data;
         _doorPositions.Clear();
         _closedDoorPositions.Clear();
+        _eliteDoorPositions.Clear();
         _renderedDoorPositions.Clear();
 
         if (doorTilemap != null)
@@ -328,7 +337,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
         }
 
         FlushDoorChanges();
-        SetDoorVisible(_renderedDoorPositions.Count > 0);
+        SetDoorVisible(_renderedDoorPositions.Count > 0 || _eliteDoorPositions.Count > 0);
 
         double elapsedMs = (Time.realtimeSinceStartupAsDouble - start) * 1000.0;
         if (RuntimePerfLogger.IsActive)
@@ -369,7 +378,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
         FlushDoorChanges();
         _closedDoorPositions.Clear();
         _renderedDoorPositions.Clear();
-        SetDoorVisible(false);
+        SetDoorVisible(_eliteDoorPositions.Count > 0);
 
         double elapsedMs = (Time.realtimeSinceStartupAsDouble - start) * 1000.0;
         if (RuntimePerfLogger.IsActive)
@@ -379,6 +388,34 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 " visible=false" +
                 " elapsedMs=" + elapsedMs.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
 
+        return true;
+    }
+
+    public bool TryOpenEliteDoorWithKey(PlayerEliteKeyInventory keyInventory)
+    {
+        if (keyInventory == null || !keyInventory.HasEliteKey)
+            return false;
+        if (_data == null || doorTilemap == null || _eliteDoorPositions.Count == 0)
+            return false;
+
+        Vector3Int touchedDoor = default;
+        bool hasTouchedDoor = false;
+        foreach (var tilemapPos in _eliteDoorPositions)
+        {
+            if (!IsPlayerOverlappingDoorCell(tilemapPos)) continue;
+
+            touchedDoor = tilemapPos;
+            hasTouchedDoor = true;
+            break;
+        }
+
+        if (!hasTouchedDoor)
+            return false;
+
+        if (!OpenEliteDoorAt(touchedDoor))
+            return false;
+
+        keyInventory.TryConsumeEliteKey();
         return true;
     }
 
@@ -432,6 +469,93 @@ public class DungeonTilemapRenderer : MonoBehaviour
         _doorPositions[tilemapPos] = new Vector2Int(col, row);
     }
 
+    private void PlaceEliteDoors(DungeonData data)
+    {
+        if (data == null || doorTilemap == null || doorTile == null)
+            return;
+        if (!data.TryGetEliteRoom(out RoomInfo eliteRoom))
+            return;
+
+        TileBase tile = ResolveEliteDoorTile();
+        _doorChangeBuffer.Clear();
+
+        for (int col = eliteRoom.X; col < eliteRoom.Right; col++)
+        {
+            TryAddEliteDoor(data, col, eliteRoom.Y - 1, tile);
+            TryAddEliteDoor(data, col, eliteRoom.Bottom, tile);
+        }
+        for (int row = eliteRoom.Y; row < eliteRoom.Bottom; row++)
+        {
+            TryAddEliteDoor(data, eliteRoom.X - 1, row, tile);
+            TryAddEliteDoor(data, eliteRoom.Right, row, tile);
+        }
+
+        if (_doorChangeBuffer.Count == 0)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[DungeonTilemapRenderer] Elite Room exists, but no corridor-adjacent Elite Door position was found.");
+#endif
+        }
+
+        FlushDoorChanges();
+        SetDoorVisible(_renderedDoorPositions.Count > 0 || _eliteDoorPositions.Count > 0);
+    }
+
+    private TileBase ResolveEliteDoorTile()
+    {
+        if (eliteDoorTile != null)
+            return eliteDoorTile;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning("[DungeonTilemapRenderer] eliteDoorTile is not assigned; using doorTile as fallback.", this);
+#endif
+        return doorTile;
+    }
+
+    private void TryAddEliteDoor(DungeonData data, int col, int row, TileBase tile)
+    {
+        if (!data.InBounds(col, row)) return;
+        if (data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
+
+        var tilemapPos = new Vector3Int(col, -row, 0);
+        var gridPos = new Vector2Int(col, row);
+        if (_eliteDoorPositions.Contains(tilemapPos)) return;
+
+        data.SetTileValue(gridPos.x, gridPos.y, DungeonGenerator.DOOR_CLOSED);
+        _eliteDoorPositions.Add(tilemapPos);
+        _doorChangeBuffer.Add(new TileChangeData
+        {
+            position  = tilemapPos,
+            tile      = tile,
+            color     = OPAQUE,
+            transform = Matrix4x4.identity,
+        });
+    }
+
+    private bool OpenEliteDoorAt(Vector3Int tilemapPos)
+    {
+        if (!_eliteDoorPositions.Contains(tilemapPos))
+            return false;
+
+        if (_doorPositions.TryGetValue(tilemapPos, out Vector2Int gridPos))
+            _data.SetTileValue(gridPos.x, gridPos.y, DungeonGenerator.CORRIDOR);
+        else
+            _data.SetTileValue(tilemapPos.x, -tilemapPos.y, DungeonGenerator.CORRIDOR);
+
+        _eliteDoorPositions.Remove(tilemapPos);
+        _doorChangeBuffer.Clear();
+        _doorChangeBuffer.Add(new TileChangeData
+        {
+            position  = tilemapPos,
+            tile      = null,
+            color     = OPAQUE,
+            transform = Matrix4x4.identity,
+        });
+        FlushDoorChanges();
+        SetDoorVisible(_renderedDoorPositions.Count > 0 || _eliteDoorPositions.Count > 0);
+        return true;
+    }
+
     private void TryAddDoorClose(int col, int row)
     {
         if (_data.GetTileType(col, row) != DungeonGenerator.CORRIDOR) return;
@@ -440,6 +564,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
         var gridPos = new Vector2Int(col, row);
         if (!_doorPositions.ContainsKey(tilemapPos)) return;
         if (_closedDoorPositions.Contains(tilemapPos)) return;
+        if (_eliteDoorPositions.Contains(tilemapPos)) return;
 
         CloseDoorAt(tilemapPos, gridPos);
     }

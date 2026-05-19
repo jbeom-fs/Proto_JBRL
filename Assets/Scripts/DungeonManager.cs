@@ -413,6 +413,14 @@ public class DungeonManager : MonoBehaviour
         spawner.ResetRoomEncounterState();
     }
 
+    private void PrepareEliteKeyPlan()
+    {
+        if (!TryGetRoomSpawner(out RoomSpawner spawner))
+            return;
+
+        spawner.PrepareEliteKeyPlan(this);
+    }
+
     private bool TryGetRoomSpawner(out RoomSpawner spawner)
     {
         spawner = roomSpawner;
@@ -451,7 +459,9 @@ public class DungeonManager : MonoBehaviour
         // 2. 그리드 + 원시 방 목록 생성
         stageStart = Time.realtimeSinceStartupAsDouble;
         DungeonGenerator.RoomRect[] rawRooms;
-        int[,] grid = DungeonGenerator.GenerateDungeon(settings, out rawRooms);
+        DungeonGenerator.DungeonLayoutInfo layoutInfo;
+        int[,] grid = DungeonGenerator.GenerateDungeon(settings, out rawRooms, out layoutInfo);
+        WarnIfEliteRoomFallback(layoutInfo);
         _originGrid = grid;
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("generate_stage_generator",
@@ -491,6 +501,7 @@ public class DungeonManager : MonoBehaviour
         // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
         stageStart = Time.realtimeSinceStartupAsDouble;
         _cachedSpawnPos = _spawnService.ComputeSpawnPos(_data, mapWidth, mapHeight);
+        PrepareEliteKeyPlan();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
                 "elapsedMs=" + ElapsedMs(stageStart) +
@@ -531,9 +542,20 @@ public class DungeonManager : MonoBehaviour
             {
                 Rect = rawRooms[i],
                 Type = RoomType.Normal,
-                StableRoomKey = DeterministicSeedUtility.CreateStableRoomKey(rawRooms[i])
+                StableRoomKey = DeterministicSeedUtility.CreateStableRoomKey(rawRooms[i]),
+                IsElite = rawRooms[i].IsElite
             };
         return result;
+    }
+
+    private void WarnIfEliteRoomFallback(DungeonGenerator.DungeonLayoutInfo layoutInfo)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (!layoutInfo.ShouldHaveEliteRoom || string.IsNullOrWhiteSpace(layoutInfo.EliteRoomWarning))
+            return;
+
+        Debug.LogWarning("[DungeonManager] " + layoutInfo.EliteRoomWarning, this);
+#endif
     }
 
     private static string ElapsedMs(double startTime)

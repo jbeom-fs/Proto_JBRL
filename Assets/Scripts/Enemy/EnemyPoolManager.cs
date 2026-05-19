@@ -74,6 +74,7 @@ public class EnemyPoolManager : MonoBehaviour
         if (enemy == null) return null;
 
         _activeData[enemy] = data;
+        enemy.ClearEliteKeyHolder();
         enemy.OnDeathFinished -= Release;
         enemy.OnDeathFinished += Release;
         if (enemy.TryGetComponent<EnemyBrain>(out var brain))
@@ -139,6 +140,7 @@ public class EnemyPoolManager : MonoBehaviour
 
             _activeData.Remove(enemy);
             enemy.OnDeathFinished -= Release;
+            enemy.ClearEliteKeyHolder();
             enemy.transform.SetParent(transform);
             enemy.gameObject.SetActive(false);
 

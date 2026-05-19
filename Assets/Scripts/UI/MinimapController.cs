@@ -23,6 +23,7 @@ public class MinimapController : MonoBehaviour
     [SerializeField] private Color exploredCorridorColor = new Color(0.18f, 0.21f, 0.28f, 0.72f);
     [SerializeField] private Color visibleDoorColor    = new Color(0.95f, 0.78f, 0.36f, 0.95f);
     [SerializeField] private Color exploredDoorColor   = new Color(0.46f, 0.36f, 0.18f, 0.78f);
+    [SerializeField] private Color stairColor          = new Color(0.95f, 0.92f, 0.38f, 1f);
     [SerializeField] private Color playerColor         = new Color(0.2f,  1f,    0.65f, 1f);
     [SerializeField] private Color transparentColor    = new Color(0f,    0f,    0f,    0f);
 
@@ -290,6 +291,7 @@ public class MinimapController : MonoBehaviour
             }
         }
 
+        DrawDungeonStairs();
         _texture.SetPixels32(_pixels);
         _texture.Apply(false, false);
     }
@@ -311,6 +313,28 @@ public class MinimapController : MonoBehaviour
             default:
                 color = transparentColor;
                 return false;
+        }
+    }
+
+    private void DrawDungeonStairs()
+    {
+        if (_data == null || fogOfWar == null)
+            return;
+
+        Color32 color = stairColor;
+        for (int row = 0; row < _data.MapHeight; row++)
+        {
+            for (int col = 0; col < _data.MapWidth; col++)
+            {
+                if (_data.GetTileTypeUnchecked(col, row) != DungeonGenerator.STAIR_UP)
+                    continue;
+
+                var cell = new Vector2Int(col, row);
+                if (!fogOfWar.IsExploredCell(cell))
+                    continue;
+
+                FillDungeonCellPixels(col, row, color);
+            }
         }
     }
 

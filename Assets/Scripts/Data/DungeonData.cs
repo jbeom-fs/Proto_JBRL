@@ -7,6 +7,8 @@ public class DungeonData
     public int MapWidth { get; }
     public int MapHeight { get; }
     public int RoomCount => _rooms.Length;
+    public int EliteRoomIndex { get; }
+    public bool HasEliteRoom => EliteRoomIndex >= 0;
     public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
 
     public DungeonData(int[,] grid, RoomInfo[] rooms)
@@ -15,6 +17,7 @@ public class DungeonData
         _rooms = rooms;
         MapWidth = grid.GetLength(1);
         MapHeight = grid.GetLength(0);
+        EliteRoomIndex = FindEliteRoomIndex(rooms);
         _roomIndex = BuildRoomIndex(rooms, MapWidth, MapHeight);
     }
 
@@ -86,6 +89,18 @@ public class DungeonData
         return _rooms[index];
     }
 
+    public bool TryGetEliteRoom(out RoomInfo room)
+    {
+        if (EliteRoomIndex < 0 || EliteRoomIndex >= _rooms.Length)
+        {
+            room = default;
+            return false;
+        }
+
+        room = _rooms[EliteRoomIndex];
+        return true;
+    }
+
     public System.Collections.Generic.List<UnityEngine.Vector2Int> GetWalkableTiles(RoomInfo room)
     {
         var tiles = new System.Collections.Generic.List<UnityEngine.Vector2Int>();
@@ -120,5 +135,16 @@ public class DungeonData
         }
 
         return index;
+    }
+
+    private static int FindEliteRoomIndex(RoomInfo[] rooms)
+    {
+        if (rooms == null) return -1;
+
+        for (int i = 0; i < rooms.Length; i++)
+            if (rooms[i].IsElite)
+                return i;
+
+        return -1;
     }
 }

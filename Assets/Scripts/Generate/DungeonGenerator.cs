@@ -145,6 +145,7 @@ public static class DungeonGenerator
     public struct RoomRect
     {
         public int X, Y, W, H;
+        public bool IsElite;
         public int Right  => X + W;
         public int Bottom => Y + H;
 
@@ -158,6 +159,14 @@ public static class DungeonGenerator
     {
         public int Cx, Cy;
         public int X, Y, W, H;
+        public bool IsElite;
+    }
+
+    public struct DungeonLayoutInfo
+    {
+        public bool ShouldHaveEliteRoom;
+        public int EliteRoomIndex;
+        public string EliteRoomWarning;
     }
 
     private struct ExtraRoomPair
@@ -205,6 +214,12 @@ public static class DungeonGenerator
     /// <param name="settings">생성 설정값</param>
     /// <param name="outRooms">생성된 방 목록 (문 제어에 활용)</param>
     public static int[,] GenerateDungeon(DungeonSettings settings, out RoomRect[] outRooms)
+        => GenerateDungeon(settings, out outRooms, out _);
+
+    public static int[,] GenerateDungeon(
+        DungeonSettings settings,
+        out RoomRect[] outRooms,
+        out DungeonLayoutInfo layoutInfo)
     {
         ValidateSettings(ref settings);
 
@@ -222,14 +237,15 @@ public static class DungeonGenerator
         foreach (var room in rooms)
             FillRoom(grid, room);
 
-        ConnectAll(grid, rooms, corridorTiles, settings, rng);
+        layoutInfo = ConnectAll(grid, rooms, corridorTiles, settings, rng);
         PlaceStairs(grid, rooms, settings, rng);
 
         // Room → RoomRect 변환 후 반환
         outRooms = new RoomRect[rooms.Count];
         for (int i = 0; i < rooms.Count; i++)
             outRooms[i] = new RoomRect { X=rooms[i].X, Y=rooms[i].Y,
-                                         W=rooms[i].W, H=rooms[i].H };
+                                         W=rooms[i].W, H=rooms[i].H,
+                                         IsElite=rooms[i].IsElite };
         return grid;
     }
 
@@ -333,17 +349,30 @@ public static class DungeonGenerator
     /// 각 단계에서 같은 소스 방을 기준으로 2번째 가까운 방에도
     /// ExtraConnProb 확률로 추가 통로를 연결합니다.
     /// </summary>
-    private static void ConnectAll(
+    private static DungeonLayoutInfo ConnectAll(
         int[,] grid, List<Room> rooms,
         HashSet<(int, int)> corridorTiles,
         DungeonSettings s, Random rng)
     {
+        var layoutInfo = new DungeonLayoutInfo
+        {
+            ShouldHaveEliteRoom = IsEliteFloor(s.Floor),
+            EliteRoomIndex = -1,
+            EliteRoomWarning = null,
+        };
+
         int n = rooms.Count;
-        if (n < 2) return;
+        if (n < 2)
+        {
+            if (layoutInfo.ShouldHaveEliteRoom)
+                layoutInfo.EliteRoomWarning = "Elite floor has fewer than two rooms; elite room was not assigned.";
+            return layoutInfo;
+        }
 
         var connected      = new HashSet<int> { 0 };
         var remaining      = new HashSet<int>();
         for (int k = 1; k < n; k++) remaining.Add(k);
+        var mstEdges = new List<(int a, int b)>(n - 1);
 
         // 이미 직접 연결된 방 쌍 추적 — 중복/병렬 통로 방지
         var connectedPairs = new HashSet<(int, int)>();
@@ -384,6 +413,7 @@ public static class DungeonGenerator
                 DebugEmit("  warning=MST returned false");
             bool mstPairAlreadyConnected = connectedPairs.Contains((Math.Min(srcIdx, dstIdx), Math.Max(srcIdx, dstIdx)));
             connectedPairs.Add((Math.Min(srcIdx, dstIdx), Math.Max(srcIdx, dstIdx)));
+            mstEdges.Add((srcIdx, dstIdx));
             connected.Add(dstIdx);
             remaining.Remove(dstIdx);
             if (DebugCorridorCarving)
@@ -396,7 +426,11 @@ public static class DungeonGenerator
 
         }
 
-        ConnectExtraCorridors(grid, rooms, corridorTiles, connectedPairs, s, rng, pathBuf);
+        if (layoutInfo.ShouldHaveEliteRoom)
+            AssignEliteRoom(rooms, mstEdges, ref layoutInfo);
+
+        ConnectExtraCorridors(grid, rooms, corridorTiles, connectedPairs, s, rng, pathBuf, layoutInfo.EliteRoomIndex);
+        return layoutInfo;
     }
 
     private static void ConnectExtraCorridors(
@@ -404,7 +438,8 @@ public static class DungeonGenerator
         HashSet<(int, int)> corridorTiles,
         HashSet<(int, int)> connectedPairs,
         DungeonSettings s, Random rng,
-        List<(int x, int y)> pathBuf)
+        List<(int x, int y)> pathBuf,
+        int eliteRoomIndex)
     {
         if (s.ExtraConnProb <= 0f || s.ExtraCandidateCount <= 0) return;
 
@@ -428,6 +463,7 @@ public static class DungeonGenerator
                 {
                     var pairKey = (i, j);
                     if (connectedPairs.Contains(pairKey)) continue;
+                    if (i == eliteRoomIndex || j == eliteRoomIndex) continue;
 
                     var pair = new ExtraRoomPair
                     {
@@ -491,6 +527,97 @@ public static class DungeonGenerator
             CarvePath(grid, corridorTiles, selected.Path, s);
             connectedPairs.Add((selected.RoomAIndex, selected.RoomBIndex));
         }
+    }
+
+    private static bool IsEliteFloor(int floor)
+        => floor > 0 && floor % 10 == 5;
+
+    private static void AssignEliteRoom(
+        List<Room> rooms,
+        List<(int a, int b)> mstEdges,
+        ref DungeonLayoutInfo layoutInfo)
+    {
+        int n = rooms.Count;
+        var degree = new int[n];
+        var depth = new int[n];
+        for (int i = 0; i < depth.Length; i++)
+            depth[i] = -1;
+
+        for (int i = 0; i < mstEdges.Count; i++)
+        {
+            degree[mstEdges[i].a]++;
+            degree[mstEdges[i].b]++;
+        }
+
+        BuildMstDepths(n, mstEdges, depth);
+
+        int best = -1;
+        for (int i = 1; i < n; i++)
+        {
+            if (degree[i] != 1) continue;
+            if (IsBetterEliteRoomCandidate(rooms, depth, i, best))
+                best = i;
+        }
+
+        if (best < 0)
+        {
+            layoutInfo.EliteRoomWarning = "No MST leaf room was found; using farthest non-start room as elite fallback.";
+            for (int i = 1; i < n; i++)
+                if (IsBetterEliteRoomCandidate(rooms, depth, i, best))
+                    best = i;
+        }
+
+        if (best < 0)
+        {
+            layoutInfo.EliteRoomWarning = "Elite room assignment failed; no non-start room exists.";
+            return;
+        }
+
+        var room = rooms[best];
+        room.IsElite = true;
+        rooms[best] = room;
+        layoutInfo.EliteRoomIndex = best;
+    }
+
+    private static void BuildMstDepths(int roomCount, List<(int a, int b)> mstEdges, int[] depth)
+    {
+        var queue = new Queue<int>();
+        depth[0] = 0;
+        queue.Enqueue(0);
+
+        while (queue.Count > 0)
+        {
+            int current = queue.Dequeue();
+            for (int i = 0; i < mstEdges.Count; i++)
+            {
+                int next = -1;
+                if (mstEdges[i].a == current)
+                    next = mstEdges[i].b;
+                else if (mstEdges[i].b == current)
+                    next = mstEdges[i].a;
+
+                if (next < 0 || next >= roomCount || depth[next] >= 0) continue;
+                depth[next] = depth[current] + 1;
+                queue.Enqueue(next);
+            }
+        }
+    }
+
+    private static bool IsBetterEliteRoomCandidate(List<Room> rooms, int[] depth, int candidate, int best)
+    {
+        if (best < 0) return true;
+
+        int candidateDepth = depth[candidate];
+        int bestDepth = depth[best];
+        if (candidateDepth != bestDepth)
+            return candidateDepth > bestDepth;
+
+        int candidateDistance = CenterDistanceSq(rooms[0], rooms[candidate]);
+        int bestDistance = CenterDistanceSq(rooms[0], rooms[best]);
+        if (candidateDistance != bestDistance)
+            return candidateDistance > bestDistance;
+
+        return candidate < best;
     }
 
     private static void BuildExtraPathCandidatesForPair(

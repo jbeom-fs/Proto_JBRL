@@ -21,6 +21,14 @@ public class RoomSpawner : MonoBehaviour
     private readonly HashSet<int> _startedRoomKeys = new();
     private RoomInfo? _activeRoom;
     private RoomInfo? _pendingRoomStart;
+    private EliteKeyPlan _eliteKeyPlan;
+
+    private struct EliteKeyPlan
+    {
+        public bool Active;
+        public int RoomKey;
+        public int SpawnIndexInRoom;
+    }
 
     private void OnEnable()
     {
@@ -55,6 +63,7 @@ public class RoomSpawner : MonoBehaviour
     private void OnRoomEntered(RoomEnteredEventArgs args)
     {
         if (!args.IsFirstVisit) return;
+        if (args.Room.IsElite) return;
         if (args.Room.Type != RoomType.Normal && args.Room.Type != RoomType.MonsterDen) return;
         if (_startedRoomKeys.Contains(GetRoomKey(args.Room))) return;
 
@@ -84,6 +93,56 @@ public class RoomSpawner : MonoBehaviour
         UnsubscribeActiveEnemies();
         activeEnemies.Clear();
         _activeRoom = null;
+        _eliteKeyPlan = default;
+    }
+
+    public void PrepareEliteKeyPlan(DungeonManager dungeonManager)
+    {
+        _eliteKeyPlan = default;
+        if (dungeonManager == null || dungeonManager.Data == null)
+            return;
+
+        DungeonData data = dungeonManager.Data;
+        if (!data.HasEliteRoom)
+            return;
+
+        var candidates = new List<(int roomKey, int spawnIndexInRoom)>();
+        for (int i = 0; i < data.RoomCount; i++)
+        {
+            RoomInfo room = dungeonManager.Registry != null
+                ? dungeonManager.Registry.Resolve(data.GetRoom(i))
+                : data.GetRoom(i);
+
+            if (room.IsElite || room.Type != RoomType.Normal && room.Type != RoomType.MonsterDen)
+                continue;
+
+            int spawnCount = CountDeterministicSpawns(room, dungeonManager);
+            for (int spawnIndex = 0; spawnIndex < spawnCount; spawnIndex++)
+                candidates.Add((GetRoomKey(room), spawnIndex));
+        }
+
+        if (candidates.Count == 0)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[RoomSpawner] Elite floor has no enemy spawn candidates for Elite Key.", this);
+#endif
+            return;
+        }
+
+        int seed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)data.currentStageRegion,
+            dungeonManager.floor,
+            data.GetRoom(data.EliteRoomIndex).StableRoomKey,
+            DeterministicSeedUtility.EliteKeyDomain);
+        var rng = new System.Random(seed);
+        var selected = candidates[rng.Next(candidates.Count)];
+        _eliteKeyPlan = new EliteKeyPlan
+        {
+            Active = true,
+            RoomKey = selected.roomKey,
+            SpawnIndexInRoom = selected.spawnIndexInRoom,
+        };
     }
 
     private void SetPendingRoomStart(RoomInfo room)
@@ -122,6 +181,7 @@ public class RoomSpawner : MonoBehaviour
     {
         var dungeonManager = DungeonManager.Instance;
         if (dungeonManager == null || dungeonManager.Data == null) return;
+        if (room.IsElite) return;
         if (EnemyPoolManager.Instance == null)
         {
             Debug.LogWarning("[RoomSpawner] EnemyPoolManager.Instance is missing.");
@@ -148,6 +208,7 @@ public class RoomSpawner : MonoBehaviour
 
         float budget = CalculateBudget(room);
         int tileIndex = 0;
+        int spawnedIndex = 0;
 
         while (budget > 0f && tileIndex < walkableTiles.Count)
         {
@@ -170,9 +231,12 @@ public class RoomSpawner : MonoBehaviour
             enemy.transform.position = dungeonManager.GridToWorld(tile);
             enemy.transform.SetParent(null);
             enemy.Initialize(selected);
+            if (ShouldAssignEliteKey(room, spawnedIndex))
+                enemy.MarkAsEliteKeyHolder();
             TrackEnemy(enemy);
 
             budget -= selected.spawnCost;
+            spawnedIndex++;
         }
 
         if (activeEnemies.Count > 0)
@@ -184,6 +248,50 @@ public class RoomSpawner : MonoBehaviour
             _activeRoom = null;
             dungeonManager.OpenCurrentRoomDoors();
         }
+    }
+
+    private int CountDeterministicSpawns(RoomInfo room, DungeonManager dungeonManager)
+    {
+        List<Vector2Int> walkableTiles = dungeonManager.Data.GetWalkableTiles(room);
+        FilterUnsafeSpawnTiles(walkableTiles, room, dungeonManager);
+        if (walkableTiles.Count == 0)
+            return 0;
+
+        SortSpawnTiles(walkableTiles);
+
+        SpawnRegion region = dungeonManager.Data.currentStageRegion;
+        int roomSeed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)region,
+            dungeonManager.floor,
+            room.StableRoomKey,
+            DeterministicSeedUtility.EnemySpawnDomain);
+        var roomRng = new System.Random(roomSeed);
+        Shuffle(walkableTiles, roomRng);
+
+        float budget = CalculateBudget(room);
+        int tileIndex = 0;
+        int spawnCount = 0;
+        while (budget > 0f && tileIndex < walkableTiles.Count)
+        {
+            BuildCandidates(region, budget);
+            if (_candidates.Count == 0)
+                break;
+
+            EnemyData selected = _candidates[roomRng.Next(_candidates.Count)];
+            budget -= selected.spawnCost;
+            tileIndex++;
+            spawnCount++;
+        }
+
+        return spawnCount;
+    }
+
+    private bool ShouldAssignEliteKey(RoomInfo room, int spawnedIndex)
+    {
+        return _eliteKeyPlan.Active &&
+               _eliteKeyPlan.RoomKey == GetRoomKey(room) &&
+               _eliteKeyPlan.SpawnIndexInRoom == spawnedIndex;
     }
 
     private void BeginRoomSpawnTracking(RoomInfo room)

@@ -69,6 +69,7 @@ public class PlayerController : MonoBehaviour
     private CircleCollider2D _circleCollider;
     private PlayerCombatController _combat;
     private PlayerDashController _dashController;
+    private PlayerEliteKeyInventory _eliteKeyInventory;
     private Vector3 _lastSafePosition;
 
     // ══════════════════════════════════════════════════════════════
@@ -99,6 +100,7 @@ public class PlayerController : MonoBehaviour
         _inputReader = GetComponent<PlayerInputReader>();
         _combat = GetComponent<PlayerCombatController>();
         _dashController = GetComponent<PlayerDashController>();
+        _eliteKeyInventory = GetComponent<PlayerEliteKeyInventory>();
         if (_inputReader == null) { Debug.LogError("[PlayerController] PlayerInputReader 없음"); enabled = false; return; }
 
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
@@ -144,6 +146,7 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void OnFloorChangedHandler(int prevFloor, int newFloor)
     {
+        _eliteKeyInventory?.ResetEliteKey();
         SpawnAtStart();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("player_spawned",
@@ -195,6 +198,9 @@ public class PlayerController : MonoBehaviour
 
         if (dungeonManager != null && dungeonManager.IsTransitioning)
             return;
+
+        if (ShouldUseDungeonSystems())
+            TryOpenEliteDoorOnContact();
 
         if (_dashController != null && _dashController.IsDashing)
         {
@@ -251,7 +257,17 @@ public class PlayerController : MonoBehaviour
         }
 
         if (ShouldUseDungeonSystems())
+        {
             CheckRoomEntry();
+        }
+    }
+
+    private void TryOpenEliteDoorOnContact()
+    {
+        if (_eliteKeyInventory == null || dungeonManager == null || dungeonManager.dungeonRenderer == null)
+            return;
+
+        dungeonManager.dungeonRenderer.TryOpenEliteDoorWithKey(_eliteKeyInventory);
     }
 
     private void LateUpdate()
