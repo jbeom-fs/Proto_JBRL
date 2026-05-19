@@ -2899,7 +2899,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: -64, y: -64}
-  m_SizeDelta: {x: 240, y: 150}
+  m_SizeDelta: {x: 225, y: 150}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &900100002
 MonoBehaviour:
@@ -2921,14 +2921,15 @@ MonoBehaviour:
   fogOfWar: {fileID: 2090000010}
   eventChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
   pixelsPerCell: 3
+  stairMarkerPixelPadding: 4
   visibleRoomColor: {r: 0.75, g: 0.82, b: 0.95, a: 0.92}
   exploredRoomColor: {r: 0.26, g: 0.31, b: 0.42, a: 0.78}
   visibleCorridorColor: {r: 0.7, g: 0.74, b: 0.82, a: 0.88}
   exploredCorridorColor: {r: 0.18, g: 0.21, b: 0.28, a: 0.72}
   visibleDoorColor: {r: 0.95, g: 0.78, b: 0.36, a: 0.95}
   exploredDoorColor: {r: 0.46, g: 0.36, b: 0.18, a: 0.78}
-  stairColor: {r: 0.95, g: 0.92, b: 0.38, a: 1}
-  playerColor: {r: 0.2, g: 1, b: 0.65, a: 1}
+  stairColor: {r: 0.05, g: 0.16, b: 0.55, a: 1}
+  playerColor: {r: 0, g: 0.32, b: 0.12, a: 1}
   transparentColor: {r: 0, g: 0, b: 0, a: 0}
 --- !u!1 &900100003
 GameObject:

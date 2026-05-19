@@ -17,14 +17,15 @@ public class MinimapController : MonoBehaviour
 
     [Header("Rendering")]
     [SerializeField, Min(1)] private int pixelsPerCell = 3;
+    [SerializeField, Min(0)] private int stairMarkerPixelPadding = 4;
     [SerializeField] private Color visibleRoomColor    = new Color(0.75f, 0.82f, 0.95f, 0.92f);
     [SerializeField] private Color exploredRoomColor   = new Color(0.26f, 0.31f, 0.42f, 0.78f);
     [SerializeField] private Color visibleCorridorColor  = new Color(0.70f, 0.74f, 0.82f, 0.88f);
     [SerializeField] private Color exploredCorridorColor = new Color(0.18f, 0.21f, 0.28f, 0.72f);
     [SerializeField] private Color visibleDoorColor    = new Color(0.95f, 0.78f, 0.36f, 0.95f);
     [SerializeField] private Color exploredDoorColor   = new Color(0.46f, 0.36f, 0.18f, 0.78f);
-    [SerializeField] private Color stairColor          = new Color(0.95f, 0.92f, 0.38f, 1f);
-    [SerializeField] private Color playerColor         = new Color(0.2f,  1f,    0.65f, 1f);
+    [SerializeField] private Color stairColor          = new Color(0.05f, 0.16f, 0.55f, 1f);
+    [SerializeField] private Color playerColor         = new Color(0f,    0.32f, 0.12f, 1f);
     [SerializeField] private Color transparentColor    = new Color(0f,    0f,    0f,    0f);
 
     // ── Dungeon mode state ────────────────────────────────────────────
@@ -43,6 +44,8 @@ public class MinimapController : MonoBehaviour
     private MinimapMode _mode = MinimapMode.Dungeon;
     private string      _pendingTilemapLocationId;
     private RectTransform _minimapRect;
+    private Canvas        _rootCanvas;
+    private Vector2       _playerMarkerBaseSize;
     private Vector2Int  _lastPlayerGrid;
     private bool        _hasLastPlayerGrid;
     private bool        _warnedMissingReferences;
@@ -58,6 +61,12 @@ public class MinimapController : MonoBehaviour
         _minimapRect = minimapImage != null
             ? minimapImage.rectTransform
             : transform as RectTransform;
+        _rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
+        if (playerMarker != null)
+        {
+            _playerMarkerBaseSize = playerMarker.sizeDelta;
+            SnapPlayerMarkerSize();
+        }
 
         if (playerMarkerGraphic != null)
             playerMarkerGraphic.color = playerColor;
@@ -67,6 +76,7 @@ public class MinimapController : MonoBehaviour
 
     private void OnEnable()
     {
+        SnapPlayerMarkerSize();
         SubscribeEvents();
         StartInitialInitializeRoutine();
     }
@@ -333,8 +343,29 @@ public class MinimapController : MonoBehaviour
                 if (!fogOfWar.IsExploredCell(cell))
                     continue;
 
-                FillDungeonCellPixels(col, row, color);
+                FillDungeonStairMarkerPixels(col, row, color);
             }
+        }
+    }
+
+    private void FillDungeonStairMarkerPixels(int gridX, int gridY, Color32 color)
+    {
+        int textureWidth = _texture.width;
+        int textureHeight = _texture.height;
+        int startX = gridX * pixelsPerCell - stairMarkerPixelPadding;
+        int startY = (_data.MapHeight - 1 - gridY) * pixelsPerCell - stairMarkerPixelPadding;
+        int size = pixelsPerCell + stairMarkerPixelPadding * 2;
+
+        int minX = Mathf.Max(0, startX);
+        int minY = Mathf.Max(0, startY);
+        int maxX = Mathf.Min(textureWidth, startX + size);
+        int maxY = Mathf.Min(textureHeight, startY + size);
+
+        for (int y = minY; y < maxY; y++)
+        {
+            int pixelRow = y * textureWidth;
+            for (int x = minX; x < maxX; x++)
+                _pixels[pixelRow + x] = color;
         }
     }
 
@@ -379,7 +410,7 @@ public class MinimapController : MonoBehaviour
         float normalizedY = (grid.y + 0.5f) / _data.MapHeight;
         float x = normalizedX * rect.width  - _minimapRect.pivot.x * rect.width;
         float y = (1f - normalizedY) * rect.height - _minimapRect.pivot.y * rect.height;
-        playerMarker.anchoredPosition = new Vector2(x, y);
+        playerMarker.anchoredPosition = SnapMarkerPosition(x, y);
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -549,7 +580,37 @@ public class MinimapController : MonoBehaviour
         float x = normalizedX * rect.width  - _minimapRect.pivot.x * rect.width;
         float y = normalizedY * rect.height - _minimapRect.pivot.y * rect.height; // no flip: Tilemap Y↑ = UI Y↑
 
-        playerMarker.anchoredPosition = new Vector2(x, y);
+        playerMarker.anchoredPosition = SnapMarkerPosition(x, y);
+    }
+
+    private Vector2 SnapMarkerPosition(float x, float y)
+    {
+        float scale = GetCanvasScaleFactor();
+        return new Vector2(
+            Mathf.Round(x * scale) / scale,
+            Mathf.Round(y * scale) / scale);
+    }
+
+    private void SnapPlayerMarkerSize()
+    {
+        if (playerMarker == null)
+            return;
+
+        float scale = GetCanvasScaleFactor();
+        playerMarker.sizeDelta = new Vector2(
+            Mathf.Max(1f, Mathf.Round(_playerMarkerBaseSize.x * scale)) / scale,
+            Mathf.Max(1f, Mathf.Round(_playerMarkerBaseSize.y * scale)) / scale);
+    }
+
+    private float GetCanvasScaleFactor()
+    {
+        if (_rootCanvas == null)
+            _rootCanvas = GetComponentInParent<Canvas>()?.rootCanvas;
+
+        if (_rootCanvas == null || _rootCanvas.scaleFactor <= 0f)
+            return 1f;
+
+        return _rootCanvas.scaleFactor;
     }
 
     private static BoundsInt UnionBounds(BoundsInt a, BoundsInt b)
