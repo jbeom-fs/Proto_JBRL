@@ -17,6 +17,8 @@ using UnityEngine;
 public class DungeonManager : MonoBehaviour
 {
     private static readonly bool AllowForcedGarbageCollectionDuringFloorTransition = false;
+    private const int MIN_FLOOR = 1;
+    private const int MAX_FLOOR = 100;
     public static DungeonManager Instance { get; private set; }
 
     // ── Inspector 연결 ───────────────────────────────────────────────
@@ -39,7 +41,7 @@ public class DungeonManager : MonoBehaviour
     public long seed = 0;
 
     [Tooltip("현재 층수 (1 ~ maxFloor)")]
-    [Range(1, 100)]
+    [Range(MIN_FLOOR, MAX_FLOOR)]
     public int floor = 1;
 
     [Tooltip("맵 너비 (타일 수)")]
@@ -130,6 +132,9 @@ public class DungeonManager : MonoBehaviour
     public RoomRegistry  Registry => _registry;
     public bool IsTransitioning => _isTransitioning;
     public RoomInfo? CurrentDoorRoom => _currentDoorRoom;
+    public int CurrentFloor => floor;
+    public int MinFloor => MIN_FLOOR;
+    public int MaxFloor => MAX_FLOOR;
 
     private void Awake()
     {
@@ -191,8 +196,33 @@ public class DungeonManager : MonoBehaviour
         Debug.Log($"[DungeonManager] New Seed: {seed}");
     }
 
-    public void NextFloor() { if (!_isTransitioning) StartCoroutine(FloorTransition(floor + 1)); }
-    public void PrevFloor() { if (!_isTransitioning) StartCoroutine(FloorTransition(floor - 1)); }
+    public void NextFloor() { TryTransitionToFloor(floor + 1, out _); }
+    public void PrevFloor() { TryTransitionToFloor(floor - 1, out _); }
+
+    public bool TryTransitionToFloor(int targetFloor, out string message)
+    {
+        if (_isTransitioning)
+        {
+            message = "Floor transition is already in progress.";
+            return false;
+        }
+
+        if (targetFloor < MIN_FLOOR || targetFloor > MAX_FLOOR)
+        {
+            message = "Invalid floor: floor must be between " + MIN_FLOOR + " and " + MAX_FLOOR + ".";
+            return false;
+        }
+
+        if (targetFloor == floor)
+        {
+            message = "Already on floor " + floor + ".";
+            return false;
+        }
+
+        StartCoroutine(FloorTransition(targetFloor));
+        message = "Moving to floor " + targetFloor + ".";
+        return true;
+    }
 
     public void GenerateAt(long dungeonSeed, int dungeonFloor)
     {
@@ -222,7 +252,7 @@ public class DungeonManager : MonoBehaviour
         DropItemSpawner.Instance?.ClearAllActiveDrops();
 
         int prev = floor;
-        floor = Mathf.Clamp(targetFloor, 1, 100);
+        floor = targetFloor;
         double stageStart = Time.realtimeSinceStartupAsDouble;
 
         // 1. 로딩 화면 표시
@@ -553,7 +583,7 @@ public class DungeonManager : MonoBehaviour
         s.ExtraPathLengthPenaltyWeight = extraPathLengthPenaltyWeight;
         s.ExtraCenterDistancePenaltyDivisor = extraCenterDistancePenaltyDivisor;
         s.Floor         = floor;
-        s.MaxFloor      = 100;
+        s.MaxFloor      = MAX_FLOOR;
         s.Seed          = (int)(seed % int.MaxValue);
         return s;
     }

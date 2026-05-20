@@ -38,6 +38,7 @@ public sealed class DeveloperConsoleService
         _commands["echo"] = ExecuteEcho;
         _commands["tp"] = ExecuteTeleport;
         _commands["dooropen"] = ExecuteDoorOpen;
+        _commands["floor"] = ExecuteFloor;
     }
 
     private DeveloperConsoleCommandResult ExecuteHelp(DeveloperConsoleCommandContext context, string arguments)
@@ -54,7 +55,10 @@ public sealed class DeveloperConsoleService
         }
 
         return DeveloperConsoleCommandResult.Success(
-            "Commands: " + builder + "\nUsage: /TP [destinationId]\nUsage: /DoorOpen [doorType]");
+            "Commands: " + builder +
+            "\nUsage: /TP [destinationId]" +
+            "\nUsage: /DoorOpen [doorType]" +
+            "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
     private DeveloperConsoleCommandResult ExecuteClear(DeveloperConsoleCommandContext context, string arguments)
@@ -126,4 +130,119 @@ public sealed class DeveloperConsoleService
                string.Equals(doorType, "basic", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(doorType, "default", StringComparison.OrdinalIgnoreCase);
     }
+
+    private DeveloperConsoleCommandResult ExecuteFloor(DeveloperConsoleCommandContext context, string arguments)
+    {
+        if (context.DungeonManager == null)
+            return DeveloperConsoleCommandResult.Error("DungeonManager is not assigned.");
+
+        string subCommand;
+        string valueText;
+        if (!TryReadFloorArguments(arguments, out subCommand, out valueText))
+            return DeveloperConsoleCommandResult.Error(GetFloorUsage());
+
+        if (string.Equals(subCommand, "add", StringComparison.OrdinalIgnoreCase))
+            return ExecuteFloorAdd(context.DungeonManager, valueText);
+
+        if (string.Equals(subCommand, "sub", StringComparison.OrdinalIgnoreCase))
+            return ExecuteFloorSub(context.DungeonManager, valueText);
+
+        if (string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase))
+            return ExecuteFloorSet(context.DungeonManager, valueText);
+
+        return DeveloperConsoleCommandResult.Error(GetFloorUsage());
+    }
+
+    private DeveloperConsoleCommandResult ExecuteFloorAdd(DungeonManager dungeonManager, string valueText)
+    {
+        if (!TryParsePositiveOptionalCount(valueText, out int count))
+            return DeveloperConsoleCommandResult.Error("Usage: /floor add [positiveCount]");
+
+        if (count > dungeonManager.MaxFloor - dungeonManager.CurrentFloor)
+            return DeveloperConsoleCommandResult.Error("Invalid floor: target floor exceeds max floor.");
+
+        int targetFloor = dungeonManager.CurrentFloor + count;
+        return ExecuteFloorTransition(dungeonManager, targetFloor);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteFloorSub(DungeonManager dungeonManager, string valueText)
+    {
+        if (!TryParsePositiveOptionalCount(valueText, out int count))
+            return DeveloperConsoleCommandResult.Error("Usage: /floor sub [positiveCount]");
+
+        if (count > dungeonManager.CurrentFloor - dungeonManager.MinFloor)
+            return DeveloperConsoleCommandResult.Error("Invalid floor: target floor must be 1 or higher.");
+
+        int targetFloor = dungeonManager.CurrentFloor - count;
+        return ExecuteFloorTransition(dungeonManager, targetFloor);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteFloorSet(DungeonManager dungeonManager, string valueText)
+    {
+        if (string.IsNullOrWhiteSpace(valueText))
+            return DeveloperConsoleCommandResult.Error("Usage: /floor set [floor]");
+
+        if (!TryParsePositiveInt(valueText, out int targetFloor))
+            return DeveloperConsoleCommandResult.Error("Usage: /floor set [floor]");
+
+        if (targetFloor < dungeonManager.MinFloor || targetFloor > dungeonManager.MaxFloor)
+        {
+            return DeveloperConsoleCommandResult.Error(
+                "Invalid floor: floor must be between " + dungeonManager.MinFloor + " and " + dungeonManager.MaxFloor + ".");
+        }
+
+        return ExecuteFloorTransition(dungeonManager, targetFloor);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager dungeonManager, int targetFloor)
+    {
+        if (targetFloor == dungeonManager.CurrentFloor)
+            return DeveloperConsoleCommandResult.Success("Already on floor " + dungeonManager.CurrentFloor + ".");
+
+        if (!dungeonManager.TryTransitionToFloor(targetFloor, out string message))
+            return DeveloperConsoleCommandResult.Error(message);
+
+        return DeveloperConsoleCommandResult.Success(message);
+    }
+
+    private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
+    {
+        subCommand = string.Empty;
+        valueText = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return false;
+
+        string trimmed = arguments.Trim();
+        int separatorIndex = trimmed.IndexOf(' ');
+        subCommand = separatorIndex >= 0 ? trimmed.Substring(0, separatorIndex) : trimmed;
+        valueText = separatorIndex >= 0 ? trimmed.Substring(separatorIndex + 1).Trim() : string.Empty;
+
+        if (valueText.IndexOf(' ') >= 0)
+            return false;
+
+        return !string.IsNullOrWhiteSpace(subCommand);
+    }
+
+    private static bool TryParsePositiveOptionalCount(string valueText, out int count)
+    {
+        if (string.IsNullOrWhiteSpace(valueText))
+        {
+            count = 1;
+            return true;
+        }
+
+        return TryParsePositiveInt(valueText, out count);
+    }
+
+    private static bool TryParsePositiveInt(string valueText, out int value)
+    {
+        if (!int.TryParse(valueText, out value))
+            return false;
+
+        return value > 0;
+    }
+
+    private static string GetFloorUsage()
+        => "Usage: /floor add [count] | /floor sub [count] | /floor set [floor]";
 }
