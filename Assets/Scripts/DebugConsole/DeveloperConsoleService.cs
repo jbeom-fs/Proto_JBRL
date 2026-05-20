@@ -13,6 +13,15 @@ public sealed class DeveloperConsoleService
         RegisterDefaults();
     }
 
+    public void GetCommandNames(List<string> output)
+    {
+        if (output == null)
+            return;
+
+        foreach (string name in _commands.Keys)
+            output.Add(name);
+    }
+
     public DeveloperConsoleCommandResult Execute(string input, DeveloperConsoleCommandContext context)
     {
         if (string.IsNullOrWhiteSpace(input))

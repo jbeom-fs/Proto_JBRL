@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -24,22 +25,35 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
     [SerializeField] private PlayerController player;
     [SerializeField] private DungeonManager dungeonManager;
+    [SerializeField] private GameObject autocompletePanel;
+    [SerializeField] private TMP_Text autocompleteText;
 
     private readonly DeveloperConsoleService _service = new DeveloperConsoleService();
     private readonly List<string> _logLines = new List<string>(128);
     private readonly List<string> _commandHistory = new List<string>(64);
     private readonly StringBuilder _logBuilder = new StringBuilder(4096);
+    private readonly List<string> _autocompleteSuggestions = new List<string>(MaxAutocompleteSuggestions);
+    private readonly List<string> _commandNamesBuffer = new List<string>(16);
+    private readonly StringBuilder _autocompleteBuilder = new StringBuilder(256);
+
     private int _historyIndex;
     private string _editingCommandBeforeHistory = string.Empty;
     private bool _isBrowsingHistory;
+    private int _autocompleteIndex;
+    private bool _isCyclingAutocomplete;
+    private bool _suppressAutocompleteRefresh;
     private bool _warnedMissingPauseController;
     private bool _warnedMissingRoot;
     private bool _warnedMissingInputField;
+
+    private const int MaxAutocompleteSuggestions = 5;
 
     public static DeveloperConsoleUI Active => s_Active;
     public static bool IsOpen => s_Active != null && s_Active.IsConsoleOpen;
 
     public bool IsConsoleOpen => root != null && root.activeSelf;
+
+    private bool IsAutocompleteVisible => autocompletePanel != null && autocompletePanel.activeSelf;
 
     private void Awake()
     {
@@ -58,13 +72,19 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     private void OnEnable()
     {
         if (inputField != null)
+        {
             inputField.onSubmit.AddListener(HandleSubmit);
+            inputField.onValueChanged.AddListener(OnInputValueChanged);
+        }
     }
 
     private void OnDisable()
     {
         if (inputField != null)
+        {
             inputField.onSubmit.RemoveListener(HandleSubmit);
+            inputField.onValueChanged.RemoveListener(OnInputValueChanged);
+        }
 
         if (IsConsoleOpen)
             Close();
@@ -85,11 +105,25 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
             return;
         }
 
+        if (!IsConsoleOpen)
+            return;
+
+        if (IsConsoleInputFocused() && keyboard.tabKey.wasPressedThisFrame)
+        {
+            HandleAutocompleteTab();
+            return;
+        }
+
         if (HandleHistoryNavigation(keyboard))
             return;
 
-        if (closeWithEscape && IsConsoleOpen && keyboard.escapeKey.wasPressedThisFrame)
-            Close();
+        if (closeWithEscape && keyboard.escapeKey.wasPressedThisFrame)
+        {
+            if (IsAutocompleteVisible)
+                HideAutocomplete();
+            else
+                Close();
+        }
     }
 
     public void Toggle()
@@ -109,12 +143,15 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         ResolvePauseController()?.Pause(GamePauseSource.DeveloperConsole);
 
         ResetHistoryNavigation();
+        HideAutocomplete();
         inputField.text = string.Empty;
         FocusInputField();
     }
 
     public void Close()
     {
+        HideAutocomplete();
+
         if (inputField != null)
         {
             inputField.DeactivateInputField();
@@ -145,6 +182,122 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
             AppendCommandResult(commandText, result);
 
         FocusInputField();
+    }
+
+    private void OnInputValueChanged(string value)
+    {
+        if (_suppressAutocompleteRefresh)
+            return;
+
+        _isCyclingAutocomplete = false;
+        _autocompleteIndex = 0;
+        RefreshAutocomplete(value);
+    }
+
+    private void RefreshAutocomplete(string input)
+    {
+        _autocompleteSuggestions.Clear();
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            SetAutocompleteVisible(false);
+            return;
+        }
+
+        string trimmed = input.TrimStart();
+        if (trimmed.IndexOf(' ') >= 0)
+        {
+            SetAutocompleteVisible(false);
+            return;
+        }
+
+        string matchText = trimmed;
+        if (matchText.Length > 0 && matchText[0] == '/')
+            matchText = matchText.Substring(1);
+
+        _commandNamesBuffer.Clear();
+        _service.GetCommandNames(_commandNamesBuffer);
+
+        for (int i = 0; i < _commandNamesBuffer.Count && _autocompleteSuggestions.Count < MaxAutocompleteSuggestions; i++)
+        {
+            if (string.IsNullOrEmpty(matchText) ||
+                _commandNamesBuffer[i].StartsWith(matchText, StringComparison.OrdinalIgnoreCase))
+            {
+                _autocompleteSuggestions.Add("/" + _commandNamesBuffer[i]);
+            }
+        }
+
+        if (_autocompleteSuggestions.Count == 0)
+        {
+            SetAutocompleteVisible(false);
+            return;
+        }
+
+        UpdateAutocompleteText();
+        SetAutocompleteVisible(true);
+    }
+
+    private void UpdateAutocompleteText()
+    {
+        if (autocompleteText == null)
+            return;
+
+        _autocompleteBuilder.Length = 0;
+        _autocompleteBuilder.Append("Suggestions:");
+        for (int i = 0; i < _autocompleteSuggestions.Count; i++)
+        {
+            _autocompleteBuilder.Append('\n');
+            _autocompleteBuilder.Append(i + 1);
+            _autocompleteBuilder.Append(". ");
+            _autocompleteBuilder.Append(_autocompleteSuggestions[i]);
+        }
+
+        autocompleteText.text = _autocompleteBuilder.ToString();
+    }
+
+    private void HandleAutocompleteTab()
+    {
+        if (_autocompleteSuggestions.Count == 0)
+            return;
+
+        if (!_isCyclingAutocomplete)
+        {
+            _isCyclingAutocomplete = true;
+            _autocompleteIndex = 0;
+        }
+        else
+        {
+            _autocompleteIndex = (_autocompleteIndex + 1) % _autocompleteSuggestions.Count;
+        }
+
+        string completed = _autocompleteSuggestions[_autocompleteIndex] + " ";
+
+        _suppressAutocompleteRefresh = true;
+        inputField.text = completed;
+        _suppressAutocompleteRefresh = false;
+
+        int caretPos = completed.Length;
+        inputField.caretPosition = caretPos;
+        inputField.selectionAnchorPosition = caretPos;
+        inputField.selectionFocusPosition = caretPos;
+        inputField.ActivateInputField();
+    }
+
+    private void SetAutocompleteVisible(bool visible)
+    {
+        if (autocompletePanel == null)
+            return;
+
+        if (autocompletePanel.activeSelf != visible)
+            autocompletePanel.SetActive(visible);
+    }
+
+    private void HideAutocomplete()
+    {
+        _autocompleteSuggestions.Clear();
+        _autocompleteIndex = 0;
+        _isCyclingAutocomplete = false;
+        SetAutocompleteVisible(false);
     }
 
     private DeveloperConsoleCommandContext CreateCommandContext()
