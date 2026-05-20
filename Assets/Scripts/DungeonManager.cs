@@ -255,8 +255,7 @@ public class DungeonManager : MonoBehaviour
             RuntimePerfLogger.MarkEvent("floor_transition_begin",
                 "from=" + floor + " target=" + targetFloor);
 
-        ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.FloorTransition);
-        DropItemSpawner.Instance?.ClearAllActiveDrops();
+        CleanupDungeonRuntimeObjectsForFloorTransition();
 
         int prev = floor;
         floor = targetFloor;
@@ -468,6 +467,16 @@ public class DungeonManager : MonoBehaviour
             return;
 
         spawner.ClearPendingRoomStart();
+    }
+
+    private void CleanupDungeonRuntimeObjectsForFloorTransition()
+    {
+        if (TryGetRoomSpawner(out RoomSpawner spawner))
+            spawner.ClearRuntimeEncounterState();
+        EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
+        ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.FloorTransition);
+        if (DropItemSpawner.Instance != null)
+            DropItemSpawner.Instance.ClearAllActiveDrops();
     }
 
     private void ResetRoomEncounterState()

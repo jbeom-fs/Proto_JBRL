@@ -434,9 +434,9 @@ public class DungeonTilemapRenderer : MonoBehaviour
         return openedCount;
     }
 
-    public bool TryOpenEliteDoorWithKey(PlayerEliteKeyInventory keyInventory)
+    public bool TryOpenEliteDoorWithKey(PlayerInventory inventory, ItemData keyItem)
     {
-        if (keyInventory == null || !keyInventory.HasEliteKey)
+        if (inventory == null || keyItem == null || !inventory.HasItem(keyItem, 1))
             return false;
         if (_data == null || doorTilemap == null || _eliteDoorPositions.Count == 0)
             return false;
@@ -458,7 +458,7 @@ public class DungeonTilemapRenderer : MonoBehaviour
         if (!OpenEliteDoorAt(touchedDoor))
             return false;
 
-        keyInventory.TryConsumeEliteKey();
+        inventory.RemoveItem(keyItem, 1);
         return true;
     }
 

@@ -19,6 +19,7 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody2D))]
 [RequireComponent(typeof(CircleCollider2D))]
 [RequireComponent(typeof(PlayerInputReader))]
+[RequireComponent(typeof(PlayerInventory))]
 public class PlayerController : MonoBehaviour
 {
     public static PlayerController Active { get; private set; }
@@ -66,7 +67,8 @@ public class PlayerController : MonoBehaviour
     private CircleCollider2D _circleCollider;
     private PlayerCombatController _combat;
     private PlayerDashController _dashController;
-    private PlayerEliteKeyInventory _eliteKeyInventory;
+    private PlayerInventory _inventory;
+    private bool _warnedMissingEliteKeyItem;
     private Vector3 _lastSafePosition;
 
     // ══════════════════════════════════════════════════════════════
@@ -88,6 +90,8 @@ public class PlayerController : MonoBehaviour
 #endif
             Active = this;
         }
+
+        _inventory = GetComponent<PlayerInventory>();
     }
 
     private void Start()
@@ -97,7 +101,6 @@ public class PlayerController : MonoBehaviour
         _inputReader = GetComponent<PlayerInputReader>();
         _combat = GetComponent<PlayerCombatController>();
         _dashController = GetComponent<PlayerDashController>();
-        _eliteKeyInventory = GetComponent<PlayerEliteKeyInventory>();
         if (_inputReader == null) { Debug.LogError("[PlayerController] PlayerInputReader 없음"); enabled = false; return; }
 
         if (dungeonManager == null) { Debug.LogError("[PlayerController] DungeonManager 없음"); enabled = false; return; }
@@ -141,7 +144,7 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void OnFloorChangedHandler(int prevFloor, int newFloor)
     {
-        _eliteKeyInventory?.ResetEliteKey();
+        ClearEliteKey();
         SpawnAtStart();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("player_spawned",
@@ -252,10 +255,27 @@ public class PlayerController : MonoBehaviour
 
     private void TryOpenEliteDoorOnContact()
     {
-        if (_eliteKeyInventory == null || dungeonManager == null || dungeonManager.dungeonRenderer == null)
+        if (_inventory == null || dungeonManager == null || dungeonManager.dungeonRenderer == null)
             return;
 
-        dungeonManager.dungeonRenderer.TryOpenEliteDoorWithKey(_eliteKeyInventory);
+        if (!_inventory.TryGetDatabaseItem(DeterministicSeedUtility.EliteKeyDomain, out ItemData eliteKeyItem))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!_warnedMissingEliteKeyItem)
+            {
+                Debug.LogWarning("[PlayerController] Elite Key item is missing from PlayerInventory database.", this);
+                _warnedMissingEliteKeyItem = true;
+            }
+#endif
+            return;
+        }
+
+        dungeonManager.dungeonRenderer.TryOpenEliteDoorWithKey(_inventory, eliteKeyItem);
+    }
+
+    public void ClearEliteKey()
+    {
+        _inventory?.RemoveAllByCode(DeterministicSeedUtility.EliteKeyDomain);
     }
 
     private void LateUpdate()

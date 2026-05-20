@@ -4,13 +4,12 @@ public sealed class DroppedItem : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Collider2D pickupCollider;
-    [SerializeField] private string eliteKeyItemCode = "elite_key";
     [SerializeField] private string sortingLayerName = "Default";
     [SerializeField] private int sortingOrder = 5;
 
+    private ItemData _itemData;
     private string _itemCode;
     private int _amount;
-    private ItemType _itemType;
     private bool _initialized;
 
     public void Initialize(ItemData itemData, int amount)
@@ -21,9 +20,9 @@ public sealed class DroppedItem : MonoBehaviour
             return;
         }
 
+        _itemData = itemData;
         _itemCode = itemData.ItemCode;
         _amount = Mathf.Max(1, amount);
-        _itemType = itemData.ItemType;
         _initialized = true;
 
         if (spriteRenderer != null)
@@ -50,14 +49,13 @@ public sealed class DroppedItem : MonoBehaviour
         if (!_initialized)
             return;
 
-        if (!other.TryGetComponent<PlayerEliteKeyInventory>(out var keyInventory))
+        if (!other.TryGetComponent<PlayerInventory>(out var inventory))
             return;
 
-        if (_itemType == ItemType.Key && _itemCode == eliteKeyItemCode)
-        {
-            keyInventory.GrantEliteKey();
-            DropItemSpawner.Instance?.Unregister(this);
-            Destroy(gameObject);
-        }
+        if (!inventory.AddItem(_itemData, _amount))
+            return;
+
+        DropItemSpawner.Instance?.Unregister(this);
+        Destroy(gameObject);
     }
 }

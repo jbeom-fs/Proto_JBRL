@@ -134,7 +134,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _holdsEliteKey = true;
         if (_inventory == null)
             _inventory = GetComponent<EnemyInventory>();
-        _inventory?.AddDropItem("elite_key");
+        _inventory?.AddDropItem(DeterministicSeedUtility.EliteKeyDomain);
     }
 
     public void ClearEliteKeyHolder()

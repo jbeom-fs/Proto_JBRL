@@ -186,8 +186,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
     {
         if (targetPlayer == null) return;
 
-        PlayerEliteKeyInventory inventory = targetPlayer.GetComponent<PlayerEliteKeyInventory>();
-        inventory?.ResetEliteKey();
+        targetPlayer.ClearEliteKey();
     }
 
     private void ApplyLocationRoots(GameLocationType locationType)

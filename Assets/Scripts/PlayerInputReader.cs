@@ -14,7 +14,7 @@ public class PlayerInputReader : MonoBehaviour
 
     public bool WasStairPressed => InteractConfirmPressedThisFrame;
     public bool IsGamePaused => GamePauseController.IsPaused;
-    public bool IsGameplayInputBlocked => GamePauseController.IsPaused || DeveloperConsoleUI.IsOpen;
+    public bool IsGameplayInputBlocked => GamePauseController.IsPaused || DeveloperConsoleUI.IsOpen || InventoryUIController.IsOpen;
 
     private readonly bool[] _wasSkillPressed = new bool[4];
     private bool _warnedMissingSettings;
@@ -55,13 +55,14 @@ public class PlayerInputReader : MonoBehaviour
             return;
         }
 
+        PlayerInputKeySettings settings = ResolveSettings();
+        InventoryPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.inventory : Key.I);
+
         if (IsGameplayInputBlocked)
         {
-            ClearAllFlags();
+            ClearGameplayFlags();
             return;
         }
-
-        PlayerInputKeySettings settings = ResolveSettings();
 
         float x = 0f;
         float y = 0f;
@@ -72,7 +73,6 @@ public class PlayerInputReader : MonoBehaviour
         MoveInput = new Vector2(x, y);
 
         InteractConfirmPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.interactConfirm : Key.Z);
-        InventoryPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.inventory : Key.I);
         WasBasicAttackPressed = WasPressedThisFrame(keyboard, settings != null ? settings.basicAttack : Key.Space);
 
         for (int i = 0; i < _wasSkillPressed.Length; i++)
@@ -132,9 +132,14 @@ public class PlayerInputReader : MonoBehaviour
 
     private void ClearAllFlags()
     {
+        ClearGameplayFlags();
+        InventoryPressedThisFrame = false;
+    }
+
+    private void ClearGameplayFlags()
+    {
         MoveInput = Vector2.zero;
         InteractConfirmPressedThisFrame = false;
-        InventoryPressedThisFrame = false;
         WasBasicAttackPressed = false;
         _wasSkillPressed[0] = _wasSkillPressed[1] = _wasSkillPressed[2] = _wasSkillPressed[3] = false;
     }
