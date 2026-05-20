@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Text;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -9,13 +12,17 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     private static DeveloperConsoleUI s_Active;
 
     [SerializeField] private GameObject root;
-    [SerializeField] private InputField inputField;
-    [SerializeField] private Text logText;
+    [SerializeField] private TMP_InputField inputField;
+    [SerializeField] private TMP_Text logText;
+    [SerializeField] private ScrollRect logScrollRect;
     [SerializeField] private GamePauseController pauseController;
     [SerializeField] private Key toggleKey = Key.Backquote;
     [SerializeField] private bool closeWithEscape = true;
+    [SerializeField] private int maxLogLines = 120;
 
     private readonly DeveloperConsoleService _service = new DeveloperConsoleService();
+    private readonly List<string> _logLines = new List<string>(128);
+    private readonly StringBuilder _logBuilder = new StringBuilder(4096);
     private bool _warnedMissingPauseController;
     private bool _warnedMissingRoot;
     private bool _warnedMissingInputField;
@@ -117,27 +124,26 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         inputField.text = string.Empty;
 
         if (result.Handled)
-            AppendResult(commandText, result);
+            AppendCommandResult(commandText, result);
 
         FocusInputField();
     }
 
-    private void AppendResult(string commandText, DeveloperConsoleCommandResult result)
+    private void AppendCommandResult(string commandText, DeveloperConsoleCommandResult result)
     {
         if (result.ClearLog)
         {
-            if (logText != null)
-                logText.text = string.Empty;
-
+            ClearLog();
             Debug.Log("[DeveloperConsole] " + result.Message, this);
             return;
         }
 
-        string prefix = result.IsError ? "Error: " : string.Empty;
-        string line = "> " + commandText + "\n" + prefix + result.Message;
+        AppendLogLine("> " + commandText);
+        if (!string.IsNullOrEmpty(result.Message))
+            AppendLogLine((result.IsError ? "Error: " : string.Empty) + result.Message);
 
-        if (logText != null)
-            logText.text = line;
+        RefreshLogText();
+        ScrollLogToBottom();
 
         if (result.IsError)
             Debug.LogWarning("[DeveloperConsole] " + result.Message, this);
@@ -152,6 +158,60 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
 
         inputField.Select();
         inputField.ActivateInputField();
+    }
+
+    private void AppendLogLine(string line)
+    {
+        _logLines.Add(line);
+        TrimLogLines();
+    }
+
+    private void TrimLogLines()
+    {
+        int limit = Mathf.Max(1, maxLogLines);
+        int overflow = _logLines.Count - limit;
+        if (overflow <= 0)
+            return;
+
+        _logLines.RemoveRange(0, overflow);
+    }
+
+    private void ClearLog()
+    {
+        _logLines.Clear();
+        _logBuilder.Length = 0;
+
+        if (logText != null)
+            logText.text = string.Empty;
+
+        ScrollLogToBottom();
+    }
+
+    private void RefreshLogText()
+    {
+        if (logText == null)
+            return;
+
+        _logBuilder.Length = 0;
+        for (int i = 0; i < _logLines.Count; i++)
+        {
+            if (i > 0)
+                _logBuilder.Append('\n');
+
+            _logBuilder.Append(_logLines[i]);
+        }
+
+        logText.text = _logBuilder.ToString();
+    }
+
+    private void ScrollLogToBottom()
+    {
+        if (logScrollRect == null)
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        logScrollRect.verticalNormalizedPosition = 0f;
+        Canvas.ForceUpdateCanvases();
     }
 
     private GamePauseController ResolvePauseController()
