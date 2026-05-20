@@ -160,8 +160,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     private void StartNewDungeonRun(PlayerController targetPlayer)
     {
-        ResetEliteKey(targetPlayer);
-
         if (generateNewDungeonOnEnter && resetFloorOnNewDungeonRun)
             dungeonManager.floor = 1;
 
@@ -175,7 +173,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     private void CleanupDungeonRuntime()
     {
-        ResetEliteKey(player);
         if (player != null)
         {
             PlayerInventory inv = player.Inventory;
@@ -186,13 +183,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
         DropItemSpawner.Instance?.ClearAllActiveDrops();
         roomSpawner?.ClearRuntimeEncounterState();
-    }
-
-    private static void ResetEliteKey(PlayerController targetPlayer)
-    {
-        if (targetPlayer == null) return;
-
-        targetPlayer.ClearEliteKey();
     }
 
     private void ApplyLocationRoots(GameLocationType locationType)

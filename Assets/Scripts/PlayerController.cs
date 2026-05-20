@@ -144,7 +144,6 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void OnFloorChangedHandler(int prevFloor, int newFloor)
     {
-        ClearEliteKey();
         SpawnAtStart();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("player_spawned",
@@ -274,11 +273,6 @@ public class PlayerController : MonoBehaviour
     }
 
     public PlayerInventory Inventory => _inventory;
-
-    public void ClearEliteKey()
-    {
-        _inventory?.RemoveAllByCode(DeterministicSeedUtility.EliteKeyDomain);
-    }
 
     private void LateUpdate()
     {
