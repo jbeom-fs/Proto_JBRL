@@ -19,6 +19,10 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     [SerializeField] private Key toggleKey = Key.Backquote;
     [SerializeField] private bool closeWithEscape = true;
     [SerializeField] private int maxLogLines = 120;
+    [SerializeField] private TownDungeonTransitionManager transitionManager;
+    [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
+    [SerializeField] private PlayerController player;
+    [SerializeField] private DungeonManager dungeonManager;
 
     private readonly DeveloperConsoleService _service = new DeveloperConsoleService();
     private readonly List<string> _logLines = new List<string>(128);
@@ -120,7 +124,7 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         if (!IsConsoleOpen)
             return;
 
-        DeveloperConsoleCommandResult result = _service.Execute(commandText, new DeveloperConsoleCommandContext(this));
+        DeveloperConsoleCommandResult result = _service.Execute(commandText, CreateCommandContext());
         inputField.text = string.Empty;
 
         if (result.Handled)
@@ -128,6 +132,14 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
 
         FocusInputField();
     }
+
+    private DeveloperConsoleCommandContext CreateCommandContext()
+        => new DeveloperConsoleCommandContext(
+            this,
+            transitionManager,
+            teleportDestinationDatabase,
+            player,
+            dungeonManager);
 
     private void AppendCommandResult(string commandText, DeveloperConsoleCommandResult result)
     {

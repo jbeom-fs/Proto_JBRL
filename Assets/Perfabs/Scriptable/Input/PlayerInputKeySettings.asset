@@ -18,7 +18,6 @@ MonoBehaviour:
   right: 62
   interactConfirm: 40
   inventory: 23
-  openDoorDebug: 104
   basicAttack: 1
   skillSlot1: 31
   skillSlot2: 37

@@ -32,9 +32,6 @@ public class PlayerController : MonoBehaviour
     [Tooltip("이벤트 채널 — 방 진입 이벤트 발행")]
     public DungeonEventChannel eventChannel;
 
-    [Tooltip("문 컨트롤러 — F10키로 문 열기 호출")]
-    public DoorController doorController;
-
     [Header("Movement")]
     [Tooltip("초당 이동 속도 (타일 단위)")]
     public float moveSpeed = 5f;
@@ -107,8 +104,6 @@ public class PlayerController : MonoBehaviour
         if (eventChannel   == null) { Debug.LogError("[PlayerController] EventChannel 없음");  enabled = false; return; }
         if (dungeonManager.dungeonRenderer == null) { Debug.LogError("[PlayerController] DungeonTilemapRenderer 없음"); enabled = false; return; }
         if (dungeonManager.dungeonRenderer.tilemap == null) { Debug.LogError("[PlayerController] DungeonTilemapRenderer.tilemap 없음"); enabled = false; return; }
-        if (doorController == null)
-            Debug.LogWarning("[PlayerController] DoorController 없음 — 문 열기 입력이 동작하지 않습니다.");
 
         TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
         if (dungeonManager.Data == null && (locationManager == null || !locationManager.StartsInTown))
@@ -224,13 +219,6 @@ public class PlayerController : MonoBehaviour
         {
             if (ShouldUseDungeonSystems())
                 TryInteractStair();
-            return;
-        }
-
-        // f10키: 문 열기 — 입력 감지는 PlayerInputReader, 실행은 DoorController
-        if (_inputReader.WasOpenDoorPressed)
-        {
-            doorController?.OpenAllDoors();
             return;
         }
 

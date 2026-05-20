@@ -1,6 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
-
 public class TownDungeonTransitionManager : MonoBehaviour
 {
     public static TownDungeonTransitionManager Active { get; private set; }
@@ -27,7 +25,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
     [SerializeField] private bool generateNewDungeonOnEnter = true;
     [SerializeField] private bool resetFloorOnNewDungeonRun = true;
     [SerializeField] private bool disableCombatInTown = true;
-    [SerializeField] private bool enableDebugReturnKey = true;
 
     private bool _warnedMissingReferences;
     private bool _isChangingLocation;
@@ -57,16 +54,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
             TeleportPlayer(player, startDestinationId);
         else
             EnterLocationWithoutPoint(GameLocationType.Town);
-    }
-
-    private void Update()
-    {
-        if (!enableDebugReturnKey || !IsInDungeon)
-            return;
-
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && keyboard.tKey.wasPressedThisFrame)
-            TeleportPlayer(player, debugReturnDestinationId);
     }
 
     private void OnDestroy()

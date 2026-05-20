@@ -398,6 +398,33 @@ public class DungeonManager : MonoBehaviour
             eventChannel?.RaiseRoomDoorsOpened(openedRoom.Value);
     }
 
+    public int OpenDebugNormalDoors()
+    {
+        ClearPendingRoomStart();
+
+        if (dungeonRenderer == null)
+            return 0;
+
+        int openedCount = dungeonRenderer.OpenNormalDoors();
+        if (openedCount <= 0)
+            return 0;
+
+        RoomInfo? openedRoom = _currentDoorRoom;
+        _currentDoorRoom = null;
+        if (openedRoom.HasValue)
+            eventChannel?.RaiseRoomDoorsOpened(openedRoom.Value);
+
+        return openedCount;
+    }
+
+    public int OpenDebugEliteDoors()
+    {
+        if (dungeonRenderer == null)
+            return 0;
+
+        return dungeonRenderer.OpenAllEliteDoors();
+    }
+
     private void ClearPendingRoomStart()
     {
         if (!TryGetRoomSpawner(out RoomSpawner spawner))

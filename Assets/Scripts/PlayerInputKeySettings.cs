@@ -13,7 +13,6 @@ public sealed class PlayerInputKeySettings : ScriptableObject
     [Header("Actions")]
     public Key interactConfirm = Key.Z;
     public Key inventory = Key.I;
-    public Key openDoorDebug = Key.F10;
     public Key basicAttack = Key.Space;
 
     [Header("Skills")]
@@ -41,13 +40,13 @@ public sealed class PlayerInputKeySettings : ScriptableObject
         Key[] keys =
         {
             up, down, left, right,
-            interactConfirm, inventory, openDoorDebug, basicAttack,
+            interactConfirm, inventory, basicAttack,
             skillSlot1, skillSlot2, skillSlot3, skillSlot4,
         };
         string[] names =
         {
             nameof(up), nameof(down), nameof(left), nameof(right),
-            nameof(interactConfirm), nameof(inventory), nameof(openDoorDebug), nameof(basicAttack),
+            nameof(interactConfirm), nameof(inventory), nameof(basicAttack),
             nameof(skillSlot1), nameof(skillSlot2), nameof(skillSlot3), nameof(skillSlot4),
         };
 

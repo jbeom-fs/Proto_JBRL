@@ -10,11 +10,11 @@ public class PlayerInputReader : MonoBehaviour
     public Vector2 MoveInput { get; private set; }
     public bool InteractConfirmPressedThisFrame { get; private set; }
     public bool InventoryPressedThisFrame { get; private set; }
-    public bool WasOpenDoorPressed { get; private set; }
     public bool WasBasicAttackPressed { get; private set; }
 
     public bool WasStairPressed => InteractConfirmPressedThisFrame;
     public bool IsGamePaused => GamePauseController.IsPaused;
+    public bool IsGameplayInputBlocked => GamePauseController.IsPaused || DeveloperConsoleUI.IsOpen;
 
     private readonly bool[] _wasSkillPressed = new bool[4];
     private bool _warnedMissingSettings;
@@ -29,6 +29,9 @@ public class PlayerInputReader : MonoBehaviour
     {
         get
         {
+            if (IsGameplayInputBlocked)
+                return false;
+
             Keyboard keyboard = Keyboard.current;
             return keyboard != null && IsPressed(keyboard, GetBasicAttackKey());
         }
@@ -36,6 +39,9 @@ public class PlayerInputReader : MonoBehaviour
 
     public bool IsSkillHeld(int slot)
     {
+        if (IsGameplayInputBlocked)
+            return false;
+
         Keyboard keyboard = Keyboard.current;
         return keyboard != null && IsPressed(keyboard, GetSkillSlotKey(slot));
     }
@@ -44,6 +50,12 @@ public class PlayerInputReader : MonoBehaviour
     {
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null)
+        {
+            ClearAllFlags();
+            return;
+        }
+
+        if (IsGameplayInputBlocked)
         {
             ClearAllFlags();
             return;
@@ -61,7 +73,6 @@ public class PlayerInputReader : MonoBehaviour
 
         InteractConfirmPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.interactConfirm : Key.Z);
         InventoryPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.inventory : Key.I);
-        WasOpenDoorPressed = WasPressedThisFrame(keyboard, settings != null ? settings.openDoorDebug : Key.F10);
         WasBasicAttackPressed = WasPressedThisFrame(keyboard, settings != null ? settings.basicAttack : Key.Space);
 
         for (int i = 0; i < _wasSkillPressed.Length; i++)
@@ -124,7 +135,6 @@ public class PlayerInputReader : MonoBehaviour
         MoveInput = Vector2.zero;
         InteractConfirmPressedThisFrame = false;
         InventoryPressedThisFrame = false;
-        WasOpenDoorPressed = false;
         WasBasicAttackPressed = false;
         _wasSkillPressed[0] = _wasSkillPressed[1] = _wasSkillPressed[2] = _wasSkillPressed[3] = false;
     }

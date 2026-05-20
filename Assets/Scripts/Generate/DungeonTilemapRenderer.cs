@@ -353,9 +353,12 @@ public class DungeonTilemapRenderer : MonoBehaviour
     /// N번 SetColor 개별 호출 대신 SetTiles 1회 배치 호출.
     /// </summary>
     public bool OpenAllDoors()
+        => OpenNormalDoors() > 0;
+
+    public int OpenNormalDoors()
     {
         if (_data == null || doorTilemap == null || _closedDoorPositions.Count == 0)
-            return false;
+            return 0;
 
         double start = Time.realtimeSinceStartupAsDouble;
         int openedCount = _closedDoorPositions.Count;
@@ -388,7 +391,47 @@ public class DungeonTilemapRenderer : MonoBehaviour
                 " visible=false" +
                 " elapsedMs=" + elapsedMs.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
 
-        return true;
+        return openedCount;
+    }
+
+    public int OpenAllEliteDoors()
+    {
+        if (_data == null || doorTilemap == null || _eliteDoorPositions.Count == 0)
+            return 0;
+
+        double start = Time.realtimeSinceStartupAsDouble;
+        int openedCount = _eliteDoorPositions.Count;
+
+        _doorChangeBuffer.Clear();
+
+        foreach (var tilemapPos in _eliteDoorPositions)
+        {
+            if (_doorPositions.TryGetValue(tilemapPos, out Vector2Int gridPos))
+                _data.SetTileValue(gridPos.x, gridPos.y, DungeonGenerator.CORRIDOR);
+            else
+                _data.SetTileValue(tilemapPos.x, -tilemapPos.y, DungeonGenerator.CORRIDOR);
+
+            _doorChangeBuffer.Add(new TileChangeData
+            {
+                position  = tilemapPos,
+                tile      = null,
+                color     = OPAQUE,
+                transform = Matrix4x4.identity,
+            });
+        }
+
+        FlushDoorChanges();
+        _eliteDoorPositions.Clear();
+        SetDoorVisible(_renderedDoorPositions.Count > 0);
+
+        double elapsedMs = (Time.realtimeSinceStartupAsDouble - start) * 1000.0;
+        if (RuntimePerfLogger.IsActive)
+            RuntimePerfLogger.MarkEvent("open_all_elite_doors",
+                "opened=" + openedCount +
+                " rendered=" + _renderedDoorPositions.Count +
+                " elapsedMs=" + elapsedMs.ToString("F3", System.Globalization.CultureInfo.InvariantCulture));
+
+        return openedCount;
     }
 
     public bool TryOpenEliteDoorWithKey(PlayerEliteKeyInventory keyInventory)

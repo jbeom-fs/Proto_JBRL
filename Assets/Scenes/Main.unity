@@ -1547,6 +1547,10 @@ MonoBehaviour:
   toggleKey: 4
   closeWithEscape: 1
   maxLogLines: 120
+  transitionManager: {fileID: 920100002}
+  teleportDestinationDatabase: {fileID: 11400000, guid: 6b019d483f774c33b2de338a6ca0e9d5, type: 2}
+  player: {fileID: 1562452755}
+  dungeonManager: {fileID: 411232467}
 --- !u!1 &300000010
 GameObject:
   m_ObjectHideFlags: 0
@@ -1564,7 +1568,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &300000011
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2401,7 +2405,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 12}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &300000092
 MonoBehaviour:
@@ -2475,10 +2479,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 300000091}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 795.83966, y: -6}
+  m_SizeDelta: {x: 1575.6793, y: 0}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &300000102
 CanvasRenderer:
@@ -4949,7 +4953,6 @@ MonoBehaviour:
   generateNewDungeonOnEnter: 1
   resetFloorOnNewDungeonRun: 1
   disableCombatInTown: 1
-  enableDebugReturnKey: 1
 --- !u!1 &920100007
 GameObject:
   m_ObjectHideFlags: 0
@@ -49918,7 +49921,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   eventChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
-  doorController: {fileID: 130866626}
   moveSpeed: 5
   collisionRadius: 0.2
 --- !u!114 &1562452756

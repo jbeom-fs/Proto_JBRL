@@ -22,6 +22,40 @@ public sealed class TeleportDestinationDatabase : ScriptableObject
         return _locationsById.TryGetValue(destinationId, out location);
     }
 
+    public bool TryResolveLocationId(string destinationId, out string resolvedId)
+    {
+        EnsureCache();
+        resolvedId = null;
+
+        if (string.IsNullOrWhiteSpace(destinationId))
+            return false;
+
+        string trimmedId = destinationId.Trim();
+        if (_locationsById.TryGetValue(trimmedId, out TeleportLocationData exactLocation))
+        {
+            resolvedId = exactLocation.Id;
+            return true;
+        }
+
+        if (locations == null)
+            return false;
+
+        for (int i = 0; i < locations.Count; i++)
+        {
+            TeleportLocationData location = locations[i];
+            if (location == null)
+                continue;
+
+            if (string.Equals(location.Id, trimmedId, StringComparison.OrdinalIgnoreCase))
+            {
+                resolvedId = location.Id;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void OnEnable()
     {
         RebuildCache();
