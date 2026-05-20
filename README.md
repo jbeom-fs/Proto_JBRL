@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-19  
+> 작성 기준일: 2026-05-20  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -22,6 +22,7 @@
 11. [시스템 8 — 렌더링 및 로딩](#11-시스템-8--렌더링-및-로딩)
 11a. [시스템 9 — 마을·던전 전환 및 미니맵](#11a-시스템-9--마을던전-전환-및-미니맵)
 11b. [시스템 10 — 아이템 / 드랍 / Elite Key](#11b-시스템-10--아이템--드랍--elite-key)
+11c. [시스템 11 — 개발자 콘솔](#11c-시스템-11--개발자-콘솔)
 12. [성능 전략](#12-성능-전략)
 13. [데이터 흐름](#13-데이터-흐름)
 14. [확장 포인트](#14-확장-포인트)
@@ -71,6 +72,7 @@
 │  EnemyInventory · DropItemSpawner · DroppedItem              │
 │  ProjectilePool · ProjectileController                       │
 │  FogOfWarController                                          │
+│  DeveloperConsoleUI                                          │
 │  GameOverFlowController · GameOverSceneReloadRestartHandler  │
 ├──────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (ScriptableObject Event Bus / Data)    │
@@ -89,6 +91,7 @@
 │  AimDirectionUtility · CombatLayers · CharacterPhysicsSetup  │
 │  MovementBlockerQuery · DeterministicSeedUtility · PerfStage │
 │  LocationRootRegistry · LocationMinimapRegistry              │
+│  DeveloperConsoleService · DeveloperConsoleCommandResult     │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
@@ -98,6 +101,7 @@
 │  HitFlashFeedback · PlayerInvincibilityFlashFeedback         │
 │  EnemyAnimationController · FogVisibilityRenderer            │
 │  MinimapController · TilemapMinimapSource                    │
+│  InventoryUIController · InventorySlotUI · UIDraggableWindow │
 │  GameOverUIController                                        │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -252,9 +256,18 @@ Assets/Scripts/
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
 │   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
+│   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, InventorySlotUI 동적 풀, 인벤토리 키·ESC 토글, DeveloperConsoleUI 열림 시 자동 닫힘
+│   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind)
+│   ├── UIDraggableWindow.cs        # 드래그 가능한 UI 패널 기반 MonoBehaviour
 │   ├── GameOverUIController.cs     # 게임오버 UI 페이드 인/아웃·확인 버튼 (UI 참조 누락 시 1회 경고 후 표시 skip)
 │   ├── GameOverRestartHandler.cs   # IGameOverRestartHandler 인터페이스
 │   └── GameOverSceneReloadRestartHandler.cs # 활성 씬 재로드로 재시작
+│
+├── DebugConsole/
+│   ├── DeveloperConsoleUI.cs       # 개발자 콘솔 UI MonoBehaviour — ` 키 토글, TMP_InputField 입력, ScrollRect 로그, Tab 자동완성 순환, GamePauseController 연동
+│   ├── DeveloperConsoleService.cs  # 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, Execute/GetArgumentSuggestions/GetCommandNames API
+│   ├── DeveloperConsoleCommandContext.cs # 명령 실행 시 전달되는 런타임 참조 묶음 (readonly struct) — DeveloperConsoleUI·TownDungeonTransitionManager·TeleportDestinationDatabase·PlayerController·DungeonManager
+│   └── DeveloperConsoleCommandResult.cs  # 명령 실행 결과 (readonly struct) — Success/Error/Clear/Ignored 팩토리 메서드
 │
 ├── Debug/
 │   └── RuntimePerfTraceLogger.cs   # 투사체/풀 호출 마이크로 타이밍 트레이스
@@ -1653,6 +1666,51 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 
 ---
 
+## 11c. 시스템 11 — 개발자 콘솔
+
+인게임 개발자 콘솔 (`` ` `` 키 토글)로 명령어 입력·자동완성·결과 출력을 제공합니다.
+
+### 11c-1. 구성 파일
+
+| 파일 | 역할 |
+|------|------|
+| `DeveloperConsoleUI` | MonoBehaviour UI 컨트롤러 — `` ` `` 키 토글, `TMP_InputField` 입력, ScrollRect 로그 출력, Tab 자동완성, `GamePauseController` 연동 |
+| `DeveloperConsoleService` | 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, `Execute` / `GetArgumentSuggestions` / `GetCommandNames` API |
+| `DeveloperConsoleCommandContext` | 명령 실행 시 전달되는 런타임 참조 묶음 (readonly struct) — `DeveloperConsoleUI` · `TownDungeonTransitionManager` · `TeleportDestinationDatabase` · `PlayerController` · `DungeonManager` |
+| `DeveloperConsoleCommandResult` | 명령 실행 결과 (readonly struct) — `Success(msg)` / `Error(msg)` / `Clear()` / `Ignored()` 팩토리 메서드 |
+
+### 11c-2. 등록된 명령
+
+| 명령 | 설명 | 인수 자동완성 |
+|------|------|--------------|
+| `/help` | 등록된 명령 목록 + 사용법 출력 | 없음 |
+| `/clear` | 콘솔 로그 초기화 | 없음 |
+| `/echo [text]` | 입력 텍스트 그대로 출력 | 없음 |
+| `/tp [destinationId]` | 플레이어를 목적지로 순간이동 | `TeleportDestinationDatabase` ID 목록 |
+| `/dooropen [doorType]` | 현재 층의 문 일괄 개방 | `default` `normal` `basic` `elite` |
+| `/floor add [count]` | 현재 층 + count 이동 | `add` `sub` `set` |
+| `/floor sub [count]` | 현재 층 - count 이동 | |
+| `/floor set [floor]` | 지정 층으로 이동 | |
+
+### 11c-3. 자동완성 구조
+
+```
+입력 토큰 분석 (ParseAutocompleteTokens):
+  토큰 1개 & 후행 공백 없음 → 명령 이름 자동완성 (prefix 필터링)
+  토큰 1개 & 후행 공백 있음 → 첫 번째 인수 자동완성
+  토큰 2개 & 후행 공백 없음 → 두 번째 자리 입력 중, 첫 번째 인수 자동완성
+
+인수 제안 프로바이더 (_argumentProviders Dictionary):
+  "floor"    → { "add", "sub", "set" }
+  "dooropen" → { "default", "normal", "basic", "elite" }
+  "tp"       → TeleportDestinationDatabase.GetDestinationIds()
+```
+
+Tab 키로 제안 순환·적용, Esc 로 제안 패널만 닫음 (이후 Esc 는 콘솔 전체 닫기).  
+콘솔 열림 시 `GamePauseController.AddSource(GamePauseSource.DeveloperConsole)` 로 게임 일시정지, 닫힘 시 해제.
+
+---
+
 ## 12. 성능 전략
 
 | 전략 | 적용 위치 | 효과 |
@@ -2046,6 +2104,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Generator 디버그 connect-state 로그** | `DebugConnectState` + `DebugReachableRoomsFromR0` — 단계마다 connected/remaining/reachable(BFS) 비교로 logical-only / grid-only 불일치 추적 |
 | **DungeonSettings.ExtraCandidateCount** | 인스펙터 `DungeonManager.extraCandidateCount` (기본 12) — pair 당 EXTRA 후보 생성·점수화 개수 노출 |
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
+| **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
+| **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + 6개 내장 명령(/help /clear /echo /tp /dooropen /floor) |
 
 ### 미구현 (다음 단계)
 
@@ -2053,7 +2113,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 |------|----------|------|
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 |
 | Buff 스킬 핸들러 | 중간 | 동일 — caster 자체에 효과를 적용하는 형태 |
-| 인벤토리 / 스택 시스템 | 중간 | `ItemData.stackable/maxStack` 데이터·`PlayerInputReader.InventoryPressedThisFrame` 입력만 보유, 실제 인벤토리 UI/스택 로직 미구현 |
+| 인벤토리 스택 소비·장착 | 중간 | `InventoryUIController`·`PlayerInventory` 구현 완료 — Currency/Consumable/Equipment 픽업 효과 및 스택 소비·장착 로직 미구현 |
 | 일반 아이템 픽업 효과 | 중간 | `DroppedItem.OnTriggerEnter2D` 가 현재 `Key + elite_key` 만 처리 — Currency / Consumable / Equipment 등 분기 추가 필요 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
