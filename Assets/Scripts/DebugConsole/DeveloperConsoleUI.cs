@@ -53,7 +53,10 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
 
     public bool IsConsoleOpen => root != null && root.activeSelf;
 
-    private bool IsAutocompleteVisible => autocompletePanel != null && autocompletePanel.activeSelf;
+    private bool IsAutocompleteVisible =>
+        autocompletePanel != null
+        && autocompletePanel.activeInHierarchy
+        && _autocompleteSuggestions.Count > 0;
 
     private void Awake()
     {
@@ -67,6 +70,10 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         s_Active = this;
         if (root != null)
             root.SetActive(false);
+
+        // TMP resets text on Esc (OnCancel) and fires onValueChanged — this prevents that.
+        if (inputField != null)
+            inputField.restoreOriginalTextOnEscape = false;
     }
 
     private void OnEnable()
@@ -191,6 +198,11 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     private void OnInputValueChanged(string value)
     {
         if (_suppressAutocompleteRefresh)
+            return;
+
+        // Belt-and-suspenders: suppress any onValueChanged that TMP fires during Esc handling.
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
             return;
 
         _isCyclingAutocomplete = false;
