@@ -14,7 +14,7 @@ public class PlayerInputReader : MonoBehaviour
 
     public bool WasStairPressed => InteractConfirmPressedThisFrame;
     public bool IsGamePaused => GamePauseController.IsPaused;
-    public bool IsGameplayInputBlocked => GamePauseController.IsPaused || DeveloperConsoleUI.IsOpen || InventoryUIController.IsOpen;
+    public bool IsGameplayInputBlocked => GamePauseController.IsPaused || DeveloperConsoleUI.IsOpen;
 
     private readonly bool[] _wasSkillPressed = new bool[4];
     private bool _warnedMissingSettings;

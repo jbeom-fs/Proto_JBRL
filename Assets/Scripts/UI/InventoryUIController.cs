@@ -156,7 +156,12 @@ public sealed class InventoryUIController : MonoBehaviour
         if (root != null && slotContent != null && slotTemplate != null)
             return;
 
-        RectTransform rootRect = CreateRect("InventoryRoot", transform);
+        // Parent InventoryRoot to the Canvas so the drag coordinate space
+        // aligns with the boundary used by UIDraggableWindow.
+        Canvas canvas = GetComponentInParent<Canvas>();
+        Transform panelParent = canvas != null ? canvas.transform : transform;
+
+        RectTransform rootRect = CreateRect("InventoryRoot", panelParent);
         root = rootRect.gameObject;
         rootRect.anchorMin = new Vector2(0.5f, 0.5f);
         rootRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -166,13 +171,28 @@ public sealed class InventoryUIController : MonoBehaviour
         Image rootImage = root.AddComponent<Image>();
         rootImage.color = new Color(0.08f, 0.09f, 0.1f, 0.88f);
 
-        TextMeshProUGUI title = CreateText("TitleText", rootRect, "Inventory", 22f);
+        // TitleBar: drag handle. Image provides the raycast target for UIDraggableWindow.
+        RectTransform titleBarRect = CreateRect("TitleBar", rootRect);
+        titleBarRect.anchorMin = new Vector2(0f, 1f);
+        titleBarRect.anchorMax = new Vector2(1f, 1f);
+        titleBarRect.pivot = new Vector2(0.5f, 1f);
+        titleBarRect.anchoredPosition = Vector2.zero;
+        titleBarRect.sizeDelta = new Vector2(0f, 48f);
+
+        Image titleBarImage = titleBarRect.gameObject.AddComponent<Image>();
+        titleBarImage.color = new Color(0.15f, 0.17f, 0.2f, 1f);
+
+        TextMeshProUGUI title = CreateText("TitleText", titleBarRect, "Inventory", 22f);
         RectTransform titleRect = title.rectTransform;
-        titleRect.anchorMin = new Vector2(0f, 1f);
-        titleRect.anchorMax = new Vector2(1f, 1f);
-        titleRect.pivot = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0f, -12f);
-        titleRect.sizeDelta = new Vector2(-24f, 36f);
+        titleRect.anchorMin = Vector2.zero;
+        titleRect.anchorMax = Vector2.one;
+        titleRect.offsetMin = new Vector2(12f, 0f);
+        titleRect.offsetMax = new Vector2(-12f, 0f);
+        title.raycastTarget = false;
+
+        UIDraggableWindow draggable = titleBarRect.gameObject.AddComponent<UIDraggableWindow>();
+        RectTransform boundaryRect = canvas != null ? (RectTransform)canvas.transform : (RectTransform)panelParent;
+        draggable.Initialize(rootRect, boundaryRect);
 
         ScrollRect scrollRect = CreateScrollView(rootRect);
         slotContent = scrollRect.content;

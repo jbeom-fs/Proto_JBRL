@@ -164,6 +164,7 @@
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Cattail.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
+    <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />
     <Compile Include="Assets\Scripts\UI\MinimapController.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Creeper.cs" />
