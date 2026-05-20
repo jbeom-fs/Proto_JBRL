@@ -273,6 +273,8 @@ public class PlayerController : MonoBehaviour
         dungeonManager.dungeonRenderer.TryOpenEliteDoorWithKey(_inventory, eliteKeyItem);
     }
 
+    public PlayerInventory Inventory => _inventory;
+
     public void ClearEliteKey()
     {
         _inventory?.RemoveAllByCode(DeterministicSeedUtility.EliteKeyDomain);

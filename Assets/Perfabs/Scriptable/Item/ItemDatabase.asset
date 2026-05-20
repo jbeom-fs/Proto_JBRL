@@ -20,3 +20,5 @@ MonoBehaviour:
     itemType: 0
     stackable: 0
     maxStack: 1
+    removeOnFloorTransition: 1
+    removeOnDungeonExit: 1

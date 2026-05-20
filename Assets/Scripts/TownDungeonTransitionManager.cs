@@ -176,6 +176,12 @@ public class TownDungeonTransitionManager : MonoBehaviour
     private void CleanupDungeonRuntime()
     {
         ResetEliteKey(player);
+        if (player != null)
+        {
+            PlayerInventory inv = player.Inventory;
+            if (inv != null)
+                inv.RemoveItemsOnDungeonExit();
+        }
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
         DropItemSpawner.Instance?.ClearAllActiveDrops();

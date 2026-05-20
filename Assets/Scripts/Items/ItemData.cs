@@ -13,6 +13,8 @@ public sealed class ItemData
     [SerializeField] private bool stackable;
     [Min(1)]
     [SerializeField] private int maxStack = 1;
+    [SerializeField] private bool removeOnFloorTransition;
+    [SerializeField] private bool removeOnDungeonExit;
 
     public string ItemCode => itemCode;
     public string DisplayName => displayName;
@@ -21,4 +23,6 @@ public sealed class ItemData
     public ItemType ItemType => itemType;
     public bool Stackable => stackable;
     public int MaxStack => maxStack;
+    public bool RemoveOnFloorTransition => removeOnFloorTransition;
+    public bool RemoveOnDungeonExit => removeOnDungeonExit;
 }

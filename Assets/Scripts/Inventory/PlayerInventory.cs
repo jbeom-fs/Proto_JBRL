@@ -138,6 +138,36 @@ public sealed class PlayerInventory : MonoBehaviour
         return total;
     }
 
+    public void RemoveItemsOnFloorTransition()
+    {
+        bool changed = false;
+        for (int i = items.Count - 1; i >= 0; i--)
+        {
+            if (items[i].Item != null && items[i].Item.RemoveOnFloorTransition)
+            {
+                items.RemoveAt(i);
+                changed = true;
+            }
+        }
+        if (changed)
+            RaiseChanged();
+    }
+
+    public void RemoveItemsOnDungeonExit()
+    {
+        bool changed = false;
+        for (int i = items.Count - 1; i >= 0; i--)
+        {
+            if (items[i].Item != null && items[i].Item.RemoveOnDungeonExit)
+            {
+                items.RemoveAt(i);
+                changed = true;
+            }
+        }
+        if (changed)
+            RaiseChanged();
+    }
+
     public void Clear()
     {
         if (items.Count == 0)

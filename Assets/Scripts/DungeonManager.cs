@@ -256,6 +256,7 @@ public class DungeonManager : MonoBehaviour
                 "from=" + floor + " target=" + targetFloor);
 
         CleanupDungeonRuntimeObjectsForFloorTransition();
+        CleanupPlayerInventoryForFloorTransition();
 
         int prev = floor;
         floor = targetFloor;
@@ -467,6 +468,15 @@ public class DungeonManager : MonoBehaviour
             return;
 
         spawner.ClearPendingRoomStart();
+    }
+
+    private static void CleanupPlayerInventoryForFloorTransition()
+    {
+        PlayerController pc = PlayerController.Active;
+        if (pc == null) return;
+        PlayerInventory inv = pc.Inventory;
+        if (inv != null)
+            inv.RemoveItemsOnFloorTransition();
     }
 
     private void CleanupDungeonRuntimeObjectsForFloorTransition()
