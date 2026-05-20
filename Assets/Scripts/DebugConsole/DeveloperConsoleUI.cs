@@ -19,6 +19,7 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     [SerializeField] private Key toggleKey = Key.Backquote;
     [SerializeField] private bool closeWithEscape = true;
     [SerializeField] private int maxLogLines = 120;
+    [SerializeField] private int maxCommandHistory = 50;
     [SerializeField] private TownDungeonTransitionManager transitionManager;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
     [SerializeField] private PlayerController player;
@@ -26,7 +27,11 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
 
     private readonly DeveloperConsoleService _service = new DeveloperConsoleService();
     private readonly List<string> _logLines = new List<string>(128);
+    private readonly List<string> _commandHistory = new List<string>(64);
     private readonly StringBuilder _logBuilder = new StringBuilder(4096);
+    private int _historyIndex;
+    private string _editingCommandBeforeHistory = string.Empty;
+    private bool _isBrowsingHistory;
     private bool _warnedMissingPauseController;
     private bool _warnedMissingRoot;
     private bool _warnedMissingInputField;
@@ -80,6 +85,9 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
             return;
         }
 
+        if (HandleHistoryNavigation(keyboard))
+            return;
+
         if (closeWithEscape && IsConsoleOpen && keyboard.escapeKey.wasPressedThisFrame)
             Close();
     }
@@ -100,6 +108,7 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         root.SetActive(true);
         ResolvePauseController()?.Pause(GamePauseSource.DeveloperConsole);
 
+        ResetHistoryNavigation();
         inputField.text = string.Empty;
         FocusInputField();
     }
@@ -113,6 +122,8 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
                 EventSystem.current.SetSelectedGameObject(null);
         }
 
+        ResetHistoryNavigation();
+
         if (root != null)
             root.SetActive(false);
 
@@ -123,6 +134,9 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     {
         if (!IsConsoleOpen)
             return;
+
+        StoreCommandHistory(commandText);
+        ResetHistoryNavigation();
 
         DeveloperConsoleCommandResult result = _service.Execute(commandText, CreateCommandContext());
         inputField.text = string.Empty;
@@ -170,6 +184,108 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
 
         inputField.Select();
         inputField.ActivateInputField();
+    }
+
+    private bool HandleHistoryNavigation(Keyboard keyboard)
+    {
+        if (!IsConsoleInputFocused())
+            return false;
+
+        if (keyboard.upArrowKey.wasPressedThisFrame)
+        {
+            NavigateHistoryOlder();
+            return true;
+        }
+
+        if (keyboard.downArrowKey.wasPressedThisFrame)
+        {
+            NavigateHistoryNewer();
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsConsoleInputFocused()
+    {
+        if (!IsConsoleOpen || inputField == null || !inputField.isFocused)
+            return false;
+
+        return EventSystem.current == null || EventSystem.current.currentSelectedGameObject == inputField.gameObject;
+    }
+
+    private void NavigateHistoryOlder()
+    {
+        if (_commandHistory.Count == 0)
+            return;
+
+        if (!_isBrowsingHistory)
+        {
+            _editingCommandBeforeHistory = inputField.text;
+            _historyIndex = _commandHistory.Count;
+            _isBrowsingHistory = true;
+        }
+
+        if (_historyIndex > 0)
+            _historyIndex--;
+
+        ApplyHistoryText(_commandHistory[_historyIndex]);
+    }
+
+    private void NavigateHistoryNewer()
+    {
+        if (!_isBrowsingHistory)
+            return;
+
+        if (_historyIndex < _commandHistory.Count - 1)
+        {
+            _historyIndex++;
+            ApplyHistoryText(_commandHistory[_historyIndex]);
+            return;
+        }
+
+        _historyIndex = _commandHistory.Count;
+        _isBrowsingHistory = false;
+        ApplyHistoryText(_editingCommandBeforeHistory);
+        _editingCommandBeforeHistory = string.Empty;
+    }
+
+    private void ApplyHistoryText(string command)
+    {
+        if (inputField == null)
+            return;
+
+        inputField.text = command ?? string.Empty;
+        int caretPosition = inputField.text.Length;
+        inputField.caretPosition = caretPosition;
+        inputField.selectionAnchorPosition = caretPosition;
+        inputField.selectionFocusPosition = caretPosition;
+        inputField.ActivateInputField();
+    }
+
+    private void StoreCommandHistory(string commandText)
+    {
+        if (maxCommandHistory <= 0 || string.IsNullOrWhiteSpace(commandText))
+            return;
+
+        string trimmedCommand = commandText.Trim();
+        int lastIndex = _commandHistory.Count - 1;
+        if (lastIndex >= 0 && _commandHistory[lastIndex] == trimmedCommand)
+            return;
+
+        _commandHistory.Add(trimmedCommand);
+
+        int limit = Mathf.Max(1, maxCommandHistory);
+        int overflow = _commandHistory.Count - limit;
+        if (overflow > 0)
+            _commandHistory.RemoveRange(0, overflow);
+    }
+
+    private void ResetHistoryNavigation()
+    {
+        _historyIndex = _commandHistory.Count;
+        _editingCommandBeforeHistory = string.Empty;
+        _isBrowsingHistory = false;
     }
 
     private void AppendLogLine(string line)
