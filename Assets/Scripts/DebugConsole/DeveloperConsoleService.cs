@@ -6,7 +6,11 @@ public sealed class DeveloperConsoleService
 {
     private delegate DeveloperConsoleCommandResult CommandHandler(DeveloperConsoleCommandContext context, string arguments);
 
+    private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
+    private static readonly string[] s_DoorOpenArgs = { "default", "normal", "basic", "elite" };
+
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
+    private readonly List<string> _destinationIdBuffer = new List<string>(16);
 
     public DeveloperConsoleService()
     {
@@ -20,6 +24,47 @@ public sealed class DeveloperConsoleService
 
         foreach (string name in _commands.Keys)
             output.Add(name);
+    }
+
+    public void GetArgumentSuggestions(string commandName, string currentArg, TeleportDestinationDatabase db, List<string> output, int maxCount)
+    {
+        if (output == null)
+            return;
+
+        if (string.Equals(commandName, "floor", StringComparison.OrdinalIgnoreCase))
+        {
+            FilterArraySuggestions(s_FloorArgs, currentArg, output, maxCount);
+        }
+        else if (string.Equals(commandName, "dooropen", StringComparison.OrdinalIgnoreCase))
+        {
+            FilterArraySuggestions(s_DoorOpenArgs, currentArg, output, maxCount);
+        }
+        else if (string.Equals(commandName, "tp", StringComparison.OrdinalIgnoreCase) && db != null)
+        {
+            _destinationIdBuffer.Clear();
+            db.GetDestinationIds(_destinationIdBuffer);
+            FilterListSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
+        }
+    }
+
+    private static void FilterArraySuggestions(string[] candidates, string prefix, List<string> output, int maxCount)
+    {
+        for (int i = 0; i < candidates.Length && output.Count < maxCount; i++)
+        {
+            if (string.IsNullOrEmpty(prefix) ||
+                candidates[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                output.Add(candidates[i]);
+        }
+    }
+
+    private static void FilterListSuggestions(List<string> candidates, string prefix, List<string> output, int maxCount)
+    {
+        for (int i = 0; i < candidates.Count && output.Count < maxCount; i++)
+        {
+            if (string.IsNullOrEmpty(prefix) ||
+                candidates[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                output.Add(candidates[i]);
+        }
     }
 
     public DeveloperConsoleCommandResult Execute(string input, DeveloperConsoleCommandContext context)

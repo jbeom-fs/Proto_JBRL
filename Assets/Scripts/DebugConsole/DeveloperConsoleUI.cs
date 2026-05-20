@@ -120,9 +120,13 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         if (closeWithEscape && keyboard.escapeKey.wasPressedThisFrame)
         {
             if (IsAutocompleteVisible)
+            {
                 HideAutocomplete();
-            else
-                Close();
+                FocusInputField();
+                return;
+            }
+
+            Close();
         }
     }
 
@@ -205,26 +209,41 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         }
 
         string trimmed = input.TrimStart();
-        if (trimmed.IndexOf(' ') >= 0)
+        ParseAutocompleteTokens(trimmed, _commandNamesBuffer, out bool trailingSpace);
+        int tokenCount = _commandNamesBuffer.Count;
+
+        if (tokenCount == 0)
         {
+            _commandNamesBuffer.Clear();
             SetAutocompleteVisible(false);
             return;
         }
 
-        string matchText = trimmed;
-        if (matchText.Length > 0 && matchText[0] == '/')
-            matchText = matchText.Substring(1);
-
-        _commandNamesBuffer.Clear();
-        _service.GetCommandNames(_commandNamesBuffer);
-
-        for (int i = 0; i < _commandNamesBuffer.Count && _autocompleteSuggestions.Count < MaxAutocompleteSuggestions; i++)
+        if (tokenCount == 1 && !trailingSpace)
         {
-            if (string.IsNullOrEmpty(matchText) ||
-                _commandNamesBuffer[i].StartsWith(matchText, StringComparison.OrdinalIgnoreCase))
-            {
-                _autocompleteSuggestions.Add("/" + _commandNamesBuffer[i]);
-            }
+            string token0 = _commandNamesBuffer[0];
+            _commandNamesBuffer.Clear();
+            BuildCommandNameSuggestions(token0);
+        }
+        else if ((tokenCount == 1 && trailingSpace) || (tokenCount == 2 && !trailingSpace))
+        {
+            string rawCmd = _commandNamesBuffer[0];
+            string currentArg = tokenCount == 2 ? _commandNamesBuffer[1] : string.Empty;
+            _commandNamesBuffer.Clear();
+
+            string commandName = rawCmd.Length > 0 && rawCmd[0] == '/' ? rawCmd.Substring(1) : rawCmd;
+            string commandPrefix = rawCmd.Length > 0 && rawCmd[0] == '/' ? rawCmd : "/" + rawCmd;
+
+            _service.GetArgumentSuggestions(commandName, currentArg, teleportDestinationDatabase, _commandNamesBuffer, MaxAutocompleteSuggestions);
+            for (int i = 0; i < _commandNamesBuffer.Count; i++)
+                _autocompleteSuggestions.Add(commandPrefix + " " + _commandNamesBuffer[i]);
+            _commandNamesBuffer.Clear();
+        }
+        else
+        {
+            _commandNamesBuffer.Clear();
+            SetAutocompleteVisible(false);
+            return;
         }
 
         if (_autocompleteSuggestions.Count == 0)
@@ -235,6 +254,40 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
 
         UpdateAutocompleteText();
         SetAutocompleteVisible(true);
+    }
+
+    private void BuildCommandNameSuggestions(string token)
+    {
+        string matchText = token.Length > 0 && token[0] == '/' ? token.Substring(1) : token;
+        _service.GetCommandNames(_commandNamesBuffer);
+        for (int i = 0; i < _commandNamesBuffer.Count && _autocompleteSuggestions.Count < MaxAutocompleteSuggestions; i++)
+        {
+            if (string.IsNullOrEmpty(matchText) ||
+                _commandNamesBuffer[i].StartsWith(matchText, StringComparison.OrdinalIgnoreCase))
+            {
+                _autocompleteSuggestions.Add("/" + _commandNamesBuffer[i]);
+            }
+        }
+        _commandNamesBuffer.Clear();
+    }
+
+    private static void ParseAutocompleteTokens(string input, List<string> tokens, out bool trailingSpace)
+    {
+        tokens.Clear();
+        trailingSpace = input.Length > 0 && input[input.Length - 1] == ' ';
+        int i = 0;
+        int len = input.Length;
+        while (i < len)
+        {
+            while (i < len && input[i] == ' ')
+                i++;
+            if (i >= len)
+                break;
+            int start = i;
+            while (i < len && input[i] != ' ')
+                i++;
+            tokens.Add(input.Substring(start, i - start));
+        }
     }
 
     private void UpdateAutocompleteText()
@@ -270,7 +323,8 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
             _autocompleteIndex = (_autocompleteIndex + 1) % _autocompleteSuggestions.Count;
         }
 
-        string completed = _autocompleteSuggestions[_autocompleteIndex] + " ";
+        string suggestion = _autocompleteSuggestions[_autocompleteIndex];
+        string completed = suggestion + " ";
 
         _suppressAutocompleteRefresh = true;
         inputField.text = completed;
@@ -281,6 +335,13 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         inputField.selectionAnchorPosition = caretPos;
         inputField.selectionFocusPosition = caretPos;
         inputField.ActivateInputField();
+
+        if (suggestion.IndexOf(' ') < 0)
+        {
+            _isCyclingAutocomplete = false;
+            _autocompleteIndex = 0;
+            RefreshAutocomplete(completed);
+        }
     }
 
     private void SetAutocompleteVisible(bool visible)

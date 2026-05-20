@@ -22,6 +22,16 @@ public sealed class TeleportDestinationDatabase : ScriptableObject
         return _locationsById.TryGetValue(destinationId, out location);
     }
 
+    public void GetDestinationIds(List<string> output)
+    {
+        if (output == null)
+            return;
+
+        EnsureCache();
+        foreach (string id in _locationsById.Keys)
+            output.Add(id);
+    }
+
     public bool TryResolveLocationId(string destinationId, out string resolvedId)
     {
         EnsureCache();
