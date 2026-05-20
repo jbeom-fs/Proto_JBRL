@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 
 public sealed class InventoryUIController : MonoBehaviour
 {
@@ -34,7 +33,6 @@ public sealed class InventoryUIController : MonoBehaviour
         }
 
         s_Active = this;
-        EnsureDefaultUi();
         if (root != null)
             root.SetActive(false);
     }
@@ -149,163 +147,5 @@ public sealed class InventoryUIController : MonoBehaviour
             slot.gameObject.SetActive(false);
             _slots.Add(slot);
         }
-    }
-
-    private void EnsureDefaultUi()
-    {
-        if (root != null && slotContent != null && slotTemplate != null)
-            return;
-
-        // Parent InventoryRoot to the Canvas so the drag coordinate space
-        // aligns with the boundary used by UIDraggableWindow.
-        Canvas canvas = GetComponentInParent<Canvas>();
-        Transform panelParent = canvas != null ? canvas.transform : transform;
-
-        RectTransform rootRect = CreateRect("InventoryRoot", panelParent);
-        root = rootRect.gameObject;
-        rootRect.anchorMin = new Vector2(0.5f, 0.5f);
-        rootRect.anchorMax = new Vector2(0.5f, 0.5f);
-        rootRect.pivot = new Vector2(0.5f, 0.5f);
-        rootRect.sizeDelta = new Vector2(360f, 420f);
-
-        Image rootImage = root.AddComponent<Image>();
-        rootImage.color = new Color(0.08f, 0.09f, 0.1f, 0.88f);
-
-        // TitleBar: drag handle. Image provides the raycast target for UIDraggableWindow.
-        RectTransform titleBarRect = CreateRect("TitleBar", rootRect);
-        titleBarRect.anchorMin = new Vector2(0f, 1f);
-        titleBarRect.anchorMax = new Vector2(1f, 1f);
-        titleBarRect.pivot = new Vector2(0.5f, 1f);
-        titleBarRect.anchoredPosition = Vector2.zero;
-        titleBarRect.sizeDelta = new Vector2(0f, 48f);
-
-        Image titleBarImage = titleBarRect.gameObject.AddComponent<Image>();
-        titleBarImage.color = new Color(0.15f, 0.17f, 0.2f, 1f);
-
-        TextMeshProUGUI title = CreateText("TitleText", titleBarRect, "Inventory", 22f);
-        RectTransform titleRect = title.rectTransform;
-        titleRect.anchorMin = Vector2.zero;
-        titleRect.anchorMax = Vector2.one;
-        titleRect.offsetMin = new Vector2(12f, 0f);
-        titleRect.offsetMax = new Vector2(-12f, 0f);
-        title.raycastTarget = false;
-
-        UIDraggableWindow draggable = titleBarRect.gameObject.AddComponent<UIDraggableWindow>();
-        RectTransform boundaryRect = canvas != null ? (RectTransform)canvas.transform : (RectTransform)panelParent;
-        draggable.Initialize(rootRect, boundaryRect);
-
-        ScrollRect scrollRect = CreateScrollView(rootRect);
-        slotContent = scrollRect.content;
-
-        emptyText = CreateText("EmptyText", rootRect, "Inventory empty", 18f);
-        RectTransform emptyRect = emptyText.rectTransform;
-        emptyRect.anchorMin = new Vector2(0f, 0f);
-        emptyRect.anchorMax = new Vector2(1f, 1f);
-        emptyRect.offsetMin = new Vector2(24f, 24f);
-        emptyRect.offsetMax = new Vector2(-24f, -56f);
-
-        slotTemplate = CreateSlotTemplate(slotContent);
-    }
-
-    private static ScrollRect CreateScrollView(RectTransform parent)
-    {
-        RectTransform scrollRectTransform = CreateRect("SlotScrollView", parent);
-        scrollRectTransform.anchorMin = new Vector2(0f, 0f);
-        scrollRectTransform.anchorMax = new Vector2(1f, 1f);
-        scrollRectTransform.offsetMin = new Vector2(16f, 16f);
-        scrollRectTransform.offsetMax = new Vector2(-16f, -56f);
-
-        ScrollRect scrollRect = scrollRectTransform.gameObject.AddComponent<ScrollRect>();
-        scrollRect.horizontal = false;
-        scrollRect.vertical = true;
-        scrollRect.scrollSensitivity = 22f;
-
-        RectTransform viewport = CreateRect("Viewport", scrollRectTransform);
-        viewport.anchorMin = Vector2.zero;
-        viewport.anchorMax = Vector2.one;
-        viewport.offsetMin = Vector2.zero;
-        viewport.offsetMax = Vector2.zero;
-        Image viewportImage = viewport.gameObject.AddComponent<Image>();
-        viewportImage.color = new Color(0f, 0f, 0f, 0.18f);
-        viewport.gameObject.AddComponent<RectMask2D>();
-
-        RectTransform content = CreateRect("Content", viewport);
-        content.anchorMin = new Vector2(0f, 1f);
-        content.anchorMax = new Vector2(1f, 1f);
-        content.pivot = new Vector2(0.5f, 1f);
-        content.offsetMin = new Vector2(8f, 0f);
-        content.offsetMax = new Vector2(-8f, 0f);
-
-        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
-        layout.childControlWidth = true;
-        layout.childControlHeight = false;
-        layout.childForceExpandWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.spacing = 6f;
-
-        ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        scrollRect.viewport = viewport;
-        scrollRect.content = content;
-        return scrollRect;
-    }
-
-    private static InventorySlotUI CreateSlotTemplate(Transform parent)
-    {
-        RectTransform slotRect = CreateRect("InventorySlotTemplate", parent);
-        slotRect.sizeDelta = new Vector2(0f, 44f);
-        Image background = slotRect.gameObject.AddComponent<Image>();
-        background.color = new Color(1f, 1f, 1f, 0.08f);
-
-        RectTransform iconRect = CreateRect("Icon", slotRect);
-        iconRect.anchorMin = new Vector2(0f, 0.5f);
-        iconRect.anchorMax = new Vector2(0f, 0.5f);
-        iconRect.pivot = new Vector2(0f, 0.5f);
-        iconRect.anchoredPosition = new Vector2(8f, 0f);
-        iconRect.sizeDelta = new Vector2(32f, 32f);
-        Image icon = iconRect.gameObject.AddComponent<Image>();
-
-        TextMeshProUGUI nameText = CreateText("NameText", slotRect, string.Empty, 16f);
-        RectTransform nameRect = nameText.rectTransform;
-        nameRect.anchorMin = new Vector2(0f, 0f);
-        nameRect.anchorMax = new Vector2(1f, 1f);
-        nameRect.offsetMin = new Vector2(48f, 0f);
-        nameRect.offsetMax = new Vector2(-56f, 0f);
-        nameText.alignment = TextAlignmentOptions.MidlineLeft;
-
-        TextMeshProUGUI countText = CreateText("CountText", slotRect, string.Empty, 15f);
-        RectTransform countRect = countText.rectTransform;
-        countRect.anchorMin = new Vector2(1f, 0f);
-        countRect.anchorMax = new Vector2(1f, 1f);
-        countRect.pivot = new Vector2(1f, 0.5f);
-        countRect.anchoredPosition = new Vector2(-10f, 0f);
-        countRect.sizeDelta = new Vector2(48f, 0f);
-        countText.alignment = TextAlignmentOptions.MidlineRight;
-
-        InventorySlotUI slot = slotRect.gameObject.AddComponent<InventorySlotUI>();
-        slot.SetReferences(icon, countText, nameText);
-        slot.gameObject.SetActive(false);
-        return slot;
-    }
-
-    private static RectTransform CreateRect(string name, Transform parent)
-    {
-        GameObject go = new GameObject(name, typeof(RectTransform));
-        go.layer = parent.gameObject.layer;
-        RectTransform rect = go.GetComponent<RectTransform>();
-        rect.SetParent(parent, false);
-        return rect;
-    }
-
-    private static TextMeshProUGUI CreateText(string name, Transform parent, string text, float fontSize)
-    {
-        RectTransform rect = CreateRect(name, parent);
-        TextMeshProUGUI label = rect.gameObject.AddComponent<TextMeshProUGUI>();
-        label.text = text;
-        label.fontSize = fontSize;
-        label.color = Color.white;
-        label.alignment = TextAlignmentOptions.Center;
-        return label;
     }
 }
