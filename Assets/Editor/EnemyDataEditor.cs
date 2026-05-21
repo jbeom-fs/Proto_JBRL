@@ -17,6 +17,8 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty _deathDelay;
     private SerializedProperty _spawnCost;
     private SerializedProperty _allowedRegions;
+    private SerializedProperty _minFloor;
+    private SerializedProperty _maxFloor;
     private SerializedProperty _behaviorType;
     private SerializedProperty _detectRange;
     private SerializedProperty _attackRange;
@@ -75,6 +77,8 @@ public sealed class EnemyDataEditor : Editor
         _deathDelay = FindHandled(nameof(EnemyData.deathDelay));
         _spawnCost = FindHandled(nameof(EnemyData.spawnCost));
         _allowedRegions = FindHandled(nameof(EnemyData.allowedRegions));
+        _minFloor = FindHandled("minFloor");
+        _maxFloor = FindHandled("maxFloor");
         _behaviorType = FindHandled(nameof(EnemyData.behaviorType));
         _detectRange = FindHandled(nameof(EnemyData.detectRange));
         _attackRange = FindHandled(nameof(EnemyData.attackRange));
@@ -353,6 +357,9 @@ public sealed class EnemyDataEditor : Editor
         DrawProperty(_deathDelay);
         DrawProperty(_spawnCost);
         DrawProperty(_allowedRegions);
+        DrawProperty(_minFloor, "Min Floor");
+        DrawProperty(_maxFloor, "Max Floor");
+        DrawInvalidFloorRangeWarning();
     }
 
     private void DrawUnhandledSection()
@@ -428,6 +435,23 @@ public sealed class EnemyDataEditor : Editor
     private static bool IsBoolEnabled(SerializedProperty property)
     {
         return property != null && !property.hasMultipleDifferentValues && property.boolValue;
+    }
+
+    private void DrawInvalidFloorRangeWarning()
+    {
+        if (_minFloor == null || _maxFloor == null)
+            return;
+        if (_minFloor.hasMultipleDifferentValues || _maxFloor.hasMultipleDifferentValues)
+            return;
+
+        int minFloor = _minFloor.intValue;
+        int maxFloor = _maxFloor.intValue;
+        if (minFloor >= 1 && maxFloor >= 1 && maxFloor >= minFloor)
+            return;
+
+        EditorGUILayout.HelpBox(
+            $"[EnemySpawnData] Invalid floor range: minFloor={minFloor}, maxFloor={maxFloor}",
+            MessageType.Warning);
     }
 
     private static void DrawSectionHeader(string title)

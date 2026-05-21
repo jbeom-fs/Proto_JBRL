@@ -20,6 +20,8 @@ MonoBehaviour:
   deathDelay: 0.5
   spawnCost: 5
   allowedRegions: 1
+  minFloor: 5
+  maxFloor: 100
   behaviorType: 0
   detectRange: 12
   attackRange: 1.2

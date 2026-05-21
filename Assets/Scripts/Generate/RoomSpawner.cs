@@ -212,7 +212,7 @@ public class RoomSpawner : MonoBehaviour
 
         while (budget > 0f && tileIndex < walkableTiles.Count)
         {
-            BuildCandidates(region, budget);
+            BuildCandidates(region, budget, dungeonManager.CurrentFloor);
             if (_candidates.Count == 0)
             {
                 // 예산이 남아도 현재 지역/비용 조건을 만족하는 적이 없으면 루프를 종료한다.
@@ -274,7 +274,7 @@ public class RoomSpawner : MonoBehaviour
         int spawnCount = 0;
         while (budget > 0f && tileIndex < walkableTiles.Count)
         {
-            BuildCandidates(region, budget);
+            BuildCandidates(region, budget, dungeonManager.CurrentFloor);
             if (_candidates.Count == 0)
                 break;
 
@@ -373,7 +373,7 @@ public class RoomSpawner : MonoBehaviour
         return baseBudget * multiplier;
     }
 
-    private void BuildCandidates(SpawnRegion region, float budget)
+    private void BuildCandidates(SpawnRegion region, float budget, int currentFloor)
     {
         _candidates.Clear();
 
@@ -396,6 +396,7 @@ public class RoomSpawner : MonoBehaviour
             // 비트 플래그 필터: 적의 허용 지역과 현재 스테이지 지역이 하나라도 겹쳐야 스폰 가능하다.
             bool regionMatches = (enemy.allowedRegions & region) != 0;
             if (!regionMatches) continue;
+            if (!enemy.IsAvailableOnFloor(currentFloor)) continue;
             if (enemy.spawnCost <= 0 || enemy.spawnCost > budget) continue;
 
             _candidates.Add(enemy);

@@ -75,6 +75,11 @@ public class EnemyData : ScriptableObject
     [Min(1)]
     public int spawnCost = 1;
     public SpawnRegion allowedRegions = SpawnRegion.Dungeon;
+    [SerializeField] private int minFloor = 1;
+    [SerializeField] private int maxFloor = 100;
+
+    public int MinFloor => minFloor;
+    public int MaxFloor => maxFloor;
 
     [Header("AI Behavior")]
     public EnemyBehaviorType behaviorType = EnemyBehaviorType.Contact;
@@ -229,4 +234,26 @@ public class EnemyData : ScriptableObject
     [Tooltip("Random: 현재 위치 기준 새 목적지를 고르는 반경(월드 단위).")]
     [Min(0f)]
     public float randomMoveRadius = 3f;
+
+    public bool IsAvailableOnFloor(int floor)
+    {
+        return minFloor <= floor && floor <= maxFloor;
+    }
+
+    public bool HasInvalidFloorRange()
+    {
+        return minFloor < 1 || maxFloor < 1 || maxFloor < minFloor;
+    }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private void OnValidate()
+    {
+        if (!HasInvalidFloorRange())
+            return;
+
+        Debug.LogWarning(
+            $"[EnemySpawnData] Invalid floor range: minFloor={minFloor}, maxFloor={maxFloor}, asset={name}",
+            this);
+    }
+#endif
 }
