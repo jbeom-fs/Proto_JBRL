@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-20  
+> 작성 기준일: 2026-05-21  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -164,6 +164,7 @@ Assets/Scripts/
 │                                    #   (EnemySpecialAttackType: None/Rush/Jump + 전용 파라미터 그룹)
 │                                    #   (EnemyAttackImpactData struct: knockback/slow/stun — rushImpact/jumpImpact/projectileImpact 공용)
 │                                    #   (isStationary: AI 이동/분리/넉백 위치 변화 정지 + Rigidbody FreezeAll, immuneToKnockback: 데미지·상태이상은 적용되나 임펄스만 무시)
+│                                    #   (minFloor/maxFloor: 등장 가능 층 범위 — IsAvailableOnFloor(floor) 필터, OnValidate 가 잘못된 범위 자동 경고)
 │
 ├── Generate/
 │   ├── DungeonGenerator.cs         # BSP + Prim MST 생성 알고리즘 (순수 C#) — IsEliteFloor(floor%10==5) → AssignEliteRoom (MST leaf 가장 깊은 방), EXTRA 통로는 elite room 제외
@@ -1159,7 +1160,8 @@ OnRoomEntered (이벤트 수신):
        roomRng  = new System.Random(roomSeed)
   ⑤ EnemyPoolManager에서 예산 기반 적 선택 (roomRng.Next 사용)
        (방 면적 × densityFactor × 방 타입 배율)
-       (SpawnRegion 비트 필터링, _poolEnemyTable 은 enemyName 기준 정렬 후 선택)
+       (SpawnRegion 비트 필터링 + EnemyData.IsAvailableOnFloor(currentFloor) 필터,
+        _poolEnemyTable 은 enemyName 기준 정렬 후 선택)
   ⑥ 방 내부 걷기 가능 타일에 스폰
        (테두리 제외, 4-코너 발자국 검사로 벽 끼임 예방)
        (타일 후보는 row-then-column SortSpawnTiles → roomRng Shuffle)
@@ -1908,6 +1910,7 @@ case SkillExecutionType.AreaOverTime:
    - Ranged 적은 `rangedMovementType`(Chase/Kiting/Random) + 투사체 패턴 설정
    - `rushImpact` / `jumpImpact` / `projectileImpact` (`EnemyAttackImpactData`) — knockback / slow / stun 부가 효과 입력
    - 필요 시 이동 플래그 토글: `isStationary` (위치 고정), `immuneToKnockback` (임펄스 무시)
+   - 등장 가능 층 범위: `minFloor` / `maxFloor` (둘 다 ≥ 1, max ≥ min — 어긋나면 인스펙터·OnValidate 경고)
 2. 프리팹에 `EnemyController` + `EnemyHealthBar` + `Collider2D` 부착
 3. `NormalEnemyBrain` 부착 또는 `EnemyBrain` 상속 후 커스텀 FSM 구현
    - Charge/Rush/Jump/Land Animator 트리거가 없는 프리팹은 자동으로 AttackTrigger 폴백 (호환)
@@ -2106,6 +2109,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 | **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
 | **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + 6개 내장 명령(/help /clear /echo /tp /dooropen /floor) |
+| **적 등장 층 범위 필터** | `EnemyData.minFloor`/`maxFloor` + `IsAvailableOnFloor(floor)` — `RoomSpawner.BuildCandidates(region, budget, currentFloor)` 가 SpawnRegion·예산 필터 직후 층 범위로 후보 차단. `EnemyDataEditor` 가 Min/Max Floor 필드 + 잘못된 범위(`HasInvalidFloorRange`) 인스펙터 경고 표시, `EnemyData.OnValidate` 가 동일 검사 후 콘솔 경고 |
 
 ### 미구현 (다음 단계)
 
