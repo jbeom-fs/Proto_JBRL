@@ -1,4 +1,4 @@
-﻿fileFormatVersion: 2
+fileFormatVersion: 2
 guid: c95ded1297da6a64ea1421135a288f3d
 TextureImporter:
   internalIDToNameTable:
@@ -221,763 +221,799 @@ TextureImporter:
       name: Elite_Magma_01_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 1045
-        width: 209
-        height: 209
+        x: 12
+        y: 1037
+        width: 190
+        height: 205
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 8b6de7312f4f4fa98f7f7ee14e5776a9
+      spriteID: 40e80a986efc716429bac35a0da8da37
       internalID: -6464910207124509996
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_1
       rect:
         serializedVersion: 2
-        x: 209
-        y: 1045
-        width: 209
-        height: 209
+        x: 222
+        y: 1037
+        width: 190
+        height: 205
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 74f2e3330a20494093455bec016c4395
+      spriteID: 3cbbbf952cf3b5e43b1bdeef1076a1df
       internalID: 3634361227548840035
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_2
       rect:
         serializedVersion: 2
-        x: 418
-        y: 1045
-        width: 209
-        height: 209
+        x: 427
+        y: 1036
+        width: 190
+        height: 205
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: d5fb2df8ecbf45ce984a3630fb9c5ed8
+      spriteID: 8bd92f7159c2c69409035d0792ccacdb
       internalID: 1226325278077113726
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_3
       rect:
         serializedVersion: 2
-        x: 627
-        y: 1045
-        width: 209
-        height: 209
+        x: 628
+        y: 1035
+        width: 205
+        height: 205
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: eec8137d21d04d82b979753cdf8d6980
+      spriteID: e19f0c982c4a6c644a951a795f4a1253
       internalID: 2728763963935083403
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_4
       rect:
         serializedVersion: 2
-        x: 836
-        y: 1045
-        width: 209
-        height: 209
+        x: 845
+        y: 1035
+        width: 190
+        height: 205
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 1907f2cf432343c095da03e29e47c4e8
+      spriteID: 3b89c9b2197508546b3a7bc95b818dad
       internalID: 5789014267184357636
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_5
       rect:
         serializedVersion: 2
-        x: 1045
-        y: 1045
-        width: 209
-        height: 209
+        x: 1043
+        y: 1036
+        width: 190
+        height: 205
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 69ab0af742a44323b6f074701cb7396c
+      spriteID: ad16964a5c4616b4eb97b658a061bc73
       internalID: 7182815091226040065
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_6
       rect:
         serializedVersion: 2
-        x: 0
-        y: 836
-        width: 209
-        height: 209
+        x: 10
+        y: 834
+        width: 203
+        height: 178
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: d2d1823080df47d787aa14ade292277d
+      spriteID: 30ec7416fbc72d243ad460168edc882b
       internalID: -4196595827190674286
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_7
       rect:
         serializedVersion: 2
-        x: 209
-        y: 836
-        width: 209
-        height: 209
+        x: 215
+        y: 829
+        width: 205
+        height: 178
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 3ee10714e73049fdb39bcf4bc5bef955
+      spriteID: 5bcac0f3a087f5b4e8a1630a385883d1
       internalID: 3852248492337326790
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_8
       rect:
         serializedVersion: 2
-        x: 418
-        y: 836
-        width: 209
-        height: 209
+        x: 420
+        y: 829
+        width: 196
+        height: 179
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 4a07ee3e4fcc409387ca38de05676119
+      spriteID: c5f28bdc68c1db44ab354ca6fb6b7367
       internalID: 2134226777170371942
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_9
       rect:
         serializedVersion: 2
-        x: 627
-        y: 836
-        width: 209
-        height: 209
+        x: 616
+        y: 831
+        width: 207
+        height: 179
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: fed277a53b5d4bc393c977725a3b6835
+      spriteID: 8e89fd2851ad4f84f827b06ae7548974
       internalID: -5621901583238756165
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_10
       rect:
         serializedVersion: 2
-        x: 836
-        y: 836
-        width: 209
-        height: 209
+        x: 825
+        y: 832
+        width: 212
+        height: 178
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 38f53656e0b14a61a4d59a290e10d6d8
+      spriteID: 213c44b9e15ffd244a751024a053c410
       internalID: -4554983550157487114
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_11
       rect:
         serializedVersion: 2
-        x: 1045
-        y: 836
-        width: 209
-        height: 209
+        x: 1041
+        y: 827
+        width: 197
+        height: 185
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: f289173bdcb549efa8d8936163fea10a
+      spriteID: 5123d4b552ecde247995e6c7d84b7c44
       internalID: 6377230260972709229
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_12
       rect:
         serializedVersion: 2
-        x: 0
-        y: 627
-        width: 209
-        height: 209
+        x: 3
+        y: 615
+        width: 208
+        height: 180
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: db18ed5302f54f7eaca841987b48340c
+      spriteID: 3732c2553d30df340a4a38913c478b40
       internalID: 130513775572738878
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_13
       rect:
         serializedVersion: 2
-        x: 209
-        y: 627
-        width: 209
-        height: 209
+        x: 230
+        y: 618
+        width: 208
+        height: 180
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 364421bbd05c4d4399a7de222772c3d4
+      spriteID: e50a84908d69c2c44ab5f7856a166060
       internalID: 4169606586229325601
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_14
       rect:
         serializedVersion: 2
-        x: 418
-        y: 627
-        width: 209
-        height: 209
+        x: 446
+        y: 616
+        width: 208
+        height: 180
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 5dda061ec5f649aca9308fc19b4c9129
+      spriteID: 47c757b5854f0a346885c6292deaf57e
       internalID: 1982729940569268970
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_15
       rect:
         serializedVersion: 2
-        x: 627
-        y: 627
-        width: 209
-        height: 209
+        x: 656
+        y: 615
+        width: 208
+        height: 180
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: d7e973b5b3914e8f95e1233009fa2d81
+      spriteID: f2b7502944043b943afc02d28893777c
       internalID: -5755276818106627048
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_16
       rect:
         serializedVersion: 2
-        x: 836
-        y: 627
-        width: 209
-        height: 209
+        x: 864
+        y: 617
+        width: 201
+        height: 180
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 790b080667124544a392fb0e7c2c9a1d
+      spriteID: 9a44cb715f44a0e4ea9301920fc93037
       internalID: -3668307771779723069
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_17
       rect:
         serializedVersion: 2
-        x: 1045
-        y: 627
-        width: 209
-        height: 209
+        x: 1062
+        y: 617
+        width: 188
+        height: 149
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 8821d807cced4c0c8de0b00e0e1d73af
+      spriteID: 8a089c9a63338894f912beee8475b056
       internalID: 5205615606010342118
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_18
       rect:
         serializedVersion: 2
         x: 0
-        y: 418
+        y: 401
         width: 209
-        height: 209
+        height: 188
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 49cf73fec2bf42aea822ae5e6f96e6b3
+      spriteID: 9ed8bb567848f544bb7eaabaab4a7085
       internalID: -7417576210471344319
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_19
       rect:
         serializedVersion: 2
         x: 209
-        y: 418
+        y: 400
         width: 209
-        height: 209
+        height: 191
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 092a85be98ad492c8b892c624d8816d4
+      spriteID: a3b305fffa563b3459fd7d7d0f9abe11
       internalID: 1113147377488882586
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_20
       rect:
         serializedVersion: 2
         x: 418
-        y: 418
+        y: 401
         width: 209
-        height: 209
+        height: 195
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: c93d4ee6b6b34cfeb3a3a0de6f7373d7
+      spriteID: c946c978f9f07964b8068cde59017048
       internalID: 8514757343507701856
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_21
       rect:
         serializedVersion: 2
         x: 627
-        y: 418
+        y: 401
         width: 209
-        height: 209
+        height: 196
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: c4f6ce9b890e4813bda54e14a7c95c93
+      spriteID: 24e10afdc8c0f0d4184d09934fbde96a
       internalID: 9146760672565063109
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_22
       rect:
         serializedVersion: 2
-        x: 836
-        y: 418
-        width: 209
-        height: 209
+        x: 832
+        y: 380
+        width: 210
+        height: 219
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: ed5fe84cbe964510abca844df5823f49
+      spriteID: 5188f2c0b7a700f498efabf2d631d9ea
       internalID: 6237544165248483635
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_23
       rect:
         serializedVersion: 2
-        x: 1045
-        y: 418
+        x: 1041
+        y: 380
         width: 209
-        height: 209
+        height: 218
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: ff3c71cb77ed4171b8eadd04cf7adeef
+      spriteID: 70ec87f86a335c844a35fc44d753e8d8
       internalID: -9038981927815190522
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_24
       rect:
         serializedVersion: 2
         x: 0
         y: 209
         width: 209
-        height: 209
+        height: 163
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 373db2859aa645609e1abbe2520b2dc6
+      spriteID: ecb54e1952df48b48b5dd5ca1ec3fd54
       internalID: 1631774189613782855
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_25
       rect:
         serializedVersion: 2
         x: 209
         y: 209
         width: 209
-        height: 209
+        height: 164
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 9ff8b990d59f441b9d7fa6bc7e30b4c7
+      spriteID: 5f77af2e308c697489492b3441075d99
       internalID: 1020391931385256387
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_26
       rect:
         serializedVersion: 2
         x: 418
         y: 209
         width: 209
-        height: 209
+        height: 163
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 335c392d30aa45acaca9dae7e5158307
+      spriteID: de63bab7d6c4d5f43949b0762d3a85f5
       internalID: -6597454963524386752
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_27
       rect:
         serializedVersion: 2
         x: 627
         y: 209
         width: 209
-        height: 209
+        height: 163
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 3457d485c3af42cf9481ad67899ac769
+      spriteID: d90ec3987f32d0244a4324608db6528d
       internalID: 7115389555375115330
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_28
       rect:
         serializedVersion: 2
         x: 836
-        y: 209
+        y: 207
         width: 209
-        height: 209
+        height: 161
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 4a67ed925f9943f2ae6db20845eac554
+      spriteID: 5cb0f594f0c82984b8a49cde84a3da8b
       internalID: -2553632165747961899
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_29
       rect:
         serializedVersion: 2
         x: 1045
         y: 209
         width: 209
-        height: 209
+        height: 159
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 3ddb42bf8b42422a90326067223a0656
+      spriteID: 73846f4fe7025a940abee210db2c23c4
       internalID: 4373440382788692559
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_30
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 209
-        height: 209
+        y: 17
+        width: 174
+        height: 168
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 1b8a1d5396844f9798c887f430588c8b
+      spriteID: baeb0866abf843b4ca87d1063a6f5329
       internalID: -8133737247207703680
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_31
       rect:
         serializedVersion: 2
-        x: 209
-        y: 0
-        width: 209
-        height: 209
+        x: 190
+        y: 15
+        width: 184
+        height: 171
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 8cf926a2c065420fb41c897732e43cb2
+      spriteID: 1f455b9449d20024e9ae851ad6f397e7
       internalID: -5116738014744219399
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_32
       rect:
         serializedVersion: 2
-        x: 418
-        y: 0
-        width: 209
-        height: 209
+        x: 381
+        y: 18
+        width: 191
+        height: 160
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 05608c90d7674deab5f6ee718b46db68
+      spriteID: 03248dd00306fd941bcdc4036c6ccdc9
       internalID: -3720736025592727851
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_33
       rect:
         serializedVersion: 2
-        x: 627
-        y: 0
-        width: 209
-        height: 209
+        x: 584
+        y: 14
+        width: 191
+        height: 164
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: b3ebac882fa740cface6e750a25bcca7
+      spriteID: 82788ecf5d4f96f46b695a7ec19d43ec
       internalID: 7789281202297455836
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_34
       rect:
         serializedVersion: 2
-        x: 836
-        y: 0
-        width: 209
-        height: 209
+        x: 793
+        y: 12
+        width: 197
+        height: 163
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 88962aa90a4347b4a4a4f115650bb02a
+      spriteID: 686de1efd4dbe634cab0622a4c33c3af
       internalID: -3819508083869057105
       vertices: []
       indices: 
       edges: []
-      weights: []    - serializedVersion: 2
+      weights: []
+    - serializedVersion: 2
       name: Elite_Magma_01_35
       rect:
         serializedVersion: 2
-        x: 1045
-        y: 0
-        width: 209
-        height: 209
+        x: 1012
+        y: 22
+        width: 223
+        height: 151
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: ba76d650e89a4ea4a32e99f5fb304f6e
+      spriteID: 7017e5ee361501e4287b5fdf55ee4f16
       internalID: 6027143250830520059
       vertices: []
       indices: 
       edges: []
-      weights: []    outline: []
+      weights: []
+    outline: []
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 18cbce2bc1b59514e99f02f9fafdd5e9
     internalID: 0
     vertices: []
     indices: 
@@ -989,14 +1025,6 @@ TextureImporter:
     nameFileIdTable:
       Elite_Magma_01_0: -6464910207124509996
       Elite_Magma_01_1: 3634361227548840035
-      Elite_Magma_01_2: 1226325278077113726
-      Elite_Magma_01_3: 2728763963935083403
-      Elite_Magma_01_4: 5789014267184357636
-      Elite_Magma_01_5: 7182815091226040065
-      Elite_Magma_01_6: -4196595827190674286
-      Elite_Magma_01_7: 3852248492337326790
-      Elite_Magma_01_8: 2134226777170371942
-      Elite_Magma_01_9: -5621901583238756165
       Elite_Magma_01_10: -4554983550157487114
       Elite_Magma_01_11: 6377230260972709229
       Elite_Magma_01_12: 130513775572738878
@@ -1007,6 +1035,7 @@ TextureImporter:
       Elite_Magma_01_17: 5205615606010342118
       Elite_Magma_01_18: -7417576210471344319
       Elite_Magma_01_19: 1113147377488882586
+      Elite_Magma_01_2: 1226325278077113726
       Elite_Magma_01_20: 8514757343507701856
       Elite_Magma_01_21: 9146760672565063109
       Elite_Magma_01_22: 6237544165248483635
@@ -1017,15 +1046,21 @@ TextureImporter:
       Elite_Magma_01_27: 7115389555375115330
       Elite_Magma_01_28: -2553632165747961899
       Elite_Magma_01_29: 4373440382788692559
+      Elite_Magma_01_3: 2728763963935083403
       Elite_Magma_01_30: -8133737247207703680
       Elite_Magma_01_31: -5116738014744219399
       Elite_Magma_01_32: -3720736025592727851
       Elite_Magma_01_33: 7789281202297455836
       Elite_Magma_01_34: -3819508083869057105
       Elite_Magma_01_35: 6027143250830520059
+      Elite_Magma_01_4: 5789014267184357636
+      Elite_Magma_01_5: 7182815091226040065
+      Elite_Magma_01_6: -4196595827190674286
+      Elite_Magma_01_7: 3852248492337326790
+      Elite_Magma_01_8: 2134226777170371942
+      Elite_Magma_01_9: -5621901583238756165
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-
