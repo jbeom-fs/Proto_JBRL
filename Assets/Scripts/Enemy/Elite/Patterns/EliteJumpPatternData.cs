@@ -11,6 +11,7 @@ public sealed class EliteJumpPatternData : ElitePatternData
     [SerializeField] private float maxDistance = 5f;
     [SerializeField] private int impactDamage = 3;
     [SerializeField] private float impactRadius = 1.25f;
+    [SerializeField] private float jumpVisualHeight = 1.0f;
     [SerializeField] private bool stayInRoom = true;
     [SerializeField] private bool lockFacingDuringJump = true;
 
@@ -23,6 +24,7 @@ public sealed class EliteJumpPatternData : ElitePatternData
     public float MaxDistance => Mathf.Max(0.01f, maxDistance);
     public int ImpactDamage => Mathf.Max(0, impactDamage);
     public float ImpactRadius => Mathf.Max(0.01f, impactRadius);
+    public float JumpVisualHeight => Mathf.Max(0f, jumpVisualHeight);
     public bool StayInRoom => stayInRoom;
     public bool LockFacingDuringJump => lockFacingDuringJump;
     public EnemyAnimationKey WindupAnimation => windupAnimation;
@@ -48,6 +50,8 @@ public sealed class EliteJumpPatternData : ElitePatternData
             Debug.LogWarning($"[EliteJumpPatternData] {name}: impactDamage is negative.", this);
         if (impactRadius <= 0f)
             Debug.LogWarning($"[EliteJumpPatternData] {name}: impactRadius must be greater than 0.", this);
+        if (jumpVisualHeight < 0f)
+            Debug.LogWarning($"[EliteJumpPatternData] {name}: jumpVisualHeight is negative.", this);
     }
 #endif
 }

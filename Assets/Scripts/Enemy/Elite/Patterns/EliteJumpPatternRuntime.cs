@@ -15,9 +15,12 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
     private Phase _phase;
     private Vector3 _startPosition;
     private Vector3 _targetPosition;
+    private Transform _visualRoot;
+    private Vector3 _visualBaseLocalPosition;
     private Vector2 _facingDirection = Vector2.down;
     private float _timer;
     private bool _appliedImpact;
+    private bool _hasVisualRoot;
     private bool _unlockFacing;
 
     public EliteJumpPatternRuntime(EliteJumpPatternData data)
@@ -30,6 +33,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         _context = context;
         IsFinished = false;
         _appliedImpact = false;
+        _hasVisualRoot = false;
 
         if (!CanRun() || !TryResolveJumpTarget(out _targetPosition))
         {
@@ -37,6 +41,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
             return;
         }
 
+        CacheVisualRoot();
         _startPosition = _context.SelfTransform.position;
         _facingDirection = ResolveFacingDirection(_targetPosition);
         _context.Brain.StopMoving();
@@ -115,10 +120,12 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         _context.Animation?.PlayEliteAnimation(_data.JumpAnimation, _targetPosition);
         _timer = 0f;
         _phase = Phase.Jump;
+        ApplyVisualOffset(0f);
 
         if (_data.JumpDuration <= 0f)
         {
             _context.SelfTransform.position = _targetPosition;
+            RestoreVisualOffset();
             _phase = Phase.Impact;
         }
     }
@@ -131,9 +138,13 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         _timer += Mathf.Max(0f, deltaTime);
         float t = Mathf.Clamp01(_timer / _data.JumpDuration);
         _context.SelfTransform.position = Vector3.Lerp(_startPosition, _targetPosition, t);
+        ApplyVisualOffset(t);
 
         if (t >= 1f)
+        {
+            RestoreVisualOffset();
             _phase = Phase.Impact;
+        }
     }
 
     private void ApplyImpactAndRecover()
@@ -146,6 +157,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
 
         _timer = _data.RecoveryDuration;
         _phase = Phase.Recovery;
+        RestoreVisualOffset();
 
         if (_timer <= 0f)
             Finish();
@@ -303,6 +315,41 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
                _context.HasLiveTarget;
     }
 
+    private void CacheVisualRoot()
+    {
+        _visualRoot = _context.Animation != null ? _context.Animation.VisualRoot : null;
+        if (_visualRoot == null)
+            return;
+
+        _visualBaseLocalPosition = _visualRoot.localPosition;
+        _hasVisualRoot = true;
+    }
+
+    private void ApplyVisualOffset(float progress)
+    {
+        if (!_hasVisualRoot || _visualRoot == null)
+            return;
+
+        float height = _data.JumpVisualHeight;
+        if (height <= 0f)
+        {
+            RestoreVisualOffset();
+            return;
+        }
+
+        float t = Mathf.Clamp01(progress);
+        float offset = Mathf.Sin(t * Mathf.PI) * height;
+        _visualRoot.localPosition = _visualBaseLocalPosition + Vector3.up * offset;
+    }
+
+    private void RestoreVisualOffset()
+    {
+        if (!_hasVisualRoot || _visualRoot == null)
+            return;
+
+        _visualRoot.localPosition = _visualBaseLocalPosition;
+    }
+
     private void Finish()
     {
         Cleanup();
@@ -311,6 +358,8 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
 
     private void Cleanup()
     {
+        RestoreVisualOffset();
+
         if (_unlockFacing)
             _context?.Animation?.UnlockSpecialFacing();
 

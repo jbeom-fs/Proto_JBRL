@@ -86,6 +86,14 @@ public class EnemyAnimationController : MonoBehaviour
     }
 
     public bool FaceTargetWhileChasing => faceTargetWhileChasing;
+    public Transform VisualRoot
+    {
+        get
+        {
+            ResolveDependencies();
+            return spriteRenderer != null ? spriteRenderer.transform : null;
+        }
+    }
 
     public void ResetAnimationState()
     {

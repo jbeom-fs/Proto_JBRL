@@ -19,12 +19,12 @@ MonoBehaviour:
   weight: 1
   recoveryDuration: 0.5
   windupDuration: 0.4
-  projectilePrefab: {fileID: 2381044973620445434, guid: 554da9809b14bd84f8b63a83d7512688, type: 3}
+  projectilePrefab: {fileID: 2350118766386836629, guid: c66242ce83733664da8d3f37c88da7b0, type: 3}
   damage: 5
   projectileSpeed: 8
   projectileLifetime: 3
-  firePattern: 0
-  projectileCount: 1
+  firePattern: 2
+  projectileCount: 5
   spreadAngle: 30
   burstInterval: 0.1
   wallHitMode: 0

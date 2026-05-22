@@ -23,6 +23,7 @@ MonoBehaviour:
   maxDistance: 5
   impactDamage: 3
   impactRadius: 1.25
+  jumpVisualHeight: 2
   stayInRoom: 1
   lockFacingDuringJump: 1
   windupAnimation: 5
