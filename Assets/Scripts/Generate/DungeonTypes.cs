@@ -58,6 +58,7 @@ public static class DeterministicSeedUtility
     private const uint FnvaPrime = 16777619u;
 
     public const string EnemySpawnDomain = "enemy_spawn";
+    public const string EliteRoomSpawnDomain = "elite_room_spawn";
     public const string EliteKeyDomain = "elite_key";
 
     public static int CreateStableRoomKey(DungeonGenerator.RoomRect rect)

@@ -56717,6 +56717,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
   - {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
   - {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
+  eliteRoomEnemyTable:
+  - {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
   densityFactor: 0.1
   normalMultiplier: 1
   monsterDenMultiplier: 2.5

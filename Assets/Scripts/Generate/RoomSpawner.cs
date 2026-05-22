@@ -6,6 +6,7 @@ public class RoomSpawner : MonoBehaviour
     [Header("Dependencies")]
     [SerializeField] private DungeonEventChannel eventChannel;
     [SerializeField] private EnemyData[] enemyTable;
+    [SerializeField] private EnemyData[] eliteRoomEnemyTable;
 
     [Header("Budget")]
     [SerializeField] private float densityFactor = 0.1f;
@@ -16,12 +17,15 @@ public class RoomSpawner : MonoBehaviour
     [SerializeField] private float spawnFootprintRadius = 0.34f;
 
     private readonly List<EnemyData> _candidates = new();
+    private readonly List<EnemyData> _eliteCandidates = new();
     private readonly List<EnemyData> _poolEnemyTable = new();
     private readonly List<GameObject> activeEnemies = new();
     private readonly HashSet<int> _startedRoomKeys = new();
     private RoomInfo? _activeRoom;
     private RoomInfo? _pendingRoomStart;
     private EliteKeyPlan _eliteKeyPlan;
+    private bool _warnedEliteInNormalTable;
+    private bool _warnedInvalidEliteCandidate;
 
     private struct EliteKeyPlan
     {
@@ -63,8 +67,7 @@ public class RoomSpawner : MonoBehaviour
     private void OnRoomEntered(RoomEnteredEventArgs args)
     {
         if (!args.IsFirstVisit) return;
-        if (args.Room.IsElite) return;
-        if (args.Room.Type != RoomType.Normal && args.Room.Type != RoomType.MonsterDen) return;
+        if (!args.Room.IsElite && args.Room.Type != RoomType.Normal && args.Room.Type != RoomType.MonsterDen) return;
         if (_startedRoomKeys.Contains(GetRoomKey(args.Room))) return;
 
         if (!CanStartRoomEncounter(args.Room))
@@ -181,10 +184,15 @@ public class RoomSpawner : MonoBehaviour
     {
         var dungeonManager = DungeonManager.Instance;
         if (dungeonManager == null || dungeonManager.Data == null) return;
-        if (room.IsElite) return;
         if (EnemyPoolManager.Instance == null)
         {
             Debug.LogWarning("[RoomSpawner] EnemyPoolManager.Instance is missing.");
+            return;
+        }
+
+        if (room.IsElite)
+        {
+            SpawnEliteRoom(room, dungeonManager);
             return;
         }
 
@@ -248,6 +256,60 @@ public class RoomSpawner : MonoBehaviour
             _activeRoom = null;
             dungeonManager.OpenCurrentRoomDoors();
         }
+    }
+
+    private void SpawnEliteRoom(RoomInfo room, DungeonManager dungeonManager)
+    {
+        List<Vector2Int> walkableTiles = dungeonManager.Data.GetWalkableTiles(room);
+        FilterUnsafeSpawnTiles(walkableTiles, room, dungeonManager);
+        if (walkableTiles.Count == 0)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[RoomSpawner] Elite Room has no safe spawn tiles.", this);
+#endif
+            return;
+        }
+
+        SortSpawnTiles(walkableTiles);
+
+        SpawnRegion region = dungeonManager.Data.currentStageRegion;
+        int roomSeed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)region,
+            dungeonManager.floor,
+            room.StableRoomKey,
+            DeterministicSeedUtility.EliteRoomSpawnDomain);
+        var roomRng = new System.Random(roomSeed);
+        Shuffle(walkableTiles, roomRng);
+
+        BuildEliteCandidates(region, dungeonManager.CurrentFloor);
+        if (_eliteCandidates.Count == 0)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[RoomSpawner] Elite Room has no valid elite spawn candidates.", this);
+#endif
+            return;
+        }
+
+        EnemyData selected = _eliteCandidates[roomRng.Next(_eliteCandidates.Count)];
+        EnemyController enemy = EnemyPoolManager.Instance.Request(selected);
+        if (enemy == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[RoomSpawner] Failed to request elite enemy from pool: " + selected.name, this);
+#endif
+            return;
+        }
+
+        BeginRoomSpawnTracking(room);
+
+        Vector2Int tile = walkableTiles[0];
+        enemy.transform.position = dungeonManager.GridToWorld(tile);
+        enemy.transform.SetParent(null);
+        enemy.Initialize(selected);
+        TrackEnemy(enemy);
+
+        dungeonManager.CloseCurrentRoomDoors(room);
     }
 
     private int CountDeterministicSpawns(RoomInfo room, DungeonManager dungeonManager)
@@ -392,6 +454,11 @@ public class RoomSpawner : MonoBehaviour
         foreach (EnemyData enemy in source)
         {
             if (enemy == null) continue;
+            if (enemy.IsElite)
+            {
+                WarnEliteInNormalTable(enemy);
+                continue;
+            }
 
             // 비트 플래그 필터: 적의 허용 지역과 현재 스테이지 지역이 하나라도 겹쳐야 스폰 가능하다.
             bool regionMatches = (enemy.allowedRegions & region) != 0;
@@ -401,6 +468,90 @@ public class RoomSpawner : MonoBehaviour
 
             _candidates.Add(enemy);
         }
+    }
+
+    private void BuildEliteCandidates(SpawnRegion region, int currentFloor)
+    {
+        _eliteCandidates.Clear();
+
+        if (eliteRoomEnemyTable == null || eliteRoomEnemyTable.Length == 0)
+            return;
+
+        for (int i = 0; i < eliteRoomEnemyTable.Length; i++)
+        {
+            EnemyData enemy = eliteRoomEnemyTable[i];
+            if (enemy == null)
+            {
+                WarnInvalidEliteCandidate("Elite Room candidate is null.");
+                continue;
+            }
+
+            if (!enemy.IsElite)
+            {
+                WarnInvalidEliteCandidate(enemy.name + " is not elite and will be ignored for Elite Rooms.");
+                continue;
+            }
+
+            bool regionMatches = (enemy.allowedRegions & region) != 0;
+            if (!regionMatches) continue;
+            if (!enemy.IsAvailableOnFloor(currentFloor)) continue;
+
+            _eliteCandidates.Add(enemy);
+        }
+    }
+
+    private void WarnEliteInNormalTable(EnemyData enemy)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedEliteInNormalTable)
+            return;
+
+        _warnedEliteInNormalTable = true;
+        string name = enemy != null ? enemy.name : "Unknown";
+        Debug.LogWarning("[RoomSpawner] Elite enemy is in normal enemy table and will be ignored for normal rooms: " + name, this);
+#endif
+    }
+
+    private void WarnInvalidEliteCandidate(string message)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedInvalidEliteCandidate)
+            return;
+
+        _warnedInvalidEliteCandidate = true;
+        Debug.LogWarning("[RoomSpawner] " + message, this);
+#endif
+    }
+
+    private void OnValidate()
+    {
+#if UNITY_EDITOR
+        ValidateEliteRoomEnemyTable();
+#endif
+    }
+
+    private void ValidateEliteRoomEnemyTable()
+    {
+#if UNITY_EDITOR
+        if (eliteRoomEnemyTable == null || eliteRoomEnemyTable.Length == 0)
+        {
+            Debug.LogWarning("[RoomSpawner] Elite Room enemy table is empty.", this);
+            return;
+        }
+
+        for (int i = 0; i < eliteRoomEnemyTable.Length; i++)
+        {
+            EnemyData enemy = eliteRoomEnemyTable[i];
+            if (enemy == null)
+            {
+                Debug.LogWarning("[RoomSpawner] Elite Room enemy table has a null entry.", this);
+                continue;
+            }
+
+            if (!enemy.IsElite)
+                Debug.LogWarning("[RoomSpawner] Elite Room enemy table contains non-elite EnemyData: " + enemy.name, this);
+        }
+#endif
     }
 
     private void FilterUnsafeSpawnTiles(List<Vector2Int> tiles, RoomInfo room, DungeonManager dungeonManager)
