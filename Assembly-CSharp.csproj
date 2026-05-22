@@ -109,6 +109,7 @@
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
     <Compile Include="Assets\Scripts\PlayerInputKeySettings.cs" />
@@ -117,6 +118,7 @@
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternData.cs" />
     <Compile Include="Assets\Scripts\Items\DropItemSpawner.cs" />
     <Compile Include="Assets\Scripts\Combat\AimDirectionUtility.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
@@ -148,6 +150,7 @@
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Pillar.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
@@ -170,6 +173,7 @@
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Cattail.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />
     <Compile Include="Assets\Scripts\UI\MinimapController.cs" />

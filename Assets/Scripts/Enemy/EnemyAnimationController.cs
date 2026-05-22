@@ -5,6 +5,7 @@ public class EnemyAnimationController : MonoBehaviour
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
     private static readonly int AttackTriggerHash = Animator.StringToHash("AttackTrigger");
     private static readonly int ProjectileTriggerHash = Animator.StringToHash("ProjectileTrigger");
+    private static readonly int DashTriggerHash = Animator.StringToHash("DashTrigger");
     private static readonly int ChargeTriggerHash = Animator.StringToHash("ChargeTrigger");
     private static readonly int RushTriggerHash = Animator.StringToHash("RushTrigger");
     private static readonly int JumpTriggerHash = Animator.StringToHash("JumpTrigger");
@@ -32,6 +33,7 @@ public class EnemyAnimationController : MonoBehaviour
     private bool _hasIsMoving;
     private bool _hasAttackTrigger;
     private bool _hasProjectileTrigger;
+    private bool _hasDashTrigger;
     private bool _hasChargeTrigger;
     private bool _hasRushTrigger;
     private bool _hasJumpTrigger;
@@ -104,6 +106,7 @@ public class EnemyAnimationController : MonoBehaviour
 
         animator.ResetTrigger(AttackTriggerHash);
         ResetTrigger(ProjectileTriggerHash, _hasProjectileTrigger);
+        ResetTrigger(DashTriggerHash, _hasDashTrigger);
         ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
         ResetTrigger(RushTriggerHash, _hasRushTrigger);
         ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
@@ -195,6 +198,10 @@ public class EnemyAnimationController : MonoBehaviour
                 SetTriggerOrAttack(ProjectileTriggerHash, _hasProjectileTrigger);
                 break;
 
+            case EnemyAnimationKey.Dash:
+                SetTriggerOrAttack(DashTriggerHash, _hasDashTrigger);
+                break;
+
             case EnemyAnimationKey.Charge:
                 PlayCharge(targetPosition);
                 break;
@@ -262,6 +269,7 @@ public class EnemyAnimationController : MonoBehaviour
 
         ResetTrigger(AttackTriggerHash, _hasAttackTrigger);
         ResetTrigger(ProjectileTriggerHash, _hasProjectileTrigger);
+        ResetTrigger(DashTriggerHash, _hasDashTrigger);
         ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
         ResetTrigger(RushTriggerHash, _hasRushTrigger);
         ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
@@ -312,6 +320,7 @@ public class EnemyAnimationController : MonoBehaviour
         _hasIsMoving = false;
         _hasAttackTrigger = false;
         _hasProjectileTrigger = false;
+        _hasDashTrigger = false;
         _hasChargeTrigger = false;
         _hasRushTrigger = false;
         _hasJumpTrigger = false;
@@ -330,6 +339,7 @@ public class EnemyAnimationController : MonoBehaviour
             if (parameter.nameHash == IsMovingHash) _hasIsMoving = true;
             if (parameter.nameHash == AttackTriggerHash) _hasAttackTrigger = true;
             if (parameter.nameHash == ProjectileTriggerHash) _hasProjectileTrigger = true;
+            if (parameter.nameHash == DashTriggerHash) _hasDashTrigger = true;
             if (parameter.nameHash == ChargeTriggerHash) _hasChargeTrigger = true;
             if (parameter.nameHash == RushTriggerHash) _hasRushTrigger = true;
             if (parameter.nameHash == JumpTriggerHash) _hasJumpTrigger = true;

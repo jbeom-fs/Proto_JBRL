@@ -43,7 +43,8 @@ public enum EnemyAnimationKey
     Charge,
     Rush,
     Jump,
-    Land
+    Land,
+    Dash
 }
 
 [System.Serializable]
