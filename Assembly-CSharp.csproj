@@ -70,6 +70,8 @@
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\Coin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_AnimatedCharacterSelection.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteProjectilePatternRuntime.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternRuntime.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverUIController.cs" />
     <Compile Include="Assets\Scripts\Visual\FogVisibilityRenderer.cs" />
     <Compile Include="Assets\Scripts\UI\InventorySlotUI.cs" />
@@ -81,11 +83,13 @@
     <Compile Include="Assets\Scripts\Combat\MovementBlockerQuery.cs" />
     <Compile Include="Assets\Scripts\Generate\FloorTransitionService.cs" />
     <Compile Include="Assets\Scripts\Generate\FogOfWarController.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteProjectilePatternData.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomSpawner.cs" />
     <Compile Include="Assets\Scripts\Items\ItemData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternSet.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonQueryService.cs" />
     <Compile Include="Assets\Scripts\UI\InventoryUIController.cs" />
     <Compile Include="Assets\Scripts\GameLocationType.cs" />
@@ -117,6 +121,7 @@
     <Compile Include="Assets\Scripts\Combat\AimDirectionUtility.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_GrassLong.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternData.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Table.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
     <Compile Include="Assets\Scripts\TownDungeonTransitionManager.cs" />
@@ -127,6 +132,7 @@
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\PlayerMovement.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverSceneReloadRestartHandler.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseSource.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternContext.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_StaggerAnimation.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
@@ -159,6 +165,7 @@
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
     <Compile Include="Assets\Scripts\LocationRootRegistry.cs" />
+    <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternRunner.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />

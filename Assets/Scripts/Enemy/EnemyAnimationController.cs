@@ -4,6 +4,7 @@ public class EnemyAnimationController : MonoBehaviour
 {
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
     private static readonly int AttackTriggerHash = Animator.StringToHash("AttackTrigger");
+    private static readonly int ProjectileTriggerHash = Animator.StringToHash("ProjectileTrigger");
     private static readonly int ChargeTriggerHash = Animator.StringToHash("ChargeTrigger");
     private static readonly int RushTriggerHash = Animator.StringToHash("RushTrigger");
     private static readonly int JumpTriggerHash = Animator.StringToHash("JumpTrigger");
@@ -30,6 +31,7 @@ public class EnemyAnimationController : MonoBehaviour
     private bool _lockedFacingRight;
     private bool _hasIsMoving;
     private bool _hasAttackTrigger;
+    private bool _hasProjectileTrigger;
     private bool _hasChargeTrigger;
     private bool _hasRushTrigger;
     private bool _hasJumpTrigger;
@@ -101,6 +103,7 @@ public class EnemyAnimationController : MonoBehaviour
             return;
 
         animator.ResetTrigger(AttackTriggerHash);
+        ResetTrigger(ProjectileTriggerHash, _hasProjectileTrigger);
         ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
         ResetTrigger(RushTriggerHash, _hasRushTrigger);
         ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
@@ -169,6 +172,57 @@ public class EnemyAnimationController : MonoBehaviour
         SetTriggerOrAttack(LandTriggerHash, _hasLandTrigger);
     }
 
+    public void PlayEliteAnimation(EnemyAnimationKey key)
+    {
+        PlayEliteAnimation(key, transform.position);
+    }
+
+    public void PlayEliteAnimation(EnemyAnimationKey key, Vector3 targetPosition)
+    {
+        if (_isDead || key == EnemyAnimationKey.None)
+            return;
+
+        switch (key)
+        {
+            case EnemyAnimationKey.Attack:
+                PlayAttack(targetPosition);
+                break;
+
+            case EnemyAnimationKey.Projectile:
+                if (faceTargetOnAttack)
+                    FacePosition(targetPosition);
+
+                SetTriggerOrAttack(ProjectileTriggerHash, _hasProjectileTrigger);
+                break;
+
+            case EnemyAnimationKey.Charge:
+                PlayCharge(targetPosition);
+                break;
+
+            case EnemyAnimationKey.Rush:
+                PlayRush();
+                break;
+
+            case EnemyAnimationKey.Jump:
+                PlayJump();
+                break;
+
+            case EnemyAnimationKey.Land:
+                PlayLand();
+                break;
+        }
+    }
+
+    public void LockSpecialFacing(Vector2 direction)
+    {
+        LockFacing(direction);
+    }
+
+    public void UnlockSpecialFacing()
+    {
+        UnlockFacing();
+    }
+
     public void LockFacing(Vector2 direction)
     {
         if (_isDead)
@@ -207,6 +261,7 @@ public class EnemyAnimationController : MonoBehaviour
             return;
 
         ResetTrigger(AttackTriggerHash, _hasAttackTrigger);
+        ResetTrigger(ProjectileTriggerHash, _hasProjectileTrigger);
         ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
         ResetTrigger(RushTriggerHash, _hasRushTrigger);
         ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
@@ -256,6 +311,7 @@ public class EnemyAnimationController : MonoBehaviour
     {
         _hasIsMoving = false;
         _hasAttackTrigger = false;
+        _hasProjectileTrigger = false;
         _hasChargeTrigger = false;
         _hasRushTrigger = false;
         _hasJumpTrigger = false;
@@ -273,6 +329,7 @@ public class EnemyAnimationController : MonoBehaviour
         {
             if (parameter.nameHash == IsMovingHash) _hasIsMoving = true;
             if (parameter.nameHash == AttackTriggerHash) _hasAttackTrigger = true;
+            if (parameter.nameHash == ProjectileTriggerHash) _hasProjectileTrigger = true;
             if (parameter.nameHash == ChargeTriggerHash) _hasChargeTrigger = true;
             if (parameter.nameHash == RushTriggerHash) _hasRushTrigger = true;
             if (parameter.nameHash == JumpTriggerHash) _hasJumpTrigger = true;

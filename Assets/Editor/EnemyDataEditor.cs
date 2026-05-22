@@ -26,6 +26,8 @@ public sealed class EnemyDataEditor : Editor
     private SerializedProperty _isStationary;
     private SerializedProperty _immuneToKnockback;
     private SerializedProperty _blocksMovement;
+    private SerializedProperty _isElite;
+    private SerializedProperty _elitePatternSet;
     private SerializedProperty _attackCooldown;
     private SerializedProperty _attackWindup;
     private SerializedProperty _attackRecovery;
@@ -86,6 +88,8 @@ public sealed class EnemyDataEditor : Editor
         _isStationary = FindHandled(nameof(EnemyData.isStationary));
         _immuneToKnockback = FindHandled(nameof(EnemyData.immuneToKnockback));
         _blocksMovement = FindHandled(nameof(EnemyData.blocksMovement));
+        _isElite = FindHandled("isElite");
+        _elitePatternSet = FindHandled("elitePatternSet");
         _attackCooldown = FindHandled(nameof(EnemyData.attackCooldown));
         _attackWindup = FindHandled(nameof(EnemyData.attackWindup));
         _attackRecovery = FindHandled(nameof(EnemyData.attackRecovery));
@@ -152,6 +156,7 @@ public sealed class EnemyDataEditor : Editor
         }
 
         DrawSeparationCollisionSection();
+        DrawEliteSection();
         DrawRewardMiscSection();
         DrawUnhandledSection();
 
@@ -348,6 +353,41 @@ public sealed class EnemyDataEditor : Editor
     {
         DrawSectionHeader("Separation / Collision");
         DrawProperty(_knockbackResistance);
+    }
+
+    private void DrawEliteSection()
+    {
+        DrawSectionHeader("Elite");
+        DrawProperty(_isElite);
+
+        if (_isElite != null && _isElite.hasMultipleDifferentValues)
+        {
+            DrawProperty(_elitePatternSet, "Elite Pattern Set");
+            EditorGUILayout.HelpBox(
+                "Multiple EnemyData assets have different Elite flags. Elite Pattern Set is used only when Is Elite is true.",
+                MessageType.Info);
+            return;
+        }
+
+        if (IsBoolEnabled(_isElite))
+        {
+            DrawProperty(_elitePatternSet, "Elite Pattern Set");
+            if (_elitePatternSet != null && _elitePatternSet.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Is Elite is true but Elite Pattern Set is missing.",
+                    MessageType.Warning);
+            }
+            return;
+        }
+
+        if (_elitePatternSet != null && _elitePatternSet.objectReferenceValue != null)
+        {
+            DrawProperty(_elitePatternSet, "Elite Pattern Set");
+            EditorGUILayout.HelpBox(
+                "Elite Pattern Set is assigned but Is Elite is false. Elite patterns will be ignored.",
+                MessageType.Info);
+        }
     }
 
     private void DrawRewardMiscSection()

@@ -35,6 +35,17 @@ public enum EnemySpecialAttackType
     Jump
 }
 
+public enum EnemyAnimationKey
+{
+    None,
+    Attack,
+    Projectile,
+    Charge,
+    Rush,
+    Jump,
+    Land
+}
+
 [System.Serializable]
 public struct EnemyAttackImpactData
 {
@@ -102,6 +113,13 @@ public class EnemyData : ScriptableObject
 
     [Tooltip("If true, this enemy blocks Player walking and dash movement. This does not affect AI movement or knockback by itself.")]
     public bool blocksMovement = false;
+
+    [Header("Elite")]
+    [SerializeField] private bool isElite = false;
+    [SerializeField] private ElitePatternSet elitePatternSet = null;
+
+    public bool IsElite => isElite;
+    public ElitePatternSet ElitePatternSet => elitePatternSet;
 
     [Header("Attack")]
     [Tooltip("Ranged behavior cooldown between attacks.")]
@@ -248,12 +266,25 @@ public class EnemyData : ScriptableObject
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void OnValidate()
     {
-        if (!HasInvalidFloorRange())
-            return;
+        if (HasInvalidFloorRange())
+        {
+            Debug.LogWarning(
+                $"[EnemySpawnData] Invalid floor range: minFloor={minFloor}, maxFloor={maxFloor}, asset={name}",
+                this);
+        }
 
-        Debug.LogWarning(
-            $"[EnemySpawnData] Invalid floor range: minFloor={minFloor}, maxFloor={maxFloor}, asset={name}",
-            this);
+        if (isElite && elitePatternSet == null)
+        {
+            Debug.LogWarning(
+                $"[EnemyData] {name}: isElite is true but ElitePatternSet is missing.",
+                this);
+        }
+        else if (!isElite && elitePatternSet != null)
+        {
+            Debug.LogWarning(
+                $"[EnemyData] {name}: ElitePatternSet is assigned but isElite is false. Elite patterns will be ignored.",
+                this);
+        }
     }
 #endif
 }

@@ -56677,6 +56677,9 @@ MonoBehaviour:
   - data: {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
     prefab: {fileID: 3448492780483144301, guid: b5883a02385742a6aa86995da202f269, type: 3}
     preloadCount: 8
+  - data: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
+    prefab: {fileID: 3448492780483144301, guid: d8a2a9fc60d442fa9ea13b89890d648b, type: 3}
+    preloadCount: 4
 --- !u!4 &1736969808
 Transform:
   m_ObjectHideFlags: 0
@@ -56713,6 +56716,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: acc8aa9d142d4770993b3aa35c175cb6, type: 2}
   - {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
   - {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
+  - {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
   densityFactor: 0.1
   normalMultiplier: 1
   monsterDenMultiplier: 2.5
