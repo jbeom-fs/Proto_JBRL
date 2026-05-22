@@ -14,11 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EliteDashPatternData
   displayName: Elite Magma Dash
   cooldown: 3
-  minRange: 10
+  minRange: 0
   maxRange: 20
   weight: 1
   recoveryDuration: 0.45
-  windup: 1
+  windup: 0.5
   dashSpeed: 15
   dashDuration: 0.2
   damage: 2
