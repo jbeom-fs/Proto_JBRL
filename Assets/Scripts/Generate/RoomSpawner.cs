@@ -291,7 +291,8 @@ public class RoomSpawner : MonoBehaviour
         eliteArenaEncounterController.PrepareEntrancePortal(room, dungeonManager);
     }
 
-    public int ForceKillCurrentEncounterEnemiesForDebug()
+    // Developer Console 전용. DeveloperConsoleCommandExecutor 외부 호출 금지.
+    internal int ForceKillCurrentEncounterEnemiesForDebug()
     {
         int killedCount = ForceKillTrackedEnemiesForDebug();
 

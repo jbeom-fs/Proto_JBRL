@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -221,7 +221,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bcfb87a4c1a24310be22670c0a3b3790, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocationRoot
   locationRootId: elite_arena
 --- !u!4 &50012721
@@ -289,7 +289,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
   m_Navigation:
     m_Mode: 3
@@ -402,7 +402,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3cf855efefea4dbfbf98c48f4d5bf95f, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RuntimePerfTraceLogger
   enableOnAwake: 1
   spikeFrameMsThreshold: 33.3
@@ -470,7 +470,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64a91e1727506ab4285b1c07536d51b4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorController
   eventChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
   dungeonRenderer: {fileID: 365644549}
@@ -521,7 +521,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -1520,10 +1520,7 @@ MonoBehaviour:
   closeWithEscape: 1
   maxLogLines: 120
   maxCommandHistory: 50
-  transitionManager: {fileID: 920100002}
-  teleportDestinationDatabase: {fileID: 11400000, guid: 6b019d483f774c33b2de338a6ca0e9d5, type: 2}
-  player: {fileID: 1562452755}
-  dungeonManager: {fileID: 411232467}
+  commandExecutor: {fileID: 0}
   autocompletePanel: {fileID: 500000010}
   autocompleteText: {fileID: 500000023}
 --- !u!1 &300000010
@@ -6283,80 +6280,6 @@ MonoBehaviour:
   generateNewDungeonOnEnter: 1
   resetFloorOnNewDungeonRun: 1
   disableCombatInTown: 1
---- !u!1 &2201000000
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2201000001}
-  - component: {fileID: 2201000002}
-  - component: {fileID: 2201000003}
-  m_Layer: 0
-  m_Name: EliteArenaEncounterController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2201000001
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2201000000}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2201000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2201000000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 52415ba618eb4792ad1200aaac9bc451, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::EliteArenaEncounterController
-  transitionManager: {fileID: 920100002}
-  arenaDestinationId: elite_arena
-  arenaWalkTilemap: {fileID: 1206688124}
-  arenaWallTilemap: {fileID: 1309604883}
-  eliteSpawnPoint: {fileID: 0}
-  returnPortal: {fileID: 0}
-  returnPortalPrefab: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
-  returnPortalSpawnPoint: {fileID: 0}
-  returnPortalParent: {fileID: 0}
-  walkabilityArea: {fileID: 2201000003}
-  entrancePortalInstance: {fileID: 0}
-  entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
-  entrancePortalParent: {fileID: 0}
-  eliteRoomReturnPoint: {fileID: 0}
---- !u!114 &2201000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2201000000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a3f9d2e8c1b4a5d6e9f0c8b2a1d3e4f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  id: elite_arena
-  walkTilemap: {fileID: 1206688124}
-  wallTilemap: {fileID: 1309604883}
 --- !u!1 &920100007
 GameObject:
   m_ObjectHideFlags: 0
@@ -6633,7 +6556,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.4461278}
@@ -15989,7 +15912,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.4433962, g: 0.4433962, b: 0.4433962, a: 0.50980395}
@@ -16064,7 +15987,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -21068,7 +20991,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -21202,7 +21125,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bcfb87a4c1a24310be22670c0a3b3790, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocationRoot
   locationRootId: dungeon
 --- !u!1 &1363907955
@@ -68500,6 +68423,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1859646878}
   m_CullTransparentMesh: 1
+--- !u!1 &1860777226
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1860777228}
+  - component: {fileID: 1860777227}
+  m_Layer: 0
+  m_Name: DeveloperConsoleCommandExecutor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1860777227
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1860777226}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aaa4b3557db9da343870aa977068cb6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeveloperConsoleCommandExecutor
+  roomSpawner: {fileID: 1736969809}
+  dungeonManager: {fileID: 411232467}
+  transitionManager: {fileID: 920100002}
+  eliteArenaEncounterController: {fileID: 2201000002}
+  player: {fileID: 1562452755}
+  teleportDestinationDatabase: {fileID: 11400000, guid: 6b019d483f774c33b2de338a6ca0e9d5, type: 2}
+--- !u!4 &1860777228
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1860777226}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 389.7, y: -48, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1877801297
 GameObject:
   m_ObjectHideFlags: 0
@@ -127821,6 +127794,83 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bbf00d2681ca41eaa1de525c32d86af6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameOverSceneReloadRestartHandler
+--- !u!1 &2201000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2201000001}
+  - component: {fileID: 2201000002}
+  - component: {fileID: 2201000003}
+  m_Layer: 0
+  m_Name: EliteArenaEncounterController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2201000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2201000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2201000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2201000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52415ba618eb4792ad1200aaac9bc451, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EliteArenaEncounterController
+  transitionManager: {fileID: 920100002}
+  arenaDestinationId: elite_arena
+  arenaWalkTilemap: {fileID: 1206688124}
+  arenaWallTilemap: {fileID: 1309604883}
+  eliteSpawnPoint: {fileID: 0}
+  returnPortal: {fileID: 0}
+  returnPortalPrefab: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+  returnPortalSpawnPoint: {fileID: 0}
+  returnPortalParent: {fileID: 0}
+  walkabilityArea: {fileID: 2201000003}
+  entrancePortalInstance: {fileID: 0}
+  entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+  entrancePortalParent: {fileID: 0}
+  eliteRoomReturnPoint: {fileID: 0}
+--- !u!114 &2201000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2201000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a3f9d2e8c1b4a5d6e9f0c8b2a1d3e4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  id: elite_arena
+  walkTilemap: {fileID: 1206688124}
+  wallTilemap: {fileID: 1309604883}
+  footprintInsetMultiplier: 0.85
+  debugLogFootprintFailures: 0
+  drawCellBoundsGizmo: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -127841,3 +127891,5 @@ SceneRoots:
   - {fileID: 300000022}
   - {fileID: 990200001}
   - {fileID: 50012721}
+  - {fileID: 2201000001}
+  - {fileID: 1860777228}

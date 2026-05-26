@@ -130,7 +130,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     }
 
     // Developer console only: routes through the normal death pipeline.
-    public void ForceKillForDebug()
+    internal void ForceKillForDebug()
     {
         if (IsDead || !IsAlive)
             return;

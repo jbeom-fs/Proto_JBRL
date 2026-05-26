@@ -21,14 +21,11 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
     [SerializeField] private bool closeWithEscape = true;
     [SerializeField] private int maxLogLines = 120;
     [SerializeField] private int maxCommandHistory = 50;
-    [SerializeField] private TownDungeonTransitionManager transitionManager;
-    [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
-    [SerializeField] private PlayerController player;
-    [SerializeField] private DungeonManager dungeonManager;
+    [SerializeField] private DeveloperConsoleCommandExecutor commandExecutor;
     [SerializeField] private GameObject autocompletePanel;
     [SerializeField] private TMP_Text autocompleteText;
 
-    private readonly DeveloperConsoleService _service = new DeveloperConsoleService();
+    private DeveloperConsoleService _service;
     private readonly List<string> _logLines = new List<string>(128);
     private readonly List<string> _commandHistory = new List<string>(64);
     private readonly StringBuilder _logBuilder = new StringBuilder(4096);
@@ -68,6 +65,13 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         }
 
         s_Active = this;
+        _service = new DeveloperConsoleService(commandExecutor);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (commandExecutor == null)
+            Debug.LogWarning("[DeveloperConsoleUI] commandExecutor is not assigned — game-state commands will fail.", this);
+#endif
+
         if (root != null)
             root.SetActive(false);
 
@@ -186,7 +190,7 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         StoreCommandHistory(commandText);
         ResetHistoryNavigation();
 
-        DeveloperConsoleCommandResult result = _service.Execute(commandText, CreateCommandContext());
+        DeveloperConsoleCommandResult result = _service.Execute(commandText);
         inputField.text = string.Empty;
 
         if (result.Handled)
@@ -246,7 +250,7 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
             string commandName = rawCmd.Length > 0 && rawCmd[0] == '/' ? rawCmd.Substring(1) : rawCmd;
             string commandPrefix = rawCmd.Length > 0 && rawCmd[0] == '/' ? rawCmd : "/" + rawCmd;
 
-            _service.GetArgumentSuggestions(commandName, currentArg, teleportDestinationDatabase, _commandNamesBuffer, MaxAutocompleteSuggestions);
+            _service.GetArgumentSuggestions(commandName, currentArg, _commandNamesBuffer, MaxAutocompleteSuggestions);
             for (int i = 0; i < _commandNamesBuffer.Count; i++)
                 _autocompleteSuggestions.Add(commandPrefix + " " + _commandNamesBuffer[i]);
             _commandNamesBuffer.Clear();
@@ -372,14 +376,6 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
         _isCyclingAutocomplete = false;
         SetAutocompleteVisible(false);
     }
-
-    private DeveloperConsoleCommandContext CreateCommandContext()
-        => new DeveloperConsoleCommandContext(
-            this,
-            transitionManager,
-            teleportDestinationDatabase,
-            player,
-            dungeonManager);
 
     private void AppendCommandResult(string commandText, DeveloperConsoleCommandResult result)
     {

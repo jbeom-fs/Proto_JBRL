@@ -65,7 +65,6 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\AnimatedObjectsGroup.cs" />
-    <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleCommandContext.cs" />
     <Compile Include="Assets\Scripts\Combat\Projectile.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
@@ -134,6 +133,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityArea.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
+    <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleCommandExecutor.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\PlayerMovement.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverSceneReloadRestartHandler.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseSource.cs" />

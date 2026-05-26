@@ -424,7 +424,8 @@ public class DungeonManager : MonoBehaviour
             eventChannel?.RaiseRoomDoorsOpened(openedRoom.Value);
     }
 
-    public int OpenDebugNormalDoors()
+    // Developer Console 전용. DeveloperConsoleCommandExecutor 외부 호출 금지.
+    internal int OpenDebugNormalDoors()
     {
         ClearPendingRoomStart();
 
@@ -443,7 +444,8 @@ public class DungeonManager : MonoBehaviour
         return openedCount;
     }
 
-    public int OpenDebugEliteDoors()
+    // Developer Console 전용. DeveloperConsoleCommandExecutor 외부 호출 금지.
+    internal int OpenDebugEliteDoors()
     {
         if (dungeonRenderer == null)
             return 0;

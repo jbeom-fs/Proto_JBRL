@@ -194,7 +194,8 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         _originReturnPosition = default;
     }
 
-    public int ForceKillActiveEliteForDebug()
+    // Developer Console 전용. RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug 에서만 호출됩니다.
+    internal int ForceKillActiveEliteForDebug()
     {
         if (!_hasEncounter || _eliteDefeated || _activeElite == null || _activeElite.IsDead || !_activeElite.IsAlive)
             return 0;

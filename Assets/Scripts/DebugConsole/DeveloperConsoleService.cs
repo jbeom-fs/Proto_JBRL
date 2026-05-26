@@ -4,8 +4,8 @@ using System.Text;
 
 public sealed class DeveloperConsoleService
 {
-    private delegate DeveloperConsoleCommandResult CommandHandler(DeveloperConsoleCommandContext context, string arguments);
-    private delegate void ArgumentSuggestionProvider(string currentArg, TeleportDestinationDatabase destinationDatabase, List<string> output, int maxCount);
+    private delegate DeveloperConsoleCommandResult CommandHandler(string arguments);
+    private delegate void ArgumentSuggestionProvider(string currentArg, List<string> output, int maxCount);
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
@@ -13,9 +13,11 @@ public sealed class DeveloperConsoleService
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _destinationIdBuffer = new List<string>(16);
+    private readonly DeveloperConsoleCommandExecutor _executor;
 
-    public DeveloperConsoleService()
+    public DeveloperConsoleService(DeveloperConsoleCommandExecutor executor)
     {
+        _executor = executor;
         RegisterDefaults();
     }
 
@@ -28,7 +30,7 @@ public sealed class DeveloperConsoleService
             output.Add(name);
     }
 
-    public void GetArgumentSuggestions(string commandName, string currentArg, TeleportDestinationDatabase destinationDatabase, List<string> output, int maxCount)
+    public void GetArgumentSuggestions(string commandName, string currentArg, List<string> output, int maxCount)
     {
         if (output == null)
             return;
@@ -39,10 +41,10 @@ public sealed class DeveloperConsoleService
         if (!_argumentProviders.TryGetValue(commandName, out ArgumentSuggestionProvider provider))
             return;
 
-        provider(currentArg, destinationDatabase, output, maxCount);
+        provider(currentArg, output, maxCount);
     }
 
-    public DeveloperConsoleCommandResult Execute(string input, DeveloperConsoleCommandContext context)
+    public DeveloperConsoleCommandResult Execute(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
             return DeveloperConsoleCommandResult.Ignored();
@@ -57,7 +59,7 @@ public sealed class DeveloperConsoleService
         if (!_commands.TryGetValue(commandName, out CommandHandler handler))
             return DeveloperConsoleCommandResult.Error("Unknown command: " + commandName);
 
-        return handler(context, arguments);
+        return handler(arguments);
     }
 
     private void RegisterDefaults()
@@ -75,19 +77,19 @@ public sealed class DeveloperConsoleService
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
     }
 
-    private static void ProvideFloorSuggestions(string currentArg, TeleportDestinationDatabase destinationDatabase, List<string> output, int maxCount)
+    private static void ProvideFloorSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_FloorArgs, currentArg, output, maxCount);
 
-    private static void ProvideDoorOpenSuggestions(string currentArg, TeleportDestinationDatabase destinationDatabase, List<string> output, int maxCount)
+    private static void ProvideDoorOpenSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_DoorOpenArgs, currentArg, output, maxCount);
 
-    private void ProvideTeleportSuggestions(string currentArg, TeleportDestinationDatabase destinationDatabase, List<string> output, int maxCount)
+    private void ProvideTeleportSuggestions(string currentArg, List<string> output, int maxCount)
     {
-        if (destinationDatabase == null)
+        if (_executor == null)
             return;
 
         _destinationIdBuffer.Clear();
-        destinationDatabase.GetDestinationIds(_destinationIdBuffer);
+        _executor.GetTeleportDestinationIds(_destinationIdBuffer);
         FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
     }
 
@@ -101,7 +103,7 @@ public sealed class DeveloperConsoleService
         }
     }
 
-    private DeveloperConsoleCommandResult ExecuteHelp(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteHelp(string arguments)
     {
         StringBuilder builder = new StringBuilder();
         bool first = true;
@@ -122,157 +124,88 @@ public sealed class DeveloperConsoleService
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
-    private DeveloperConsoleCommandResult ExecuteClear(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteClear(string arguments)
         => DeveloperConsoleCommandResult.Clear();
 
-    private DeveloperConsoleCommandResult ExecuteEcho(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteEcho(string arguments)
         => DeveloperConsoleCommandResult.Success(arguments);
 
-    private DeveloperConsoleCommandResult ExecuteTeleport(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteTeleport(string arguments)
     {
         if (string.IsNullOrWhiteSpace(arguments))
             return DeveloperConsoleCommandResult.Error("Usage: /TP [destinationId]");
 
-        if (context.TransitionManager == null)
-            return DeveloperConsoleCommandResult.Error("Teleport manager is not assigned.");
-
-        if (context.TeleportDestinationDatabase == null)
-            return DeveloperConsoleCommandResult.Error("Teleport destination database is not assigned.");
-
-        if (context.Player == null)
-            return DeveloperConsoleCommandResult.Error("Player is not assigned.");
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
 
         string destinationId = arguments.Trim();
         if (destinationId.IndexOf(' ') >= 0)
             return DeveloperConsoleCommandResult.Error("Usage: /TP [destinationId]");
 
-        if (!context.TeleportDestinationDatabase.TryResolveLocationId(destinationId, out string resolvedId))
-            return DeveloperConsoleCommandResult.Error("Unknown destinationId: " + destinationId);
-
-        context.TransitionManager.TeleportPlayer(context.Player, resolvedId);
-        return DeveloperConsoleCommandResult.Success("Teleported to " + resolvedId);
+        return _executor.ExecuteTeleport(destinationId);
     }
 
-    private DeveloperConsoleCommandResult ExecuteDoorOpen(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteDoorOpen(string arguments)
     {
-        if (context.DungeonManager == null)
-            return DeveloperConsoleCommandResult.Error("DungeonManager is not assigned.");
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
 
         string doorType = string.IsNullOrWhiteSpace(arguments) ? "normal" : arguments.Trim();
         if (doorType.IndexOf(' ') >= 0)
             return DeveloperConsoleCommandResult.Error("Usage: /DoorOpen [normal|elite]");
 
-        int openedCount;
-        string label;
         if (string.Equals(doorType, "normal", StringComparison.OrdinalIgnoreCase))
-        {
-            openedCount = context.DungeonManager.OpenDebugNormalDoors();
-            label = "normal";
-        }
-        else if (string.Equals(doorType, "elite", StringComparison.OrdinalIgnoreCase))
-        {
-            openedCount = context.DungeonManager.OpenDebugEliteDoors();
-            label = "elite";
-        }
-        else
-        {
-            return DeveloperConsoleCommandResult.Error("Unsupported DoorType: " + doorType + ". Use normal or elite.");
-        }
+            return _executor.ExecuteOpenNormalDoors();
 
-        if (openedCount <= 0)
-            return DeveloperConsoleCommandResult.Success("No " + label + " doors to open.");
+        if (string.Equals(doorType, "elite", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecuteOpenEliteDoors();
 
-        return DeveloperConsoleCommandResult.Success("Opened " + openedCount + " " + label + " door(s).");
+        return DeveloperConsoleCommandResult.Error("Unsupported DoorType: " + doorType + ". Use normal or elite.");
     }
 
-    private DeveloperConsoleCommandResult ExecuteKill(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteKill(string arguments)
     {
         if (!string.IsNullOrWhiteSpace(arguments))
             return DeveloperConsoleCommandResult.Error("Usage: /kill");
 
-        RoomSpawner spawner = RoomSpawner.Active;
-        if (spawner == null)
-            return DeveloperConsoleCommandResult.Error("RoomSpawner is not active.");
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
 
-        int killedCount = spawner.ForceKillCurrentEncounterEnemiesForDebug();
-        if (killedCount <= 0)
-            return DeveloperConsoleCommandResult.Success("No enemies to kill in current room or elite arena.");
-
-        return DeveloperConsoleCommandResult.Success("Killed " + killedCount + " enemy(s) in current room or elite arena.");
+        return _executor.ExecuteKill();
     }
 
-    private DeveloperConsoleCommandResult ExecuteFloor(DeveloperConsoleCommandContext context, string arguments)
+    private DeveloperConsoleCommandResult ExecuteFloor(string arguments)
     {
-        if (context.DungeonManager == null)
-            return DeveloperConsoleCommandResult.Error("DungeonManager is not assigned.");
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
 
-        string subCommand;
-        string valueText;
-        if (!TryReadFloorArguments(arguments, out subCommand, out valueText))
+        if (!TryReadFloorArguments(arguments, out string subCommand, out string valueText))
             return DeveloperConsoleCommandResult.Error(GetFloorUsage());
 
         if (string.Equals(subCommand, "add", StringComparison.OrdinalIgnoreCase))
-            return ExecuteFloorAdd(context.DungeonManager, valueText);
-
-        if (string.Equals(subCommand, "sub", StringComparison.OrdinalIgnoreCase))
-            return ExecuteFloorSub(context.DungeonManager, valueText);
-
-        if (string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase))
-            return ExecuteFloorSet(context.DungeonManager, valueText);
-
-        return DeveloperConsoleCommandResult.Error(GetFloorUsage());
-    }
-
-    private DeveloperConsoleCommandResult ExecuteFloorAdd(DungeonManager dungeonManager, string valueText)
-    {
-        if (!TryParsePositiveOptionalCount(valueText, out int count))
-            return DeveloperConsoleCommandResult.Error("Usage: /floor add [positiveCount]");
-
-        if (count > dungeonManager.MaxFloor - dungeonManager.CurrentFloor)
-            return DeveloperConsoleCommandResult.Error("Invalid floor: target floor exceeds max floor.");
-
-        int targetFloor = dungeonManager.CurrentFloor + count;
-        return ExecuteFloorTransition(dungeonManager, targetFloor);
-    }
-
-    private DeveloperConsoleCommandResult ExecuteFloorSub(DungeonManager dungeonManager, string valueText)
-    {
-        if (!TryParsePositiveOptionalCount(valueText, out int count))
-            return DeveloperConsoleCommandResult.Error("Usage: /floor sub [positiveCount]");
-
-        if (count > dungeonManager.CurrentFloor - dungeonManager.MinFloor)
-            return DeveloperConsoleCommandResult.Error("Invalid floor: target floor must be 1 or higher.");
-
-        int targetFloor = dungeonManager.CurrentFloor - count;
-        return ExecuteFloorTransition(dungeonManager, targetFloor);
-    }
-
-    private DeveloperConsoleCommandResult ExecuteFloorSet(DungeonManager dungeonManager, string valueText)
-    {
-        if (string.IsNullOrWhiteSpace(valueText))
-            return DeveloperConsoleCommandResult.Error("Usage: /floor set [floor]");
-
-        if (!TryParsePositiveInt(valueText, out int targetFloor))
-            return DeveloperConsoleCommandResult.Error("Usage: /floor set [floor]");
-
-        if (targetFloor < dungeonManager.MinFloor || targetFloor > dungeonManager.MaxFloor)
         {
-            return DeveloperConsoleCommandResult.Error(
-                "Invalid floor: floor must be between " + dungeonManager.MinFloor + " and " + dungeonManager.MaxFloor + ".");
+            if (!TryParsePositiveOptionalCount(valueText, out int count))
+                return DeveloperConsoleCommandResult.Error("Usage: /floor add [positiveCount]");
+            return _executor.ExecuteFloorAdd(count);
         }
 
-        return ExecuteFloorTransition(dungeonManager, targetFloor);
-    }
+        if (string.Equals(subCommand, "sub", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParsePositiveOptionalCount(valueText, out int count))
+                return DeveloperConsoleCommandResult.Error("Usage: /floor sub [positiveCount]");
+            return _executor.ExecuteFloorSub(count);
+        }
 
-    private DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager dungeonManager, int targetFloor)
-    {
-        if (targetFloor == dungeonManager.CurrentFloor)
-            return DeveloperConsoleCommandResult.Success("Already on floor " + dungeonManager.CurrentFloor + ".");
+        if (string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(valueText))
+                return DeveloperConsoleCommandResult.Error("Usage: /floor set [floor]");
+            if (!TryParsePositiveInt(valueText, out int targetFloor))
+                return DeveloperConsoleCommandResult.Error("Usage: /floor set [floor]");
+            return _executor.ExecuteFloorSet(targetFloor);
+        }
 
-        if (!dungeonManager.TryTransitionToFloor(targetFloor, out string message))
-            return DeveloperConsoleCommandResult.Error(message);
-
-        return DeveloperConsoleCommandResult.Success(message);
+        return DeveloperConsoleCommandResult.Error(GetFloorUsage());
     }
 
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
