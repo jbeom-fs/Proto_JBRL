@@ -64,11 +64,16 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     public void TeleportPlayer(PlayerController targetPlayer, string destinationId)
     {
+        TryTeleportPlayer(targetPlayer, destinationId);
+    }
+
+    public bool TryTeleportPlayer(PlayerController targetPlayer, string destinationId)
+    {
         if (targetPlayer == null || _isChangingLocation)
-            return;
+            return false;
 
         if (!TryGetLocation(destinationId, out TeleportLocationData destination))
-            return;
+            return false;
 
         GameLocationType from = CurrentLocation;
         GameLocationType to = destination.LocationType;
@@ -82,6 +87,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
         ApplyLocationRoots(to);
         CurrentLocation = to;
+        bool moved = false;
 
         if (to == GameLocationType.Dungeon)
         {
@@ -89,19 +95,21 @@ public class TownDungeonTransitionManager : MonoBehaviour
             {
                 minimap?.SetDungeonSource();
                 StartNewDungeonRun(targetPlayer);
+                moved = true;
             }
             else
             {
-                TryMovePlayerToDestination(targetPlayer, destination);
+                moved = TryMovePlayerToDestination(targetPlayer, destination);
             }
         }
         else
         {
             minimap?.SetTilemapSource(destination.MinimapLocationId);
-            TryMovePlayerToDestination(targetPlayer, destination);
+            moved = TryMovePlayerToDestination(targetPlayer, destination);
         }
 
         _isChangingLocation = false;
+        return moved;
     }
 
     public void EnterDungeon()

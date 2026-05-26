@@ -32,6 +32,11 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelDash();
+    }
+
+    public void CancelDash()
+    {
         if (_dashRoutine != null)
         {
             StopCoroutine(_dashRoutine);

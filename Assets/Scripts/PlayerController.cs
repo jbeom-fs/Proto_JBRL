@@ -172,6 +172,10 @@ public class PlayerController : MonoBehaviour
 
     public void TeleportTo(Vector3 worldPosition)
     {
+        if (_dashController == null)
+            _dashController = GetComponent<PlayerDashController>();
+        _dashController?.CancelDash();
+
         transform.position = worldPosition;
         _lastSafePosition = transform.position;
         if (_rb != null)

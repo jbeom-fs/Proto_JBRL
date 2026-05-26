@@ -15,6 +15,9 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
     [SerializeField] private Tilemap arenaWallTilemap;
     [SerializeField] private Transform eliteSpawnPoint;
     [SerializeField] private EliteArenaReturnPortal returnPortal;
+    [SerializeField] private EliteArenaReturnPortal returnPortalPrefab;
+    [SerializeField] private Transform returnPortalSpawnPoint;
+    [SerializeField] private Transform returnPortalParent;
 
     [Tooltip("Arena의 walkable 영역을 query하는 컴포넌트. 같은 GameObject 또는 Arena root에서 연결합니다.")]
     [SerializeField] private WalkabilityArea walkabilityArea;
@@ -28,6 +31,7 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
     private RoomInfo _originRoom;
     private Vector3 _originReturnPosition;
     private EliteArenaPortal _activeEntrancePortal;
+    private EliteArenaReturnPortal _activeReturnPortal;
     private EnemyController _activeElite;
     private bool _hasEncounter;
     private bool _eliteDefeated;
@@ -88,19 +92,24 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
 #endif
     }
 
-    public void BeginEncounter(EliteArenaPortal portal, RoomInfo room, PlayerController player, DungeonManager dungeonManager, RoomSpawner roomSpawner)
+    public bool TryEnterArenaFromPortal(EliteArenaPortal portal, RoomInfo room, PlayerController player)
+    {
+        return TryEnterArenaFromPortal(portal, room, player, DungeonManager.Instance, RoomSpawner.Active);
+    }
+
+    public bool TryEnterArenaFromPortal(EliteArenaPortal portal, RoomInfo room, PlayerController player, DungeonManager dungeonManager, RoomSpawner roomSpawner)
     {
         if (player == null || dungeonManager == null || roomSpawner == null)
-            return;
+            return false;
 
         if (_hasEncounter || portal == null || portal.IsCompletedForRoom(room))
-            return;
+            return false;
 
         if (!TryResolveReturnPosition(room, player, dungeonManager, out _originReturnPosition))
             _originReturnPosition = player.transform.position;
 
         if (!roomSpawner.TrySelectEliteForArena(room, out EnemyData eliteData))
-            return;
+            return false;
 
         _originRoom = room;
         _hasEncounter = true;
@@ -108,24 +117,38 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         HideReturnPortal();
 
         transitionManager = transitionManager != null ? transitionManager : TownDungeonTransitionManager.Active;
-        if (transitionManager != null)
-            transitionManager.TeleportPlayer(player, arenaDestinationId);
-        else
+        if (transitionManager == null)
+        {
             Debug.LogWarning("[EliteArenaEncounterController] TownDungeonTransitionManager is missing.", this);
+            CancelEncounter();
+            return false;
+        }
+
+        if (!transitionManager.TryTeleportPlayer(player, arenaDestinationId))
+        {
+            CancelEncounter();
+            return false;
+        }
 
         if (!TrySpawnElite(eliteData))
         {
             CancelEncounter();
-            return;
+            return false;
         }
 
         portal.SetLocked(true);
+        return true;
     }
 
-    public void ReturnToOriginRoom(PlayerController player)
+    public void BeginEncounter(EliteArenaPortal portal, RoomInfo room, PlayerController player, DungeonManager dungeonManager, RoomSpawner roomSpawner)
+    {
+        TryEnterArenaFromPortal(portal, room, player, dungeonManager, roomSpawner);
+    }
+
+    public bool TryReturnFromArena(PlayerController player)
     {
         if (!_hasEncounter || !_eliteDefeated || player == null)
-            return;
+            return false;
 
         player.TeleportTo(_originReturnPosition);
         DungeonManager.Instance?.OpenCurrentRoomDoors();
@@ -134,6 +157,12 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
             _activeEntrancePortal.MarkCompletedAndDisable(_originRoom);
 
         CancelEncounter();
+        return true;
+    }
+
+    public void ReturnToOriginRoom(PlayerController player)
+    {
+        TryReturnFromArena(player);
     }
 
     public void CancelEncounter()
@@ -158,6 +187,8 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
             _activeEntrancePortal.ResetRuntimeState();
             _activeEntrancePortal.gameObject.SetActive(false);
         }
+
+        HideReturnPortal();
 
         _originRoom = default;
         _originReturnPosition = default;
@@ -297,21 +328,71 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
 
     private void ShowReturnPortal()
     {
-        if (returnPortal == null)
+        EliteArenaReturnPortal portal = GetReturnPortal();
+        if (portal == null)
             return;
 
-        returnPortal.Bind(this);
-        returnPortal.gameObject.SetActive(true);
-        returnPortal.SetColliderEnabled(true);
+        if (TryResolveReturnPortalPosition(out Vector3 position))
+            portal.transform.position = position;
+
+        portal.Bind(this);
+        portal.gameObject.SetActive(true);
+        portal.SetColliderEnabled(true);
     }
 
     private void HideReturnPortal()
     {
-        if (returnPortal == null)
+        EliteArenaReturnPortal portal = _activeReturnPortal != null ? _activeReturnPortal : returnPortal;
+        if (portal == null)
             return;
 
-        returnPortal.SetColliderEnabled(false);
-        returnPortal.gameObject.SetActive(false);
+        portal.SetColliderEnabled(false);
+        portal.gameObject.SetActive(false);
+    }
+
+    private EliteArenaReturnPortal GetReturnPortal()
+    {
+        if (_activeReturnPortal != null)
+            return _activeReturnPortal;
+
+        if (returnPortal != null)
+        {
+            _activeReturnPortal = returnPortal;
+            return _activeReturnPortal;
+        }
+
+        if (returnPortalPrefab == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[EliteArenaEncounterController] Return portal prefab/scene reference is missing.", this);
+#endif
+            return null;
+        }
+
+        Transform parent = returnPortalParent != null ? returnPortalParent : transform;
+        _activeReturnPortal = Instantiate(returnPortalPrefab, parent);
+        _activeReturnPortal.gameObject.SetActive(false);
+        _activeReturnPortal.SetColliderEnabled(false);
+        return _activeReturnPortal;
+    }
+
+    private bool TryResolveReturnPortalPosition(out Vector3 position)
+    {
+        if (returnPortalSpawnPoint != null)
+        {
+            position = returnPortalSpawnPoint.position;
+            return true;
+        }
+
+        if (TryGetCenterTileWorldPosition(arenaWalkTilemap, out position))
+            return true;
+
+        if (walkabilityArea != null &&
+            walkabilityArea.TryGetNearestWalkableWorldPosition(transform.position, out position))
+            return true;
+
+        position = transform.position;
+        return false;
     }
 
     private static bool TryGetCenterTileWorldPosition(Tilemap tilemap, out Vector3 position)

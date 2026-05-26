@@ -41,10 +41,11 @@ public sealed class EliteArenaReturnPortal : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!other.TryGetComponent(out PlayerController player))
+        PlayerController player = other.GetComponentInParent<PlayerController>();
+        if (player == null)
             return;
 
-        _controller?.ReturnToOriginRoom(player);
+        _controller?.TryReturnFromArena(player);
     }
 
     private void EnsureVisual()

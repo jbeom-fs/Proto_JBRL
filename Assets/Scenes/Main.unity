@@ -6334,6 +6334,9 @@ MonoBehaviour:
   arenaWallTilemap: {fileID: 1309604883}
   eliteSpawnPoint: {fileID: 0}
   returnPortal: {fileID: 0}
+  returnPortalPrefab: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+  returnPortalSpawnPoint: {fileID: 0}
+  returnPortalParent: {fileID: 0}
   walkabilityArea: {fileID: 2201000003}
   entrancePortalInstance: {fileID: 0}
   entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}

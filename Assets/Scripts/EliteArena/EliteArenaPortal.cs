@@ -18,6 +18,7 @@ public sealed class EliteArenaPortal : MonoBehaviour
     private bool _bound;
     private bool _locked;
     private bool _completed;
+    private bool _isTeleporting;
     private int _completedRoomKey;
     private bool _warnedMissingVisual;
     private bool _warnedFogVisibility;
@@ -35,6 +36,7 @@ public sealed class EliteArenaPortal : MonoBehaviour
         _room = room;
         _bound = true;
         _locked = false;
+        _isTeleporting = false;
 
         if (_collider == null)
             _collider = GetComponent<Collider2D>();
@@ -76,6 +78,7 @@ public sealed class EliteArenaPortal : MonoBehaviour
     {
         _bound = false;
         _locked = false;
+        _isTeleporting = false;
         _completed = false;
         _completedRoomKey = 0;
         _controller = null;
@@ -141,14 +144,23 @@ public sealed class EliteArenaPortal : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (!_bound || _locked || IsCompletedForRoom(_room))
+        if (!_bound || _locked || _isTeleporting || IsCompletedForRoom(_room))
             return;
 
-        if (!other.TryGetComponent(out PlayerController player))
+        PlayerController player = other.GetComponentInParent<PlayerController>();
+        if (player == null)
             return;
 
-        DungeonManager dungeonManager = DungeonManager.Instance;
-        RoomSpawner roomSpawner = RoomSpawner.Active;
-        _controller?.BeginEncounter(this, _room, player, dungeonManager, roomSpawner);
+        if (_controller == null)
+            return;
+
+        _isTeleporting = true;
+        if (_controller.TryEnterArenaFromPortal(this, _room, player))
+        {
+            _locked = true;
+            return;
+        }
+
+        _isTeleporting = false;
     }
 }
