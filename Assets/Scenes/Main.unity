@@ -204,6 +204,7 @@ GameObject:
   m_Component:
   - component: {fileID: 50012721}
   - component: {fileID: 50012720}
+  - component: {fileID: 50012722}
   m_Layer: 0
   m_Name: EliteArenaRoot
   m_TagString: Untagged
@@ -240,6 +241,29 @@ Transform:
   - {fileID: 1877801298}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &50012722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50012719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bab441a45097ecc45aa4bf6f9f030ae7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TilemapMinimapSource
+  locationId: elite_arena
+  groundTilemap: {fileID: 1206688124}
+  wallTilemap: {fileID: 1363907958}
+  doorTilemap: {fileID: 0}
+  autoDiscoverChildren: 0
+  walkableLayerName: Walkable
+  wallLayerName: Wall
+  doorLayerName: Door
+  groundColor: {r: 0.75, g: 0.82, b: 0.95, a: 0.92}
+  wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 0.95}
+  doorColor: {r: 0.95, g: 0.78, b: 0.36, a: 0.95}
 --- !u!1 &51986288
 GameObject:
   m_ObjectHideFlags: 0
@@ -1520,7 +1544,7 @@ MonoBehaviour:
   closeWithEscape: 1
   maxLogLines: 120
   maxCommandHistory: 50
-  commandExecutor: {fileID: 0}
+  commandExecutor: {fileID: 1860777227}
   autocompletePanel: {fileID: 500000010}
   autocompleteText: {fileID: 500000023}
 --- !u!1 &300000010
@@ -6721,7 +6745,7 @@ GameObject:
   - component: {fileID: 1206688122}
   - component: {fileID: 1206688124}
   - component: {fileID: 1206688123}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: WalkTileMap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -23431,8 +23455,8 @@ GameObject:
   - component: {fileID: 1475615696}
   - component: {fileID: 1475615697}
   - component: {fileID: 1475615698}
-  m_Layer: 6
-  m_Name: Tilemap
+  m_Layer: 10
+  m_Name: DoorTileMap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -23749,8 +23773,8 @@ GameObject:
   - component: {fileID: 1496677929}
   - component: {fileID: 1496677931}
   - component: {fileID: 1496677930}
-  m_Layer: 0
-  m_Name: Tilemap
+  m_Layer: 9
+  m_Name: WalkTileMap
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -62469,8 +62493,14 @@ MonoBehaviour:
   locationId: town
   groundTilemap: {fileID: 1711711470}
   wallTilemap: {fileID: 1309604883}
+  doorTilemap: {fileID: 0}
+  autoDiscoverChildren: 0
+  walkableLayerName: Walkable
+  wallLayerName: Wall
+  doorLayerName: Door
   groundColor: {r: 0.75, g: 0.82, b: 0.95, a: 0.92}
   wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 0.95}
+  doorColor: {r: 0.95, g: 0.78, b: 0.36, a: 0.95}
 --- !u!114 &1525631551
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -63306,7 +63336,7 @@ GameObject:
   - component: {fileID: 1711711468}
   - component: {fileID: 1711711470}
   - component: {fileID: 1711711469}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: WalkTileMap
   m_TagString: Untagged
   m_Icon: {fileID: 0}

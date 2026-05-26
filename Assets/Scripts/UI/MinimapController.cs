@@ -158,6 +158,14 @@ public class MinimapController : MonoBehaviour
         {
             _tilemapSource           = source;
             _pendingTilemapLocationId = null;
+
+            if (!source.IsReady)
+            {
+                Warn("TilemapMinimapSource '" + locationId + "' is registered but has no Walkable/Wall/Door Tilemap. " +
+                     "Wire groundTilemap/wallTilemap/doorTilemap explicitly, or enable autoDiscoverChildren with proper child Layers.");
+                return;
+            }
+
             InitializeFromTilemapSource();
         }
         else
@@ -459,31 +467,19 @@ public class MinimapController : MonoBehaviour
 
     private void BuildTilemapTexture(TilemapMinimapSource source)
     {
-        Tilemap ground = source.GroundTilemap;
-        Tilemap wall   = source.WallTilemap;
+        System.Collections.Generic.IReadOnlyList<Tilemap> walkable = source.WalkableTilemaps;
+        System.Collections.Generic.IReadOnlyList<Tilemap> walls = source.WallTilemaps;
+        System.Collections.Generic.IReadOnlyList<Tilemap> doors = source.DoorTilemaps;
 
-        if (ground == null && wall == null)
-            return;
+        CompressBoundsAll(walkable);
+        CompressBoundsAll(walls);
+        CompressBoundsAll(doors);
 
-        ground?.CompressBounds();
-        wall?.CompressBounds();
-
-        bool groundValid = ground != null && ground.cellBounds.size.x > 0 && ground.cellBounds.size.y > 0;
-        bool wallValid   = wall   != null && wall.cellBounds.size.x   > 0 && wall.cellBounds.size.y   > 0;
-
-        if (!groundValid && !wallValid)
+        if (!TryComputeUnionBounds(walkable, walls, doors, out BoundsInt bounds))
         {
             Warn("TilemapMinimapSource '" + source.LocationId + "' has empty Tilemap bounds. No minimap texture built.");
             return;
         }
-
-        BoundsInt bounds;
-        if (groundValid && wallValid)
-            bounds = UnionBounds(ground.cellBounds, wall.cellBounds);
-        else if (groundValid)
-            bounds = ground.cellBounds;
-        else
-            bounds = wall.cellBounds;
 
         int w = bounds.size.x;
         int h = bounds.size.y;
@@ -512,6 +508,7 @@ public class MinimapController : MonoBehaviour
 
         Color32 groundColor = source.GroundColor;
         Color32 wallColor   = source.WallColor;
+        Color32 doorColor   = source.DoorColor;
 
         for (int y = 0; y < h; y++)
         {
@@ -519,15 +516,23 @@ public class MinimapController : MonoBehaviour
             {
                 Vector3Int cell = new Vector3Int(bounds.xMin + x, bounds.yMin + y, 0);
 
-                bool hasGround = groundValid && ground.GetTile(cell) != null;
-                bool hasWall   = wallValid   && wall.GetTile(cell)   != null;
+                bool hasDoor = AnyHasTile(doors, cell);
+                bool hasWall = AnyHasTile(walls, cell);
+                bool hasGround = AnyHasTile(walkable, cell);
 
-                if (!hasGround && !hasWall)
+                if (!hasDoor && !hasWall && !hasGround)
                     continue;
 
-                Color32 color  = hasWall ? wallColor : groundColor;
-                int startX     = x * pixelsPerCell;
-                int startY     = y * pixelsPerCell; // Tilemap Y↑ matches Texture2D Y↑, no flip needed
+                Color32 color;
+                if (hasDoor)
+                    color = doorColor;
+                else if (hasWall)
+                    color = wallColor;
+                else
+                    color = groundColor;
+
+                int startX = x * pixelsPerCell;
+                int startY = y * pixelsPerCell; // Tilemap Y↑ matches Texture2D Y↑, no flip needed
 
                 for (int py = 0; py < pixelsPerCell; py++)
                 {
@@ -543,12 +548,82 @@ public class MinimapController : MonoBehaviour
         minimapImage.texture = _tilemapTexture;
     }
 
+    private static void CompressBoundsAll(System.Collections.Generic.IReadOnlyList<Tilemap> tilemaps)
+    {
+        if (tilemaps == null)
+            return;
+        for (int i = 0; i < tilemaps.Count; i++)
+            tilemaps[i]?.CompressBounds();
+    }
+
+    private static bool TryComputeUnionBounds(
+        System.Collections.Generic.IReadOnlyList<Tilemap> walkable,
+        System.Collections.Generic.IReadOnlyList<Tilemap> walls,
+        System.Collections.Generic.IReadOnlyList<Tilemap> doors,
+        out BoundsInt bounds)
+    {
+        bool initialized = false;
+        bounds = default;
+
+        AccumulateBounds(walkable, ref bounds, ref initialized);
+        AccumulateBounds(walls, ref bounds, ref initialized);
+        AccumulateBounds(doors, ref bounds, ref initialized);
+
+        return initialized && bounds.size.x > 0 && bounds.size.y > 0;
+    }
+
+    private static void AccumulateBounds(
+        System.Collections.Generic.IReadOnlyList<Tilemap> tilemaps,
+        ref BoundsInt bounds,
+        ref bool initialized)
+    {
+        if (tilemaps == null)
+            return;
+
+        for (int i = 0; i < tilemaps.Count; i++)
+        {
+            Tilemap tilemap = tilemaps[i];
+            if (tilemap == null)
+                continue;
+
+            BoundsInt b = tilemap.cellBounds;
+            if (b.size.x <= 0 || b.size.y <= 0)
+                continue;
+
+            if (!initialized)
+            {
+                bounds = b;
+                initialized = true;
+            }
+            else
+            {
+                bounds = UnionBounds(bounds, b);
+            }
+        }
+    }
+
+    private static bool AnyHasTile(System.Collections.Generic.IReadOnlyList<Tilemap> tilemaps, Vector3Int cell)
+    {
+        if (tilemaps == null)
+            return false;
+
+        for (int i = 0; i < tilemaps.Count; i++)
+        {
+            Tilemap tilemap = tilemaps[i];
+            if (tilemap != null && tilemap.GetTile(cell) != null)
+                return true;
+        }
+        return false;
+    }
+
     private void UpdateTilemapMarkerIfMoved()
     {
         if (!CanRenderTilemap())
             return;
 
-        Tilemap refTilemap = _tilemapSource.GroundTilemap ?? _tilemapSource.WallTilemap;
+        Tilemap refTilemap = _tilemapSource.ReferenceTilemap;
+        if (refTilemap == null)
+            return;
         Vector3Int cell    = refTilemap.WorldToCell(player.position);
         Vector2Int cell2d  = new Vector2Int(cell.x, cell.y);
 

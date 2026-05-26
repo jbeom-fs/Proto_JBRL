@@ -59,6 +59,17 @@ public static class LocationMinimapRegistry
         return false;
     }
 
+    /// <summary>
+    /// 등록 여부만 조용히 확인합니다. (로그 X) Teleport 흐름에서 minimap 모드 자동 감지에 사용합니다.
+    /// </summary>
+    public static bool Contains(string locationId)
+    {
+        if (string.IsNullOrWhiteSpace(locationId))
+            return false;
+
+        return SourcesById.TryGetValue(locationId, out TilemapMinimapSource source) && source != null;
+    }
+
     private static void Warn(string message, Object context)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

@@ -143,12 +143,18 @@ public sealed class TeleportLocationData
     [SerializeField, Tooltip("LocationMinimapRegistry에 등록된 ID와 맞춥니다. 비어 있으면 id를 그대로 사용합니다.")]
     private string minimapLocationId;
 
+    [SerializeField, Tooltip(
+        "true이면 Dungeon 내부 이동이라도 미니맵을 TilemapMinimapSource(minimapLocationId)로 전환합니다. " +
+        "Elite Arena / Boss Arena 같이 Dungeon flow 안에 있는 독립 Tilemap 공간에서 사용합니다.")]
+    private bool useTilemapMinimap;
+
     public string Id => id;
     public string DisplayName => displayName;
     public string Description => description;
     public GameLocationType LocationType => locationType;
     public string LocationRootId => locationRootId;
     public Vector3 LocalSpawnPosition => localSpawnPosition;
+    public bool UseTilemapMinimap => useTilemapMinimap;
 
     /// <summary>
     /// TilemapMinimapSource에 설정한 locationId와 맞춥니다.

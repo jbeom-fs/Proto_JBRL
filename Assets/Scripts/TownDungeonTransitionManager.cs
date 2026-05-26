@@ -101,6 +101,12 @@ public class TownDungeonTransitionManager : MonoBehaviour
             {
                 moved = TryMovePlayerToDestination(targetPlayer, destination);
             }
+
+            // Dungeon flow 안에서도 LocationMinimapRegistry에 destination의 minimapLocationId가
+            // 등록되어 있거나 useTilemapMinimap 플래그가 켜져 있으면 Tilemap 미니맵으로 전환합니다.
+            // (Elite Arena, Boss Arena 등 Dungeon 내부의 독립 Tilemap 공간 자동 감지)
+            // 복귀는 RestoreDungeonMinimapSource()로 처리.
+            TrySwitchToTilemapMinimap(destination);
         }
         else
         {
@@ -112,9 +118,37 @@ public class TownDungeonTransitionManager : MonoBehaviour
         return moved;
     }
 
+    private void TrySwitchToTilemapMinimap(TeleportLocationData destination)
+    {
+        if (minimap == null || destination == null)
+            return;
+
+        string minimapId = destination.MinimapLocationId;
+        if (string.IsNullOrWhiteSpace(minimapId))
+            return;
+
+        bool registered = LocationMinimapRegistry.Contains(minimapId);
+        if (!registered && !destination.UseTilemapMinimap)
+            return;
+
+        minimap.SetTilemapSource(minimapId);
+    }
+
     public void EnterDungeon()
     {
         TeleportPlayer(player, debugDungeonEntranceDestinationId);
+    }
+
+    /// <summary>
+    /// Elite Arena 등 Dungeon flow 안의 독립 Tilemap 공간에서 Dungeon으로 복귀할 때 호출합니다.
+    /// 미니맵을 Dungeon grid 모드로 되돌립니다. Player 좌표 이동은 별도로 수행되어 있어야 합니다.
+    /// </summary>
+    public void RestoreDungeonMinimapSource()
+    {
+        if (CurrentLocation != GameLocationType.Dungeon)
+            return;
+
+        minimap?.SetDungeonSource();
     }
 
     public void EnterTown()

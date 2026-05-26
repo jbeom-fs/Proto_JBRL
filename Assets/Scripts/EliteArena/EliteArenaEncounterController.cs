@@ -153,6 +153,11 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         player.TeleportTo(_originReturnPosition);
         DungeonManager.Instance?.OpenCurrentRoomDoors();
 
+        TownDungeonTransitionManager router = transitionManager != null
+            ? transitionManager
+            : TownDungeonTransitionManager.Active;
+        router?.RestoreDungeonMinimapSource();
+
         if (_activeEntrancePortal != null)
             _activeEntrancePortal.MarkCompletedAndDisable(_originRoom);
 

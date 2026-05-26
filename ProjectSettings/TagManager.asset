@@ -14,11 +14,11 @@ TagManager:
   - Wall
   - Player
   - Enemy
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Walkable
+  - Door
+  -
+  -
+  -
   - 
   - 
   - 
