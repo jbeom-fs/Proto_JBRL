@@ -370,6 +370,9 @@ public class DungeonManager : MonoBehaviour
     /// <summary>월드 좌표를 중심으로 한 정사각형 footprint(반경 radius)의 4 코너가 모두 walkable인지 검사합니다.</summary>
     public bool IsFootprintWalkable(Vector3 worldPosition, float radius)
     {
+        if (EliteArenaEncounterController.TryIsArenaFootprintWalkable(worldPosition, radius, out bool arenaWalkable))
+            return arenaWalkable;
+
         if (_data == null) return true;
 
         Vector2Int g;

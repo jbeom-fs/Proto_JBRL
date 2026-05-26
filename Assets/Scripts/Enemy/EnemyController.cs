@@ -419,9 +419,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private bool IsFootprintWalkable(Vector3 position)
     {
-        var dungeonManager = DungeonManager.Instance;
-        if (dungeonManager == null) return true;
-        return dungeonManager.IsFootprintWalkable(position, GetWorldColliderRadius());
+        return WorldEnvironmentQuery.IsFootprintWalkable(position, GetWorldColliderRadius());
     }
 
     private void ApplyStationaryPhysicsSettings()

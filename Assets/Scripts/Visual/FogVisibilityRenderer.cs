@@ -88,6 +88,9 @@ public sealed class FogVisibilityRenderer : MonoBehaviour
 
     private bool ResolveVisibility()
     {
+        if (EliteArenaEncounterController.TryIsArenaWorldPosition(transform.position, out bool isInArena) && isInArena)
+            return true;
+
         FogOfWarController fog = FogOfWarController.Active;
         if (fog == null)
             return !hideWhenFogControllerMissing;

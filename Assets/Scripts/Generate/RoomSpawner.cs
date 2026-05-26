@@ -3,10 +3,13 @@ using UnityEngine;
 
 public class RoomSpawner : MonoBehaviour
 {
+    public static RoomSpawner Active { get; private set; }
+
     [Header("Dependencies")]
     [SerializeField] private DungeonEventChannel eventChannel;
     [SerializeField] private EnemyData[] enemyTable;
     [SerializeField] private EnemyData[] eliteRoomEnemyTable;
+    [SerializeField] private EliteArenaEncounterController eliteArenaEncounterController;
 
     [Header("Budget")]
     [SerializeField] private float densityFactor = 0.1f;
@@ -26,6 +29,22 @@ public class RoomSpawner : MonoBehaviour
     private EliteKeyPlan _eliteKeyPlan;
     private bool _warnedEliteInNormalTable;
     private bool _warnedInvalidEliteCandidate;
+
+    private void Awake()
+    {
+        if (Active != null && Active != this)
+        {
+            Debug.LogWarning("[RoomSpawner] Multiple RoomSpawner instances are active. Keeping latest.", this);
+        }
+
+        Active = this;
+    }
+
+    private void OnDestroy()
+    {
+        if (ReferenceEquals(Active, this))
+            Active = null;
+    }
 
     private struct EliteKeyPlan
     {
@@ -97,6 +116,7 @@ public class RoomSpawner : MonoBehaviour
         activeEnemies.Clear();
         _activeRoom = null;
         _eliteKeyPlan = default;
+        eliteArenaEncounterController?.ClearRuntimeState();
     }
 
     public void PrepareEliteKeyPlan(DungeonManager dungeonManager)
@@ -192,7 +212,7 @@ public class RoomSpawner : MonoBehaviour
 
         if (room.IsElite)
         {
-            SpawnEliteRoom(room, dungeonManager);
+            PrepareEliteRoomPortal(room, dungeonManager);
             return;
         }
 
@@ -258,19 +278,26 @@ public class RoomSpawner : MonoBehaviour
         }
     }
 
-    private void SpawnEliteRoom(RoomInfo room, DungeonManager dungeonManager)
+    private void PrepareEliteRoomPortal(RoomInfo room, DungeonManager dungeonManager)
     {
-        List<Vector2Int> walkableTiles = dungeonManager.Data.GetWalkableTiles(room);
-        FilterUnsafeSpawnTiles(walkableTiles, room, dungeonManager);
-        if (walkableTiles.Count == 0)
+        if (eliteArenaEncounterController == null)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.LogWarning("[RoomSpawner] Elite Room has no safe spawn tiles.", this);
+            Debug.LogWarning("[RoomSpawner] EliteArenaEncounterController is missing.", this);
 #endif
             return;
         }
 
-        SortSpawnTiles(walkableTiles);
+        eliteArenaEncounterController.PrepareEntrancePortal(room, dungeonManager);
+        dungeonManager.CloseCurrentRoomDoors(room);
+    }
+
+    public bool TrySelectEliteForArena(RoomInfo room, out EnemyData selected)
+    {
+        selected = null;
+        DungeonManager dungeonManager = DungeonManager.Instance;
+        if (dungeonManager == null || dungeonManager.Data == null)
+            return false;
 
         SpawnRegion region = dungeonManager.Data.currentStageRegion;
         int roomSeed = DeterministicSeedUtility.CreateSeed(
@@ -280,36 +307,18 @@ public class RoomSpawner : MonoBehaviour
             room.StableRoomKey,
             DeterministicSeedUtility.EliteRoomSpawnDomain);
         var roomRng = new System.Random(roomSeed);
-        Shuffle(walkableTiles, roomRng);
 
         BuildEliteCandidates(region, dungeonManager.CurrentFloor);
         if (_eliteCandidates.Count == 0)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.LogWarning("[RoomSpawner] Elite Room has no valid elite spawn candidates.", this);
+            Debug.LogWarning("[RoomSpawner] Elite Arena has no valid elite spawn candidates.", this);
 #endif
-            return;
+            return false;
         }
 
-        EnemyData selected = _eliteCandidates[roomRng.Next(_eliteCandidates.Count)];
-        EnemyController enemy = EnemyPoolManager.Instance.Request(selected);
-        if (enemy == null)
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.LogWarning("[RoomSpawner] Failed to request elite enemy from pool: " + selected.name, this);
-#endif
-            return;
-        }
-
-        BeginRoomSpawnTracking(room);
-
-        Vector2Int tile = walkableTiles[0];
-        enemy.transform.position = dungeonManager.GridToWorld(tile);
-        enemy.transform.SetParent(null);
-        enemy.Initialize(selected);
-        TrackEnemy(enemy);
-
-        dungeonManager.CloseCurrentRoomDoors(room);
+        selected = _eliteCandidates[roomRng.Next(_eliteCandidates.Count)];
+        return selected != null;
     }
 
     private int CountDeterministicSpawns(RoomInfo room, DungeonManager dungeonManager)

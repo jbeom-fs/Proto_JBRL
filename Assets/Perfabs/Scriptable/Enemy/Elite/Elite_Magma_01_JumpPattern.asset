@@ -15,7 +15,7 @@ MonoBehaviour:
   displayName: Elite Magma Jump
   cooldown: 3.5
   minRange: 0
-  maxRange: 10
+  maxRange: 50
   weight: 1
   recoveryDuration: 0.55
   windup: 0.45

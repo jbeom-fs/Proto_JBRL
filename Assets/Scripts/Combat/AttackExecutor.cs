@@ -51,7 +51,6 @@ public class AttackExecutor
         var dungeonManager = DungeonManager.Instance;
         if (dungeonManager == null) return;
 
-        Vector2Int attackerGrid = dungeonManager.WorldToGrid(_attackerTransform.position);
         _hitCandidates.Clear();
         _targetGridSet.Clear();
 
@@ -71,7 +70,7 @@ public class AttackExecutor
 
             if (!canPenetrateWalls)
             {
-                if (HasWallBetween(attackerGrid, targetGrid)) continue;
+                if (!WorldEnvironmentQuery.HasGeometryLineOfSight(_attackerTransform.position, col.bounds.center)) continue;
             }
 
             if (!_hitTargetsThisAttack.Add(target)) continue;
@@ -147,23 +146,4 @@ public class AttackExecutor
         return Mathf.Sqrt(maxSqrDistance);
     }
 
-    private bool HasWallBetween(Vector2Int from, Vector2Int to)
-    {
-        DungeonData data = DungeonManager.Instance != null ? DungeonManager.Instance.Data : null;
-        if (data == null) return false;
-
-        int dx    = to.x - from.x;
-        int dy    = to.y - from.y;
-        int steps = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
-        if (steps == 0) return false;
-
-        for (int i = 1; i <= steps; i++)
-        {
-            float t   = (float)i / steps;
-            int   col = Mathf.RoundToInt(from.x + dx * t);
-            int   row = Mathf.RoundToInt(from.y + dy * t);
-            if (!data.IsWalkable(col, row)) return true;
-        }
-        return false;
-    }
 }

@@ -15,7 +15,7 @@ MonoBehaviour:
   displayName: Elite Magma Dash
   cooldown: 3
   minRange: 0
-  maxRange: 20
+  maxRange: 50
   weight: 1
   recoveryDuration: 0.45
   windup: 0.5

@@ -377,7 +377,7 @@ public class PlayerController : MonoBehaviour
         }
 
         float radius = _tileSize * collisionRadius;
-        return dungeonManager.IsFootprintWalkable(pos, radius) &&
+        return WorldEnvironmentQuery.IsFootprintWalkable(pos, radius) &&
                !MovementBlockerQuery.IsPlayerMovementBlocked(pos, radius);
     }
 

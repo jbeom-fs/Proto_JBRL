@@ -92,6 +92,9 @@ public class TargetHandler
 
     private bool IsTargetOnTrackableTile()
     {
+        if (EliteArenaEncounterController.TryIsArenaPointWalkable(TargetPosition, out bool arenaWalkable))
+            return arenaWalkable;
+
         DungeonData data = _brain.DungeonData;
         if (data == null) return true;
 

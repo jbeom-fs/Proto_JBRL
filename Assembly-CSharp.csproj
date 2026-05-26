@@ -53,7 +53,9 @@
     <Compile Include="Assets\Scripts\Combat\PlayerResource.cs" />
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\EliteArenaReturnPortal.cs" />
     <Compile Include="Assets\Scripts\Inventory\PlayerInventory.cs" />
+    <Compile Include="Assets\Scripts\Combat\WorldEnvironmentQuery.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Items\ItemType.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
@@ -155,6 +157,7 @@
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Flower.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CoinDisplay.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Statue.cs" />
@@ -184,6 +187,7 @@
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\EliteArenaEncounterController.cs" />
     <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>
   <ItemGroup>

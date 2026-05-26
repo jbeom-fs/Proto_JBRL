@@ -106,6 +106,13 @@ public class MovementHandler
 
     public virtual bool HasLineOfSight(Vector2Int start, Vector2Int goal)
     {
+        if (_brain.Target != null &&
+            EliteArenaEncounterController.TryHasArenaLineOfSight(
+                _brain.transform.position,
+                _brain.Target.TargetPosition,
+                out bool arenaLineOfSight))
+            return arenaLineOfSight;
+
         DungeonData data = _brain.DungeonData;
         if (data == null) return false;
 
@@ -236,7 +243,7 @@ public class MovementHandler
         float radius = _brain.Enemy != null
             ? _brain.Enemy.CollisionFootprintRadius
             : _tileSize * _brain.collisionRadius;
-        return _brain.dungeonManager.IsFootprintWalkable(pos, radius);
+        return WorldEnvironmentQuery.IsFootprintWalkable(pos, radius);
     }
 
     /// <summary>
@@ -333,7 +340,7 @@ public class MovementHandler
 
             // 1 step 떨어진 candidate가 walkable인지 사전 검사한다.
             Vector3 candidate = new Vector3(self.x + dir.x * step, self.y + dir.y * step, 0f);
-            if (dungeon != null && !dungeon.IsFootprintWalkable(candidate, footprintRadius))
+            if (dungeon != null && !WorldEnvironmentQuery.IsFootprintWalkable(candidate, footprintRadius))
                 continue;
 
             // 채택: MoveToward가 separation을 합친 뒤 MoveWithCollision의 4-corner 체크로 최종 이동.
@@ -411,7 +418,7 @@ public class MovementHandler
                 self.y + Mathf.Sin(angle) * r,
                 0f);
 
-            if (dungeon == null || dungeon.IsFootprintWalkable(candidate, footprintRadius))
+            if (dungeon == null || WorldEnvironmentQuery.IsFootprintWalkable(candidate, footprintRadius))
             {
                 _randomDestination = candidate;
                 _hasRandomDestination = true;

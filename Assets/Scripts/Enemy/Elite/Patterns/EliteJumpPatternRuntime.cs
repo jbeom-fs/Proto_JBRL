@@ -209,6 +209,9 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         if (dungeon == null || dungeon.Data == null || _context.Target == null)
             return false;
 
+        if (TryResolveArenaJumpTarget(out targetPosition))
+            return true;
+
         Vector2Int enemyGrid = dungeon.WorldToGrid(_context.SelfTransform.position);
         RoomInfo? currentRoom = dungeon.GetRoomAt(enemyGrid.x, enemyGrid.y);
         if (_data.StayInRoom && !currentRoom.HasValue)
@@ -223,6 +226,24 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         }
 
         return TryFindNearbyJumpTarget(dungeon, desiredGrid, currentRoom, out targetPosition);
+    }
+
+    private bool TryResolveArenaJumpTarget(out Vector3 targetPosition)
+    {
+        targetPosition = _context.SelfTransform.position;
+
+        float radius = _context.Enemy != null
+            ? _context.Enemy.CollisionFootprintRadius
+            : 0.32f;
+        Vector3 desired = ClampJumpDistance(_context.Target.position);
+
+        return EliteArenaEncounterController.TryFindNearestArenaWalkableWorld(
+            desired,
+            _context.SelfTransform.position,
+            _data.MaxDistance,
+            radius,
+            3,
+            out targetPosition);
     }
 
     private Vector3 ClampJumpDistance(Vector3 desired)
@@ -291,7 +312,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         float radius = _context.Enemy != null
             ? _context.Enemy.CollisionFootprintRadius
             : 0.32f;
-        return _context.DungeonManager.IsFootprintWalkable(position, radius);
+        return WorldEnvironmentQuery.IsFootprintWalkable(position, radius);
     }
 
     private Vector2 ResolveFacingDirection(Vector3 targetPosition)

@@ -53,7 +53,6 @@ public class ProjectileController : MonoBehaviour
     private Quaternion _initialLocalRotation;
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private bool _released;
-    private DungeonManager _dungeon;
     private readonly HashSet<EnemyController> _hitEnemies = new();
 
     private void Awake()
@@ -168,7 +167,6 @@ public class ProjectileController : MonoBehaviour
         _owner = owner;
         _maxBounceCount = Mathf.Max(0, maxBounceCount);
         _currentBounceCount = 0;
-        _dungeon = DungeonManager.Instance;
         _hitEnemies.Clear();
         ApplyFogVisibilityForActiveProjectile();
     }
@@ -282,27 +280,15 @@ public class ProjectileController : MonoBehaviour
     }
 
     // Map bounds 밖이면 wall mode와 무관하게 lifecycle을 끝낸다.
-    // _dungeon/Data가 아직 준비되지 않은 짧은 윈도에서는 false로 두어 기존 동작을 유지한다.
+    // 데이터가 준비되지 않은 짧은 윈도에서는 IsInsideKnownCombatSpace가 true를 반환해 기존 동작을 유지한다.
     private bool IsOutOfDungeonBounds(Vector2 worldPosition)
     {
-        if (_dungeon == null)
-            _dungeon = DungeonManager.Instance;
-        if (_dungeon == null || _dungeon.Data == null)
-            return false;
-
-        Vector2Int grid = _dungeon.WorldToGrid(worldPosition);
-        return !_dungeon.Data.InBounds(grid.x, grid.y);
+        return !WorldEnvironmentQuery.IsInsideKnownCombatSpace(worldPosition);
     }
 
     private bool IsWallPosition(Vector2 position)
     {
-        if (_dungeon == null)
-            _dungeon = DungeonManager.Instance;
-        if (_dungeon == null || _dungeon.Data == null)
-            return false;
-
-        Vector2Int grid = _dungeon.WorldToGrid(position);
-        return !_dungeon.IsWalkable(grid.x, grid.y);
+        return WorldEnvironmentQuery.IsWallAt(position);
     }
 
     private bool HandleWallHit(Vector2 currentPosition, Vector2 nextPosition)

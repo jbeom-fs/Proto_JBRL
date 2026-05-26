@@ -204,7 +204,7 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         float radius = _context.Enemy != null
             ? _context.Enemy.CollisionFootprintRadius
             : 0.32f;
-        return _context.DungeonManager.IsFootprintWalkable(position, radius);
+        return WorldEnvironmentQuery.IsFootprintWalkable(position, radius);
     }
 
     private bool CanRun()

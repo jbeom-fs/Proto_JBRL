@@ -33,4 +33,11 @@ MonoBehaviour:
     locationType: 1
     locationRootId: dungeon
     localSpawnPosition: {x: 0, y: 0, z: 0}
-    minimapLocationId: ""
+    minimapLocationId:
+  - id: elite_arena
+    displayName: elite_arena
+    description: elite arena room
+    locationType: 1
+    locationRootId: elite_arena
+    localSpawnPosition: {x: 0, y: 0, z: 0}
+    minimapLocationId:
