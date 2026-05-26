@@ -201,7 +201,7 @@ public class DungeonManager : MonoBehaviour
 
     public bool TryTransitionToFloor(int targetFloor, out string message)
     {
-        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        LocationTransitionManager locationManager = LocationTransitionManager.Active;
         if (locationManager != null && !locationManager.IsInDungeon)
         {
             message = "Floor command can only be used in Dungeon.";

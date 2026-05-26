@@ -7,7 +7,7 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
     public static EliteArenaEncounterController Active { get; private set; }
 
     [Header("Teleport")]
-    [SerializeField] private TownDungeonTransitionManager transitionManager;
+    [SerializeField] private LocationTransitionManager transitionManager;
     [SerializeField, TeleportDestinationId] private string arenaDestinationId = "elite_arena";
 
     [Header("Arena")]
@@ -116,10 +116,10 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         _eliteDefeated = false;
         HideReturnPortal();
 
-        transitionManager = transitionManager != null ? transitionManager : TownDungeonTransitionManager.Active;
+        transitionManager = transitionManager != null ? transitionManager : LocationTransitionManager.Active;
         if (transitionManager == null)
         {
-            Debug.LogWarning("[EliteArenaEncounterController] TownDungeonTransitionManager is missing.", this);
+            Debug.LogWarning("[EliteArenaEncounterController] LocationTransitionManager is missing.", this);
             CancelEncounter();
             return false;
         }
@@ -153,9 +153,9 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         player.TeleportTo(_originReturnPosition);
         DungeonManager.Instance?.OpenCurrentRoomDoors();
 
-        TownDungeonTransitionManager router = transitionManager != null
+        LocationTransitionManager router = transitionManager != null
             ? transitionManager
-            : TownDungeonTransitionManager.Active;
+            : LocationTransitionManager.Active;
         router?.RestoreDungeonMinimapSource();
 
         if (_activeEntrancePortal != null)

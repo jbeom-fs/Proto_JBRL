@@ -1,7 +1,7 @@
-using UnityEngine;
-public class TownDungeonTransitionManager : MonoBehaviour
+﻿using UnityEngine;
+public class LocationTransitionManager : MonoBehaviour
 {
-    public static TownDungeonTransitionManager Active { get; private set; }
+    public static LocationTransitionManager Active { get; private set; }
 
     [Header("Roots")]
     [SerializeField] private GameObject townRoot;
@@ -28,6 +28,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
 
     private bool _warnedMissingReferences;
     private bool _isChangingLocation;
+    private TeleportLocationData _currentDestination;
 
     public GameLocationType CurrentLocation { get; private set; }
     public bool IsInTown => CurrentLocation == GameLocationType.Town;
@@ -93,7 +94,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
         {
             if (enteringDungeon)
             {
-                minimap?.SetDungeonSource();
                 StartNewDungeonRun(targetPlayer);
                 moved = true;
             }
@@ -102,36 +102,58 @@ public class TownDungeonTransitionManager : MonoBehaviour
                 moved = TryMovePlayerToDestination(targetPlayer, destination);
             }
 
-            // Dungeon flow 안에서도 LocationMinimapRegistry에 destination의 minimapLocationId가
-            // 등록되어 있거나 useTilemapMinimap 플래그가 켜져 있으면 Tilemap 미니맵으로 전환합니다.
-            // (Elite Arena, Boss Arena 등 Dungeon 내부의 독립 Tilemap 공간 자동 감지)
-            // 복귀는 RestoreDungeonMinimapSource()로 처리.
-            TrySwitchToTilemapMinimap(destination);
         }
         else
         {
-            minimap?.SetTilemapSource(destination.MinimapLocationId);
             moved = TryMovePlayerToDestination(targetPlayer, destination);
         }
 
+        _currentDestination = destination;
+        ApplyMinimapSourceForLocation(destination);
         _isChangingLocation = false;
         return moved;
     }
 
-    private void TrySwitchToTilemapMinimap(TeleportLocationData destination)
+    public void RefreshMinimapForCurrentLocation()
     {
-        if (minimap == null || destination == null)
+        if (_currentDestination != null)
+            ApplyMinimapSourceForLocation(_currentDestination);
+        else if (CurrentLocation == GameLocationType.Dungeon)
+            minimap?.SetDungeonSource();
+    }
+
+    private void ApplyMinimapSourceForLocation(TeleportLocationData destination)
+    {
+        if (minimap == null)
             return;
+
+        if (destination == null)
+        {
+            if (CurrentLocation == GameLocationType.Dungeon)
+                minimap.SetDungeonSource();
+            return;
+        }
+
+        if (destination.LocationType != GameLocationType.Dungeon)
+        {
+            minimap.SetTilemapSource(destination.MinimapLocationId);
+            return;
+        }
+
+        if (ShouldUseTilemapMinimap(destination))
+            minimap.SetTilemapSource(destination.MinimapLocationId);
+        else
+            minimap.SetDungeonSource();
+    }
+
+    private static bool ShouldUseTilemapMinimap(TeleportLocationData destination)
+    {
+        if (destination == null)
+            return false;
 
         string minimapId = destination.MinimapLocationId;
-        if (string.IsNullOrWhiteSpace(minimapId))
-            return;
-
-        bool registered = LocationMinimapRegistry.Contains(minimapId);
-        if (!registered && !destination.UseTilemapMinimap)
-            return;
-
-        minimap.SetTilemapSource(minimapId);
+        return !string.IsNullOrWhiteSpace(minimapId) &&
+               (destination.UseTilemapMinimap || LocationMinimapRegistry.Contains(minimapId));
     }
 
     public void EnterDungeon()
@@ -139,10 +161,6 @@ public class TownDungeonTransitionManager : MonoBehaviour
         TeleportPlayer(player, debugDungeonEntranceDestinationId);
     }
 
-    /// <summary>
-    /// Elite Arena 등 Dungeon flow 안의 독립 Tilemap 공간에서 Dungeon으로 복귀할 때 호출합니다.
-    /// 미니맵을 Dungeon grid 모드로 되돌립니다. Player 좌표 이동은 별도로 수행되어 있어야 합니다.
-    /// </summary>
     public void RestoreDungeonMinimapSource()
     {
         if (CurrentLocation != GameLocationType.Dungeon)
@@ -184,6 +202,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
         _isChangingLocation = true;
         ApplyLocationRoots(locationType);
         CurrentLocation = locationType;
+        RefreshMinimapForCurrentLocation();
         _isChangingLocation = false;
     }
 
@@ -232,7 +251,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
         bool isDungeon = locationType == GameLocationType.Dungeon;
         SetRootActive(townRoot, !isDungeon);
         SetRootActive(dungeonRoot, isDungeon);
-        SetRootActive(minimapRoot, true); // always visible — source switches on teleport
+        SetRootActive(minimapRoot, true);
     }
 
     private static void SetRootActive(GameObject root, bool active)
@@ -263,7 +282,7 @@ public class TownDungeonTransitionManager : MonoBehaviour
     private void Warn(string message)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        Debug.LogWarning("[TownDungeonTransitionManager] " + message, this);
+        Debug.LogWarning("[LocationTransitionManager] " + message, this);
 #endif
     }
 }

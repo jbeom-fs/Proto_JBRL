@@ -6288,7 +6288,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0b74e0cfbb634e3f9502a43000c55ecf, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TownDungeonTransitionManager
+  m_EditorClassIdentifier: Assembly-CSharp::LocationTransitionManager
   townRoot: {fileID: 1525631516}
   dungeonRoot: {fileID: 1353486742}
   minimapRoot: {fileID: 900100000}

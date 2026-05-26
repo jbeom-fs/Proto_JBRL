@@ -9,7 +9,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [Header("Gameplay Dependencies")]
     [SerializeField] private RoomSpawner roomSpawner;
     [SerializeField] private DungeonManager dungeonManager;
-    [SerializeField] private TownDungeonTransitionManager transitionManager;
+    [SerializeField] private LocationTransitionManager transitionManager;
     [SerializeField] private EliteArenaEncounterController eliteArenaEncounterController;
     [SerializeField] private PlayerController player;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
@@ -68,7 +68,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     {
         if (transitionManager == null)
         {
-            WarnMissing(nameof(TownDungeonTransitionManager));
+            WarnMissing(nameof(LocationTransitionManager));
             return DeveloperConsoleCommandResult.Error("Teleport manager is not assigned.");
         }
 

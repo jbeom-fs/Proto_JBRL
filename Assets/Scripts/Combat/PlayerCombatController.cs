@@ -781,7 +781,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private static bool IsCombatBlockedByLocation()
     {
-        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        LocationTransitionManager locationManager = LocationTransitionManager.Active;
         return locationManager != null && locationManager.ShouldBlockCombat;
     }
 

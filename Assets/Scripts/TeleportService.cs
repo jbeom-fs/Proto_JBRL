@@ -3,7 +3,7 @@ using UnityEngine;
 public class TeleportService : MonoBehaviour
 {
     [SerializeField, TeleportDestinationId] private string targetDestinationId;
-    [SerializeField] private TownDungeonTransitionManager transitionManager;
+    [SerializeField] private LocationTransitionManager transitionManager;
     [SerializeField] private bool teleportOnPlayerTrigger = true;
     [SerializeField, Min(0f)] private float triggerCooldownSeconds = 0.5f;
 

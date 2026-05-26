@@ -108,7 +108,7 @@ public class PlayerController : MonoBehaviour
         if (dungeonManager.dungeonRenderer == null) { Debug.LogError("[PlayerController] DungeonTilemapRenderer 없음"); enabled = false; return; }
         if (dungeonManager.dungeonRenderer.tilemap == null) { Debug.LogError("[PlayerController] DungeonTilemapRenderer.tilemap 없음"); enabled = false; return; }
 
-        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        LocationTransitionManager locationManager = LocationTransitionManager.Active;
         if (dungeonManager.Data == null && (locationManager == null || !locationManager.StartsInTown))
             dungeonManager.Generate();
 
@@ -372,7 +372,7 @@ public class PlayerController : MonoBehaviour
 
     private bool CanMoveTo(Vector3 pos)
     {
-        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        LocationTransitionManager locationManager = LocationTransitionManager.Active;
         if (locationManager != null && locationManager.IsInTown)
         {
             float townRadius = GetWorldColliderRadius();
@@ -553,7 +553,7 @@ public class PlayerController : MonoBehaviour
 
     private bool ShouldUseDungeonSystems()
     {
-        TownDungeonTransitionManager locationManager = TownDungeonTransitionManager.Active;
+        LocationTransitionManager locationManager = LocationTransitionManager.Active;
         if (locationManager != null && !locationManager.IsInDungeon)
             return false;
 

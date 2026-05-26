@@ -120,7 +120,7 @@ public class MinimapController : MonoBehaviour
     }
 
     // ═════════════════════════════════════════════════════════════════
-    // Public API — called by TownDungeonTransitionManager on teleport
+    // Public API called by LocationTransitionManager on teleport.
     // ═════════════════════════════════════════════════════════════════
 
     public void SetDungeonSource()
@@ -132,8 +132,7 @@ public class MinimapController : MonoBehaviour
         _pendingTilemapLocationId = null;
         _hasLastPlayerGrid       = false;
 
-        // Dungeon texture will be built when fog/floor events fire after dungeon generation.
-        // Start polling as a safety net in case events arrive before this frame completes.
+        InitializeFromCurrentDungeon();
         StartInitialInitializeRoutine();
     }
 
