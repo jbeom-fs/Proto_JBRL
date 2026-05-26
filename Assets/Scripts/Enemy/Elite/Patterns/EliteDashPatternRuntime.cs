@@ -13,6 +13,7 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
     private ElitePatternContext _context;
     private Phase _phase;
     private Vector2 _direction = Vector2.down;
+    private Vector3 _targetPosition;
     private float _timer;
     private bool _hasHitPlayer;
     private bool _unlockFacing;
@@ -28,13 +29,13 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         IsFinished = false;
         _hasHitPlayer = false;
 
-        if (!CanRun())
+        if (!CanRun() || !TryResolveDashTarget(out _targetPosition))
         {
             Finish();
             return;
         }
 
-        _direction = ResolveDirection();
+        _direction = ResolveDirection(_targetPosition);
         _context.Brain.StopMoving();
         if (_data.LockFacingDuringDash)
         {
@@ -102,11 +103,11 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
 
     private void StartDash()
     {
-        _context.Animation?.PlayEliteAnimation(_data.DashAnimation, _context.Target.position);
-        _timer = _data.DashDuration;
+        _context.Animation?.PlayEliteAnimation(_data.DashAnimation, _targetPosition);
+        _timer = 0f;
         _phase = Phase.Dash;
 
-        if (_timer <= 0f)
+        if (_data.DashSpeed <= 0f || HasReachedTarget())
             StartRecovery();
     }
 
@@ -115,17 +116,11 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         if (_data.LockFacingDuringDash)
             _context.Animation?.LockSpecialFacing(_direction);
 
-        TryMove(deltaTime);
+        bool dashFinished = TryMove(deltaTime);
         TryApplyDamage();
 
-        if (_timer > 0f)
-        {
-            _timer -= deltaTime;
-            if (_timer > 0f)
-                return;
-        }
-
-        StartRecovery();
+        if (dashFinished)
+            StartRecovery();
     }
 
     private void TickRecovery(float deltaTime)
@@ -140,20 +135,32 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         Finish();
     }
 
-    private void TryMove(float deltaTime)
+    private bool TryMove(float deltaTime)
     {
         float step = _data.DashSpeed * deltaTime;
         if (step <= 0f)
-            return;
+            return false;
 
-        Vector3 next = _context.SelfTransform.position + (Vector3)(_direction * step);
+        Vector3 current = _context.SelfTransform.position;
+        Vector3 toTarget = _targetPosition - current;
+        float remaining = toTarget.magnitude;
+        if (remaining <= 0.001f)
+            return true;
+
+        Vector3 direction = toTarget / remaining;
+        _direction = (Vector2)direction;
+
+        Vector3 next = step >= remaining
+            ? _targetPosition
+            : current + direction * step;
+
         if (_data.StopOnWall && !CanOccupy(next))
         {
-            StartRecovery();
-            return;
+            return true;
         }
 
         _context.SelfTransform.position = next;
+        return step >= remaining || HasReachedTarget();
     }
 
     private void TryApplyDamage()
@@ -184,12 +191,53 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         return delta.sqrMagnitude <= radius * radius;
     }
 
-    private Vector2 ResolveDirection()
+    private bool TryResolveDashTarget(out Vector3 targetPosition)
     {
         if (_context == null || _context.Target == null || _context.SelfTransform == null)
+        {
+            targetPosition = default;
+            return false;
+        }
+
+        Vector3 selfPosition = _context.SelfTransform.position;
+        targetPosition = selfPosition;
+        Vector3 desired = _context.Target.position;
+        desired.z = selfPosition.z;
+        if (CanOccupy(desired))
+        {
+            targetPosition = desired;
+            return true;
+        }
+
+        float footprintRadius = GetFootprintRadius();
+        float maxDistanceFromOrigin = Vector3.Distance(selfPosition, desired) + Mathf.Max(1f, footprintRadius);
+        if (WalkabilityQuery.TryFindNearestWalkable(
+                desired,
+                selfPosition,
+                maxDistanceFromOrigin,
+                footprintRadius,
+                3,
+                out targetPosition))
+        {
+            targetPosition.z = selfPosition.z;
+            return true;
+        }
+
+        if (WalkabilityQuery.TryGetNearestWalkableWorldPosition(desired, out targetPosition))
+        {
+            targetPosition.z = selfPosition.z;
+            return CanOccupy(targetPosition);
+        }
+
+        return false;
+    }
+
+    private Vector2 ResolveDirection(Vector3 targetPosition)
+    {
+        if (_context == null || _context.SelfTransform == null)
             return _direction.sqrMagnitude > 0.0001f ? _direction : Vector2.down;
 
-        Vector2 direction = _context.Target.position - _context.SelfTransform.position;
+        Vector2 direction = targetPosition - _context.SelfTransform.position;
         if (direction.sqrMagnitude <= 0.0001f)
             return _direction.sqrMagnitude > 0.0001f ? _direction : Vector2.down;
 
@@ -201,10 +249,22 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         if (_context.DungeonManager == null)
             return true;
 
-        float radius = _context.Enemy != null
+        return WorldEnvironmentQuery.IsFootprintWalkable(position, GetFootprintRadius());
+    }
+
+    private float GetFootprintRadius()
+    {
+        return _context.Enemy != null
             ? _context.Enemy.CollisionFootprintRadius
             : 0.32f;
-        return WorldEnvironmentQuery.IsFootprintWalkable(position, radius);
+    }
+
+    private bool HasReachedTarget()
+    {
+        if (_context == null || _context.SelfTransform == null)
+            return true;
+
+        return (_targetPosition - _context.SelfTransform.position).sqrMagnitude <= 0.000001f;
     }
 
     private bool CanRun()

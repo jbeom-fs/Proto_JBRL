@@ -8,6 +8,7 @@ public sealed class EliteDashPatternData : ElitePatternData
 
     [Header("Dash")]
     [SerializeField] private float dashSpeed = 8f;
+    [Tooltip("Deprecated for distance calculation. Dash now moves to the prepared target position using dashSpeed.")]
     [SerializeField] private float dashDuration = 0.35f;
     [SerializeField] private int damage = 2;
     [SerializeField] private float hitRadius = 0.45f;
