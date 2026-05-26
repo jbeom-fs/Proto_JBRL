@@ -5,9 +5,9 @@ public sealed class EliteJumpPatternData : ElitePatternData
 {
     [Header("Timing")]
     [SerializeField] private float windup = 0.45f;
-    [SerializeField] private float jumpDuration = 0.55f;
 
     [Header("Jump")]
+    [SerializeField] private float jumpSpeed = 8f;
     [SerializeField] private float maxDistance = 5f;
     [SerializeField] private int impactDamage = 3;
     [SerializeField] private float impactRadius = 1.25f;
@@ -20,7 +20,7 @@ public sealed class EliteJumpPatternData : ElitePatternData
     [SerializeField] private EnemyAnimationKey jumpAnimation = EnemyAnimationKey.Jump;
 
     public float Windup => Mathf.Max(0f, windup);
-    public float JumpDuration => Mathf.Max(0f, jumpDuration);
+    public float JumpSpeed => Mathf.Max(0f, jumpSpeed);
     public float MaxDistance => Mathf.Max(0.01f, maxDistance);
     public int ImpactDamage => Mathf.Max(0, impactDamage);
     public float ImpactRadius => Mathf.Max(0.01f, impactRadius);
@@ -42,8 +42,8 @@ public sealed class EliteJumpPatternData : ElitePatternData
 
         if (windup < 0f)
             Debug.LogWarning($"[EliteJumpPatternData] {name}: windup is negative.", this);
-        if (jumpDuration < 0f)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: jumpDuration is negative.", this);
+        if (jumpSpeed <= 0f)
+            Debug.LogWarning($"[EliteJumpPatternData] {name}: jumpSpeed must be greater than 0.", this);
         if (maxDistance <= 0f)
             Debug.LogWarning($"[EliteJumpPatternData] {name}: maxDistance must be greater than 0.", this);
         if (impactDamage < 0)

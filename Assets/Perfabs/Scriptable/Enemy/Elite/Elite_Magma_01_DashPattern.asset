@@ -20,7 +20,6 @@ MonoBehaviour:
   recoveryDuration: 0.45
   windup: 0.5
   dashSpeed: 15
-  dashDuration: 0.2
   damage: 2
   hitRadius: 0.45
   stopOnWall: 1

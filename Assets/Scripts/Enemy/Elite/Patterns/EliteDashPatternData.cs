@@ -8,8 +8,6 @@ public sealed class EliteDashPatternData : ElitePatternData
 
     [Header("Dash")]
     [SerializeField] private float dashSpeed = 8f;
-    [Tooltip("Deprecated for distance calculation. Dash now moves to the prepared target position using dashSpeed.")]
-    [SerializeField] private float dashDuration = 0.35f;
     [SerializeField] private int damage = 2;
     [SerializeField] private float hitRadius = 0.45f;
     [SerializeField] private bool stopOnWall = true;
@@ -21,7 +19,6 @@ public sealed class EliteDashPatternData : ElitePatternData
 
     public float Windup => Mathf.Max(0f, windup);
     public float DashSpeed => Mathf.Max(0f, dashSpeed);
-    public float DashDuration => Mathf.Max(0f, dashDuration);
     public int Damage => Mathf.Max(0, damage);
     public float HitRadius => Mathf.Max(0.01f, hitRadius);
     public bool StopOnWall => stopOnWall;
@@ -43,8 +40,6 @@ public sealed class EliteDashPatternData : ElitePatternData
             Debug.LogWarning($"[EliteDashPatternData] {name}: windup is negative.", this);
         if (dashSpeed <= 0f)
             Debug.LogWarning($"[EliteDashPatternData] {name}: dashSpeed must be greater than 0.", this);
-        if (dashDuration < 0f)
-            Debug.LogWarning($"[EliteDashPatternData] {name}: dashDuration is negative.", this);
         if (damage < 0)
             Debug.LogWarning($"[EliteDashPatternData] {name}: damage is negative.", this);
         if (hitRadius <= 0f)

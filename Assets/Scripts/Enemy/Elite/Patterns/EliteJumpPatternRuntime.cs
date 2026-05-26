@@ -15,6 +15,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
     private Phase _phase;
     private Vector3 _startPosition;
     private Vector3 _targetPosition;
+    private float _totalJumpDistance;
     private Transform _visualRoot;
     private Vector3 _visualBaseLocalPosition;
     private Vector2 _facingDirection = Vector2.down;
@@ -117,12 +118,13 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
     private void StartJump()
     {
         _startPosition = _context.SelfTransform.position;
+        _totalJumpDistance = Vector3.Distance(_startPosition, _targetPosition);
         _context.Animation?.PlayEliteAnimation(_data.JumpAnimation, _targetPosition);
         _timer = 0f;
         _phase = Phase.Jump;
         ApplyVisualOffset(0f);
 
-        if (_data.JumpDuration <= 0f)
+        if (_data.JumpSpeed <= 0f || _totalJumpDistance <= 0.001f)
         {
             _context.SelfTransform.position = _targetPosition;
             RestoreVisualOffset();
@@ -135,15 +137,29 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         if (_data.LockFacingDuringJump)
             _context.Animation?.LockSpecialFacing(_facingDirection);
 
-        _timer += Mathf.Max(0f, deltaTime);
-        float t = Mathf.Clamp01(_timer / _data.JumpDuration);
-        _context.SelfTransform.position = Vector3.Lerp(_startPosition, _targetPosition, t);
-        ApplyVisualOffset(t);
+        float step = _data.JumpSpeed * deltaTime;
+        if (step <= 0f)
+            return;
 
-        if (t >= 1f)
+        Vector3 current = _context.SelfTransform.position;
+        Vector3 toTarget = _targetPosition - current;
+        float remaining = toTarget.magnitude;
+        if (remaining <= 0.001f)
         {
-            RestoreVisualOffset();
-            _phase = Phase.Impact;
+            CompleteJumpMovement();
+            return;
+        }
+
+        Vector3 next = step >= remaining
+            ? _targetPosition
+            : current + toTarget / remaining * step;
+
+        _context.SelfTransform.position = next;
+        ApplyVisualOffset(CalculateJumpProgress(next));
+
+        if (step >= remaining || HasReachedTarget())
+        {
+            CompleteJumpMovement();
         }
     }
 
@@ -211,6 +227,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
 
         Vector3 selfPosition = _context.SelfTransform.position;
         Vector3 desired = ClampJumpDistance(_context.Target.position);
+        desired.z = selfPosition.z;
 
         // 등록된 Area(예: Elite Arena) 안에서는 room 개념이 없으므로 Area 기반 walkable spiral 검색을 사용합니다.
         // Dungeon이 활성화되어 있어도 enemy 위치가 Area 안이면 이 경로가 우선합니다.
@@ -219,8 +236,14 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
             float radius = _context.Enemy != null
                 ? _context.Enemy.CollisionFootprintRadius
                 : 0.32f;
-            return WalkabilityQuery.TryFindNearestWalkable(
-                desired, selfPosition, _data.MaxDistance, radius, 3, out targetPosition);
+            if (WalkabilityQuery.TryFindNearestWalkable(
+                    desired, selfPosition, _data.MaxDistance, radius, 3, out targetPosition))
+            {
+                targetPosition.z = selfPosition.z;
+                return true;
+            }
+
+            return false;
         }
 
         if (dungeon.Data == null)
@@ -235,10 +258,17 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         if (IsValidJumpGrid(dungeon, desiredGrid, currentRoom))
         {
             targetPosition = dungeon.GridToWorld(desiredGrid);
+            targetPosition.z = selfPosition.z;
             return CanOccupy(targetPosition);
         }
 
-        return TryFindNearbyJumpTarget(dungeon, desiredGrid, currentRoom, out targetPosition);
+        if (TryFindNearbyJumpTarget(dungeon, desiredGrid, currentRoom, out targetPosition))
+        {
+            targetPosition.z = selfPosition.z;
+            return true;
+        }
+
+        return false;
     }
 
     private Vector3 ClampJumpDistance(Vector3 desired)
@@ -317,6 +347,30 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
             return _facingDirection.sqrMagnitude > 0.0001f ? _facingDirection : Vector2.down;
 
         return direction.normalized;
+    }
+
+    private float CalculateJumpProgress(Vector3 currentPosition)
+    {
+        if (_totalJumpDistance <= 0.001f)
+            return 1f;
+
+        float moved = Vector3.Distance(_startPosition, currentPosition);
+        return Mathf.Clamp01(moved / _totalJumpDistance);
+    }
+
+    private bool HasReachedTarget()
+    {
+        if (_context == null || _context.SelfTransform == null)
+            return true;
+
+        return (_targetPosition - _context.SelfTransform.position).sqrMagnitude <= 0.000001f;
+    }
+
+    private void CompleteJumpMovement()
+    {
+        _context.SelfTransform.position = _targetPosition;
+        RestoreVisualOffset();
+        _phase = Phase.Impact;
     }
 
     private bool CanRun()

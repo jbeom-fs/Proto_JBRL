@@ -19,7 +19,7 @@ MonoBehaviour:
   weight: 1
   recoveryDuration: 0.55
   windup: 0.45
-  jumpDuration: 0.55
+  jumpSpeed: 9
   maxDistance: 5
   impactDamage: 3
   impactRadius: 1.25
