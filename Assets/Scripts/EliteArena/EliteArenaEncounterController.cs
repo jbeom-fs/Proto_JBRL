@@ -194,6 +194,15 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         _originReturnPosition = default;
     }
 
+    public int ForceKillActiveEliteForDebug()
+    {
+        if (!_hasEncounter || _eliteDefeated || _activeElite == null || _activeElite.IsDead || !_activeElite.IsAlive)
+            return 0;
+
+        _activeElite.ForceKillForDebug();
+        return 1;
+    }
+
     // walkable / wall / LOS / bounds 판정 본체는 WalkabilityArea + WalkabilityQuery에 있습니다.
     // EliteArenaEncounterController는 입장/복귀, Elite spawn, portal lifecycle만 담당합니다.
     //

@@ -129,6 +129,17 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (_currentHp == 0) Die();
     }
 
+    // Developer console only: routes through the normal death pipeline.
+    public void ForceKillForDebug()
+    {
+        if (IsDead || !IsAlive)
+            return;
+
+        _currentHp = 0;
+        _healthBar?.SetHp(_currentHp, data != null ? data.maxHp : 0);
+        Die();
+    }
+
     public void MarkAsEliteKeyHolder()
     {
         _holdsEliteKey = true;

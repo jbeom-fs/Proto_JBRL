@@ -289,7 +289,19 @@ public class RoomSpawner : MonoBehaviour
         }
 
         eliteArenaEncounterController.PrepareEntrancePortal(room, dungeonManager);
-        dungeonManager.CloseCurrentRoomDoors(room);
+    }
+
+    public int ForceKillCurrentEncounterEnemiesForDebug()
+    {
+        int killedCount = ForceKillTrackedEnemiesForDebug();
+
+        EliteArenaEncounterController arenaController = eliteArenaEncounterController != null
+            ? eliteArenaEncounterController
+            : EliteArenaEncounterController.Active;
+        if (arenaController != null)
+            killedCount += arenaController.ForceKillActiveEliteForDebug();
+
+        return killedCount;
     }
 
     public bool TrySelectEliteForArena(RoomInfo room, out EnemyData selected)
@@ -420,6 +432,31 @@ public class RoomSpawner : MonoBehaviour
             if (enemyObject.TryGetComponent<EnemyController>(out var enemy))
                 enemy.OnDied -= OnSpawnedEnemyDied;
         }
+    }
+
+    private int ForceKillTrackedEnemiesForDebug()
+    {
+        int killedCount = 0;
+        for (int i = activeEnemies.Count - 1; i >= 0; i--)
+        {
+            GameObject enemyObject = activeEnemies[i];
+            if (enemyObject == null || !enemyObject.activeInHierarchy)
+            {
+                activeEnemies.RemoveAt(i);
+                continue;
+            }
+
+            if (!enemyObject.TryGetComponent<EnemyController>(out var enemy) || enemy.IsDead || !enemy.IsAlive)
+            {
+                activeEnemies.RemoveAt(i);
+                continue;
+            }
+
+            enemy.ForceKillForDebug();
+            killedCount++;
+        }
+
+        return killedCount;
     }
 
     private static bool IsSameRoom(RoomInfo a, RoomInfo b)

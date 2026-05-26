@@ -8,7 +8,7 @@ public sealed class DeveloperConsoleService
     private delegate void ArgumentSuggestionProvider(string currentArg, TeleportDestinationDatabase destinationDatabase, List<string> output, int maxCount);
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
-    private static readonly string[] s_DoorOpenArgs = { "default", "normal", "basic", "elite" };
+    private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
@@ -67,6 +67,7 @@ public sealed class DeveloperConsoleService
         _commands["echo"] = ExecuteEcho;
         _commands["tp"] = ExecuteTeleport;
         _commands["dooropen"] = ExecuteDoorOpen;
+        _commands["kill"] = ExecuteKill;
         _commands["floor"] = ExecuteFloor;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
@@ -116,7 +117,8 @@ public sealed class DeveloperConsoleService
         return DeveloperConsoleCommandResult.Success(
             "Commands: " + builder +
             "\nUsage: /TP [destinationId]" +
-            "\nUsage: /DoorOpen [doorType]" +
+            "\nUsage: /DoorOpen [normal|elite]" +
+            "\nUsage: /kill" +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -158,11 +160,11 @@ public sealed class DeveloperConsoleService
 
         string doorType = string.IsNullOrWhiteSpace(arguments) ? "normal" : arguments.Trim();
         if (doorType.IndexOf(' ') >= 0)
-            return DeveloperConsoleCommandResult.Error("Usage: /DoorOpen [doorType]");
+            return DeveloperConsoleCommandResult.Error("Usage: /DoorOpen [normal|elite]");
 
         int openedCount;
         string label;
-        if (IsNormalDoorType(doorType))
+        if (string.Equals(doorType, "normal", StringComparison.OrdinalIgnoreCase))
         {
             openedCount = context.DungeonManager.OpenDebugNormalDoors();
             label = "normal";
@@ -174,7 +176,7 @@ public sealed class DeveloperConsoleService
         }
         else
         {
-            return DeveloperConsoleCommandResult.Error("Unsupported DoorType: " + doorType + ". Use normal/basic/default or elite.");
+            return DeveloperConsoleCommandResult.Error("Unsupported DoorType: " + doorType + ". Use normal or elite.");
         }
 
         if (openedCount <= 0)
@@ -183,11 +185,20 @@ public sealed class DeveloperConsoleService
         return DeveloperConsoleCommandResult.Success("Opened " + openedCount + " " + label + " door(s).");
     }
 
-    private static bool IsNormalDoorType(string doorType)
+    private DeveloperConsoleCommandResult ExecuteKill(DeveloperConsoleCommandContext context, string arguments)
     {
-        return string.Equals(doorType, "normal", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(doorType, "basic", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(doorType, "default", StringComparison.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error("Usage: /kill");
+
+        RoomSpawner spawner = RoomSpawner.Active;
+        if (spawner == null)
+            return DeveloperConsoleCommandResult.Error("RoomSpawner is not active.");
+
+        int killedCount = spawner.ForceKillCurrentEncounterEnemiesForDebug();
+        if (killedCount <= 0)
+            return DeveloperConsoleCommandResult.Success("No enemies to kill in current room or elite arena.");
+
+        return DeveloperConsoleCommandResult.Success("Killed " + killedCount + " enemy(s) in current room or elite arena.");
     }
 
     private DeveloperConsoleCommandResult ExecuteFloor(DeveloperConsoleCommandContext context, string arguments)
