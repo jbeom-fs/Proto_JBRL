@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-22  
+> 작성 기준일: 2026-05-26  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -23,6 +23,7 @@
 11a. [시스템 9 — 마을·던전 전환 및 미니맵](#11a-시스템-9--마을던전-전환-및-미니맵)
 11b. [시스템 10 — 아이템 / 드랍 / Elite Key](#11b-시스템-10--아이템--드랍--elite-key)
 11c. [시스템 11 — 개발자 콘솔](#11c-시스템-11--개발자-콘솔)
+11d. [시스템 12 — Elite Arena](#11d-시스템-12--elite-arena)
 12. [성능 전략](#12-성능-전략)
 13. [데이터 흐름](#13-데이터-흐름)
 14. [확장 포인트](#14-확장-포인트)
@@ -75,7 +76,9 @@
 │  ProjectilePool · ProjectileController                       │
 │  FogOfWarController                                          │
 │  GamePauseController                                         │
-│  DeveloperConsoleUI                                          │
+│  DeveloperConsoleUI · DeveloperConsoleCommandExecutor        │
+│  EliteArenaEncounterController                               │
+│  EliteArenaPortal · EliteArenaReturnPortal                   │
 │  GameOverFlowController · GameOverSceneReloadRestartHandler  │
 ├──────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer (ScriptableObject Event Bus / Data)    │
@@ -99,6 +102,8 @@
 │  GamePauseSource · GameLocationType                          │
 │  LocationRootRegistry · LocationMinimapRegistry              │
 │  DeveloperConsoleService · DeveloperConsoleCommandResult     │
+│  WalkabilityQuery · WorldEnvironmentQuery                    │
+│  WalkabilityArea                                             │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
 │  DungeonTilemapRenderer · DoorController                     │
@@ -135,6 +140,9 @@
 - **인벤토리 데이터 드리븐**: `PlayerInventory`(MonoBehaviour, RequireComponent for PlayerController) 가 `InventoryItemStack` 리스트를 보유, stackable/maxStack 정책을 자동 적용. `ItemData.removeOnFloorTransition`/`removeOnDungeonExit` 플래그로 층/던전 이탈 시 자동 정리. Elite Key 도 일반 ItemData 한 항목으로 통합 (과거의 `PlayerEliteKeyInventory` 는 제거됨)
 - **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
+- **공간 독립 walkability**: `WalkabilityQuery`(static) + `WalkabilityArea`(OnEnable/OnDisable 자동 등록) 로 Dungeon·Elite Arena·Boss Arena 등 모든 공간에서 단일 query API 사용. 전투 코드는 `WorldEnvironmentQuery` 파사드만 호출하며 공간 종류를 알지 못해도 됨 — 새 공간은 `WalkabilityArea` 컴포넌트 부착만으로 자동 등록
+- **Elite Arena 포탈 lifecycle 관리**: `EliteArenaEncounterController.Active` 정적 참조 + `RoomSpawner.PrepareEntrancePortal` 에서 생성주기 시작, `MarkCompletedAndDisable` + `ClearRuntimeState` 로 층 이동·던전 이탈 시 일괄 정리
+- **개발자 콘솔 실행 분리**: `DeveloperConsoleService`(파싱·등록) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경) 로 책임 분리 — 서비스 레이어가 Unity 의존성 없이 테스트 가능, 새 명령은 Executor에 메서드 추가만으로 등록
 
 ---
 
@@ -238,7 +246,8 @@ Assets/Scripts/
 │   ├── Projectile.cs               # (구) 트리거 기반 발사체 — 호환 유지용
 │   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
 │   ├── PlayerInvincibilityFlashFeedback.cs # 무적 시 셰이더 _FlashAmount 보간 (PropertyBlock)
-│   └── CombatEventChannel.cs       # 전투 이벤트 버스 (ScriptableObject)
+│   ├── CombatEventChannel.cs       # 전투 이벤트 버스 (ScriptableObject)
+│   └── WorldEnvironmentQuery.cs    # 전투 코드용 환경 query 파사드 — WalkabilityQuery에 위임 (IsWalkablePoint/IsFootprintWalkable/HasGeometryLineOfSight/IsWallAt/IsInsideKnownCombatSpace)
 │
 ├── Visual/
 │   └── FogVisibilityRenderer.cs    # FogOfWar visible 상태에 따라 Renderer.enabled 토글 (적·적 투사체 공용)
@@ -275,10 +284,12 @@ Assets/Scripts/
 │       └── Patterns/
 │           ├── EliteProjectilePatternData.cs  # 발사 패턴 (windup, prefab, speed, lifetime, firePattern, count, spread, burstInterval, wallHitMode, maxBounceCount, impact)
 │           ├── EliteProjectilePatternRuntime.cs # windup → Fire(ProjectileFireService) → recovery 순으로 진행, EnemyAnimationKey 분기로 Animator 트리거
-│           ├── EliteDashPatternData.cs        # 돌진 (windup, dashSpeed, dashDuration, damage, hitRadius, stopOnWall, lockFacingDuringDash)
-│           ├── EliteDashPatternRuntime.cs     # windup → Lerp 보간 돌진 → 경로 위 타겟 1회 데미지 → recovery
+│           ├── EliteDashPatternData.cs        # 돌진 (windup, dashSpeed, damage, hitRadius, stopOnWall, lockFacingDuringDash, windupAnimation, dashAnimation)
+│           │                                  #   dashDuration 제거 → dashSpeed 기반 목표 위치 이동으로 변경
+│           ├── EliteDashPatternRuntime.cs     # windup → 목표 위치(플레이어 위치 기반) 결정 → dashSpeed×dt 이동 → 타겟 1회 데미지 → recovery
+│           │                                  #   WalkabilityQuery.TryFindNearestWalkable 로 목표 위치 보정 (Arena/Dungeon 공용)
 │           ├── EliteJumpPatternData.cs        # 도약 (windup, jumpDuration, maxDistance, impactDamage, impactRadius, jumpVisualHeight, stayInRoom, lockFacingDuringJump)
-│           └── EliteJumpPatternRuntime.cs     # windup → 착지점 결정 → 비행 → 착지 임팩트(impactRadius OverlapCircle → ApplyEnemyImpactToTarget) → recovery
+│           └── EliteJumpPatternRuntime.cs     # windup → WalkabilityQuery 기반 착지점 결정 → 비행 → 착지 임팩트 → recovery
 │
 ├── UI/
 │   ├── MinimapController.cs        # 이중 모드 미니맵 — Dungeon(DungeonData 기반) / Tilemap(TilemapMinimapSource 기반)
@@ -305,8 +316,19 @@ Assets/Scripts/
 ├── DebugConsole/
 │   ├── DeveloperConsoleUI.cs       # 개발자 콘솔 UI MonoBehaviour — ` 키 토글, TMP_InputField 입력, ScrollRect 로그, Tab 자동완성 순환, GamePauseController 연동
 │   ├── DeveloperConsoleService.cs  # 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, Execute/GetArgumentSuggestions/GetCommandNames API
-│   ├── DeveloperConsoleCommandContext.cs # 명령 실행 시 전달되는 런타임 참조 묶음 (readonly struct) — DeveloperConsoleUI·TownDungeonTransitionManager·TeleportDestinationDatabase·PlayerController·DungeonManager
+│   ├── DeveloperConsoleCommandExecutor.cs # 명령 실행 MonoBehaviour (구 CommandContext 대체) — 게임 상태 변경 호출을 담당 (RoomSpawner·DungeonManager·TownDungeonTransitionManager·EliteArenaEncounterController·PlayerController 참조 보유)
 │   └── DeveloperConsoleCommandResult.cs  # 명령 실행 결과 (readonly struct) — Success/Error/Clear/Ignored 팩토리 메서드
+│
+├── EliteArena/
+│   ├── EliteArenaEncounterController.cs  # Elite Arena 인카운터 총괄 — static Active, 입장/복귀/취소, Elite spawn, portal lifecycle, WalkabilityArea passthrough API
+│   ├── EliteArenaPortal.cs              # Elite Room 내 진입 포탈 MonoBehaviour — 플레이어 접촉 시 TryEnterArenaFromPortal 호출, Bind/MarkCompletedAndDisable/ResetRuntimeState
+│   └── EliteArenaReturnPortal.cs        # Arena 내 복귀 포탈 — Elite 사망 후 ShowReturnPortal로 활성화, 접촉 시 TryReturnFromArena 호출
+│
+├── World/
+│   ├── WalkabilityArea.cs    # 전투 공간 단위 컴포넌트 (Elite Arena 등) — walk/wall Tilemap 쌍, OnEnable/OnDisable → WalkabilityQuery 자동 등록
+│   │                         #   IsInsideWorld/IsWalkableWorld/IsFootprintWalkableWorld/HasLineOfSightWorld/TryGetNearestWalkableWorldPosition API
+│   └── WalkabilityQuery.cs   # 정적 라우팅 서비스 — 등록된 WalkabilityArea 우선, 없으면 DungeonData fallback
+│                             #   IsWalkable/IsFootprintWalkable/HasLineOfSight/IsInsideKnownArea/TryFindNearestWalkable
 │
 ├── Debug/
 │   └── RuntimePerfTraceLogger.cs   # 투사체/풀 호출 마이크로 타이밍 트레이스
@@ -1127,9 +1149,9 @@ ElitePatternRunner.Tick(dt):
 
 | 패턴 (ScriptableObject) | 핵심 파라미터 | 동작 |
 |---|---|---|
-| `EliteProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (Charge 등 windupAnimation) → ProjectileFireService.Fire → recovery |
-| `EliteDashPatternData` | windup / dashSpeed / dashDuration / damage / hitRadius / stopOnWall / lockFacingDuringDash | windup → Lerp 보간 돌진, 경로 위 타겟 1회 데미지 → recovery |
-| `EliteJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → 착지점 결정 → 비행 보간 → 착지 임팩트(impactRadius OverlapCircle) → recovery |
+| `EliteProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
+| `EliteDashPatternData` | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery. ~~dashDuration 제거~~ |
+| `EliteJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정 → 비행 보간 → 착지 임팩트(impactRadius OverlapCircle) → recovery |
 
 공통 ElitePatternData 필드: `displayName` / `cooldown` / `minRange` / `maxRange` / `weight` / `recoveryDuration` + `OnValidate` 가 음수·역전 범위·weight 0 을 자동 경고.
 
@@ -1753,7 +1775,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 |------|------|
 | `DeveloperConsoleUI` | MonoBehaviour UI 컨트롤러 — `` ` `` 키 토글, `TMP_InputField` 입력, ScrollRect 로그 출력, Tab 자동완성, `GamePauseController` 연동 |
 | `DeveloperConsoleService` | 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, `Execute` / `GetArgumentSuggestions` / `GetCommandNames` API |
-| `DeveloperConsoleCommandContext` | 명령 실행 시 전달되는 런타임 참조 묶음 (readonly struct) — `DeveloperConsoleUI` · `TownDungeonTransitionManager` · `TeleportDestinationDatabase` · `PlayerController` · `DungeonManager` |
+| `DeveloperConsoleCommandExecutor` | MonoBehaviour 실행 컨트롤러 — `DeveloperConsoleService`가 파싱·등록을 담당하고 게임 상태 변경(적 처치·문 개방·텔레포트·층 이동)은 이 컴포넌트로 위임. `RoomSpawner` · `DungeonManager` · `TownDungeonTransitionManager` · `EliteArenaEncounterController` · `PlayerController` · `TeleportDestinationDatabase` 보유 (구 `DeveloperConsoleCommandContext` readonly struct 대체) |
 | `DeveloperConsoleCommandResult` | 명령 실행 결과 (readonly struct) — `Success(msg)` / `Error(msg)` / `Clear()` / `Ignored()` 팩토리 메서드 |
 
 ### 11c-2. 등록된 명령
@@ -1765,6 +1787,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 | `/echo [text]` | 입력 텍스트 그대로 출력 | 없음 |
 | `/tp [destinationId]` | 플레이어를 목적지로 순간이동 | `TeleportDestinationDatabase` ID 목록 |
 | `/dooropen [doorType]` | 현재 층의 문 일괄 개방 | `default` `normal` `basic` `elite` |
+| `/kill` | 현재 방 또는 Elite Arena 내 모든 적 즉시 처치 (디버그 전용) | 없음 |
 | `/floor add [count]` | 현재 층 + count 이동 | `add` `sub` `set` |
 | `/floor sub [count]` | 현재 층 - count 이동 | |
 | `/floor set [floor]` | 지정 층으로 이동 | |
@@ -1785,6 +1808,72 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 
 Tab 키로 제안 순환·적용, Esc 로 제안 패널만 닫음 (이후 Esc 는 콘솔 전체 닫기).  
 콘솔 열림 시 `GamePauseController.AddSource(GamePauseSource.DeveloperConsole)` 로 게임 일시정지, 닫힘 시 해제.
+
+> `/kill` 명령은 `DeveloperConsoleCommandExecutor.ExecuteKill()` → `RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug()` 로 라우팅됩니다. 일반 방이면 현재 방의 생존 적을, Elite Arena 인카운터 중이면 `EliteArenaEncounterController.ForceKillActiveEliteForDebug()` 로 Elite 적을 처치합니다.
+
+---
+
+## 11d. 시스템 12 — Elite Arena
+
+Elite Floor(`floor % 10 == 5`)의 Elite Room에 포탈이 배치되고, 플레이어가 포탈에 진입하면 별도 고정 Arena 씬으로 텔레포트해 Elite 적과 1:1 전투를 치르는 시스템입니다.
+
+### 11d-1. 전체 흐름
+
+```
+던전 생성 완료 후 RoomSpawner.PrepareEliteKeyPlan():
+  IsEliteFloor → EliteArenaEncounterController.PrepareEntrancePortal(eliteRoom, dungeonManager)
+    Elite Room 중앙 walkable 타일에 EliteArenaPortal Instantiate·배치
+
+플레이어가 포탈 콜라이더에 접촉:
+  EliteArenaPortal.OnTriggerEnter2D → TryEnterArenaFromPortal(portal, room, player)
+    RoomSpawner.TrySelectEliteForArena(room, out eliteData)
+    TownDungeonTransitionManager.TryTeleportPlayer(player, arenaDestinationId)
+    EliteArenaEncounterController.TrySpawnElite(eliteData) → 씬 내 eliteSpawnPoint에 적 배치
+    DungeonManager.CloseCurrentRoomDoors() (Elite Room 문 봉인)
+    portal.SetLocked(true)
+
+Elite 적 사망 시:
+  OnEliteDied → ShowReturnPortal (ArenaReturnPortal 활성화)
+
+플레이어가 복귀 포탈 접촉:
+  EliteArenaReturnPortal.OnTriggerEnter2D → TryReturnFromArena(player)
+    player.TeleportTo(_originReturnPosition)
+    DungeonManager.OpenCurrentRoomDoors()
+    TownDungeonTransitionManager.RestoreDungeonMinimapSource()
+    portal.MarkCompletedAndDisable(originRoom) → 이후 같은 방에서 포탈 비활성
+    CancelEncounter() → HideReturnPortal
+```
+
+### 11d-2. 컴포넌트 책임 분리
+
+| 컴포넌트 | 역할 |
+|---------|------|
+| `EliteArenaEncounterController` | 인카운터 전체 조율 (static `Active`), Elite spawn/defeat, portal lifecycle, `WalkabilityArea` passthrough |
+| `EliteArenaPortal` | Elite Room 내 진입 포탈 — `Bind(controller, room)` 후 접촉 감지, `IsCompletedForRoom` 으로 중복 진입 차단 |
+| `EliteArenaReturnPortal` | Arena 내 복귀 포탈 — Elite 사망 후 `ShowReturnPortal`로 활성화 |
+| `WalkabilityArea` | Arena walk/wall Tilemap 쌍 — OnEnable/OnDisable 자동 등록, walkability·LOS API 제공 |
+| `WalkabilityQuery` | 정적 라우팅 — `WalkabilityArea` 우선, 없으면 `DungeonData` fallback |
+| `WorldEnvironmentQuery` | 전투 코드용 퍼사드 — 어떤 공간인지 몰라도 `WorldEnvironmentQuery.IsFootprintWalkable(pos, r)` 1회 호출 |
+
+### 11d-3. WalkabilityArea 등록 패턴
+
+`WalkabilityArea` MonoBehaviour를 Arena 루트 오브젝트에 부착하면, `OnEnable` 시 `WalkabilityQuery`(static `List<WalkabilityArea>`)에 자동 등록됩니다. 던전 절차 공간은 `DungeonManager`/`DungeonData`로 처리되고, Arena 등 특수 공간은 `WalkabilityArea` 단위로 격리됩니다.
+
+```
+EliteDashPatternRuntime / EliteJumpPatternRuntime:
+  CanOccupy(pos) → WorldEnvironmentQuery.IsFootprintWalkable(pos, footprintRadius)
+    → WalkabilityQuery.IsFootprintWalkable
+      Area 안 → WalkabilityArea.IsFootprintWalkableWorld (walk tile + wall tile 판정)
+      Area 밖 → DungeonData footprint 4코너 IsWalkable (기존 던전 판정)
+```
+
+서로 다른 Area에 걸친 LOS는 항상 차단(`HasLineOfSight`에서 fromArea ≠ toArea → false)하여 공간 간 투사체·시야 누출을 방지합니다.
+
+### 11d-4. 복귀·정리 흐름
+
+- 층 이동 또는 마을 이동 시 `TownDungeonTransitionManager.CleanupDungeonRuntime()` 이 `EliteArenaEncounterController.Active?.ClearRuntimeState()` 호출 → 진행 중 인카운터 취소, 포탈 비활성화
+- Elite 적은 `EnemyPoolManager` 풀에서 꺼내므로 층 이동 시 `EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange()` 로 일괄 회수됨
+- `TownDungeonTransitionManager.RestoreDungeonMinimapSource()` 가 복귀 시 미니맵을 Dungeon 모드로 복원 (Elite Arena 진입 시 minimap이 Arena Tilemap으로 전환된 경우 대비)
 
 ---
 
@@ -1874,6 +1963,11 @@ Tab 키로 제안 순환·적용, Esc 로 제안 패널만 닫음 (이후 Esc �
 | Wall 레이어 마스크 캐시 | `CombatLayers.WallMask`/`WallFilter` (`Wall`/`Obstacle` 이름 폴백) | `EnemyController.ClampKnockbackForceAgainstWall` 등이 매 호출마다 `LayerMask.GetMask` 호출 없이 정적 마스크 재사용 |
 | GameOver 자동 빌드 fallback 제거 | `GameOverUIController._warnedMissingReferences` | 인스펙터 미설정 시 1회 경고만 출력하고 표시 skip — 런타임에 새 GameObject 생성 코드(~66줄) 삭제 |
 | 상태이상 UI 정적 액티브 바인딩 | `PlayerStatusEffectUI.TryBindCombat` + `PlayerCombatController.Active` | 매 프레임 FindAnyObjectByType 없이 OnEnable / 첫 Update 에서 1회 바인딩, OnDisable 시 자동 unsubscribe |
+| WalkabilityArea OnEnable/OnDisable 자동 등록 | `WalkabilityQuery.s_Areas` static List | Elite Arena 등 특수 공간이 활성화될 때만 리스트에 추가 — 런타임 Find 없음, Area 0개 시 DungeonData fallback |
+| WorldEnvironmentQuery 파사드 | `WorldEnvironmentQuery → WalkabilityQuery` | 전투 코드가 공간 종류를 몰라도 `IsFootprintWalkable` 1회 호출로 Dungeon/Arena 자동 라우팅 |
+| Elite Dash 목표 위치 기반 이동 | `EliteDashPatternRuntime.TryResolveDashTarget` + `dashSpeed×dt` | dashDuration 대신 목표 도달 시 종료 — `WalkabilityQuery.TryFindNearestWalkable` 로 Arena 내 유효 위치 선택, 벽에 막히면 `stopOnWall` 즉시 종료 |
+| Elite Arena 포탈 정적 캐시 | `EliteArenaEncounterController.Active` | `EliteArenaPortal` / `RoomSpawner` 가 매 프레임 FindAnyObjectByType 없이 controller 참조 |
+| 개발자 콘솔 kill 명령 단일 진입 | `DeveloperConsoleCommandExecutor.ExecuteKill` → `RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug` | 일반 방/Elite Arena 여부에 무관하게 1 메서드로 처리 — Arena 인카운터 중이면 `EliteArenaEncounterController.ForceKillActiveEliteForDebug` 로 위임 |
 
 ---
 
@@ -2199,8 +2293,14 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Elite Pattern 런타임** | `ElitePatternData`(abstract SO) + `ElitePatternRuntime`(abstract) + `ElitePatternContext`(Brain/Enemy/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 일괄 노출) — 새 패턴 추가는 두 클래스(Data+Runtime) 작성 + CreateAssetMenu 만으로 가능 |
 | **게임 일시정지 컨트롤러** | `GamePauseController` + `GamePauseSource`(DeveloperConsole/Inventory/PauseMenu/Cutscene) — 출처별 카운터 + Time.timeScale 토글, OnDisable 시 이전 timeScale 복원 |
 | **DungeonPortal 진입 트리거** | `DungeonPortal.EnterDungeon()` — 마을 측에서 TeleportService 를 호출해 던전으로 전환 (UI 버튼 / 트리거 모두 사용 가능) |
-| **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + 6개 내장 명령(/help /clear /echo /tp /dooropen /floor) |
+| **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경 담당) + 7개 내장 명령(/help /clear /echo /tp /dooropen /kill /floor) |
+| **개발자 콘솔 실행 분리** | `DeveloperConsoleCommandExecutor` (MonoBehaviour) — 구 `DeveloperConsoleCommandContext` (readonly struct) 대체. 파싱·등록은 Service, 게임 상태 변경은 Executor 로 책임 분리 |
+| **개발자 콘솔 /kill 명령** | `DeveloperConsoleCommandExecutor.ExecuteKill` → `RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug()` — 일반 방이면 현재 방 생존 적, Elite Arena 인카운터 중이면 `EliteArenaEncounterController.ForceKillActiveEliteForDebug()` 로 분기 |
 | **적 등장 층 범위 필터** | `EnemyData.minFloor`/`maxFloor` + `IsAvailableOnFloor(floor)` — `RoomSpawner.BuildCandidates(region, budget, currentFloor)` 가 SpawnRegion·예산 필터 직후 층 범위로 후보 차단. `EnemyDataEditor` 가 Min/Max Floor 필드 + 잘못된 범위(`HasInvalidFloorRange`) 인스펙터 경고 표시, `EnemyData.OnValidate` 가 동일 검사 후 콘솔 경고 |
+| **World Environment Query** | `WalkabilityArea`(walk/wall Tilemap 쌍 + OnEnable/OnDisable 자동 등록) + `WalkabilityQuery`(정적 라우팅 — Area 우선, DungeonData fallback) + `WorldEnvironmentQuery`(전투 코드용 파사드) — Dungeon·Elite Arena 등 공간 종류와 무관하게 단일 API로 walkability/LOS/footprint 판정 |
+| **Elite Arena 시스템** | `EliteArenaEncounterController`(static Active, 입장/복귀/취소/Elite spawn) + `EliteArenaPortal`(Elite Room 내 진입 포탈) + `EliteArenaReturnPortal`(Elite 사망 후 복귀 포탈) — `RoomSpawner.PrepareEntrancePortal` 에서 Elite Room 중앙에 포탈 배치, 접촉 시 `TownDungeonTransitionManager.TryTeleportPlayer` 로 Arena 진입, 복귀 시 `RestoreDungeonMinimapSource` 로 미니맵 복원 |
+| **Elite Dash 목표 위치 기반** | `EliteDashPatternRuntime` — dashDuration 제거, dashSpeed×dt 이동으로 변경. `WalkabilityQuery.TryFindNearestWalkable` 로 플레이어 위치 기반 목표 결정 (Arena/Dungeon 공용) |
+| **Elite Jump WalkabilityQuery 통합** | `EliteJumpPatternRuntime` — `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정 (Arena Tilemap / Dungeon grid 자동 라우팅) |
 
 ### 미구현 (다음 단계)
 
@@ -2209,12 +2309,12 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 |
 | Buff 스킬 핸들러 | 중간 | 동일 — caster 자체에 효과를 적용하는 형태 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
-| 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨 |
+| 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. `WalkabilityArea` + `WalkabilityQuery` 인프라가 Boss Arena 에도 동일 적용 가능 |
+| Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
 | 상태이상 시스템 확장 | 낮음 | 독, 빙결 등 StatusEffectData 추가 |
 | 세이브 / 로드 | 낮음 | Seed 기반 재현으로 부분 대체 가능 |
-| 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장 |
-| Elite Room 보상 컨텐츠 | 낮음 | 현재는 Elite Room 진입 자체가 목표 — 내부 보상/보스 미구현 (Elite 적 자체는 ElitePatternSet 로 패턴 구현됨) |
+| 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장. Boss Arena는 WalkabilityArea 컴포넌트 부착만으로 지원 가능 |
 | AreaOverTime / Buff Elite 패턴 | 낮음 | ElitePatternData 추가 변형 자리 — 예: 광역 장판, 자기 강화 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
 | SkillData dash 툴팁 정정 | 낮음 | `dashDamageOnPath`/`OnContact` 인스펙터 툴팁이 아직 "first-pass implementation shares the same detection path"로 남아 있음 — 실제 구현은 분리됨 |
