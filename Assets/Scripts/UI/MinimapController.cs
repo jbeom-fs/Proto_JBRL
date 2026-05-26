@@ -132,8 +132,26 @@ public class MinimapController : MonoBehaviour
         _pendingTilemapLocationId = null;
         _hasLastPlayerGrid       = false;
 
-        InitializeFromCurrentDungeon();
+        if (minimapImage != null && minimapImage.texture == _tilemapTexture)
+            minimapImage.texture = _texture;
+
+        RefreshDungeonSourceNow();
         StartInitialInitializeRoutine();
+    }
+
+    public void RefreshDungeonSourceNow()
+    {
+        if (_mode != MinimapMode.Dungeon)
+            return;
+
+        fogOfWar?.ForceRefresh();
+        InitializeFromCurrentDungeon();
+
+        if (minimapImage != null && minimapImage.texture == _tilemapTexture)
+            minimapImage.texture = _texture;
+
+        if (_texture == null)
+            playerMarker?.gameObject.SetActive(false);
     }
 
     public void SetTilemapSource(string locationId)

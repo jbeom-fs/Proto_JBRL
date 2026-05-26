@@ -166,6 +166,7 @@ public class LocationTransitionManager : MonoBehaviour
         if (CurrentLocation != GameLocationType.Dungeon)
             return;
 
+        _currentDestination = null;
         minimap?.SetDungeonSource();
     }
 
