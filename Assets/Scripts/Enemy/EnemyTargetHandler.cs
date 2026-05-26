@@ -92,8 +92,10 @@ public class TargetHandler
 
     private bool IsTargetOnTrackableTile()
     {
-        if (EliteArenaEncounterController.TryIsArenaPointWalkable(TargetPosition, out bool arenaWalkable))
-            return arenaWalkable;
+        // 등록된 Area 안이면 Area의 walkable 여부 = 추적 가능 여부로 본다.
+        // Dungeon은 `!= EMPTY`로 두어 닫힌 문 안에 있어도 추적 좌표가 유효한 기존 동작을 유지한다.
+        if (WalkabilityQuery.FindAreaContaining(TargetPosition) != null)
+            return WalkabilityQuery.IsWalkable(TargetPosition);
 
         DungeonData data = _brain.DungeonData;
         if (data == null) return true;

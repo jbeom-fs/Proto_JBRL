@@ -206,18 +206,31 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
     {
         targetPosition = _context.SelfTransform.position;
         DungeonManager dungeon = _context.DungeonManager;
-        if (dungeon == null || dungeon.Data == null || _context.Target == null)
+        if (dungeon == null || _context.Target == null)
             return false;
 
-        if (TryResolveArenaJumpTarget(out targetPosition))
-            return true;
+        Vector3 selfPosition = _context.SelfTransform.position;
+        Vector3 desired = ClampJumpDistance(_context.Target.position);
 
-        Vector2Int enemyGrid = dungeon.WorldToGrid(_context.SelfTransform.position);
+        // 등록된 Area(예: Elite Arena) 안에서는 room 개념이 없으므로 Area 기반 walkable spiral 검색을 사용합니다.
+        // Dungeon이 활성화되어 있어도 enemy 위치가 Area 안이면 이 경로가 우선합니다.
+        if (WalkabilityQuery.FindAreaContaining(selfPosition) != null)
+        {
+            float radius = _context.Enemy != null
+                ? _context.Enemy.CollisionFootprintRadius
+                : 0.32f;
+            return WalkabilityQuery.TryFindNearestWalkable(
+                desired, selfPosition, _data.MaxDistance, radius, 3, out targetPosition);
+        }
+
+        if (dungeon.Data == null)
+            return false;
+
+        Vector2Int enemyGrid = dungeon.WorldToGrid(selfPosition);
         RoomInfo? currentRoom = dungeon.GetRoomAt(enemyGrid.x, enemyGrid.y);
         if (_data.StayInRoom && !currentRoom.HasValue)
             return false;
 
-        Vector3 desired = ClampJumpDistance(_context.Target.position);
         Vector2Int desiredGrid = dungeon.WorldToGrid(desired);
         if (IsValidJumpGrid(dungeon, desiredGrid, currentRoom))
         {
@@ -226,24 +239,6 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         }
 
         return TryFindNearbyJumpTarget(dungeon, desiredGrid, currentRoom, out targetPosition);
-    }
-
-    private bool TryResolveArenaJumpTarget(out Vector3 targetPosition)
-    {
-        targetPosition = _context.SelfTransform.position;
-
-        float radius = _context.Enemy != null
-            ? _context.Enemy.CollisionFootprintRadius
-            : 0.32f;
-        Vector3 desired = ClampJumpDistance(_context.Target.position);
-
-        return EliteArenaEncounterController.TryFindNearestArenaWalkableWorld(
-            desired,
-            _context.SelfTransform.position,
-            _data.MaxDistance,
-            radius,
-            3,
-            out targetPosition);
     }
 
     private Vector3 ClampJumpDistance(Vector3 desired)

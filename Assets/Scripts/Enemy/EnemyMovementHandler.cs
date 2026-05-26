@@ -106,12 +106,13 @@ public class MovementHandler
 
     public virtual bool HasLineOfSight(Vector2Int start, Vector2Int goal)
     {
+        // 등록된 Area 안이면 Area의 walkable LOS를 사용합니다(DOOR_CLOSED 같은 wall 개념 포함).
+        // Dungeon 내부에서는 기존 EMPTY-only Bresenham을 유지해 닫힌 문 너머 추적이 가능하던 동작을 보존합니다.
         if (_brain.Target != null &&
-            EliteArenaEncounterController.TryHasArenaLineOfSight(
-                _brain.transform.position,
-                _brain.Target.TargetPosition,
-                out bool arenaLineOfSight))
-            return arenaLineOfSight;
+            WalkabilityQuery.FindAreaContaining(_brain.transform.position) != null)
+        {
+            return WalkabilityQuery.HasLineOfSight(_brain.transform.position, _brain.Target.TargetPosition);
+        }
 
         DungeonData data = _brain.DungeonData;
         if (data == null) return false;

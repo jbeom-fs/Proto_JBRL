@@ -132,6 +132,7 @@
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\CollectedCoin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\CameraController.cs" />
+    <Compile Include="Assets\Scripts\World\WalkabilityArea.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\SceneScripts\PlayerMovement.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverSceneReloadRestartHandler.cs" />
@@ -152,6 +153,7 @@
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Pillar.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
+    <Compile Include="Assets\Scripts\World\WalkabilityQuery.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />

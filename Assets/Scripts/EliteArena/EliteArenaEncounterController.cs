@@ -16,6 +16,9 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
     [SerializeField] private Transform eliteSpawnPoint;
     [SerializeField] private EliteArenaReturnPortal returnPortal;
 
+    [Tooltip("Arena의 walkable 영역을 query하는 컴포넌트. 같은 GameObject 또는 Arena root에서 연결합니다.")]
+    [SerializeField] private WalkabilityArea walkabilityArea;
+
     [Header("Elite Room Portal")]
     [SerializeField] private EliteArenaPortal entrancePortalInstance;
     [SerializeField] private EliteArenaPortal entrancePortalPrefab;
@@ -160,69 +163,30 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         _originReturnPosition = default;
     }
 
-    public static bool TryIsArenaFootprintWalkable(Vector3 worldPosition, float radius, out bool isWalkable)
+    // walkable / wall / LOS / bounds 판정 본체는 WalkabilityArea + WalkabilityQuery에 있습니다.
+    // EliteArenaEncounterController는 입장/복귀, Elite spawn, portal lifecycle만 담당합니다.
+    //
+    // 아래 5개 API는 디버깅/테스트/명시적 호출용 thin pass-through 입니다.
+    // 게임플레이 코드는 WalkabilityQuery / WorldEnvironmentQuery를 통해 같은 본체를 자동 라우팅합니다.
+
+    public WalkabilityArea WalkabilityArea => walkabilityArea;
+
+    public bool IsInsideArenaWorld(Vector2 worldPosition)
+        => walkabilityArea != null && walkabilityArea.IsInsideWorld(worldPosition);
+
+    public bool IsWalkableWorld(Vector2 worldPosition)
+        => walkabilityArea != null && walkabilityArea.IsWalkableWorld(worldPosition);
+
+    public bool IsFootprintWalkableWorld(Vector2 worldPosition, float radius)
+        => walkabilityArea != null && walkabilityArea.IsFootprintWalkableWorld(worldPosition, radius);
+
+    public bool HasLineOfSightWorld(Vector2 fromWorld, Vector2 toWorld)
+        => walkabilityArea != null && walkabilityArea.HasLineOfSightWorld(fromWorld, toWorld);
+
+    public bool TryGetNearestWalkableWorldPosition(Vector2 preferred, out Vector2 result)
     {
-        isWalkable = true;
-        EliteArenaEncounterController active = Active;
-        if (active == null || !active._hasEncounter)
-            return false;
-
-        return active.TryIsFootprintWalkable(worldPosition, radius, out isWalkable);
-    }
-
-    public static bool TryIsArenaPointWalkable(Vector3 worldPosition, out bool isWalkable)
-    {
-        isWalkable = true;
-        EliteArenaEncounterController active = Active;
-        if (active == null || !active._hasEncounter || active.arenaWalkTilemap == null)
-            return false;
-
-        isWalkable = active.IsArenaPointWalkable(worldPosition);
-        return true;
-    }
-
-    public static bool TryIsArenaWorldPosition(Vector3 worldPosition, out bool isInArena)
-    {
-        isInArena = false;
-        EliteArenaEncounterController active = Active;
-        if (active == null || !active._hasEncounter || active.arenaWalkTilemap == null)
-            return false;
-
-        isInArena = HasTileAtWorld(active.arenaWalkTilemap, worldPosition);
-        return true;
-    }
-
-    public static bool TryHasArenaLineOfSight(Vector3 from, Vector3 to, out bool hasLineOfSight)
-    {
-        hasLineOfSight = true;
-        EliteArenaEncounterController active = Active;
-        if (active == null || !active._hasEncounter || active.arenaWalkTilemap == null)
-            return false;
-
-        hasLineOfSight = active.HasArenaLineOfSight(from, to);
-        return true;
-    }
-
-    public static bool TryFindNearestArenaWalkableWorld(
-        Vector3 desired,
-        Vector3 origin,
-        float maxDistanceFromOrigin,
-        float footprintRadius,
-        int maxSearchRadius,
-        out Vector3 position)
-    {
-        position = desired;
-        EliteArenaEncounterController active = Active;
-        if (active == null || !active._hasEncounter || active.arenaWalkTilemap == null)
-            return false;
-
-        return active.TryFindNearestWalkableWorld(
-            desired,
-            origin,
-            maxDistanceFromOrigin,
-            footprintRadius,
-            maxSearchRadius,
-            out position);
+        if (walkabilityArea == null) { result = preferred; return false; }
+        return walkabilityArea.TryGetNearestWalkableWorldPosition(preferred, out result);
     }
 
     private bool TrySpawnElite(EnemyData eliteData)
@@ -350,109 +314,6 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
         returnPortal.gameObject.SetActive(false);
     }
 
-    private bool TryIsFootprintWalkable(Vector3 worldPosition, float radius, out bool isWalkable)
-    {
-        isWalkable = true;
-        if (arenaWalkTilemap == null)
-            return false;
-
-        if (!HasTileAtWorld(arenaWalkTilemap, worldPosition))
-            return false;
-
-        Vector3 c0 = new Vector3(worldPosition.x - radius, worldPosition.y - radius, 0f);
-        Vector3 c1 = new Vector3(worldPosition.x + radius, worldPosition.y - radius, 0f);
-        Vector3 c2 = new Vector3(worldPosition.x - radius, worldPosition.y + radius, 0f);
-        Vector3 c3 = new Vector3(worldPosition.x + radius, worldPosition.y + radius, 0f);
-
-        isWalkable =
-            IsArenaPointWalkable(c0) &&
-            IsArenaPointWalkable(c1) &&
-            IsArenaPointWalkable(c2) &&
-            IsArenaPointWalkable(c3);
-        return true;
-    }
-
-    private bool IsArenaPointWalkable(Vector3 world)
-    {
-        if (!HasTileAtWorld(arenaWalkTilemap, world))
-            return false;
-
-        return arenaWallTilemap == null || !HasTileAtWorld(arenaWallTilemap, world);
-    }
-
-    private bool IsArenaCellWalkable(Vector3Int cell)
-    {
-        if (arenaWalkTilemap == null || !arenaWalkTilemap.HasTile(cell))
-            return false;
-
-        return arenaWallTilemap == null || !arenaWallTilemap.HasTile(cell);
-    }
-
-    private bool HasArenaLineOfSight(Vector3 from, Vector3 to)
-    {
-        Vector3Int fromCell = arenaWalkTilemap.WorldToCell(from);
-        Vector3Int toCell = arenaWalkTilemap.WorldToCell(to);
-
-        int dx = toCell.x - fromCell.x;
-        int dy = toCell.y - fromCell.y;
-        int steps = Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy));
-        if (steps == 0)
-            return IsArenaCellWalkable(fromCell);
-
-        for (int i = 0; i <= steps; i++)
-        {
-            float t = (float)i / steps;
-            int x = Mathf.RoundToInt(fromCell.x + dx * t);
-            int y = Mathf.RoundToInt(fromCell.y + dy * t);
-            if (!IsArenaCellWalkable(new Vector3Int(x, y, fromCell.z)))
-                return false;
-        }
-
-        return true;
-    }
-
-    private bool TryFindNearestWalkableWorld(
-        Vector3 desired,
-        Vector3 origin,
-        float maxDistanceFromOrigin,
-        float footprintRadius,
-        int maxSearchRadius,
-        out Vector3 position)
-    {
-        position = desired;
-        Vector3Int center = arenaWalkTilemap.WorldToCell(desired);
-        float maxDistanceSqr = maxDistanceFromOrigin * maxDistanceFromOrigin;
-        int searchRadius = Mathf.Max(0, maxSearchRadius);
-
-        for (int radius = 0; radius <= searchRadius; radius++)
-        {
-            for (int dy = -radius; dy <= radius; dy++)
-            {
-                for (int dx = -radius; dx <= radius; dx++)
-                {
-                    if (radius > 0 && Mathf.Abs(dx) != radius && Mathf.Abs(dy) != radius)
-                        continue;
-
-                    Vector3Int cell = new Vector3Int(center.x + dx, center.y + dy, center.z);
-                    if (!IsArenaCellWalkable(cell))
-                        continue;
-
-                    Vector3 world = arenaWalkTilemap.GetCellCenterWorld(cell);
-                    if ((world - origin).sqrMagnitude > maxDistanceSqr)
-                        continue;
-
-                    if (!TryIsFootprintWalkable(world, footprintRadius, out bool canOccupy) || !canOccupy)
-                        continue;
-
-                    position = world;
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     private static bool TryGetCenterTileWorldPosition(Tilemap tilemap, out Vector3 position)
     {
         position = default;
@@ -488,10 +349,5 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
 
         position = tilemap.GetCellCenterWorld(bestCell);
         return true;
-    }
-
-    private static bool HasTileAtWorld(Tilemap tilemap, Vector3 world)
-    {
-        return tilemap != null && tilemap.HasTile(tilemap.WorldToCell(world));
     }
 }

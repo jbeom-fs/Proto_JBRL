@@ -367,26 +367,12 @@ public class DungeonManager : MonoBehaviour
     public bool IsWalkable(int col, int row)
         => _queryService.IsWalkable(col, row);
 
-    /// <summary>월드 좌표를 중심으로 한 정사각형 footprint(반경 radius)의 4 코너가 모두 walkable인지 검사합니다.</summary>
+    /// <summary>
+    /// 월드 좌표를 중심으로 한 정사각형 footprint(반경 radius)의 4 코너가 모두 walkable인지 검사합니다.
+    /// 공통 라우팅(<see cref="WalkabilityQuery"/>)에 위임해 Area/Dungeon 모두 동일한 의미로 동작합니다.
+    /// </summary>
     public bool IsFootprintWalkable(Vector3 worldPosition, float radius)
-    {
-        if (EliteArenaEncounterController.TryIsArenaFootprintWalkable(worldPosition, radius, out bool arenaWalkable))
-            return arenaWalkable;
-
-        if (_data == null) return true;
-
-        Vector2Int g;
-        g = WorldToGrid(new Vector3(worldPosition.x - radius, worldPosition.y - radius, 0f));
-        if (!IsWalkable(g.x, g.y)) return false;
-        g = WorldToGrid(new Vector3(worldPosition.x + radius, worldPosition.y - radius, 0f));
-        if (!IsWalkable(g.x, g.y)) return false;
-        g = WorldToGrid(new Vector3(worldPosition.x - radius, worldPosition.y + radius, 0f));
-        if (!IsWalkable(g.x, g.y)) return false;
-        g = WorldToGrid(new Vector3(worldPosition.x + radius, worldPosition.y + radius, 0f));
-        if (!IsWalkable(g.x, g.y)) return false;
-
-        return true;
-    }
+        => WalkabilityQuery.IsFootprintWalkable(worldPosition, radius);
 
     public int GetTileType(int col, int row)
         => _queryService.GetTileType(col, row);
