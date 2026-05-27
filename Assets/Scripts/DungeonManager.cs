@@ -392,10 +392,6 @@ public class DungeonManager : MonoBehaviour
     public Vector2Int WorldToGrid(Vector3 worldPos)
         => _queryService.WorldToGrid(worldPos);
 
-    /// <summary>해당 타입의 계단 위치를 그리드 좌표로 반환합니다.</summary>
-    public Vector2Int FindStairPos(int stairType)
-        => _queryService.FindStairPos(stairType);
-
     /// <summary>방 타입을 변경합니다 (Registry에 위임).</summary>
     public void SetRoomType(RoomInfo room, RoomType type)
         => _registry?.SetRoomType(room, type);

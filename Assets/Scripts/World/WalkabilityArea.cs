@@ -88,9 +88,6 @@ public sealed class WalkabilityArea : MonoBehaviour
         return !_hasCachedWorldBounds || _cachedWorldBounds.Contains(worldPosition);
     }
 
-    /// <summary>world 좌표가 이 Area 안인지(Vector2 오버로드).</summary>
-    public bool IsInsideWorld(Vector2 worldPosition) => IsInsideWorld((Vector3)worldPosition);
-
     /// <summary>world 좌표 셀이 walkable(walk tile 있음 + wall tile 없음)인지 반환합니다.</summary>
     public bool IsWalkableWorld(Vector3 worldPosition)
     {
@@ -99,8 +96,6 @@ public sealed class WalkabilityArea : MonoBehaviour
         if (!walkTilemap.HasTile(walkCell)) return false;
         return !IsBlockedAtWorld(worldPosition);
     }
-
-    public bool IsWalkableWorld(Vector2 worldPosition) => IsWalkableWorld((Vector3)worldPosition);
 
     /// <summary>해당 world 좌표에 wall tile이 명시적으로 존재하는지 반환합니다. wall tilemap이 null이면 false.</summary>
     public bool IsWallAtWorld(Vector3 worldPosition)
@@ -180,9 +175,6 @@ public sealed class WalkabilityArea : MonoBehaviour
         return true;
     }
 
-    public bool IsFootprintWalkableWorld(Vector2 worldPosition, float radius)
-        => IsFootprintWalkableWorld((Vector3)worldPosition, radius);
-
     /// <summary>이 Area 안에서 from→to 사이 LOS가 wall로 막혀 있지 않은지 반환합니다.</summary>
     public bool HasLineOfSightWorld(Vector3 fromWorld, Vector3 toWorld)
     {
@@ -208,9 +200,6 @@ public sealed class WalkabilityArea : MonoBehaviour
         }
         return true;
     }
-
-    public bool HasLineOfSightWorld(Vector2 fromWorld, Vector2 toWorld)
-        => HasLineOfSightWorld((Vector3)fromWorld, (Vector3)toWorld);
 
     /// <summary>
     /// preferred 좌표에서 가장 가까운 walkable world 좌표를 spiral 검색해 반환합니다.
@@ -241,17 +230,6 @@ public sealed class WalkabilityArea : MonoBehaviour
                 }
             }
         }
-        return false;
-    }
-
-    public bool TryGetNearestWalkableWorldPosition(Vector2 preferred, out Vector2 result)
-    {
-        if (TryGetNearestWalkableWorldPosition((Vector3)preferred, out Vector3 v3))
-        {
-            result = v3;
-            return true;
-        }
-        result = preferred;
         return false;
     }
 

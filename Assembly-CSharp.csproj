@@ -65,7 +65,6 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\AnimatedObjectsGroup.cs" />
-    <Compile Include="Assets\Scripts\Combat\Projectile.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
@@ -79,7 +78,6 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\Prop Variants\DUN_Chair.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
-    <Compile Include="Assets\Scripts\Enemy\NormalEnemyAI.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseController.cs" />
     <Compile Include="Assets\Scripts\Combat\MovementBlockerQuery.cs" />
     <Compile Include="Assets\Scripts\Generate\FloorTransitionService.cs" />
@@ -103,7 +101,6 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyPoolManager.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomFootprintSampler.cs" />
     <Compile Include="Assets\Scripts\Tool\LoadingScreenController.cs" />
-    <Compile Include="Assets\Scripts\DoorController.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnRegion.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectilePool.cs" />
@@ -142,7 +139,6 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Items\DroppedItem.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
-    <Compile Include="Assets\Scripts\DungeonPortal.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleService.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />

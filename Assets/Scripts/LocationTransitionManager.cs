@@ -156,11 +156,6 @@ public class LocationTransitionManager : MonoBehaviour
                (destination.UseTilemapMinimap || LocationMinimapRegistry.Contains(minimapId));
     }
 
-    public void EnterDungeon()
-    {
-        TeleportPlayer(player, debugDungeonEntranceDestinationId);
-    }
-
     public void RestoreDungeonMinimapSource()
     {
         if (CurrentLocation != GameLocationType.Dungeon)
@@ -168,11 +163,6 @@ public class LocationTransitionManager : MonoBehaviour
 
         _currentDestination = null;
         minimap?.SetDungeonSource();
-    }
-
-    public void EnterTown()
-    {
-        TeleportPlayer(player, debugReturnDestinationId);
     }
 
     private bool TryGetLocation(string destinationId, out TeleportLocationData location)

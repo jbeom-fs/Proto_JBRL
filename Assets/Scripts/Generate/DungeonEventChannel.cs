@@ -4,7 +4,7 @@
 //
 //  책임:
 //    • 이벤트 선언 및 발행
-//    • 발행자(DungeonManager)와 구독자(PlayerController, DoorController 등)를
+//    • 발행자(DungeonManager)와 구독자(PlayerController, RoomSpawner, FogOfWarController 등)를
 //      서로 모르게 연결
 //
 //  사용법:

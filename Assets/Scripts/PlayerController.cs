@@ -8,7 +8,7 @@
 //    • 계단 상호작용 → DungeonManager.NextFloor()
 //
 //  알지 말아야 할 것:
-//    • 문 개폐 로직 (DoorController 담당)
+//    • 문 개폐 로직 (DungeonManager.OpenCurrentRoomDoors 담당)
 //    • Tilemap (DungeonTilemapRenderer 담당)
 //    • 던전 생성 알고리즘
 // ═══════════════════════════════════════════════════════════════════

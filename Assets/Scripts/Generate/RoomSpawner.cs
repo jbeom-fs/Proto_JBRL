@@ -418,7 +418,7 @@ public class RoomSpawner : MonoBehaviour
         if (!_activeRoom.HasValue) return;
 
         // 추적 중인 방의 모든 적이 사라졌을 때만 현재 닫힌 문을 엽니다.
-        // 실제 문 타일 제어는 DungeonManager.Instance가 담당해 DoorController와 책임이 겹치지 않습니다.
+        // 실제 문 타일 제어는 DungeonManager.Instance 가 단일 진입점으로 담당합니다.
         _activeRoom = null;
         DungeonManager.Instance?.OpenCurrentRoomDoors();
     }

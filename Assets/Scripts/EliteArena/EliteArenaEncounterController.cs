@@ -211,29 +211,7 @@ public sealed class EliteArenaEncounterController : MonoBehaviour
 
     // walkable / wall / LOS / bounds 판정 본체는 WalkabilityArea + WalkabilityQuery에 있습니다.
     // EliteArenaEncounterController는 입장/복귀, Elite spawn, portal lifecycle만 담당합니다.
-    //
-    // 아래 5개 API는 디버깅/테스트/명시적 호출용 thin pass-through 입니다.
     // 게임플레이 코드는 WalkabilityQuery / WorldEnvironmentQuery를 통해 같은 본체를 자동 라우팅합니다.
-
-    public WalkabilityArea WalkabilityArea => walkabilityArea;
-
-    public bool IsInsideArenaWorld(Vector2 worldPosition)
-        => walkabilityArea != null && walkabilityArea.IsInsideWorld(worldPosition);
-
-    public bool IsWalkableWorld(Vector2 worldPosition)
-        => walkabilityArea != null && walkabilityArea.IsWalkableWorld(worldPosition);
-
-    public bool IsFootprintWalkableWorld(Vector2 worldPosition, float radius)
-        => walkabilityArea != null && walkabilityArea.IsFootprintWalkableWorld(worldPosition, radius);
-
-    public bool HasLineOfSightWorld(Vector2 fromWorld, Vector2 toWorld)
-        => walkabilityArea != null && walkabilityArea.HasLineOfSightWorld(fromWorld, toWorld);
-
-    public bool TryGetNearestWalkableWorldPosition(Vector2 preferred, out Vector2 result)
-    {
-        if (walkabilityArea == null) { result = preferred; return false; }
-        return walkabilityArea.TryGetNearestWalkableWorldPosition(preferred, out result);
-    }
 
     private bool TrySpawnElite(EnemyData eliteData)
     {

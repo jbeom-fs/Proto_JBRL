@@ -73,17 +73,6 @@ public class DungeonQueryService
         return _registry.Resolve(room.Value);
     }
 
-    /// <summary>해당 타입의 계단 위치를 그리드 좌표로 반환합니다. 없으면 (-1,-1).</summary>
-    public Vector2Int FindStairPos(int stairType)
-    {
-        if (_data == null) return new Vector2Int(-1, -1);
-        for (int row = 0; row < _data.MapHeight; row++)
-            for (int col = 0; col < _data.MapWidth; col++)
-                if (_data.GetTileType(col, row) == stairType)
-                    return new Vector2Int(col, row);
-        return new Vector2Int(-1, -1);
-    }
-
     // ── 좌표 변환 (Renderer 위임) ─────────────────────────────────────
 
     /// <summary>그리드 좌표를 월드 좌표로 변환합니다.</summary>
