@@ -50,9 +50,9 @@ public sealed class SkillExecutor
 
     private bool ExecuteInstantArea(SkillExecutionContext context)
     {
-        List<Vector2Int> targets = _targetResolver.ResolveTargets(context);
+        List<Vector3> targets = _targetResolver.ResolveWorldTargets(context);
         _attackExecutor.BeginAttackActivation();
-        _attackExecutor.ExecuteAttack(
+        _attackExecutor.ExecuteAttackWorld(
             targets,
             context.TotalAttack + context.Skill.damage,
             context.Skill.canPenetrateWalls,

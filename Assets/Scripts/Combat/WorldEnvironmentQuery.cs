@@ -74,4 +74,21 @@ public static class WorldEnvironmentQuery
 
     public static bool TryFindNearestWalkable(Vector3 position, float radius, out Vector3 result)
         => WalkabilityQuery.TryFindNearestWalkable(position, radius, out result);
+
+    public static float GetCellSize(Vector3 worldPosition)
+    {
+        WalkabilityArea area = WalkabilityQuery.FindAreaContaining(worldPosition);
+        if (area != null && area.WalkTilemap != null)
+            return Mathf.Max(0.01f, area.WalkTilemap.cellSize.x);
+
+        DungeonManager dungeon = DungeonManager.Instance;
+        if (dungeon != null &&
+            dungeon.dungeonRenderer != null &&
+            dungeon.dungeonRenderer.tilemap != null)
+        {
+            return Mathf.Max(0.01f, dungeon.dungeonRenderer.tilemap.cellSize.x);
+        }
+
+        return 1f;
+    }
 }

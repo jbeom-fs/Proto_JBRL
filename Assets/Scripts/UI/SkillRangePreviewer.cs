@@ -17,7 +17,7 @@
 //
 //  벽 인식:
 //    enableWallAwareness = true 이면 각 꼭짓점을 공격자 → 해당 점 방향으로
-//    DungeonData 그리드를 따라 샘플링해 벽 경계에서 클리핑합니다.
+//    WorldEnvironmentQuery를 따라 샘플링해 벽 경계에서 클리핑합니다.
 //    wallLayer LayerMask 가 설정된 경우 Physics2D.Raycast 를 우선 사용합니다.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -32,7 +32,6 @@ public class SkillRangePreviewer : MonoBehaviour
     [Header("의존성")]
     [SerializeField] private PlayerCombatController combat;
     [SerializeField] private PlayerController       movement;
-    [SerializeField] private DungeonManager         dungeonManager;
     [SerializeField] private PlayerInputReader      inputReader;
 
     [Header("곡선 품질")]
@@ -51,7 +50,7 @@ public class SkillRangePreviewer : MonoBehaviour
     [Header("벽 인식")]
     [Tooltip("true면 꼭짓점을 벽 경계에서 잘라냅니다.")]
     [SerializeField] private bool      enableWallAwareness = true;
-    [Tooltip("Physics2D 벽 레이어 (선택). 0이면 DungeonData 그리드 방식 사용.")]
+    [Tooltip("Physics2D 벽 레이어 (선택). 0이면 WorldEnvironmentQuery 샘플링 사용.")]
     [SerializeField] private LayerMask wallLayer;
 
     [Header("Projectile Preview")]
@@ -86,15 +85,11 @@ public class SkillRangePreviewer : MonoBehaviour
             combat = PlayerCombatController.Active;
         if (movement == null)
             movement = PlayerController.Active;
-        if (dungeonManager == null)
-            dungeonManager = DungeonManager.Instance;
 
         if (combat == null)
             Debug.LogWarning("[SkillRangePreviewer] PlayerCombatController가 연결되지 않아 스킬 미리보기를 표시할 수 없습니다.");
         if (movement == null)
             Debug.LogWarning("[SkillRangePreviewer] PlayerController가 연결되지 않아 방향성 미리보기가 기본 방향을 사용합니다.");
-        if (dungeonManager == null)
-            Debug.LogWarning("[SkillRangePreviewer] DungeonManager가 연결되지 않아 벽 인식 미리보기가 비활성화됩니다.");
 
         if (inputReader == null && movement != null)
             inputReader = movement.GetComponent<PlayerInputReader>();
@@ -623,8 +618,7 @@ public class SkillRangePreviewer : MonoBehaviour
             return toLocal;
         }
 
-        // ② DungeonData 그리드 샘플링 (wallLayer 미설정 시 폴백)
-        if (dungeonManager == null || dungeonManager.Data == null) return toLocal;
+        // ② WorldEnvironmentQuery 샘플링 (wallLayer 미설정 시 폴백)
 
         float   step     = tileSize * 0.5f;   // 0.5칸 간격으로 샘플링
         Vector3 lastSafe = fromWorld;
@@ -632,8 +626,6 @@ public class SkillRangePreviewer : MonoBehaviour
         for (float d = step; d < dist + step; d += step)
         {
             Vector3    cur  = fromWorld + dir * Mathf.Min(d, dist);
-            Vector2Int grid = dungeonManager.WorldToGrid(cur);
-
             if (!WorldEnvironmentQuery.IsWalkable(cur))
                 return transform.InverseTransformPoint(lastSafe);  // 벽 직전 반환
 

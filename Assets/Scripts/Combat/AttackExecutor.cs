@@ -9,7 +9,6 @@ public class AttackExecutor
     private readonly IDamageable _owner;
     private readonly ContactFilter2D _targetFilter;
     private readonly HashSet<IDamageable> _hitTargetsThisAttack = new();
-    private readonly HashSet<Vector2Int> _targetGridSet = new();
     private readonly List<HitCandidate> _hitCandidates = new();
     private bool _isAttackAlreadyProcessed;
 
@@ -30,12 +29,11 @@ public class AttackExecutor
     {
         _isAttackAlreadyProcessed = false;
         _hitTargetsThisAttack.Clear();
-        _targetGridSet.Clear();
         _hitCandidates.Clear();
     }
 
-    public void ExecuteAttack(
-        List<Vector2Int> gridPositions,
+    public void ExecuteAttackWorld(
+        List<Vector3> targetWorldPositions,
         int damage,
         bool canPenetrateWalls,
         bool isMultiTarget,
@@ -47,15 +45,15 @@ public class AttackExecutor
     {
         if (_isAttackAlreadyProcessed) return;
         if (_attackerTransform == null) return;
-
-        var dungeonManager = DungeonManager.Instance;
-        if (dungeonManager == null) return;
+        if (targetWorldPositions == null || targetWorldPositions.Count == 0) return;
 
         _hitCandidates.Clear();
-        _targetGridSet.Clear();
 
-        float queryRadius = BuildTargetGridSetAndRadius(gridPositions, dungeonManager);
-        if (_targetGridSet.Count == 0) return;
+        float queryRadius = BuildWorldQueryRadius(targetWorldPositions);
+        float targetMatchRadius = Mathf.Max(
+            Mathf.Max(0.01f, hitRadius),
+            WorldEnvironmentQuery.GetCellSize(_attackerTransform.position) * 0.5f);
+        float targetMatchRadiusSqr = targetMatchRadius * targetMatchRadius;
 
         int count = Physics2D.OverlapCircle(_attackerTransform.position, queryRadius + hitRadius, _targetFilter, s_HitBuffer);
         for (int i = 0; i < count; i++)
@@ -65,12 +63,14 @@ public class AttackExecutor
             if (ReferenceEquals(target, _owner)) continue;
             if (!target.IsAlive) continue;
 
-            Vector2Int targetGrid = dungeonManager.WorldToGrid(col.bounds.center);
-            if (!_targetGridSet.Contains(targetGrid)) continue;
+            Vector3 targetPoint;
+            if (!TryResolveMatchedTargetPoint(col.bounds.center, targetWorldPositions, targetMatchRadiusSqr, out targetPoint))
+                continue;
 
             if (!canPenetrateWalls)
             {
-                if (!WorldEnvironmentQuery.HasGeometryLineOfSight(_attackerTransform.position, col.bounds.center)) continue;
+                if (!WorldEnvironmentQuery.HasLineOfSight(_attackerTransform.position, col.bounds.center)) continue;
+                if (!WorldEnvironmentQuery.HasLineOfSight(_attackerTransform.position, targetPoint)) continue;
             }
 
             if (!_hitTargetsThisAttack.Add(target)) continue;
@@ -127,23 +127,45 @@ public class AttackExecutor
         target.TakeDamage(damage);
     }
 
-    private float BuildTargetGridSetAndRadius(List<Vector2Int> gridPositions, DungeonManager dungeonManager)
+    private float BuildWorldQueryRadius(List<Vector3> targetWorldPositions)
     {
         float maxSqrDistance = 0f;
         Vector2 origin = _attackerTransform.position;
 
-        for (int i = 0; i < gridPositions.Count; i++)
+        for (int i = 0; i < targetWorldPositions.Count; i++)
         {
-            Vector2Int grid = gridPositions[i];
-            if (!_targetGridSet.Add(grid)) continue;
-
-            Vector2 world = dungeonManager.GridToWorld(grid);
+            Vector2 world = targetWorldPositions[i];
             float sqrDistance = (world - origin).sqrMagnitude;
             if (sqrDistance > maxSqrDistance)
                 maxSqrDistance = sqrDistance;
         }
 
         return Mathf.Sqrt(maxSqrDistance);
+    }
+
+    private static bool TryResolveMatchedTargetPoint(
+        Vector3 targetCenter,
+        List<Vector3> targetWorldPositions,
+        float maxSqrDistance,
+        out Vector3 targetPoint)
+    {
+        targetPoint = default;
+        float bestSqrDistance = maxSqrDistance;
+        bool found = false;
+
+        for (int i = 0; i < targetWorldPositions.Count; i++)
+        {
+            Vector3 candidate = targetWorldPositions[i];
+            float sqrDistance = ((Vector2)candidate - (Vector2)targetCenter).sqrMagnitude;
+            if (sqrDistance > bestSqrDistance)
+                continue;
+
+            bestSqrDistance = sqrDistance;
+            targetPoint = candidate;
+            found = true;
+        }
+
+        return found;
     }
 
 }

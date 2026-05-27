@@ -56,6 +56,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
     private AttackExecutor _attackExecutor;
     private SkillExecutor _skillExecutor;
+    private readonly List<Vector3> _basicAttackWorldTargets = new();
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
     private HitFlashFeedback _hitFlash;
@@ -299,12 +300,17 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
         _attackExecutor.BeginAttackActivation();
 
-        var targets = ResolveTargets(
+        SkillTargetResolver.FillWorldTargets(
             currentWeapon.attackPattern,
-            currentWeapon.patternRange);
+            transform.position,
+            CurrentAimDirection,
+            GetGridAimDirection(),
+            currentWeapon.patternRange,
+            45f,
+            _basicAttackWorldTargets);
 
-        _attackExecutor.ExecuteAttack(
-            targets,
+        _attackExecutor.ExecuteAttackWorld(
+            _basicAttackWorldTargets,
             TotalAttack + currentWeapon.damage,
             currentWeapon.canPenetrateWalls,
             currentWeapon.basicAttackMultiTarget,
@@ -450,26 +456,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Stun);
     }
 
-    private List<Vector2Int> ResolveTargets(AttackPatternType pattern, int range, float coneHalfAngle = 45f)
-    {
-        var dungeonManager = DungeonManager.Instance;
-        if (dungeonManager == null) return new List<Vector2Int>();
-
-        var origin = dungeonManager.WorldToGrid(transform.position);
-
-        // FacingDirection은 화면 공간 (Up키 → y=+1).
-        // 그리드 좌표계는 GridToWorld에서 Y가 반전(tilemap y = -row)되므로
-        // 화면 +Y = 그리드 -Y 로 변환해야 실제 방향과 일치한다.
-        var screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
-        var gridFacing = SkillTargetResolver.ToGridAimDirection(screenFacing);
-
-        return AttackPattern.GetTargets(pattern, origin, gridFacing, range, coneHalfAngle);
-    }
-
     private SkillExecutionContext CreateSkillExecutionContext(SkillData skill, int slotIndex)
     {
-        Vector2Int screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
-        Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(screenFacing);
+        Vector2Int gridFacing = GetGridAimDirection();
         Vector2 aimDirection = RefreshAimDirection();
 
         return new SkillExecutionContext(
@@ -482,6 +471,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             gridFacing,
             TotalAttack,
             hitRadius);
+    }
+
+    private Vector2Int GetGridAimDirection()
+    {
+        Vector2Int screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
+        return SkillTargetResolver.ToGridAimDirection(screenFacing);
     }
 
     // ══════════════════════════════════════════════════════════════
