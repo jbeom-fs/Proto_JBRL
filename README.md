@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-26  
+> 작성 기준일: 2026-05-27  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -40,7 +40,7 @@
 | 장르 | 로그라이크 던전 탐색 |
 | 시점 | 탑다운 2D |
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
-| 거점 구조 | 마을(Town) ↔ 던전(Dungeon) 전환 (`TownDungeonTransitionManager`) — 마을은 Tilemap 고정 맵, 던전은 절차적 생성 |
+| 거점 구조 | 마을(Town) ↔ 던전(Dungeon) ↔ Elite Arena 전환 (`LocationTransitionManager`, 구 `TownDungeonTransitionManager`) — 마을·Arena는 Tilemap 고정 맵, 던전은 절차적 생성 |
 | 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
 | 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
@@ -68,7 +68,7 @@
 │  PlayerCombatController · PlayerDashController               │
 │  PlayerAnimationController                                   │
 │  DungeonManager · FloorTransitionService · DungeonPortal     │
-│  TownDungeonTransitionManager · LocationRoot                 │
+│  LocationTransitionManager (구 TownDungeonTransitionManager) · LocationRoot │
 │  TeleportService                                             │
 │  EnemyBrain · NormalEnemyBrain · RoomSpawner                 │
 │  ElitePatternRunner                                          │
@@ -141,7 +141,7 @@
 - **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 - **공간 독립 walkability**: `WalkabilityQuery`(static) + `WalkabilityArea`(OnEnable/OnDisable 자동 등록) 로 Dungeon·Elite Arena·Boss Arena 등 모든 공간에서 단일 query API 사용. 전투 코드는 `WorldEnvironmentQuery` 파사드만 호출하며 공간 종류를 알지 못해도 됨 — 새 공간은 `WalkabilityArea` 컴포넌트 부착만으로 자동 등록
-- **Elite Arena 포탈 lifecycle 관리**: `EliteArenaEncounterController.Active` 정적 참조 + `RoomSpawner.PrepareEntrancePortal` 에서 생성주기 시작, `MarkCompletedAndDisable` + `ClearRuntimeState` 로 층 이동·던전 이탈 시 일괄 정리
+- **Elite Arena 포탈 lifecycle 관리**: `EliteArenaEncounterController.Active` 정적 참조 + `RoomSpawner.PrepareEliteRoomPortal` → `EliteArenaEncounterController.PrepareEntrancePortal` 에서 생성주기 시작, `MarkCompletedAndDisable` + `ClearRuntimeState` 로 층 이동·던전 이탈 시 일괄 정리
 - **개발자 콘솔 실행 분리**: `DeveloperConsoleService`(파싱·등록) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경) 로 책임 분리 — 서비스 레이어가 Unity 의존성 없이 테스트 가능, 새 명령은 Executor에 메서드 추가만으로 등록
 
 ---
@@ -162,7 +162,7 @@ Assets/Scripts/
 ├── DoorController.cs               # 문 열기 위임 (DungeonManager로 라우팅)
 ├── DungeonPortal.cs                # 마을 측 던전 진입 트리거 — EnterDungeon() 에서 TeleportService.RequestTeleport(PlayerController.Active) 호출
 │
-├── TownDungeonTransitionManager.cs # 마을↔던전 전환 조율 (TeleportDestinationDatabase 기반)
+├── LocationTransitionManager.cs # 마을↔던전 전환 조율 (TeleportDestinationDatabase 기반)
 │                                    #   SetDungeonSource/SetTilemapSource → MinimapController 라우팅
 │                                    #   CleanupDungeonRuntime (투사체·적·드랍 아이템·Elite Key 일괄 회수) / StartNewDungeonRun
 │
@@ -172,7 +172,7 @@ Assets/Scripts/
 │                                    #    locationRootId · localSpawnPosition · minimapLocationId)
 ├── TeleportDestinationIdAttribute.cs # 인스펙터 문자열 필드를 destination id 드롭다운으로 렌더링하는 PropertyAttribute
 ├── LocationRoot.cs                 # 씬에 배치하는 위치 루트 (OnEnable/OnDisable → LocationRootRegistry 자동 등록)
-└── LocationRootRegistry.cs         # 위치 루트 static Dict 레지스트리 — TownDungeonTransitionManager 가 root.TransformPoint(localSpawnPosition) 으로 월드 좌표 계산
+└── LocationRootRegistry.cs         # 위치 루트 static Dict 레지스트리 — LocationTransitionManager 가 root.TransformPoint(localSpawnPosition) 으로 월드 좌표 계산
 │
 ├── Data/
 │   ├── DungeonData.cs              # 타일 그리드 + 방 목록 (Domain)
@@ -296,10 +296,12 @@ Assets/Scripts/
 │   │                                #   SetDungeonSource() / SetTilemapSource(locationId) 공개 API
 │   │                                #   Texture2D → RawImage 렌더링, 플레이어 마커 오버레이
 │   │                                #   Dungeon: Y축 뒤집기(row0=top) / Tilemap: Y축 그대로(Y↑=Y↑)
-│   ├── TilemapMinimapSource.cs     # 위치별 Tilemap 미니맵 소스 MonoBehaviour (groundTilemap·wallTilemap·색상)
-│   │                                #   OnEnable/OnDisable → LocationMinimapRegistry 자동 등록
+│   ├── TilemapMinimapSource.cs     # 위치별 Tilemap 미니맵 소스 MonoBehaviour
+│   │                                #   ① 명시 모드: groundTilemap/wallTilemap/doorTilemap 인스펙터 직접 연결 (backward compat)
+│   │                                #   ② 자동 모드: autoDiscoverChildren=true 시 자식 Tilemap 을 GameObject Layer(Walkable/Wall/Door)로 분류
+│   │                                #   OnEnable/OnDisable → LocationMinimapRegistry 자동 등록, 색상 3종(ground/wall/door) 분리
 │   ├── LocationMinimapRegistry.cs  # 씬 내 TilemapMinimapSource를 locationId로 조회하는 정적 레지스트리
-│   ├── PlayerStatusBarUI.cs        # 플레이어 HP·MP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerEliteKeyInventory.EliteKeyChanged 구독
+│   ├── PlayerStatusBarUI.cs        # 플레이어 HP·MP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerInventory.OnInventoryChanged 로 elite_key 보유 수에 따라 아이콘 토글
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
@@ -316,7 +318,7 @@ Assets/Scripts/
 ├── DebugConsole/
 │   ├── DeveloperConsoleUI.cs       # 개발자 콘솔 UI MonoBehaviour — ` 키 토글, TMP_InputField 입력, ScrollRect 로그, Tab 자동완성 순환, GamePauseController 연동
 │   ├── DeveloperConsoleService.cs  # 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, Execute/GetArgumentSuggestions/GetCommandNames API
-│   ├── DeveloperConsoleCommandExecutor.cs # 명령 실행 MonoBehaviour (구 CommandContext 대체) — 게임 상태 변경 호출을 담당 (RoomSpawner·DungeonManager·TownDungeonTransitionManager·EliteArenaEncounterController·PlayerController 참조 보유)
+│   ├── DeveloperConsoleCommandExecutor.cs # 명령 실행 MonoBehaviour (구 CommandContext 대체) — 게임 상태 변경 호출을 담당 (RoomSpawner·DungeonManager·LocationTransitionManager·EliteArenaEncounterController·PlayerController 참조 보유)
 │   └── DeveloperConsoleCommandResult.cs  # 명령 실행 결과 (readonly struct) — Success/Error/Clear/Ignored 팩토리 메서드
 │
 ├── EliteArena/
@@ -327,8 +329,13 @@ Assets/Scripts/
 ├── World/
 │   ├── WalkabilityArea.cs    # 전투 공간 단위 컴포넌트 (Elite Arena 등) — walk/wall Tilemap 쌍, OnEnable/OnDisable → WalkabilityQuery 자동 등록
 │   │                         #   IsInsideWorld/IsWalkableWorld/IsFootprintWalkableWorld/HasLineOfSightWorld/TryGetNearestWalkableWorldPosition API
+│   │                         #   Inspector 튜닝: footprintInsetMultiplier(0.1~1.0, 기본 0.85) — 4-corner sample 거리를 radius 대비 인셋으로 완화,
+│   │                         #                   debugLogFootprintFailures(1초/회 throttle) — 어떤 cell 이 왜 막혔는지 로그,
+│   │                         #                   drawCellBoundsGizmo — Selected 시 walkTilemap.cellBounds 시각화
+│   │                         #   walk/wall Tilemap 이 서로 다른 transform/cellSize 여도 각 Tilemap 의 WorldToCell 로 안전 처리
 │   └── WalkabilityQuery.cs   # 정적 라우팅 서비스 — 등록된 WalkabilityArea 우선, 없으면 DungeonData fallback
 │                             #   IsWalkable/IsFootprintWalkable/HasLineOfSight/IsInsideKnownArea/TryFindNearestWalkable
+│                             #   FindAreaContaining(world) 으로 호출자가 "Area 내부인지" 자체 분기 가능 (FogVisibilityRenderer 등이 사용)
 │
 ├── Debug/
 │   └── RuntimePerfTraceLogger.cs   # 투사체/풀 호출 마이크로 타이밍 트레이스
@@ -424,7 +431,7 @@ return mixed & 0x7FFFFFFF;
 | 같은 시드 + 다른 층 | 다른 지형 |
 | 다른 시드 + 같은 층 | 다른 지형 |
 
-> 방별 적 스폰은 별도의 결정론 경로(`DeterministicSeedUtility.CreateSeed(globalSeed, dungeonType, floor, RoomInfo.StableRoomKey, "enemy_spawn")`)를 사용합니다. `DungeonManager.dungeonType`(`DungeonTypeId`) 으로 같은 시드라도 던전 종류별 스폰 RNG 를 분리할 수 있습니다. 자세한 내용은 [9-1-2. 결정론적 방 스폰 시드](#9-1-2-결정론적-방-스폰-시드-deterministicseedutility) 참조.
+> 방별 적 스폰은 별도의 결정론 경로(`DeterministicSeedUtility.CreateSeed(globalSeed, currentStageRegion, floor, RoomInfo.StableRoomKey, "enemy_spawn")`)를 사용합니다. `DungeonManager.currentStageRegion`(`SpawnRegion` 비트 플래그) 으로 같은 시드라도 지역별 스폰 RNG 를 분리할 수 있습니다. 자세한 내용은 [9-1-2. 결정론적 방 스폰 시드](#9-1-2-결정론적-방-스폰-시드-deterministicseedutility) 참조.
 
 ### 4-4. 방 연결 알고리즘 (Prim's MST + EXTRA 다중 후보 점수화)
 
@@ -647,7 +654,7 @@ CheckRoomEntry():
 
 `PlayerInputReader` 는 `keySettings` SerializeField 가 비어 있으면 위 기본 키로 폴백하고 1회 경고를 출력합니다. `PlayerInputKeySettings.OnValidate` 가 `Key.None` 사용과 동일 키 중복 할당을 에디터에서 자동 감지합니다.
 
-`PlayerEliteKeyInventory` 가 부착되어 있으면 `PlayerController` 가 매 프레임 `TryOpenEliteDoorOnContact` 를 호출 — 별도 키 입력 없이 접촉만으로 Elite Door 가 열립니다 (키 보유 시).
+`PlayerInventory` 가 `elite_key` ItemData 를 보유하면 `PlayerController` 가 매 프레임 `TryOpenEliteDoorOnContact` 를 호출 — 별도 키 입력 없이 접촉만으로 Elite Door 가 열립니다 (`TryGetDatabaseItem("elite_key", out keyItem)` → `dungeonRenderer.TryOpenEliteDoorWithKey(_inventory, keyItem)`). 구 `PlayerEliteKeyInventory` 는 제거되었고 Elite Key 는 일반 ItemData 한 항목으로 통합됨.
 
 ### 6-4-1. 적 상태이상에 의한 이동/입력 제어
 
@@ -1246,7 +1253,7 @@ OnRoomEntered (이벤트 수신):
        플레이어가 문 타일과 겹치지 않음
        → 실패 시 _pendingRoomStart에 저장, LateUpdate에서 재시도
   ④ 방 전용 결정론적 RNG 생성:
-       roomSeed = FNV-1a(globalSeed, dungeonType, floor, room.StableRoomKey, "enemy_spawn")
+       roomSeed = FNV-1a(globalSeed, currentStageRegion, floor, room.StableRoomKey, "enemy_spawn")
        roomRng  = new System.Random(roomSeed)
   ⑤ EnemyPoolManager에서 예산 기반 적 선택 (roomRng.Next 사용)
        (방 면적 × densityFactor × 방 타입 배율)
@@ -1269,25 +1276,27 @@ DeterministicSeedUtility.CreateStableRoomKey(RoomRect):
   RoomInfo.StableRoomKey 에 던전 생성 시 캐싱
   (RoomSpawner.SameRoom / GetRoomKey 가 이 키로 방 동일성 판정)
 
-DeterministicSeedUtility.CreateSeed(globalSeed, dungeonType, floor, stableRoomKey, domain):
-  FNV-1a 해시(long globalSeed, int dungeonType, int floor, int stableRoomKey, string domain)
+DeterministicSeedUtility.CreateSeed(globalSeed, currentStageRegion, floor, stableRoomKey, domain):
+  FNV-1a 해시(long globalSeed, int region, int floor, int stableRoomKey, string domain)
   → 양수 int 시드 반환
 
 도메인 상수:
   EnemySpawnDomain = "enemy_spawn"
     → RoomSpawner.SpawnEnemiesInRoom 에서 사용
+  EliteKeyDomain   = "elite_key"
+    → RoomSpawner.PrepareEliteKeyPlan 에서 키 드랍 슬롯 선정 시 사용
     → 다른 결정론 시스템을 추가할 땐 새 도메인 문자열을 정의해 시드 충돌 방지
 ```
 
 ```
-DungeonTypeId (enum):
-  Default = 0
-  (DungeonManager.dungeonType 가 시드 입력에 포함 — 던전 종류별 RNG 분기 자리)
+SpawnRegion (Flags enum, Generate/SpawnRegion.cs):
+  None / Dungeon / Forest / Castle 등 비트 플래그
+  DungeonManager.currentStageRegion 이 시드 입력에 포함 — 지역별 RNG 분기 + EnemyData.allowedRegions 필터 공용
 
 RoomInfo.StableRoomKey:
   DungeonManager.BuildRoomInfos 가 생성 시 CreateStableRoomKey 로 채움
   Spawn/Stair 자동 분류 후에도 보존
-  RoomSpawner._spawnedRoomsByKey / _pendingRoomStart 도 이 키로 식별
+  RoomSpawner._startedRoomKeys / _pendingRoomStart 도 이 키로 식별
 ```
 
 UnityEngine.Random 대신 per-room `System.Random` 인스턴스를 사용해 다른 시스템(파티클·UI·물리 노이즈)이 RNG 상태를 오염시켜도 스폰 결과가 흔들리지 않습니다.
@@ -1580,12 +1589,12 @@ FloorTransition(targetFloor):
 
 ## 11a. 시스템 9 — 마을·던전 전환 및 미니맵
 
-### 11a-1. 마을·던전 전환 (TownDungeonTransitionManager)
+### 11a-1. 마을·던전 전환 (LocationTransitionManager)
 
 마을(Town)과 던전(Dungeon) 사이의 전환을 조율합니다. TeleportDestinationDatabase(ScriptableObject)에 등록된 목적지 ID로 이동 대상을 결정합니다.
 
 ```
-TownDungeonTransitionManager.TeleportPlayer(player, destinationId):
+LocationTransitionManager.TeleportPlayer(player, destinationId):
   ① TeleportDestinationDatabase에서 TeleportLocationData 조회
   ② CurrentLocation → destination.LocationType 방향 판별
        enteringDungeon: 현재 위치가 Dungeon이 아닌데 목적지가 Dungeon
@@ -1613,7 +1622,7 @@ TownDungeonTransitionManager.TeleportPlayer(player, destinationId):
          player.TeleportTo(worldPos)
 ```
 
-마을에서 T 키를 누르면 디버그 진입(`debugReturnDestinationId`)이 호출됩니다(`enableDebugReturnKey`).
+`debugDungeonEntranceDestinationId` / `debugReturnDestinationId` 는 개발자 콘솔 `/tp` 명령 또는 `EnterDungeon()` / `EnterTown()` 디버그 API 진입점입니다 (전용 키 바인딩은 제거되어 콘솔 `/tp` 로만 호출).
 
 **목적지 데이터 (TeleportLocationData)**
 
@@ -1626,7 +1635,7 @@ TownDungeonTransitionManager.TeleportPlayer(player, destinationId):
 | `localSpawnPosition` | LocationRoot 기준 로컬 좌표 — `root.TransformPoint(localSpawnPosition)` 으로 월드화 |
 | `minimapLocationId` | 미니맵 소스 ID — 비어 있으면 `id` 폴백 |
 
-`[TeleportDestinationId]` PropertyAttribute + `TeleportDestinationIdDrawer` 가 인스펙터의 destination id 문자열 필드를 DB 의 id 드롭다운으로 렌더링합니다 (TownDungeonTransitionManager / TeleportService 가 사용).
+`[TeleportDestinationId]` PropertyAttribute + `TeleportDestinationIdDrawer` 가 인스펙터의 destination id 문자열 필드를 DB 의 id 드롭다운으로 렌더링합니다 (LocationTransitionManager / TeleportService 가 사용).
 
 **LocationRoot (씬 배치 컴포넌트)**
 
@@ -1662,6 +1671,10 @@ SetTilemapSource(locationId):
 **TilemapMinimapSource 레지스트리 패턴**
 
 `TilemapMinimapSource` MonoBehaviour를 TownRoot(또는 위치 루트)에 부착하면, `OnEnable` 시 `LocationMinimapRegistry`(static Dictionary)에 `locationId`로 자동 등록됩니다. `MinimapController.SetTilemapSource`는 이 레지스트리를 조회해 즉시 또는 폴링으로 소스를 획득합니다.
+
+**자동 분류 모드 (autoDiscoverChildren)**
+
+`autoDiscoverChildren = true` 인 경우 `OnEnable` 시 1회 자식 Tilemap 을 `GetComponentsInChildren<Tilemap>` 로 수집한 뒤 각 GameObject 의 Layer(`Walkable` / `Wall` / `Door` — 인스펙터에서 이름 커스터마이즈 가능)에 따라 `_walkableTilemaps` / `_wallTilemaps` / `_doorTilemaps` 세 List 로 분류합니다. 명시 모드(groundTilemap/wallTilemap/doorTilemap 직접 연결)와 병행 가능하며, 한 location 에 walk/wall 각각 여러 개의 Tilemap 이 있어도 모두 처리됩니다. 분류 실패 시(0개 매칭) 인스펙터에 1회 경고를 출력합니다.
 
 ### 11a-3. 미니맵 마커·계단 가시성
 
@@ -1757,7 +1770,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 | `HasItem(item, amount)` / `GetItemCount(item)` | 보유량 조회 |
 | `TryGetDatabaseItem(itemCode, out item)` | 부착된 `ItemDatabase` 에서 ItemData 조회 (PlayerController 의 Elite Door 처리가 사용) |
 | `RemoveItemsOnFloorTransition()` | `ItemData.RemoveOnFloorTransition=true` 항목만 제거 — `DungeonManager.CleanupPlayerInventoryForFloorTransition` 에서 호출 |
-| `RemoveItemsOnDungeonExit()` | `ItemData.RemoveOnDungeonExit=true` 항목만 제거 — `TownDungeonTransitionManager` 던전 이탈 시 호출 |
+| `RemoveItemsOnDungeonExit()` | `ItemData.RemoveOnDungeonExit=true` 항목만 제거 — `LocationTransitionManager` 던전 이탈 시 호출 |
 | `Clear()` | 전체 비움 |
 | `OnInventoryChanged` (event) | `InventoryUIController` 가 구독해 슬롯 갱신, `PlayerStatusBarUI` 가 elite_key 보유 수로 키 아이콘 토글 |
 
@@ -1775,7 +1788,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 |------|------|
 | `DeveloperConsoleUI` | MonoBehaviour UI 컨트롤러 — `` ` `` 키 토글, `TMP_InputField` 입력, ScrollRect 로그 출력, Tab 자동완성, `GamePauseController` 연동 |
 | `DeveloperConsoleService` | 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, `Execute` / `GetArgumentSuggestions` / `GetCommandNames` API |
-| `DeveloperConsoleCommandExecutor` | MonoBehaviour 실행 컨트롤러 — `DeveloperConsoleService`가 파싱·등록을 담당하고 게임 상태 변경(적 처치·문 개방·텔레포트·층 이동)은 이 컴포넌트로 위임. `RoomSpawner` · `DungeonManager` · `TownDungeonTransitionManager` · `EliteArenaEncounterController` · `PlayerController` · `TeleportDestinationDatabase` 보유 (구 `DeveloperConsoleCommandContext` readonly struct 대체) |
+| `DeveloperConsoleCommandExecutor` | MonoBehaviour 실행 컨트롤러 — `DeveloperConsoleService`가 파싱·등록을 담당하고 게임 상태 변경(적 처치·문 개방·텔레포트·층 이동)은 이 컴포넌트로 위임. `RoomSpawner` · `DungeonManager` · `LocationTransitionManager` · `EliteArenaEncounterController` · `PlayerController` · `TeleportDestinationDatabase` 보유 (구 `DeveloperConsoleCommandContext` readonly struct 대체) |
 | `DeveloperConsoleCommandResult` | 명령 실행 결과 (readonly struct) — `Success(msg)` / `Error(msg)` / `Clear()` / `Ignored()` 팩토리 메서드 |
 
 ### 11c-2. 등록된 명령
@@ -1786,7 +1799,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 | `/clear` | 콘솔 로그 초기화 | 없음 |
 | `/echo [text]` | 입력 텍스트 그대로 출력 | 없음 |
 | `/tp [destinationId]` | 플레이어를 목적지로 순간이동 | `TeleportDestinationDatabase` ID 목록 |
-| `/dooropen [doorType]` | 현재 층의 문 일괄 개방 | `default` `normal` `basic` `elite` |
+| `/dooropen [doorType]` | 현재 층의 문 일괄 개방 | `normal` `elite` |
 | `/kill` | 현재 방 또는 Elite Arena 내 모든 적 즉시 처치 (디버그 전용) | 없음 |
 | `/floor add [count]` | 현재 층 + count 이동 | `add` `sub` `set` |
 | `/floor sub [count]` | 현재 층 - count 이동 | |
@@ -1802,7 +1815,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 
 인수 제안 프로바이더 (_argumentProviders Dictionary):
   "floor"    → { "add", "sub", "set" }
-  "dooropen" → { "default", "normal", "basic", "elite" }
+  "dooropen" → { "normal", "elite" }
   "tp"       → TeleportDestinationDatabase.GetDestinationIds()
 ```
 
@@ -1820,14 +1833,18 @@ Elite Floor(`floor % 10 == 5`)의 Elite Room에 포탈이 배치되고, 플레�
 ### 11d-1. 전체 흐름
 
 ```
-던전 생성 완료 후 RoomSpawner.PrepareEliteKeyPlan():
-  IsEliteFloor → EliteArenaEncounterController.PrepareEntrancePortal(eliteRoom, dungeonManager)
-    Elite Room 중앙 walkable 타일에 EliteArenaPortal Instantiate·배치
+던전 생성 시:
+  RoomSpawner.PrepareEliteKeyPlan() — 일반 방의 elite_key 드랍 슬롯 1개 결정론적 선정
+
+Elite Room 진입 시 RoomSpawner.SpawnRoom(room):
+  room.IsElite → PrepareEliteRoomPortal(room, dungeonManager)
+    → EliteArenaEncounterController.PrepareEntrancePortal(room, dungeonManager)
+      Elite Room 중앙 walkable 타일에 EliteArenaPortal Instantiate·배치
 
 플레이어가 포탈 콜라이더에 접촉:
   EliteArenaPortal.OnTriggerEnter2D → TryEnterArenaFromPortal(portal, room, player)
     RoomSpawner.TrySelectEliteForArena(room, out eliteData)
-    TownDungeonTransitionManager.TryTeleportPlayer(player, arenaDestinationId)
+    LocationTransitionManager.TryTeleportPlayer(player, arenaDestinationId)
     EliteArenaEncounterController.TrySpawnElite(eliteData) → 씬 내 eliteSpawnPoint에 적 배치
     DungeonManager.CloseCurrentRoomDoors() (Elite Room 문 봉인)
     portal.SetLocked(true)
@@ -1839,7 +1856,7 @@ Elite 적 사망 시:
   EliteArenaReturnPortal.OnTriggerEnter2D → TryReturnFromArena(player)
     player.TeleportTo(_originReturnPosition)
     DungeonManager.OpenCurrentRoomDoors()
-    TownDungeonTransitionManager.RestoreDungeonMinimapSource()
+    LocationTransitionManager.RestoreDungeonMinimapSource()
     portal.MarkCompletedAndDisable(originRoom) → 이후 같은 방에서 포탈 비활성
     CancelEncounter() → HideReturnPortal
 ```
@@ -1860,7 +1877,7 @@ Elite 적 사망 시:
 `WalkabilityArea` MonoBehaviour를 Arena 루트 오브젝트에 부착하면, `OnEnable` 시 `WalkabilityQuery`(static `List<WalkabilityArea>`)에 자동 등록됩니다. 던전 절차 공간은 `DungeonManager`/`DungeonData`로 처리되고, Arena 등 특수 공간은 `WalkabilityArea` 단위로 격리됩니다.
 
 ```
-EliteDashPatternRuntime / EliteJumpPatternRuntime:
+EliteDashPatternRuntime / EliteJumpPatternRuntime / PlayerDashController / EnemyMovementHandler:
   CanOccupy(pos) → WorldEnvironmentQuery.IsFootprintWalkable(pos, footprintRadius)
     → WalkabilityQuery.IsFootprintWalkable
       Area 안 → WalkabilityArea.IsFootprintWalkableWorld (walk tile + wall tile 판정)
@@ -1869,11 +1886,19 @@ EliteDashPatternRuntime / EliteJumpPatternRuntime:
 
 서로 다른 Area에 걸친 LOS는 항상 차단(`HasLineOfSight`에서 fromArea ≠ toArea → false)하여 공간 간 투사체·시야 누출을 방지합니다.
 
+> **Area-우선 분기가 명시적으로 남아 있는 호출처** (현재 4곳):
+> - [`EnemyMovementHandler.HasLineOfSight`](Assets/Scripts/Enemy/EnemyMovementHandler.cs#L107) — Area 안에서는 walkable LOS, Dungeon 에서는 `!= EMPTY` 만 차단(닫힌 문 너머 추적 유지 의도)
+> - [`EnemyTargetHandler.IsTargetOnTrackableTile`](Assets/Scripts/Enemy/EnemyTargetHandler.cs#L93) — 같은 의도. Area=walkable, Dungeon=`!= EMPTY`
+> - [`EliteJumpPatternRuntime.TryResolveJumpTarget`](Assets/Scripts/Enemy/Elite/Patterns/EliteJumpPatternRuntime.cs#L221) — Area 안에서는 `TryFindNearestWalkable`, Dungeon 에서는 `dungeon.GetRoomAt + StayInRoom`
+> - [`FogVisibilityRenderer.ResolveVisibility`](Assets/Scripts/Visual/FogVisibilityRenderer.cs#L89) — Area 안에서는 항상 visible 로 처리(Fog bypass)
+>
+> 그 외 `PlayerController.CanMoveTo` 는 `LocationTransitionManager.IsInTown` 분기로 Town 일 때만 `Physics2D.OverlapCircle(CombatLayers.WallMask)` 를 사용합니다(Town walls 가 Collider 기반이라서). 이 5개 분기를 단일 라우팅으로 통합하는 정리 안건은 별도 문서 참고.
+
 ### 11d-4. 복귀·정리 흐름
 
-- 층 이동 또는 마을 이동 시 `TownDungeonTransitionManager.CleanupDungeonRuntime()` 이 `EliteArenaEncounterController.Active?.ClearRuntimeState()` 호출 → 진행 중 인카운터 취소, 포탈 비활성화
+- 층 이동 또는 마을 이동 시 `LocationTransitionManager.CleanupDungeonRuntime()` 이 `EliteArenaEncounterController.Active?.ClearRuntimeState()` 호출 → 진행 중 인카운터 취소, 포탈 비활성화
 - Elite 적은 `EnemyPoolManager` 풀에서 꺼내므로 층 이동 시 `EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange()` 로 일괄 회수됨
-- `TownDungeonTransitionManager.RestoreDungeonMinimapSource()` 가 복귀 시 미니맵을 Dungeon 모드로 복원 (Elite Arena 진입 시 minimap이 Arena Tilemap으로 전환된 경우 대비)
+- `LocationTransitionManager.RestoreDungeonMinimapSource()` 가 복귀 시 미니맵을 Dungeon 모드로 복원 (Elite Arena 진입 시 minimap이 Arena Tilemap으로 전환된 경우 대비)
 
 ---
 
@@ -1938,7 +1963,7 @@ EliteDashPatternRuntime / EliteJumpPatternRuntime:
 | Kiting 다중 후퇴 방향 | `s_KitingRotations` (away → away±45° → side±90°) | 막혔을 때도 폴백 후보로 후퇴 시도, footprint 통과 첫 후보 채택 |
 | Random minR 안전판 | `MovementHandler.TickRandomMovement` | `minR = max(radius*0.25, footprintRadius+0.1)` — 자기 위치 위에 목적지 찍힘 방지 |
 | 정지 상태 separation step | `MovementHandler.TryApplyIdleSeparationStep` | Kiting/Random 대기 중에도 이웃이 가까우면 separation 인프라 재사용해 가상 target으로 1회 이동 (0 할당) |
-| 결정론적 방 스폰 시드 | `DeterministicSeedUtility.CreateSeed` + `RoomInfo.StableRoomKey` | 방마다 globalSeed/dungeonType/floor/StableRoomKey/domain FNV-1a 해시로 `System.Random` 생성 — UnityEngine.Random 오염에 흔들리지 않음 |
+| 결정론적 방 스폰 시드 | `DeterministicSeedUtility.CreateSeed` + `RoomInfo.StableRoomKey` | 방마다 globalSeed/currentStageRegion/floor/StableRoomKey/domain FNV-1a 해시로 `System.Random` 생성 — UnityEngine.Random 오염에 흔들리지 않음 |
 | 스폰 정렬 후 결정론 셔플 | `RoomSpawner.SortSpawnTiles` / `CompareEnemyDataDeterministic` | 타일·EnemyData 후보를 안정 정렬 후 `roomRng.Next` 로 선택, ScriptableObject 로드 순서에 무관한 재현성 |
 | 적 블로커 정적 캐시 | `MovementBlockerQuery.s_BlockerBuffer` + `s_EnemyCache` | OverlapCircle 결과를 Collider2D→EnemyController 사전 매핑으로 재사용, 매 이동 검사 0 할당 |
 | 분리 벡터 OverlapCircle throttle | `MovementHandler.SeparationQueryInterval=0.1s` | 결과만 캐시, Lerp 평활화는 매 프레임 유지 — N×N OverlapCircle 부담 감소 |
@@ -2233,7 +2258,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Kiting 다중 후퇴 방향** | `s_KitingRotations` 5단계 폴백 (away → away±45° → side±90°) — 후퇴가 막혀도 첫 통과 후보로 이동 |
 | **Random 목적지 minR 보호** | `MovementHandler.TickRandomMovement` — `minR=max(radius*0.25, footprintRadius+0.1)` 로 자기 위 목적지 차단 |
 | **정지 시 separation step** | `MovementHandler.TryApplyIdleSeparationStep` — Kiting/Random 대기 상태에서도 이웃이 가까우면 산개 |
-| **결정론적 방 적 스폰** | `DeterministicSeedUtility` + `RoomInfo.StableRoomKey` + `DungeonManager.dungeonType` — 방별 `System.Random` 으로 적 종류·위치 재현성 보장 |
+| **결정론적 방 적 스폰** | `DeterministicSeedUtility` + `RoomInfo.StableRoomKey` + `DungeonManager.currentStageRegion`(`SpawnRegion`) — 방별 `System.Random` 으로 적 종류·위치 재현성 보장 |
 | **방 적 블로커 시스템** | `EnemyData.blocksMovement` + `MovementBlockerQuery` — `blocksMovement=true` 적이 플레이어 이동/대시를 막음 (AI·넉백 무관) |
 | **분리 벡터 throttle** | `MovementHandler.SeparationQueryInterval=0.1s` — OverlapCircle 결과 캐시, Lerp 평활화는 매 프레임 유지 |
 | **적 LateUpdate 좌표 skip** | `EnemyController.LateUpdate` — 이전 안전 좌표와 동일하면 4-corner 검사 생략 |
@@ -2252,7 +2277,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **EXTRA 점수 weight 인스펙터화** | `DungeonManager.extraOverlapScoreWeight`/`extraPathLengthPenaltyWeight`/`extraCenterDistancePenaltyDivisor` — 점수 함수 가중치를 인스펙터로 노출, 과거 `LongestParallelCorridorRun` 항목은 단순화로 제거 |
 | **플레이어 상태이상 시스템** | `PlayerStatusEffectType`(Slow/Stun) + `PlayerCombatController.ApplyEnemyCombatImpact` — 적 공격에서 받는 데미지·넉백·슬로우·스턴을 단일 진입점으로 처리, 슬로우는 활성 효과 중 가장 강한 강도만 적용, 스턴 중 이동·방향 전환·스킬 입력 차단 |
 | **플레이어 상태이상 아이콘 UI** | `PlayerStatusEffectUI` + `StatusEffectIconView` — 슬로우/스턴 아이콘과 잔여 시간 게이지·텍스트 표시, `OnStatusEffectApplied/Ended` 이벤트 구독 |
-| **마을·던전 전환 시스템** | `TownDungeonTransitionManager` — `TeleportDestinationDatabase` ScriptableObject 기반 목적지 관리, 진입/이탈 시 CleanupDungeonRuntime + StartNewDungeonRun, minimapRoot 항상 표시 |
+| **마을·던전 전환 시스템** | `LocationTransitionManager` — `TeleportDestinationDatabase` ScriptableObject 기반 목적지 관리, 진입/이탈 시 CleanupDungeonRuntime + StartNewDungeonRun, minimapRoot 항상 표시 |
 | **텔레포트 시스템** | `TeleportService` + `TeleportDestinationDatabase` + `LocationRoot` + `LocationRootRegistry` — DB 조회·씬 루트 자동 등록·`root.TransformPoint(localSpawnPosition)` 으로 월드 좌표 계산 |
 | **이중 모드 미니맵** | `MinimapController` — Dungeon(DungeonData 그리드) / Tilemap(TilemapMinimapSource) 두 모드 전환, `SetDungeonSource()` / `SetTilemapSource(id)` 공개 API, 전환 시 스테일 텍스처 즉시 클리어 |
 | **Town Tilemap 미니맵** | `TilemapMinimapSource` + `LocationMinimapRegistry` — 위치별 Tilemap 소스 자동 등록 레지스트리, Texture2D 픽셀 렌더링 (Y↑ 뒤집기 없음, Dungeon과 좌표계 분리) |
@@ -2263,18 +2288,18 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **GameOver UI 자동 빌드 제거** | `BuildDefaultUi` 경로 삭제, 인스펙터 미설정 시 1회 경고만 출력하고 표시 skip |
 | **EXTRA 통로 외곽 우회 방지** | `DrawLCorridor`가 EXTRA(optional)에서는 primary/alternate 모두 충돌 시 skip + bool 반환 — `connectedPairs` 보존으로 잘못된 logical 상태 누적 차단 |
 | **Elite Floor 자동 분기** | `DungeonGenerator.IsEliteFloor(floor%10==5)` + `AssignEliteRoom` — MST leaf 가장 깊은 방을 Elite 로 지정, EXTRA 통로에서 elite 방 제외해 단일 진입 경로 보장 |
-| **Elite Door 타일·자동 개방** | `DungeonTilemapRenderer.eliteDoorTile` + `PlaceEliteDoors` + `TryOpenEliteDoorWithKey` — Elite Room perimeter 의 corridor-인접 cell 만 elite door 로 봉인, 플레이어 접촉 시 `PlayerEliteKeyInventory.TryConsumeEliteKey` 로 한 셀 카빙 |
+| **Elite Door 타일·자동 개방** | `DungeonTilemapRenderer.eliteDoorTile` + `PlaceEliteDoors` + `TryOpenEliteDoorWithKey(PlayerInventory, ItemData)` — Elite Room perimeter 의 corridor-인접 cell 만 elite door 로 봉인, 플레이어 접촉 시 인벤토리에서 `elite_key` 1개 소모 + 한 셀 카빙 |
 | **Elite Key 결정론적 드랍** | `RoomSpawner.PrepareEliteKeyPlan` + `DeterministicSeedUtility.EliteKeyDomain` — `CountDeterministicSpawns` dry-run 으로 모든 일반 방의 스폰 슬롯 수 집계 후, elite room StableRoomKey 기반 RNG 로 1개 슬롯 선택, `MarkAsEliteKeyHolder` 가 그 적의 EnemyInventory 에 `elite_key` 추가 |
-| **PlayerEliteKeyInventory** | bool 단일 상태 + `GrantEliteKey/TryConsumeEliteKey/Reset` + `EliteKeyChanged(bool)` 이벤트 — PlayerStatusBarUI 가 구독해 아이콘 토글, 층 이동·마을 이동·던전 재진입 시 자동 클리어 |
+| ~~**PlayerEliteKeyInventory**~~ | (제거됨) Elite Key 가 일반 ItemData 로 통합되어 `PlayerInventory` 가 모든 보유 항목을 관리. 구 bool/EliteKeyChanged 이벤트 경로는 삭제 |
 | **PlayerController Elite Door 접촉 처리** | `TryOpenEliteDoorOnContact` — 매 프레임 dungeonRenderer.TryOpenEliteDoorWithKey 호출, 키 보유 시 접촉만으로 자동 개방 |
 | **아이템 데이터베이스** | `ItemDatabase` ScriptableObject + `ItemData`(itemCode/displayName/icon/itemType/stackable/maxStack) + `ItemType` enum — `TryGetItem` Dictionary 캐시, OnValidate 중복/공백 itemCode 자동 경고 |
 | **EnemyInventory + DropItemSpawner** | `EnemyInventory.AddDropItem(itemCode)` → Die 시 `DropItemSpawner.Instance.SpawnDrops` 가 ItemDatabase 로 ItemData 해석 후 `DroppedItem` Instantiate, dropSpacing 으로 다중 드랍 정렬 |
-| **DroppedItem 픽업** | `OnTriggerEnter2D` 에서 Key + eliteKeyItemCode 매칭 시 `PlayerEliteKeyInventory.GrantEliteKey` 호출 후 Destroy + `DropItemSpawner.Unregister` |
-| **마을·던전 전환 시 드랍 정리** | `TownDungeonTransitionManager.CleanupDungeonRuntime` 에 `DropItemSpawner.ClearAllActiveDrops` 추가 + 층 이동시에도 `DungeonManager.FloorTransition` 시작점에서 호출 — 이전 층 드랍이 신생 던전에 잔존하지 않음 |
+| **DroppedItem 픽업** | `OnTriggerEnter2D` 에서 `player.TryGetComponent<PlayerInventory>` 후 `inventory.AddItem(_itemData, _amount)` 호출 — 성공 시 `DropItemSpawner.Instance?.Unregister(self)` + `Destroy(self)`. ItemType 분기 없이 모든 아이템(Currency/Consumable/Key 등)을 인벤토리로 통합 |
+| **마을·던전 전환 시 드랍 정리** | `LocationTransitionManager.CleanupDungeonRuntime` 에 `DropItemSpawner.ClearAllActiveDrops` 추가 + 층 이동시에도 `DungeonManager.FloorTransition` 시작점에서 호출 — 이전 층 드랍이 신생 던전에 잔존하지 않음 |
 | **PlayerInputKeySettings ScriptableObject** | 이동/액션/스킬 12개 키를 단일 에셋으로 일괄 설정, `PlayerInputReader` 가 keySettings 미설정 시 기본 키 폴백 + 1회 경고, OnValidate 가 `Key.None`/중복 키 자동 검출 |
 | **PlayerInputReader 인벤토리 입력 hook** | `InventoryPressedThisFrame` flag 노출 (구독자 미구현 — 인벤토리 시스템 확장 자리) |
 | **LocationRoot 기반 텔레포트** | 기존 `TeleportDestinationPoint`/`Registry` 제거, `LocationRoot`(SerializeField id + OnEnable/OnDisable 자동 등록) + `LocationRootRegistry` static Dict 로 대체. `TeleportLocationData` 가 `locationRootId` + `localSpawnPosition` 을 보유, `root.TransformPoint(localSpawnPosition)` 으로 월드 좌표 계산 |
-| **TeleportDestinationId 드롭다운** | `[TeleportDestinationId]` PropertyAttribute + Editor drawer 가 string 필드를 DB id 드롭다운으로 변환 — TownDungeonTransitionManager / TeleportService 인스펙터에 적용 |
+| **TeleportDestinationId 드롭다운** | `[TeleportDestinationId]` PropertyAttribute + Editor drawer 가 string 필드를 DB id 드롭다운으로 변환 — LocationTransitionManager / TeleportService 인스펙터에 적용 |
 | **TeleportDestinationData 메타데이터 확장** | `displayName` / `description` 필드 추가, `minimapLocationId` 가 빈 문자열일 때 `id` 폴백 |
 | **미니맵 계단 마커 확장** | `stairMarkerPixelPadding` — STAIR_UP 셀을 padding 픽셀만큼 키워 그려 작은 미니맵에서도 가시성 확보 (탐사된 셀만) |
 | **미니맵 문 색상** | `visibleDoorColor` / `exploredDoorColor` — DOOR_CLOSED 셀이 방·통로와 구분되어 표시 |
@@ -2298,9 +2323,13 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **개발자 콘솔 /kill 명령** | `DeveloperConsoleCommandExecutor.ExecuteKill` → `RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug()` — 일반 방이면 현재 방 생존 적, Elite Arena 인카운터 중이면 `EliteArenaEncounterController.ForceKillActiveEliteForDebug()` 로 분기 |
 | **적 등장 층 범위 필터** | `EnemyData.minFloor`/`maxFloor` + `IsAvailableOnFloor(floor)` — `RoomSpawner.BuildCandidates(region, budget, currentFloor)` 가 SpawnRegion·예산 필터 직후 층 범위로 후보 차단. `EnemyDataEditor` 가 Min/Max Floor 필드 + 잘못된 범위(`HasInvalidFloorRange`) 인스펙터 경고 표시, `EnemyData.OnValidate` 가 동일 검사 후 콘솔 경고 |
 | **World Environment Query** | `WalkabilityArea`(walk/wall Tilemap 쌍 + OnEnable/OnDisable 자동 등록) + `WalkabilityQuery`(정적 라우팅 — Area 우선, DungeonData fallback) + `WorldEnvironmentQuery`(전투 코드용 파사드) — Dungeon·Elite Arena 등 공간 종류와 무관하게 단일 API로 walkability/LOS/footprint 판정 |
-| **Elite Arena 시스템** | `EliteArenaEncounterController`(static Active, 입장/복귀/취소/Elite spawn) + `EliteArenaPortal`(Elite Room 내 진입 포탈) + `EliteArenaReturnPortal`(Elite 사망 후 복귀 포탈) — `RoomSpawner.PrepareEntrancePortal` 에서 Elite Room 중앙에 포탈 배치, 접촉 시 `TownDungeonTransitionManager.TryTeleportPlayer` 로 Arena 진입, 복귀 시 `RestoreDungeonMinimapSource` 로 미니맵 복원 |
+| **Elite Arena 시스템** | `EliteArenaEncounterController`(static Active, 입장/복귀/취소/Elite spawn) + `EliteArenaPortal`(Elite Room 내 진입 포탈) + `EliteArenaReturnPortal`(Elite 사망 후 복귀 포탈) — `RoomSpawner.PrepareEliteRoomPortal` → `EliteArenaEncounterController.PrepareEntrancePortal` 로 Elite Room 중앙에 포탈 배치, 접촉 시 `LocationTransitionManager.TryTeleportPlayer` 로 Arena 진입, 복귀 시 `RestoreDungeonMinimapSource` 로 미니맵 복원 |
 | **Elite Dash 목표 위치 기반** | `EliteDashPatternRuntime` — dashDuration 제거, dashSpeed×dt 이동으로 변경. `WalkabilityQuery.TryFindNearestWalkable` 로 플레이어 위치 기반 목표 결정 (Arena/Dungeon 공용) |
 | **Elite Jump WalkabilityQuery 통합** | `EliteJumpPatternRuntime` — `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정 (Arena Tilemap / Dungeon grid 자동 라우팅) |
+| **`LocationTransitionManager` 이름 정리** | 구 `TownDungeonTransitionManager` → `LocationTransitionManager` 리네이밍 (Town·Dungeon 외에 Elite Arena·향후 Boss Arena 등 다중 지역 전환을 표현). 인스펙터 필드/`Active` 정적 참조 동일, 동작 변경 없음 (commit 01897373) |
+| **Elite Arena 복귀 시 미니맵 즉시 복원** | `EliteArenaEncounterController.TryReturnFromArena` 가 `LocationTransitionManager.RestoreDungeonMinimapSource` 호출 — Arena 진입 중 Tilemap 미니맵으로 전환됐던 source 를 Dungeon source 로 복귀 (commit 07be7b2e) |
+| **TilemapMinimapSource Layer 자동 분류** | `autoDiscoverChildren=true` 시 자식 Tilemap 을 GameObject Layer(Walkable/Wall/Door, 인스펙터에서 이름 재정의 가능)로 한 번에 분류해 `_walkableTilemaps`/`_wallTilemaps`/`_doorTilemaps` 세 List 구성. 명시 모드와 병행 가능, 매칭 0개 시 1회 경고 |
+| **전투 판정 World Environment Query 일원화** | 모든 전투 코드(`PlayerController.CanMoveTo`(Dungeon/Arena 한정), `PlayerDashController`, `EnemyController.IsFootprintWalkable`, `EnemyMovementHandler.CanMoveTo`, Kiting/Random 후퇴 검사, Elite Dash/Jump `CanOccupy`, `AttackExecutor.HasGeometryLineOfSight`, `ProjectileController.IsWallPosition`/`IsOutOfDungeonBounds`)가 `WorldEnvironmentQuery` 1개 facade 만 호출. Dungeon/Arena 라우팅은 `WalkabilityQuery` static 이 처리 (commit 7335129d, 85dce89e) |
 
 ### 미구현 (다음 단계)
 
