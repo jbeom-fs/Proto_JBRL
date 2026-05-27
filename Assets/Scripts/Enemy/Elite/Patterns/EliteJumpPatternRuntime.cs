@@ -231,12 +231,12 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
 
         // 등록된 Area(예: Elite Arena) 안에서는 room 개념이 없으므로 Area 기반 walkable spiral 검색을 사용합니다.
         // Dungeon이 활성화되어 있어도 enemy 위치가 Area 안이면 이 경로가 우선합니다.
-        if (WalkabilityQuery.FindAreaContaining(selfPosition) != null)
+        if (WorldEnvironmentQuery.IsInRegisteredArea(selfPosition))
         {
             float radius = _context.Enemy != null
                 ? _context.Enemy.CollisionFootprintRadius
                 : 0.32f;
-            if (WalkabilityQuery.TryFindNearestWalkable(
+            if (WorldEnvironmentQuery.TryFindNearestWalkable(
                     desired, selfPosition, _data.MaxDistance, radius, 3, out targetPosition))
             {
                 targetPosition.z = selfPosition.z;
@@ -315,10 +315,10 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
 
     private bool IsValidJumpGrid(DungeonManager dungeon, Vector2Int grid, RoomInfo? room)
     {
-        if (!dungeon.IsWalkable(grid.x, grid.y))
+        Vector3 world = dungeon.GridToWorld(grid);
+        if (!WorldEnvironmentQuery.IsWalkable(world))
             return false;
 
-        Vector3 world = dungeon.GridToWorld(grid);
         float maxDistance = _data.MaxDistance;
         if ((world - _context.SelfTransform.position).sqrMagnitude > maxDistance * maxDistance)
             return false;

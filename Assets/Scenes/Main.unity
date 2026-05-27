@@ -127898,6 +127898,7 @@ MonoBehaviour:
   id: elite_arena
   walkTilemap: {fileID: 1206688124}
   wallTilemap: {fileID: 1309604883}
+  doorTilemap: {fileID: 0}
   footprintInsetMultiplier: 0.85
   debugLogFootprintFailures: 0
   drawCellBoundsGizmo: 1

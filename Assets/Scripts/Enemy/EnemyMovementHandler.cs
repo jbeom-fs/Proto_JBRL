@@ -106,54 +106,11 @@ public class MovementHandler
 
     public virtual bool HasLineOfSight(Vector2Int start, Vector2Int goal)
     {
-        // 등록된 Area 안이면 Area의 walkable LOS를 사용합니다(DOOR_CLOSED 같은 wall 개념 포함).
-        // Dungeon 내부에서는 기존 EMPTY-only Bresenham을 유지해 닫힌 문 너머 추적이 가능하던 동작을 보존합니다.
-        if (_brain.Target != null &&
-            WalkabilityQuery.FindAreaContaining(_brain.transform.position) != null)
-        {
-            return WalkabilityQuery.HasLineOfSight(_brain.transform.position, _brain.Target.TargetPosition);
-        }
-
-        DungeonData data = _brain.DungeonData;
-        if (data == null) return false;
-
-        int x0 = start.x;
-        int y0 = start.y;
-        int x1 = goal.x;
-        int y1 = goal.y;
-
-        int dx = Mathf.Abs(x1 - x0);
-        int dy = Mathf.Abs(y1 - y0);
-        int sx = x0 < x1 ? 1 : -1;
-        int sy = y0 < y1 ? 1 : -1;
-        int err = dx - dy;
-
-        while (true)
-        {
-            if (!data.InBounds(x0, y0))
-                return false;
-
-            // 복도와 방을 가로지르는 시야에서는 EMPTY(0)만 벽으로 봅니다.
-            // 닫힌 문이나 계단 같은 특수 타일이 시야 검사를 불필요하게 끊지 않게 합니다.
-            if (data.GetTileTypeUnchecked(x0, y0) == DungeonGenerator.EMPTY)
-                return false;
-
-            if (x0 == x1 && y0 == y1)
-                return true;
-
-            int e2 = err * 2;
-            if (e2 > -dy)
-            {
-                err -= dy;
-                x0 += sx;
-            }
-
-            if (e2 < dx)
-            {
-                err += dx;
-                y0 += sy;
-            }
-        }
+        Vector3 from = _brain.transform.position;
+        Vector3 to = _brain.Target != null && _brain.Target.HasTarget
+            ? _brain.Target.TargetPosition
+            : GridToWorld(goal);
+        return WorldEnvironmentQuery.HasLineOfSight(from, to);
     }
 
     private bool MoveWithCollision(Vector2 dir)

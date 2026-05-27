@@ -34,6 +34,9 @@ public sealed class WalkabilityArea : MonoBehaviour
     [Tooltip("이 Area의 wall(차단) 셀을 표현하는 Tilemap. 비어 있으면 wall 없음으로 처리합니다.")]
     [SerializeField] private Tilemap wallTilemap;
 
+    [Tooltip("Closed door/blocking tilemap. Open doors should remove their tiles from this map.")]
+    [SerializeField] private Tilemap doorTilemap;
+
     [Header("Footprint Tuning")]
     [Tooltip("Footprint 4-corner 샘플을 실제 radius 대비 이 비율 거리에 둡니다. 1.0이면 strict, 0.85 정도면 약간 완화.")]
     [SerializeField, Range(0.1f, 1f)] private float footprintInsetMultiplier = 0.85f;
@@ -47,14 +50,18 @@ public sealed class WalkabilityArea : MonoBehaviour
 
     private bool _warnedMissingWalkTilemap;
     private float _lastDebugLogTime;
+    private Bounds _cachedWorldBounds;
+    private bool _hasCachedWorldBounds;
 
     public string Id => id;
     public Tilemap WalkTilemap => walkTilemap;
     public Tilemap WallTilemap => wallTilemap;
+    public Tilemap DoorTilemap => doorTilemap;
     public float FootprintInsetMultiplier => footprintInsetMultiplier;
 
     private void OnEnable()
     {
+        RebuildBoundsCache();
         WalkabilityQuery.Register(this);
     }
 
@@ -72,7 +79,13 @@ public sealed class WalkabilityArea : MonoBehaviour
     public bool IsInsideWorld(Vector3 worldPosition)
     {
         if (!EnsureWalkTilemap()) return false;
+        if (!MightContainWorld(worldPosition)) return false;
         return walkTilemap.HasTile(walkTilemap.WorldToCell(worldPosition));
+    }
+
+    public bool MightContainWorld(Vector3 worldPosition)
+    {
+        return !_hasCachedWorldBounds || _cachedWorldBounds.Contains(worldPosition);
     }
 
     /// <summary>world 좌표가 이 Area 안인지(Vector2 오버로드).</summary>
@@ -84,7 +97,7 @@ public sealed class WalkabilityArea : MonoBehaviour
         if (!EnsureWalkTilemap()) return false;
         Vector3Int walkCell = walkTilemap.WorldToCell(worldPosition);
         if (!walkTilemap.HasTile(walkCell)) return false;
-        return !IsWallAtWorld(worldPosition);
+        return !IsBlockedAtWorld(worldPosition);
     }
 
     public bool IsWalkableWorld(Vector2 worldPosition) => IsWalkableWorld((Vector3)worldPosition);
@@ -95,6 +108,18 @@ public sealed class WalkabilityArea : MonoBehaviour
         if (wallTilemap == null) return false;
         Vector3Int wallCell = wallTilemap.WorldToCell(worldPosition);
         return wallTilemap.HasTile(wallCell);
+    }
+
+    public bool IsDoorAtWorld(Vector3 worldPosition)
+    {
+        if (doorTilemap == null) return false;
+        Vector3Int doorCell = doorTilemap.WorldToCell(worldPosition);
+        return doorTilemap.HasTile(doorCell);
+    }
+
+    public bool IsBlockedAtWorld(Vector3 worldPosition)
+    {
+        return IsWallAtWorld(worldPosition) || IsDoorAtWorld(worldPosition);
     }
 
     /// <summary>해당 world 좌표가 wall로 취급되어 LOS/이동이 차단되어야 하는지 반환합니다. walk 영역 밖도 wall로 봅니다.</summary>
@@ -121,7 +146,7 @@ public sealed class WalkabilityArea : MonoBehaviour
             LogFootprintFailure(worldPosition, centerCell, "center cell has no walk tile");
             return false;
         }
-        if (IsWallAtWorld(worldPosition))
+        if (IsBlockedAtWorld(worldPosition))
         {
             LogFootprintFailure(worldPosition, centerCell, "center cell is wall");
             return false;
@@ -131,22 +156,22 @@ public sealed class WalkabilityArea : MonoBehaviour
         if (effective <= 0f)
             return true;
 
-        if (CornerHitsWall(worldPosition, -effective, -effective, out Vector3Int cBL))
+        if (CornerHitsBlocker(worldPosition, -effective, -effective, out Vector3Int cBL))
         {
             LogFootprintFailure(worldPosition, cBL, "corner BL hits wall");
             return false;
         }
-        if (CornerHitsWall(worldPosition, +effective, -effective, out Vector3Int cBR))
+        if (CornerHitsBlocker(worldPosition, +effective, -effective, out Vector3Int cBR))
         {
             LogFootprintFailure(worldPosition, cBR, "corner BR hits wall");
             return false;
         }
-        if (CornerHitsWall(worldPosition, -effective, +effective, out Vector3Int cTL))
+        if (CornerHitsBlocker(worldPosition, -effective, +effective, out Vector3Int cTL))
         {
             LogFootprintFailure(worldPosition, cTL, "corner TL hits wall");
             return false;
         }
-        if (CornerHitsWall(worldPosition, +effective, +effective, out Vector3Int cTR))
+        if (CornerHitsBlocker(worldPosition, +effective, +effective, out Vector3Int cTR))
         {
             LogFootprintFailure(worldPosition, cTR, "corner TR hits wall");
             return false;
@@ -256,22 +281,44 @@ public sealed class WalkabilityArea : MonoBehaviour
     private bool IsWalkableCellSampledAsWorld(Vector3Int walkCell)
     {
         if (walkTilemap == null || !walkTilemap.HasTile(walkCell)) return false;
-        if (wallTilemap == null) return true;
         Vector3 cellWorld = walkTilemap.GetCellCenterWorld(walkCell);
-        Vector3Int wallCell = wallTilemap.WorldToCell(cellWorld);
-        return !wallTilemap.HasTile(wallCell);
+        return !IsBlockedAtWorld(cellWorld);
     }
 
-    private bool CornerHitsWall(Vector3 center, float dx, float dy, out Vector3Int wallCell)
+    private bool CornerHitsBlocker(Vector3 center, float dx, float dy, out Vector3Int blockerCell)
     {
         Vector3 sampled = new Vector3(center.x + dx, center.y + dy, 0f);
-        if (wallTilemap == null)
+        if (wallTilemap != null)
         {
-            wallCell = walkTilemap != null ? walkTilemap.WorldToCell(sampled) : Vector3Int.zero;
-            return false;
+            blockerCell = wallTilemap.WorldToCell(sampled);
+            if (wallTilemap.HasTile(blockerCell))
+                return true;
         }
-        wallCell = wallTilemap.WorldToCell(sampled);
-        return wallTilemap.HasTile(wallCell);
+
+        if (doorTilemap != null)
+        {
+            blockerCell = doorTilemap.WorldToCell(sampled);
+            if (doorTilemap.HasTile(blockerCell))
+                return true;
+        }
+
+        blockerCell = walkTilemap != null ? walkTilemap.WorldToCell(sampled) : Vector3Int.zero;
+        return false;
+    }
+
+    private void RebuildBoundsCache()
+    {
+        _hasCachedWorldBounds = false;
+        if (walkTilemap == null) return;
+
+        BoundsInt cellBounds = walkTilemap.cellBounds;
+        if (cellBounds.size.x <= 0 || cellBounds.size.y <= 0) return;
+
+        Vector3 min = walkTilemap.CellToWorld(cellBounds.min);
+        Vector3 max = walkTilemap.CellToWorld(cellBounds.max);
+        _cachedWorldBounds = new Bounds((min + max) * 0.5f, max - min);
+        _cachedWorldBounds.Expand(0.01f);
+        _hasCachedWorldBounds = true;
     }
 
     private bool EnsureWalkTilemap()
@@ -303,6 +350,7 @@ public sealed class WalkabilityArea : MonoBehaviour
 #if UNITY_EDITOR
     private void OnValidate()
     {
+        RebuildBoundsCache();
         if (walkTilemap == null)
             Debug.LogWarning($"[WalkabilityArea] '{id}' walkTilemap이 비어 있습니다. Inspector에서 연결하세요.", this);
         if (string.IsNullOrWhiteSpace(id))

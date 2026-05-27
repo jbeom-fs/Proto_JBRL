@@ -558,10 +558,10 @@ public class ActionHandler
 
     private bool IsValidJumpGrid(DungeonManager dungeon, Vector2Int grid, RoomInfo? room)
     {
-        if (!dungeon.IsWalkable(grid.x, grid.y))
+        Vector3 world = dungeon.GridToWorld(grid);
+        if (!WorldEnvironmentQuery.IsWalkable(world))
             return false;
 
-        Vector3 world = dungeon.GridToWorld(grid);
         float maxDistance = Mathf.Max(0.01f, _brain.Data.jumpMaxDistance);
         if ((world - _brain.transform.position).sqrMagnitude > maxDistance * maxDistance)
             return false;

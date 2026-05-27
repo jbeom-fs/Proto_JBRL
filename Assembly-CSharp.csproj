@@ -187,9 +187,9 @@
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\EliteArenaEncounterController.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
-    <Compile Include="Assets\Scripts\EliteArena\EliteArenaEncounterController.cs" />
     <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>
   <ItemGroup>

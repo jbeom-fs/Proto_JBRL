@@ -634,7 +634,7 @@ public class SkillRangePreviewer : MonoBehaviour
             Vector3    cur  = fromWorld + dir * Mathf.Min(d, dist);
             Vector2Int grid = dungeonManager.WorldToGrid(cur);
 
-            if (!dungeonManager.Data.IsWalkable(grid.x, grid.y))
+            if (!WorldEnvironmentQuery.IsWalkable(cur))
                 return transform.InverseTransformPoint(lastSafe);  // 벽 직전 반환
 
             lastSafe = cur;

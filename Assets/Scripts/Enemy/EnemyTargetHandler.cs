@@ -1,9 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 플레이어 탐색과 현재 목표 좌표 관리를 담당합니다.
-/// 방 입장 이벤트나 CheckRoomEntry에 의존하지 않고 매 프레임 월드 좌표에서 그리드 좌표를 얻습니다.
-/// EnemyBrain의 public 멤버만 참조해 외부 파일로 안전하게 분리되어 있습니다.
+/// Resolves and caches the current player target for enemy brains.
 /// </summary>
 public class TargetHandler
 {
@@ -72,8 +70,6 @@ public class TargetHandler
         IDamageable damageable = ResolveOnHierarchy<IDamageable>(targetTransform);
         if (damageable != null) return damageable;
 
-        // PlayerCombatController가 IDamageable을 구현하지만,
-        // 인터페이스 lookup이 누락된 prefab 구성에서도 안전하게 fallback한다.
         return ResolveOnHierarchy<PlayerCombatController>(targetTransform);
     }
 
@@ -92,21 +88,6 @@ public class TargetHandler
 
     private bool IsTargetOnTrackableTile()
     {
-        // 등록된 Area 안이면 Area의 walkable 여부 = 추적 가능 여부로 본다.
-        // Dungeon은 `!= EMPTY`로 두어 닫힌 문 안에 있어도 추적 좌표가 유효한 기존 동작을 유지한다.
-        if (WalkabilityQuery.FindAreaContaining(TargetPosition) != null)
-            return WalkabilityQuery.IsWalkable(TargetPosition);
-
-        DungeonData data = _brain.DungeonData;
-        if (data == null) return true;
-
-        Vector2Int grid = TargetGridPosition;
-        if (!data.InBounds(grid.x, grid.y)) return false;
-
-        int tile = data.GetTileTypeUnchecked(grid.x, grid.y);
-
-        // 핵심 수정: ROOM뿐 아니라 CORRIDOR/STair 등 EMPTY가 아닌 전체 그리드를 추적 대상으로 둡니다.
-        // 그래서 플레이어가 복도에 나가도 적 AI의 목표 좌표가 사라지지 않습니다.
-        return tile != DungeonGenerator.EMPTY;
+        return WorldEnvironmentQuery.IsWalkable(TargetPosition);
     }
 }

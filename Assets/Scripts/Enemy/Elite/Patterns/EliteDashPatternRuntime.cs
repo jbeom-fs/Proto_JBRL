@@ -211,7 +211,7 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
 
         float footprintRadius = GetFootprintRadius();
         float maxDistanceFromOrigin = Vector3.Distance(selfPosition, desired) + Mathf.Max(1f, footprintRadius);
-        if (WalkabilityQuery.TryFindNearestWalkable(
+        if (WorldEnvironmentQuery.TryFindNearestWalkable(
                 desired,
                 selfPosition,
                 maxDistanceFromOrigin,

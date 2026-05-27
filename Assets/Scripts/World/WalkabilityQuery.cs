@@ -44,6 +44,7 @@ public static class WalkabilityQuery
         {
             WalkabilityArea a = s_Areas[i];
             if (a == null) continue;
+            if (!a.MightContainWorld(worldPosition)) continue;
             if (a.IsInsideWorld(worldPosition))
                 return a;
         }
@@ -69,6 +70,26 @@ public static class WalkabilityQuery
 
     /// <summary>해당 world 좌표가 wall인지 여부. <see cref="IsWalkable"/>의 보수.</summary>
     public static bool IsWall(Vector3 worldPosition) => !IsWalkable(worldPosition);
+
+    public static bool IsBlocked(Vector3 worldPosition)
+    {
+        WalkabilityArea area = FindAreaContaining(worldPosition);
+        if (area != null)
+            return !area.IsWalkableWorld(worldPosition);
+
+        DungeonManager dungeon = DungeonManager.Instance;
+        DungeonData data = dungeon != null ? dungeon.Data : null;
+        if (dungeon == null || data == null)
+            return false;
+
+        Vector2Int grid = dungeon.WorldToGrid(worldPosition);
+        return !data.IsWalkable(grid.x, grid.y);
+    }
+
+    public static bool IsProjectilePositionValid(Vector3 worldPosition)
+    {
+        return IsInsideKnownArea(worldPosition) && !IsBlocked(worldPosition);
+    }
 
     /// <summary>
     /// 중심 좌표를 기준으로 4-corner footprint(반경 radius)가 모두 walkable인지 판정합니다.
@@ -267,6 +288,19 @@ public static class WalkabilityQuery
         }
 
         return false;
+    }
+
+    public static bool TryFindNearestWalkable(Vector3 position, float radius, out Vector3 result)
+    {
+        const int DefaultSearchRadius = 8;
+        float maxDistance = Mathf.Max(1f, radius) * DefaultSearchRadius;
+        return TryFindNearestWalkable(
+            position,
+            position,
+            maxDistance,
+            radius,
+            DefaultSearchRadius,
+            out result);
     }
 
     private static bool TrySpiralSearchInArea(WalkabilityArea area, Vector3 desired, int maxRadius, out Vector3 result)

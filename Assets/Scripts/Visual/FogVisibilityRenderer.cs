@@ -90,7 +90,7 @@ public sealed class FogVisibilityRenderer : MonoBehaviour
     {
         // 등록된 WalkabilityArea(Elite Arena / Boss Arena 등) 안에서는 Fog 가시성을 무시하고 항상 visible로 둔다.
         // Dungeon Fog는 절차 Dungeon에서만 의미가 있고, 별도 Area는 자체적으로 가시성이 항상 보장된다.
-        if (WalkabilityQuery.FindAreaContaining(transform.position) != null)
+        if (WorldEnvironmentQuery.IsInRegisteredArea(transform.position))
             return true;
 
         FogOfWarController fog = FogOfWarController.Active;
