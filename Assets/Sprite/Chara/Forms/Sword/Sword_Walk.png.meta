@@ -1,0 +1,390 @@
+fileFormatVersion: 2
+guid: 049050281e0f40e4993e2312da688f88
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -2989776697005222456
+    second: Sword_Walk_0
+  - first:
+      213: 2659084352712104888
+    second: Sword_Walk_1
+  - first:
+      213: -318214678669277418
+    second: Sword_Walk_2
+  - first:
+      213: -1954388336664244273
+    second: Sword_Walk_3
+  - first:
+      213: -3148805705709400332
+    second: Sword_Walk_4
+  - first:
+      213: -5897640961171899833
+    second: Sword_Walk_5
+  - first:
+      213: -4154724639253396638
+    second: Sword_Walk_6
+  - first:
+      213: -4448180260764543035
+    second: Sword_Walk_7
+  - first:
+      213: -9038304669749987674
+    second: Sword_Walk_8
+  - first:
+      213: 8876492064889919940
+    second: Sword_Walk_9
+  - first:
+      213: 2879316810330423318
+    second: Sword_Walk_10
+  - first:
+      213: 8232176717532040658
+    second: Sword_Walk_11
+  - first:
+      213: 216439837266895440
+    second: Sword_Walk_12
+  - first:
+      213: -4576739018089137011
+    second: Sword_Walk_13
+  - first:
+      213: 389914857299159
+    second: Sword_Walk_14
+  - first:
+      213: -4883803542664814425
+    second: Sword_Walk_15
+  - first:
+      213: 7736005666601479232
+    second: Sword_Walk_16
+  - first:
+      213: -334990482686826022
+    second: Sword_Walk_17
+  - first:
+      213: 4088454351084043183
+    second: Sword_Walk_18
+  - first:
+      213: 8599968379108195373
+    second: Sword_Walk_19
+  - first:
+      213: -8252442722393737274
+    second: Sword_Walk_20
+  - first:
+      213: -2609882551065309656
+    second: Sword_Walk_21
+  - first:
+      213: -8015378512695662946
+    second: Sword_Walk_22
+  - first:
+      213: 1596225641225819786
+    second: Sword_Walk_23
+  - first:
+      213: -6988412438166642314
+    second: Sword_Walk_24
+  - first:
+      213: -5636442976843818852
+    second: Sword_Walk_25
+  - first:
+      213: -8230386472546983439
+    second: Sword_Walk_26
+  - first:
+      213: -1396339015348686067
+    second: Sword_Walk_27
+  - first:
+      213: 8801563364179476253
+    second: Sword_Walk_28
+  - first:
+      213: -8145310714592095165
+    second: Sword_Walk_29
+  - first:
+      213: 1081613183545269027
+    second: Sword_Walk_30
+  - first:
+      213: -1156882991849878220
+    second: Sword_Walk_31
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Sword_Walk_1
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 13
+        width: 160
+        height: 224
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8bb543f5127f6e420800000000000000
+      internalID: 2659084352712104888
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Walk_4
+      rect:
+        serializedVersion: 2
+        x: 309
+        y: 12
+        width: 161
+        height: 222
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fec77cc4e13d44d0800000000000000
+      internalID: -3148805705709400332
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Walk_7
+      rect:
+        serializedVersion: 2
+        x: 558
+        y: 5
+        width: 161
+        height: 233
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c7993cce93e442c0800000000000000
+      internalID: -4448180260764543035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Walk_10
+      rect:
+        serializedVersion: 2
+        x: 803
+        y: 14
+        width: 168
+        height: 220
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6104e8b326365f720800000000000000
+      internalID: 2879316810330423318
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Walk_13
+      rect:
+        serializedVersion: 2
+        x: 1046
+        y: 20
+        width: 188
+        height: 215
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d8c70259c182c70c0800000000000000
+      internalID: -4576739018089137011
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Walk_16
+      rect:
+        serializedVersion: 2
+        x: 1306
+        y: 25
+        width: 178
+        height: 214
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04ca03aaa20db5b60800000000000000
+      internalID: 7736005666601479232
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5ba8d0f822438fa4dafc107ea2eb1258
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Sword_Walk_0: -2989776697005222456
+      Sword_Walk_1: 2659084352712104888
+      Sword_Walk_10: 2879316810330423318
+      Sword_Walk_11: 8232176717532040658
+      Sword_Walk_12: 216439837266895440
+      Sword_Walk_13: -4576739018089137011
+      Sword_Walk_14: 389914857299159
+      Sword_Walk_15: -4883803542664814425
+      Sword_Walk_16: 7736005666601479232
+      Sword_Walk_17: -334990482686826022
+      Sword_Walk_18: 4088454351084043183
+      Sword_Walk_19: 8599968379108195373
+      Sword_Walk_2: -318214678669277418
+      Sword_Walk_20: -8252442722393737274
+      Sword_Walk_21: -2609882551065309656
+      Sword_Walk_22: -8015378512695662946
+      Sword_Walk_23: 1596225641225819786
+      Sword_Walk_24: -6988412438166642314
+      Sword_Walk_25: -5636442976843818852
+      Sword_Walk_26: -8230386472546983439
+      Sword_Walk_27: -1396339015348686067
+      Sword_Walk_28: 8801563364179476253
+      Sword_Walk_29: -8145310714592095165
+      Sword_Walk_3: -1954388336664244273
+      Sword_Walk_30: 1081613183545269027
+      Sword_Walk_31: -1156882991849878220
+      Sword_Walk_4: -3148805705709400332
+      Sword_Walk_5: -5897640961171899833
+      Sword_Walk_6: -4154724639253396638
+      Sword_Walk_7: -4448180260764543035
+      Sword_Walk_8: -9038304669749987674
+      Sword_Walk_9: 8876492064889919940
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

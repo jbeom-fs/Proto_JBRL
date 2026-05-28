@@ -5,6 +5,7 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private PlayerInputReader inputReader;
     [SerializeField] private Animator animator;
     [SerializeField] private PlayerCombatController combat;
+    [SerializeField] private PlayerFormController formController;
     [SerializeField] private float inputDeadZone = 0.01f;
 
     private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -26,6 +27,9 @@ public class PlayerAnimationController : MonoBehaviour
 
         if (combat == null)
             combat = GetComponent<PlayerCombatController>();
+
+        if (formController == null)
+            formController = GetComponent<PlayerFormController>();
     }
 
     private void OnEnable()
@@ -39,6 +43,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         if (combat != null && combat.IsDead)
         {
+            formController?.ResetDashAnimationVisual();
             animator.SetBool(IsDeadHash, true);
             animator.SetBool(IsMovingHash, false);
             animator.SetFloat(MoveXHash, 0f);
@@ -67,6 +72,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         Vector2 direction = ResolveCardinalDirection(input);
         _lastMoveDirection = direction;
+        formController?.ApplyFacing(direction);
 
         animator.SetBool(IsMovingHash, true);
         animator.SetFloat(MoveXHash, direction.x);

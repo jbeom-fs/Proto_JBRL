@@ -1,0 +1,472 @@
+fileFormatVersion: 2
+guid: 836afec4623115548b12dc7535217c20
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7875353455157290823
+    second: Sword_Spin_0
+  - first:
+      213: 7435142362181886272
+    second: Sword_Spin_1
+  - first:
+      213: -8360412516426437994
+    second: Sword_Spin_2
+  - first:
+      213: -1413283366682128536
+    second: Sword_Spin_3
+  - first:
+      213: 1102435495391523875
+    second: Sword_Spin_4
+  - first:
+      213: 7272957349846263850
+    second: Sword_Spin_5
+  - first:
+      213: -5647140213075613781
+    second: Sword_Spin_6
+  - first:
+      213: 7065710968749371996
+    second: Sword_Spin_7
+  - first:
+      213: -5343668183328573130
+    second: Sword_Spin_8
+  - first:
+      213: -1870057415889374503
+    second: Sword_Spin_9
+  - first:
+      213: 855944981385309948
+    second: Sword_Spin_10
+  - first:
+      213: 7750093773703390490
+    second: Sword_Spin_11
+  - first:
+      213: -4246574060773515233
+    second: Sword_Spin_12
+  - first:
+      213: -747766413658417677
+    second: Sword_Spin_13
+  - first:
+      213: 108078091522873134
+    second: Sword_Spin_14
+  - first:
+      213: 3475511423586050936
+    second: Sword_Spin_15
+  - first:
+      213: -9033112540214068146
+    second: Sword_Spin_16
+  - first:
+      213: 7182351018317689607
+    second: Sword_Spin_17
+  - first:
+      213: 8331418864985032813
+    second: Sword_Spin_18
+  - first:
+      213: 7698619426798492742
+    second: Sword_Spin_19
+  - first:
+      213: -3202163520183172143
+    second: Sword_Spin_20
+  - first:
+      213: 6364279795651887179
+    second: Sword_Spin_21
+  - first:
+      213: -9082393660484964085
+    second: Sword_Spin_22
+  - first:
+      213: 2818141576456770278
+    second: Sword_Spin_23
+  - first:
+      213: 738649463180090575
+    second: Sword_Spin_24
+  - first:
+      213: 6544833425782331824
+    second: Sword_Spin_25
+  - first:
+      213: -1003002890915197607
+    second: Sword_Spin_26
+  - first:
+      213: 7630495699473439314
+    second: Sword_Spin_27
+  - first:
+      213: -8285991103658841867
+    second: Sword_Spin_28
+  - first:
+      213: -4318827627900787006
+    second: Sword_Spin_29
+  - first:
+      213: 7851346931750182416
+    second: Sword_Spin_30
+  - first:
+      213: -726029451370683600
+    second: Sword_Spin_31
+  - first:
+      213: -7589273773645189919
+    second: Sword_Spin_32
+  - first:
+      213: 7194713999239842370
+    second: Sword_Spin_33
+  - first:
+      213: 1578160293271800290
+    second: Sword_Spin_34
+  - first:
+      213: 2773851828573000355
+    second: Sword_Spin_35
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Sword_Spin_0
+      rect:
+        serializedVersion: 2
+        x: 50
+        y: 8
+        width: 113
+        height: 240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b854b802cf15b290800000000000000
+      internalID: -7875353455157290823
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_1
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 40
+        width: 173
+        height: 175
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0416f48d59eee2760800000000000000
+      internalID: 7435142362181886272
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_2
+      rect:
+        serializedVersion: 2
+        x: 704
+        y: 38
+        width: 175
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 69a2ca69c19d9fb80800000000000000
+      internalID: -8360412516426437994
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_6
+      rect:
+        serializedVersion: 2
+        x: 928
+        y: 8
+        width: 113
+        height: 240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba7edc265e351a1b0800000000000000
+      internalID: -5647140213075613781
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_8
+      rect:
+        serializedVersion: 2
+        x: 1094
+        y: 38
+        width: 174
+        height: 176
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 639b427691a77d5b0800000000000000
+      internalID: -5343668183328573130
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_10
+      rect:
+        serializedVersion: 2
+        x: 1587
+        y: 44
+        width: 175
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cfeefb2fc6de0eb00800000000000000
+      internalID: 855944981385309948
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_11
+      rect:
+        serializedVersion: 2
+        x: 1809
+        y: 5
+        width: 113
+        height: 240
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a15ae85b93ddd8b60800000000000000
+      internalID: 7750093773703390490
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_13
+      rect:
+        serializedVersion: 2
+        x: 426
+        y: 72
+        width: 240
+        height: 113
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f51cea98666f95f0800000000000000
+      internalID: -747766413658417677
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Spin_15
+      rect:
+        serializedVersion: 2
+        x: 1306
+        y: 68
+        width: 240
+        height: 113
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 873a8a7c93f7b3030800000000000000
+      internalID: 3475511423586050936
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 1fac8713529416044b3d62743f73b63e
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Sword_Spin_0: -7875353455157290823
+      Sword_Spin_1: 7435142362181886272
+      Sword_Spin_10: 855944981385309948
+      Sword_Spin_11: 7750093773703390490
+      Sword_Spin_12: -4246574060773515233
+      Sword_Spin_13: -747766413658417677
+      Sword_Spin_14: 108078091522873134
+      Sword_Spin_15: 3475511423586050936
+      Sword_Spin_16: -9033112540214068146
+      Sword_Spin_17: 7182351018317689607
+      Sword_Spin_18: 8331418864985032813
+      Sword_Spin_19: 7698619426798492742
+      Sword_Spin_2: -8360412516426437994
+      Sword_Spin_20: -3202163520183172143
+      Sword_Spin_21: 6364279795651887179
+      Sword_Spin_22: -9082393660484964085
+      Sword_Spin_23: 2818141576456770278
+      Sword_Spin_24: 738649463180090575
+      Sword_Spin_25: 6544833425782331824
+      Sword_Spin_26: -1003002890915197607
+      Sword_Spin_27: 7630495699473439314
+      Sword_Spin_28: -8285991103658841867
+      Sword_Spin_29: -4318827627900787006
+      Sword_Spin_3: -1413283366682128536
+      Sword_Spin_30: 7851346931750182416
+      Sword_Spin_31: -726029451370683600
+      Sword_Spin_32: -7589273773645189919
+      Sword_Spin_33: 7194713999239842370
+      Sword_Spin_34: 1578160293271800290
+      Sword_Spin_35: 2773851828573000355
+      Sword_Spin_4: 1102435495391523875
+      Sword_Spin_5: 7272957349846263850
+      Sword_Spin_6: -5647140213075613781
+      Sword_Spin_7: 7065710968749371996
+      Sword_Spin_8: -5343668183328573130
+      Sword_Spin_9: -1870057415889374503
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

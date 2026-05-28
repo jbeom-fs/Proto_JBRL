@@ -59,6 +59,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private readonly List<Vector3> _basicAttackWorldTargets = new();
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
+    private PlayerFormController _formController;
     private HitFlashFeedback _hitFlash;
     [SerializeField] private PlayerInvincibilityFlashFeedback invincibilityFlashFeedback;
     private WeaponData _boundSkillWeapon;
@@ -139,6 +140,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         BindSkillSlots(currentWeapon);
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
+        _formController = GetComponent<PlayerFormController>();
         _hitFlash = ResolveHitFlashFeedback();
         if (invincibilityFlashFeedback == null)
             invincibilityFlashFeedback = ResolveInvincibilityFlashFeedback();
@@ -299,6 +301,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
         _attackExecutor.BeginAttackActivation();
+        _formController?.TriggerAttackAnimation(CurrentAimDirection);
 
         SkillTargetResolver.FillWorldTargets(
             currentWeapon.attackPattern,

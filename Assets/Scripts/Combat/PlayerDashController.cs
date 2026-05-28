@@ -18,6 +18,7 @@ public sealed class PlayerDashController : MonoBehaviour
     private Coroutine _dashRoutine;
     private CircleCollider2D _circleCollider;
     private DungeonManager _dungeonManager;
+    private PlayerFormController _formController;
     private PlayerCombatController _activeInvincibilityOwner;
     private DashDamageRequest _damageRequest;
     private bool _hasDashDamage;
@@ -28,6 +29,7 @@ public sealed class PlayerDashController : MonoBehaviour
     {
         _circleCollider = GetComponent<CircleCollider2D>();
         _dungeonManager = DungeonManager.Instance;
+        _formController = GetComponent<PlayerFormController>();
     }
 
     private void OnDisable()
@@ -45,6 +47,7 @@ public sealed class PlayerDashController : MonoBehaviour
 
         ClearDashInvincibility();
         ClearDashDamageState();
+        _formController?.ResetDashAnimationVisual();
     }
 
     public bool TryStartDash(
@@ -79,11 +82,12 @@ public sealed class PlayerDashController : MonoBehaviour
             BeginDashInvincibility(caster, Mathf.Max(0f, duration));
 
         BeginDashDamageState(damageRequest);
-        _dashRoutine = StartCoroutine(DashRoutine(caster, start, destination, Mathf.Max(0f, duration)));
+        int dashVisualToken = _formController != null ? _formController.TriggerDashAnimation(direction) : 0;
+        _dashRoutine = StartCoroutine(DashRoutine(caster, start, destination, Mathf.Max(0f, duration), dashVisualToken));
         return true;
     }
 
-    private IEnumerator DashRoutine(PlayerCombatController caster, Vector3 start, Vector3 destination, float duration)
+    private IEnumerator DashRoutine(PlayerCombatController caster, Vector3 start, Vector3 destination, float duration, int dashVisualToken)
     {
         try
         {
@@ -123,6 +127,7 @@ public sealed class PlayerDashController : MonoBehaviour
             _dashRoutine = null;
             ClearDashInvincibility();
             ClearDashDamageState();
+            _formController?.CompleteDashAnimationVisual(dashVisualToken);
         }
     }
 

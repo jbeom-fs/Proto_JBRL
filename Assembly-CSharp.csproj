@@ -67,6 +67,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\AnimatedObjectsGroup.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
+    <Compile Include="Assets\Scripts\PlayerFormController.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\Coin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_AnimatedCharacterSelection.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnRegion.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectilePool.cs" />
+    <Compile Include="Assets\Scripts\Data\PlayerFormId.cs" />
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
@@ -139,6 +141,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MinifantasyCommon\Scripts\SetAnimatorParameter.cs" />
     <Compile Include="Assets\Scripts\Items\DroppedItem.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
+    <Compile Include="Assets\Scripts\Data\PlayerFormData.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleService.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />

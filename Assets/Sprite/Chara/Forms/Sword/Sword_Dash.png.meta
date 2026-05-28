@@ -1,0 +1,334 @@
+fileFormatVersion: 2
+guid: dbb12bde7fe0c2744892f752e906cf85
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1954762620878203469
+    second: Sword_Dash _0
+  - first:
+      213: -55040226165634557
+    second: Sword_Dash _1
+  - first:
+      213: 867726004049041430
+    second: Sword_Dash _2
+  - first:
+      213: 8921469415026925716
+    second: Sword_Dash _3
+  - first:
+      213: 7610376914044393527
+    second: Sword_Dash _4
+  - first:
+      213: -1417798316382365614
+    second: Sword_Dash _5
+  - first:
+      213: 7126678694719127317
+    second: Sword_Dash _6
+  - first:
+      213: 3463321951632076282
+    second: Sword_Dash _7
+  - first:
+      213: 5167870490204496619
+    second: Sword_Dash _8
+  - first:
+      213: 2151658958385124766
+    second: Sword_Dash _9
+  - first:
+      213: -4952009133363742262
+    second: Sword_Dash _10
+  - first:
+      213: -8384559374430923455
+    second: Sword_Dash _11
+  - first:
+      213: -890097877763545160
+    second: Sword_Dash _12
+  - first:
+      213: -7845973180219806129
+    second: Sword_Dash _13
+  - first:
+      213: -4434841305564400187
+    second: Sword_Dash _14
+  - first:
+      213: 2096949982485423934
+    second: Sword_Dash _15
+  - first:
+      213: 959752547188986748
+    second: Sword_Dash _16
+  - first:
+      213: -7223470973805083653
+    second: Sword_Dash _17
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Sword_Dash _0
+      rect:
+        serializedVersion: 2
+        x: 21
+        y: 75
+        width: 165
+        height: 120
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4a28a53f36b02b10800000000000000
+      internalID: 1954762620878203469
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Dash _2
+      rect:
+        serializedVersion: 2
+        x: 249
+        y: 77
+        width: 166
+        height: 119
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61856b90438ca0c00800000000000000
+      internalID: 867726004049041430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Dash _4
+      rect:
+        serializedVersion: 2
+        x: 503
+        y: 73
+        width: 227
+        height: 123
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 73813785b7d7d9960800000000000000
+      internalID: 7610376914044393527
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Dash _6
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 95
+        width: 255
+        height: 82
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 51ff31b938c07e260800000000000000
+      internalID: 7126678694719127317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Dash _8
+      rect:
+        serializedVersion: 2
+        x: 1113
+        y: 74
+        width: 167
+        height: 117
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be2ecdd84d6f7b740800000000000000
+      internalID: 5167870490204496619
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Sword_Dash _10
+      rect:
+        serializedVersion: 2
+        x: 1360
+        y: 75
+        width: 164
+        height: 115
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac93d591eede64bb0800000000000000
+      internalID: -4952009133363742262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: b6cb648393d9af540ab6f736eea9a1b6
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Sword_Dash _0: 1954762620878203469
+      Sword_Dash _1: -55040226165634557
+      Sword_Dash _10: -4952009133363742262
+      Sword_Dash _11: -8384559374430923455
+      Sword_Dash _12: -890097877763545160
+      Sword_Dash _13: -7845973180219806129
+      Sword_Dash _14: -4434841305564400187
+      Sword_Dash _15: 2096949982485423934
+      Sword_Dash _16: 959752547188986748
+      Sword_Dash _17: -7223470973805083653
+      Sword_Dash _2: 867726004049041430
+      Sword_Dash _3: 8921469415026925716
+      Sword_Dash _4: 7610376914044393527
+      Sword_Dash _5: -1417798316382365614
+      Sword_Dash _6: 7126678694719127317
+      Sword_Dash _7: 3463321951632076282
+      Sword_Dash _8: 5167870490204496619
+      Sword_Dash _9: 2151658958385124766
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

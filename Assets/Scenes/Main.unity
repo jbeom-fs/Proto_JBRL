@@ -452,52 +452,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &130866624
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 130866625}
-  - component: {fileID: 130866626}
-  m_Layer: 0
-  m_Name: DoorController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &130866625
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 130866624}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 411232466}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &130866626
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 130866624}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 64a91e1727506ab4285b1c07536d51b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DoorController
-  eventChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
-  dungeonRenderer: {fileID: 365644549}
 --- !u!1 &150470875
 GameObject:
   m_ObjectHideFlags: 0
@@ -3958,7 +3912,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 365644550}
-  - {fileID: 130866625}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &411232467
@@ -6314,7 +6267,6 @@ GameObject:
   m_Component:
   - component: {fileID: 920100008}
   - component: {fileID: 920100009}
-  - component: {fileID: 920100010}
   - component: {fileID: 920100013}
   m_Layer: 0
   m_Name: DungeonEntrancePortal
@@ -6374,19 +6326,6 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 0.75
---- !u!114 &920100010
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 920100007}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0a7122fd1a8b45b5927b00b2140debbc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DungeonPortal
-  teleportService: {fileID: 920100013}
 --- !u!114 &920100013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62535,6 +62474,7 @@ GameObject:
   - component: {fileID: 1562452771}
   - component: {fileID: 1562452772}
   - component: {fileID: 1562452773}
+  - component: {fileID: 1562452774}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -62610,7 +62550,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillRangePreviewer
   combat: {fileID: 1562452756}
   movement: {fileID: 1562452755}
-  dungeonManager: {fileID: 411232467}
   inputReader: {fileID: 1562452762}
   circleSegments: 50
   lineWidth: 0.1
@@ -62823,6 +62762,7 @@ MonoBehaviour:
   inputReader: {fileID: 1562452762}
   animator: {fileID: 2005918157}
   combat: {fileID: 1562452756}
+  formController: {fileID: 1562452774}
   inputDeadZone: 0.01
 --- !u!114 &1562452770
 MonoBehaviour:
@@ -62848,7 +62788,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1a1a5d98bb0d4f9498716a7c8d4f1a32, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitFlashFeedback
-  targetRenderer: {fileID: 0}
+  targetRenderer: {fileID: 2005918156}
   flashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.08
   flashCount: 1
@@ -62865,7 +62805,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dc111b8e3ea4ef4f9359f821a7f9d92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInvincibilityFlashFeedback
-  targetRenderer: {fileID: 0}
+  targetRenderer: {fileID: 2005918156}
   flashColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &1562452773
 MonoBehaviour:
@@ -62881,6 +62821,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
   itemDatabase: {fileID: 11400000, guid: 9918c152d2e144009a28b77650e3eb23, type: 2}
   items: []
+--- !u!114 &1562452774
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562452752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ba2206ee53a4e5fb19cd713effdf9d7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFormController
+  spriteRenderer: {fileID: 2005918156}
+  animator: {fileID: 2005918157}
+  visualTransform: {fileID: 2005918155}
+  defaultForm: {fileID: 11400000, guid: 426305cbe569421b9896d689bacd474d, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -69038,7 +68994,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 7877763079785016250, guid: 3a56783b4a77a1b43876c1cf695a1d3c, type: 3}
+  m_Sprite: {fileID: -2646800685242748869, guid: c0827a12f295bb74b89c2bb0c9f71c37, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -69058,7 +69014,7 @@ Animator:
   m_GameObject: {fileID: 2005918154}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 8df3482fa6a24ba386949c1a53a00fd4, type: 2}
+  m_Controller: {fileID: 9100000, guid: efa9756cec8248588ba0cf731eac5f1c, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
