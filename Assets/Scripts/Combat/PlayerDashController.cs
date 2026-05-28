@@ -57,7 +57,8 @@ public sealed class PlayerDashController : MonoBehaviour
         float duration,
         bool stopOnWall,
         bool invincibleDuringDash,
-        DashDamageRequest damageRequest)
+        DashDamageRequest damageRequest,
+        SkillData animationSkillData)
     {
         if (_dashRoutine != null) return false;
         if (caster == null || caster.IsDead || !caster.isActiveAndEnabled) return false;
@@ -82,7 +83,7 @@ public sealed class PlayerDashController : MonoBehaviour
             BeginDashInvincibility(caster, Mathf.Max(0f, duration));
 
         BeginDashDamageState(damageRequest);
-        int dashVisualToken = _formController != null ? _formController.TriggerDashAnimation(direction) : 0;
+        int dashVisualToken = _formController != null ? _formController.PlaySkillAnimation(animationSkillData, direction) : 0;
         _dashRoutine = StartCoroutine(DashRoutine(caster, start, destination, Mathf.Max(0f, duration), dashVisualToken));
         return true;
     }

@@ -413,7 +413,7 @@ AnimatorState:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: Spin
-  m_Speed: 1
+  m_Speed: 3
   m_CycleOffset: 0
   m_Transitions:
   - {fileID: 110100009}
@@ -496,19 +496,19 @@ AnimatorStateMachine:
   m_ChildStates:
   - serializedVersion: 1
     m_State: {fileID: 110200001}
-    m_Position: {x: 260, y: 20, z: 0}
+    m_Position: {x: 250, y: -80, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 110200002}
     m_Position: {x: 260, y: 120, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 110200003}
-    m_Position: {x: 560, y: 20, z: 0}
+    m_Position: {x: 550, y: -60, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 110200004}
     m_Position: {x: 560, y: 120, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 110200005}
-    m_Position: {x: 560, y: 220, z: 0}
+    m_Position: {x: 430, y: 350, z: 0}
   - serializedVersion: 1
     m_State: {fileID: 110200006}
     m_Position: {x: 860, y: 120, z: 0}

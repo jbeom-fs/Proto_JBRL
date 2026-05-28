@@ -62533,6 +62533,7 @@ MonoBehaviour:
   baseAttack: 0
   baseDefense: 1
   currentWeapon: {fileID: 11400000, guid: 76534a25531f9ee479638279ac83fdf5, type: 2}
+  basicAttackSkillData: {fileID: 11400000, guid: 5ebbea7a1b464df294f062ad5be22510, type: 2}
   hitRadius: 0.3
   damageInvincibleDuration: 0.2
   invincibilityFlashFeedback: {fileID: 1562452772}
@@ -62837,6 +62838,7 @@ MonoBehaviour:
   animator: {fileID: 2005918157}
   visualTransform: {fileID: 2005918155}
   defaultForm: {fileID: 11400000, guid: 426305cbe569421b9896d689bacd474d, type: 2}
+  currentForm: {fileID: 11400000, guid: 426305cbe569421b9896d689bacd474d, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0

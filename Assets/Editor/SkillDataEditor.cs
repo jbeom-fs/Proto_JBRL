@@ -15,6 +15,11 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _recoveryDelay;
     private SerializedProperty _damage;
 
+    private SerializedProperty _animationType;
+    private SerializedProperty _customAnimationTrigger;
+    private SerializedProperty _rotateAnimationByDirection;
+    private SerializedProperty _animationBaseAngle;
+
     private SerializedProperty _attackPattern;
     private SerializedProperty _patternRange;
     private SerializedProperty _coneHalfAngle;
@@ -60,6 +65,11 @@ public sealed class SkillDataEditor : Editor
         _recoveryDelay = serializedObject.FindProperty("recoveryDelay");
         _damage = serializedObject.FindProperty("damage");
 
+        _animationType = serializedObject.FindProperty("animationType");
+        _customAnimationTrigger = serializedObject.FindProperty("customAnimationTrigger");
+        _rotateAnimationByDirection = serializedObject.FindProperty("rotateAnimationByDirection");
+        _animationBaseAngle = serializedObject.FindProperty("animationBaseAngle");
+
         _attackPattern = serializedObject.FindProperty("attackPattern");
         _patternRange = serializedObject.FindProperty("patternRange");
         _coneHalfAngle = serializedObject.FindProperty("coneHalfAngle");
@@ -97,6 +107,7 @@ public sealed class SkillDataEditor : Editor
         serializedObject.Update();
 
         DrawBasicSection();
+        DrawAnimationSection();
         SkillExecutionType executionType = GetExecutionType();
 
         if (_executionType != null && _executionType.hasMultipleDifferentValues)
@@ -150,6 +161,37 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_castDelay);
         DrawProperty(_recoveryDelay);
         DrawProperty(_damage);
+    }
+
+    private void DrawAnimationSection()
+    {
+        DrawSectionHeader("Animation");
+        DrawProperty(_animationType);
+
+        if (_animationType == null)
+            return;
+
+        if (_animationType.hasMultipleDifferentValues)
+        {
+            EditorGUILayout.HelpBox(
+                "Multiple SkillData assets have different animation types. Animation-specific options are hidden until the selection has one animation type.",
+                MessageType.Info);
+            return;
+        }
+
+        SkillAnimationType animationType = GetAnimationType();
+        if (animationType == SkillAnimationType.None)
+        {
+            EditorGUILayout.HelpBox("No animation request will be sent when this skill succeeds.", MessageType.Info);
+            return;
+        }
+
+        if (animationType == SkillAnimationType.CustomTrigger)
+            DrawProperty(_customAnimationTrigger);
+
+        DrawProperty(_rotateAnimationByDirection);
+        if (animationType == SkillAnimationType.Dash || IsBoolEnabled(_rotateAnimationByDirection))
+            DrawProperty(_animationBaseAngle);
     }
 
     private void DrawInstantAreaSection()
@@ -286,6 +328,14 @@ public sealed class SkillDataEditor : Editor
             return SkillExecutionType.InstantArea;
 
         return (SkillExecutionType)_executionType.enumValueIndex;
+    }
+
+    private SkillAnimationType GetAnimationType()
+    {
+        if (_animationType == null || _animationType.hasMultipleDifferentValues)
+            return SkillAnimationType.None;
+
+        return (SkillAnimationType)_animationType.enumValueIndex;
     }
 
     private ProjectileFirePattern GetProjectileFirePattern()

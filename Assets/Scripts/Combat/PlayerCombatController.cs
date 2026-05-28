@@ -42,6 +42,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     [Header("무기 (런타임에 EquipWeapon()으로 교체 가능)")]
     public WeaponData currentWeapon;
 
+    [Header("Animation")]
+    [SerializeField] private SkillData basicAttackSkillData;
+
     [Header("피해 감지")]
     [Tooltip("공격 판정 반경 (월드 단위). 타일 크기의 약 40% 권장.")]
     [SerializeField] private float hitRadius = 0.3f;
@@ -301,7 +304,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
         _attackExecutor.BeginAttackActivation();
-        _formController?.TriggerAttackAnimation(CurrentAimDirection);
+        if (basicAttackSkillData != null)
+            _formController?.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection);
 
         SkillTargetResolver.FillWorldTargets(
             currentWeapon.attackPattern,
@@ -467,6 +471,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         return new SkillExecutionContext(
             this,
             _dashController,
+            _formController,
             transform,
             skill,
             slotIndex,

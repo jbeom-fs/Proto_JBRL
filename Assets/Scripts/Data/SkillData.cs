@@ -1,5 +1,14 @@
 using UnityEngine;
 
+public enum SkillAnimationType
+{
+    None = 0,
+    Attack = 1,
+    Spin = 2,
+    Dash = 3,
+    CustomTrigger = 4
+}
+
 /// <summary>
 /// Skill data assigned from WeaponData.skills[].
 /// Create from Assets > Create > JBRogLike > Combat > Skill.
@@ -36,6 +45,13 @@ public class SkillData : ScriptableObject
     [Tooltip("Delay in seconds after a successful skill execution before attacks or skills can be used again.")]
     [Min(0f)]
     public float recoveryDelay = 0f;
+
+    [Space(8)]
+    [Header("Animation")]
+    [SerializeField] private SkillAnimationType animationType = SkillAnimationType.None;
+    [SerializeField] private string customAnimationTrigger;
+    [SerializeField] private bool rotateAnimationByDirection;
+    [SerializeField] private float animationBaseAngle;
 
     [Tooltip("Base damage shared by InstantArea, Projectile, and Dash damage checks where applicable.")]
     [Min(0)]
@@ -143,4 +159,9 @@ public class SkillData : ScriptableObject
 
     [Tooltip("Ignore incoming damage while executionType is Dash.")]
     public bool dashInvincibleDuringDash = false;
+
+    public SkillAnimationType AnimationType => animationType;
+    public string CustomAnimationTrigger => customAnimationTrigger;
+    public bool RotateAnimationByDirection => rotateAnimationByDirection;
+    public float AnimationBaseAngle => animationBaseAngle;
 }

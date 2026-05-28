@@ -6,7 +6,9 @@ public sealed class PlayerFormController : MonoBehaviour
 {
     private const float FacingDeadZone = 0.01f;
     private static readonly int AttackTriggerHash = Animator.StringToHash("AttackTrigger");
+    private static readonly int SpinTriggerHash = Animator.StringToHash("SpinTrigger");
     private static readonly int DashTriggerHash = Animator.StringToHash("DashTrigger");
+    private static readonly int DeathTriggerHash = Animator.StringToHash("DeathTrigger");
     private static readonly int DashStateHash = Animator.StringToHash("Dash");
 
     [Header("Dependencies")]
@@ -16,26 +18,44 @@ public sealed class PlayerFormController : MonoBehaviour
 
     [Header("Form")]
     [SerializeField] private PlayerFormData defaultForm;
+    [SerializeField] private PlayerFormData currentForm;
 
-    public PlayerFormData CurrentForm { get; private set; }
+    public PlayerFormData CurrentForm => currentForm;
 
+    private PlayerFormData _appliedForm;
     private Quaternion _defaultVisualRotation = Quaternion.identity;
     private bool _dashPreFlipX;
     private bool _hasAttackTrigger;
+    private bool _hasSpinTrigger;
     private bool _hasDashTrigger;
+    private bool _hasDeathTrigger;
     private bool _dashVisualRotationActive;
     private bool _dashStateObserved;
     private bool _dashMovementCompleted;
     private int _dashVisualVersion;
     private int _activeDashVisualToken;
     private int _dashVisualStartFrame;
+    private bool _isInitialized;
 
     private void Awake()
     {
         CacheVisualDefaults();
+        _isInitialized = true;
 
-        if (defaultForm != null)
-            ApplyForm(defaultForm);
+        PlayerFormData initialForm = currentForm != null ? currentForm : defaultForm;
+        if (currentForm == null)
+            currentForm = initialForm;
+
+        ApplyForm(initialForm);
+    }
+
+    private void OnValidate()
+    {
+        if (!Application.isPlaying || !_isInitialized)
+            return;
+
+        if (currentForm != _appliedForm)
+            ApplyForm(currentForm);
     }
 
     private void LateUpdate()
@@ -60,17 +80,30 @@ public sealed class PlayerFormController : MonoBehaviour
     {
         if (formData == null)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning("[PlayerFormController] Form data is missing.", this);
+#endif
             return;
         }
 
         if (spriteRenderer == null || animator == null)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogError("[PlayerFormController] SpriteRenderer and Animator must be assigned in Inspector.", this);
+#endif
             return;
         }
 
-        CurrentForm = formData;
+        if (_appliedForm == formData &&
+            (formData.DefaultSprite == null || spriteRenderer.sprite == formData.DefaultSprite) &&
+            (formData.AnimatorController == null || animator.runtimeAnimatorController == formData.AnimatorController))
+        {
+            currentForm = formData;
+            return;
+        }
+
+        currentForm = formData;
+        _appliedForm = formData;
         ResetDashVisualRotation();
 
         if (formData.DefaultSprite != null)
@@ -84,6 +117,20 @@ public sealed class PlayerFormController : MonoBehaviour
         }
 
         CacheAnimatorParameters();
+        ResetCachedTriggers();
+    }
+
+    public void SetCurrentForm(PlayerFormData formData)
+    {
+        if (formData == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[PlayerFormController] Cannot set current form because form data is missing.", this);
+#endif
+            return;
+        }
+
+        ApplyForm(formData);
     }
 
     public void ApplyFacing(Vector2 direction)
@@ -103,16 +150,54 @@ public sealed class PlayerFormController : MonoBehaviour
         spriteRenderer.flipX = ResolveFlipX(direction);
     }
 
+    public int PlaySkillAnimation(SkillData skillData, Vector2 direction)
+    {
+        if (skillData == null)
+            return 0;
+
+        return PlaySkillAnimation(
+            skillData.AnimationType,
+            direction,
+            skillData.RotateAnimationByDirection,
+            skillData.AnimationBaseAngle,
+            skillData.CustomAnimationTrigger);
+    }
+
+    public int PlaySkillAnimation(
+        SkillAnimationType animationType,
+        Vector2 direction,
+        bool rotateByDirection,
+        float baseAngle,
+        string customTrigger)
+    {
+        switch (animationType)
+        {
+            case SkillAnimationType.Attack:
+                PlayTriggerAnimation(AttackTriggerHash, _hasAttackTrigger, direction);
+                return 0;
+
+            case SkillAnimationType.Spin:
+                PlayTriggerAnimation(SpinTriggerHash, _hasSpinTrigger, direction);
+                return 0;
+
+            case SkillAnimationType.Dash:
+                return PlayDashAnimation(direction, rotateByDirection, baseAngle);
+
+            case SkillAnimationType.CustomTrigger:
+                PlayCustomTriggerAnimation(customTrigger, direction);
+                return 0;
+
+            case SkillAnimationType.None:
+            default:
+                return 0;
+        }
+    }
+
     public int TriggerDashAnimation(Vector2 direction)
     {
-        int token = BeginDashVisualToken();
-        ApplyFacing(direction);
-        ApplyDashVisualRotation(direction);
-
-        if (_hasDashTrigger)
-            SetTrigger(DashTriggerHash);
-
-        return token;
+        bool rotateByDirection = currentForm != null && currentForm.RotateDashAnimationByDirection;
+        float baseAngle = currentForm != null ? currentForm.DashBaseAngle : 0f;
+        return PlaySkillAnimation(SkillAnimationType.Dash, direction, rotateByDirection, baseAngle, null);
     }
 
     public void ResetDashAnimationVisual()
@@ -136,11 +221,38 @@ public sealed class PlayerFormController : MonoBehaviour
 
     public void TriggerAttackAnimation(Vector2 direction)
     {
+        PlaySkillAnimation(SkillAnimationType.Attack, direction, false, 0f, null);
+    }
+
+    private int PlayDashAnimation(Vector2 direction, bool rotateByDirection, float baseAngle)
+    {
+        int token = BeginDashVisualToken();
+        ApplyFacing(direction);
+        ApplyDashVisualRotation(direction, rotateByDirection, baseAngle);
+
+        if (_hasDashTrigger)
+            SetTrigger(DashTriggerHash);
+
+        return token;
+    }
+
+    private void PlayTriggerAnimation(int triggerHash, bool hasTrigger, Vector2 direction)
+    {
         ResetDashVisualRotation();
         ApplyFacing(direction);
 
-        if (_hasAttackTrigger)
-            SetTrigger(AttackTriggerHash);
+        if (hasTrigger)
+            SetTrigger(triggerHash);
+    }
+
+    private void PlayCustomTriggerAnimation(string triggerName, Vector2 direction)
+    {
+        if (string.IsNullOrWhiteSpace(triggerName))
+            return;
+
+        int triggerHash = Animator.StringToHash(triggerName);
+        if (HasTrigger(triggerHash))
+            PlayTriggerAnimation(triggerHash, true, direction);
     }
 
     private void SetTrigger(int triggerHash)
@@ -155,7 +267,9 @@ public sealed class PlayerFormController : MonoBehaviour
     private void CacheAnimatorParameters()
     {
         _hasAttackTrigger = false;
+        _hasSpinTrigger = false;
         _hasDashTrigger = false;
+        _hasDeathTrigger = false;
         if (animator == null)
             return;
 
@@ -168,9 +282,28 @@ public sealed class PlayerFormController : MonoBehaviour
 
             if (parameter.nameHash == AttackTriggerHash)
                 _hasAttackTrigger = true;
+            else if (parameter.nameHash == SpinTriggerHash)
+                _hasSpinTrigger = true;
             else if (parameter.nameHash == DashTriggerHash)
                 _hasDashTrigger = true;
+            else if (parameter.nameHash == DeathTriggerHash)
+                _hasDeathTrigger = true;
         }
+    }
+
+    private void ResetCachedTriggers()
+    {
+        if (animator == null)
+            return;
+
+        if (_hasAttackTrigger)
+            animator.ResetTrigger(AttackTriggerHash);
+        if (_hasSpinTrigger)
+            animator.ResetTrigger(SpinTriggerHash);
+        if (_hasDashTrigger)
+            animator.ResetTrigger(DashTriggerHash);
+        if (_hasDeathTrigger)
+            animator.ResetTrigger(DeathTriggerHash);
     }
 
     private void CacheVisualDefaults()
@@ -183,10 +316,10 @@ public sealed class PlayerFormController : MonoBehaviour
 
     }
 
-    private void ApplyDashVisualRotation(Vector2 direction)
+    private void ApplyDashVisualRotation(Vector2 direction, bool rotateByDirection, float baseAngle)
     {
         if (CurrentForm == null ||
-            !CurrentForm.RotateDashAnimationByDirection ||
+            !rotateByDirection ||
             spriteRenderer == null ||
             visualTransform == null ||
             direction.sqrMagnitude <= FacingDeadZone * FacingDeadZone)
@@ -205,8 +338,27 @@ public sealed class PlayerFormController : MonoBehaviour
 
         spriteRenderer.flipX = false;
 
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + CurrentForm.DashBaseAngle;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg + baseAngle;
         visualTransform.localRotation = _defaultVisualRotation * Quaternion.Euler(0f, 0f, angle);
+    }
+
+    private bool HasTrigger(int triggerHash)
+    {
+        if (animator == null)
+            return false;
+
+        AnimatorControllerParameter[] parameters = animator.parameters;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            AnimatorControllerParameter parameter = parameters[i];
+            if (parameter.type == AnimatorControllerParameterType.Trigger &&
+                parameter.nameHash == triggerHash)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private bool ResolveFlipX(Vector2 direction)

@@ -9,6 +9,7 @@ public sealed class SkillExecutionContext
 {
     public PlayerCombatController CasterCombat { get; }
     public PlayerDashController CasterDash { get; }
+    public PlayerFormController CasterForm { get; }
     public Transform CasterTransform { get; }
     public SkillData Skill { get; }
     public int SlotIndex { get; }
@@ -21,6 +22,7 @@ public sealed class SkillExecutionContext
     public SkillExecutionContext(
         PlayerCombatController casterCombat,
         PlayerDashController casterDash,
+        PlayerFormController casterForm,
         Transform casterTransform,
         SkillData skill,
         int slotIndex,
@@ -31,6 +33,7 @@ public sealed class SkillExecutionContext
     {
         CasterCombat = casterCombat;
         CasterDash = casterDash;
+        CasterForm = casterForm;
         CasterTransform = casterTransform;
         Skill = skill;
         SlotIndex = slotIndex;

@@ -20,6 +20,10 @@ MonoBehaviour:
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0.35
+  animationType: 3
+  customAnimationTrigger:
+  rotateAnimationByDirection: 1
+  animationBaseAngle: 0
   damage: 0
   attackPattern: 1
   patternRange: 3

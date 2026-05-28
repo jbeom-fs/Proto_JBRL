@@ -63,6 +63,7 @@ public sealed class SkillExecutor
             context.Skill.slowDuration,
             context.HitRadius);
 
+        PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
         return true;
     }
 
@@ -76,7 +77,11 @@ public sealed class SkillExecutor
         }
 
         Vector2 direction = ResolveExecutionDirection(context);
-        return _projectileFireService.Fire(CreateProjectileFireRequest(context, direction));
+        if (!_projectileFireService.Fire(CreateProjectileFireRequest(context, direction)))
+            return false;
+
+        PlayConfiguredAnimation(context, skill, direction);
+        return true;
     }
 
     private bool ExecuteDash(SkillExecutionContext context)
@@ -98,7 +103,16 @@ public sealed class SkillExecutor
             skill.dashDuration,
             skill.dashStopOnWall,
             invincibleDuringDash,
-            CreateDashDamageRequest(context));
+            CreateDashDamageRequest(context),
+            skill);
+    }
+
+    private static void PlayConfiguredAnimation(SkillExecutionContext context, SkillData skill, Vector2 direction)
+    {
+        if (context.CasterForm == null || skill == null)
+            return;
+
+        context.CasterForm.PlaySkillAnimation(skill, direction);
     }
 
     private static DashDamageRequest CreateDashDamageRequest(SkillExecutionContext context)
