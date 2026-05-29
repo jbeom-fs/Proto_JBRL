@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-28  
+> 작성 기준일: 2026-05-29  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -156,7 +156,7 @@ Assets/Scripts/
 ├── PlayerInputReader.cs            # 키보드 입력 단일 집계 (실행 순서 제어) — PlayerInputKeySettings 참조
 ├── PlayerInputKeySettings.cs       # 키 바인딩 ScriptableObject (이동·액션·스킬 12 키)
 ├── PlayerAnimationController.cs    # 4방향 이동 애니메이션 (MoveX/Y, LastMoveX/Y) — PlayerFormController 와 협력
-├── PlayerFormController.cs         # 플레이어 시각 폼 (PlayerFormData) 적용 — AnimatorController 스왑, default sprite, facing flipX, dash visual rotation/token, SkillData.AnimationType (Attack/Spin/Dash/CustomTrigger) 별 trigger 발동
+├── PlayerFormController.cs         # 플레이어 시각 폼 (PlayerFormData) 적용 — AnimatorController 스왑, default sprite, facing flipX, dash visual rotation/token, SkillData.AnimationType (Attack/Spin/Dash/CustomTrigger) 별 trigger 발동. ApplyForm 시 실제 폼 변경이면 EquipWeapon(form.DefaultWeapon) 로 loadout(무기·스킬) 동시 적용
 ├── GameLocationType.cs             # 위치 분류 enum (Town/Dungeon)
 │
 ├── DungeonManager.cs               # 던전 생애주기 조율 (Facade) — extraCandidateCount/extraOverlapScoreWeight 등 EXTRA 점수 weight 노출, PrepareEliteKeyPlan
@@ -178,9 +178,10 @@ Assets/Scripts/
 ├── Data/
 │   ├── DungeonData.cs              # 타일 그리드 + 방 목록 (Domain)
 │   ├── WeaponData.cs               # 무기 ScriptableObject
-│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드: animationType/customAnimationTrigger/rotateAnimationByDirection/animationBaseAngle)
+│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드 + 자원: resourceType(None/Bullet/ParryStack)/requiredAmount/consumeAmount/bulletShortageMode/reloadAmount). MP(mpCost) 폐지
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
-│   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/defaultSpriteFacesRight/useHorizontalFlipForFacing/rotateDashAnimationByDirection/dashBaseAngle + 예약 defaultWeapon/skills)
+│   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의
+│   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
 │   └── EnemyData.cs                # 적 ScriptableObject — Contact(+Special Rush/Jump) / Ranged + 투사체 패턴
@@ -230,17 +231,19 @@ Assets/Scripts/
 │   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
 │   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시, 기존 CircleCollider 보존)
 │   ├── MovementBlockerQuery.cs     # Player 이동/대시가 `EnemyData.blocksMovement=true` 적과 겹치는지 판정 (Collider2D→EnemyController 캐시)
-│   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·MP·공격·스킬·무적시간·8방향 조준·castDelay/recoveryDelay 잠금)
+│   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·공격·스킬·무적시간·8방향 조준·castDelay/recoveryDelay 잠금) + ISkillResourceLedger(Bullet 탄창·재장전 / ParryStack 패리) (MP 폐지)
 │   │                               #   + ApplyEnemyCombatImpact(damage, hitDir, knockback, slow, stun) 단일 진입점
 │   │                               #   + 슬로우(_enemySlows 강도 최대값) / 스턴(_stunTimer) / 넉백(EnemyKnockbackRoutine → playerMovement.TryApplyExternalDisplacement)
 │   │                               #   + IsSlowed/IsStunned/MoveSpeedMultiplier · OnStatusEffectApplied/Ended(PlayerStatusEffectType)
 │   ├── PlayerStatusEffectType.cs   # 플레이어 상태이상 enum (Slow, Stun)
-│   ├── PlayerResource.cs           # HP·MP 상태 컨테이너 (Domain)
+│   ├── PlayerResource.cs           # HP 상태 컨테이너 (Domain) — MP 폐지. 스킬 자원은 PlayerCombatController 의 ISkillResourceLedger(Bullet/ParryStack)
 │   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
 │   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기)
 │   ├── SkillTargetResolver.cs      # 스킬 셀·미리보기 반경·투사체 거리 공통 계산
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
-│   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존)
+│   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
+│   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
+│   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
 │   ├── ProjectileFireService.cs    # 투사체 발사 패턴 처리 (Single/Burst/Spread/Circle)
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
@@ -302,7 +305,9 @@ Assets/Scripts/
 │   │                                #   ② 자동 모드: autoDiscoverChildren=true 시 자식 Tilemap 을 GameObject Layer(Walkable/Wall/Door)로 분류
 │   │                                #   OnEnable/OnDisable → LocationMinimapRegistry 자동 등록, 색상 3종(ground/wall/door) 분리
 │   ├── LocationMinimapRegistry.cs  # 씬 내 TilemapMinimapSource를 locationId로 조회하는 정적 레지스트리
-│   ├── PlayerStatusBarUI.cs        # 플레이어 HP·MP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerInventory.OnInventoryChanged 로 elite_key 보유 수에 따라 아이콘 토글
+│   ├── PlayerStatusBarUI.cs        # 플레이어 HP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerInventory.OnInventoryChanged 로 elite_key 보유 수에 따라 아이콘 토글. MP 바 제거
+│   ├── ParryStackBarUI.cs          # 패리 폼 자원 UI — 현재 ParryStack 을 Slider 로 표시 (임시). 현재 폼이 Parry 일 때만 노출
+│   ├── FreischutzMagazineUI.cs     # 마탄 폼 탄창 UI — Bullet/Bullet_empty 이미지 칸 + x/max·Reloading 텍스트. 현재 폼이 Bullet 일 때만 노출
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
@@ -350,7 +355,7 @@ Assets/Scripts/
 
 ```
 Assets/Editor/                     # Editor-only (런타임 미포함)
-├── SkillDataEditor.cs              # SkillData CustomEditor — Basic/InstantArea/Projectile/Dash 섹션 + Reserved foldout + 음수·non-positive 경고
+├── SkillDataEditor.cs              # SkillData CustomEditor — Basic/Resource(자원·Bullet 설정)/InstantArea/Projectile/Dash 섹션 + Reserved foldout + 음수·non-positive·partial 설정 경고
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 └── TeleportDestinationIdDrawer.cs  # `[TeleportDestinationId]` 문자열 필드를 TeleportDestinationDatabase 의 id 드롭다운으로 렌더링
 ```
@@ -557,7 +562,6 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 |--------|--------|--------|
 | `OnEnemyKilled(EnemyController)` | EnemyController | RoomSpawner (방 클리어 판정) |
 | `OnPlayerHpChanged(cur, max)` | PlayerCombatController | PlayerStatusBarUI |
-| `OnPlayerMpChanged(cur, max)` | PlayerCombatController | PlayerStatusBarUI |
 | `OnPlayerDied(PlayerCombatController)` | PlayerCombatController | GameOverFlowController |
 | `OnSkillUsed(SkillData)` | PlayerCombatController | SkillSlotUI (쿨다운 표시) |
 
@@ -686,15 +690,15 @@ MoveSpeedMultiplier:
 PlayerCombatController:
   ├── _isSkillCasting  (bool) — SkillCastRoutine 진행 중인지
   ├── _skillRecoveryTimer (float) — recoveryDelay 만료 카운트다운
-  ├── IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0
-  └── BlocksPlayerMovement => IsSkillBusy   ← PlayerController/PlayerAnimationController 가 구독
+  ├── IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0 || _isParrySequenceActive || _isReloading
+  └── BlocksPlayerMovement => 캐스팅·후딜·(옵션)패리 중 이동 잠금 (재장전은 이동 허용) ← PlayerController/PlayerAnimationController 가 구독
 
 흐름:
   TryUseSkill(slot):
     castDelay > 0 이면 BeginSkillCast → SkillCastRoutine 로 castDelay 후 ExecuteSkillIfReady
     castDelay == 0 이면 즉시 ExecuteSkillIfReady
   ExecuteSkillIfReady:
-    성공 시 SpendMp / slot.StartCooldown / StartSkillRecovery(recoveryDelay)
+    성공 시 Spend(자원, 실제 소모량) / slot.StartCooldown / StartSkillRecovery(recoveryDelay)
     실패 가드: IsDead / IsDashing / DungeonManager.IsTransitioning / 슬롯 데이터 불일치
   TickSkillRecovery(dt) — Update에서 매 프레임 감소
 
@@ -721,11 +725,14 @@ WeaponData (ScriptableObject)
   ├── basicAttackMultiTarget
   ├── knockbackForce/Duration · slowPercentage/Duration
   ├── canPenetrateWalls
-  └── skills[4] (SkillData[])
+  ├── 탄창(마탄 폼): usesMagazine, magazineSize, reloadTime, reloadAmount  ← EquipWeapon 시 주입+풀충전
+  └── skills[4] (SkillData[])   ← 폼 loadout 단일 소스 (PlayerFormData.skills 폐지)
 
 SkillData (ScriptableObject)
   ├── executionType (SkillExecutionType)  ← InstantArea/Projectile/Dash/AreaOverTime/Buff
-  ├── 공통: damage, mpCost, cooldown, castDelay, recoveryDelay
+  ├── 공통: damage, cooldown, castDelay, recoveryDelay
+  ├── 자원: resourceType(None/Bullet/ParryStack), requiredAmount, consumeAmount,
+  │        bulletShortageMode(RequireFullCost/AllowPartialUse), reloadAmount  ← MP 폐지, 자원 기반
   ├── 공통: isMultiTarget, canPenetrateWalls
   ├── 공통: attackPattern, patternRange, coneHalfAngle
   ├── 공통: knockback/slow 파라미터
@@ -742,11 +749,10 @@ SkillData (ScriptableObject)
  AreaOverTime/Buff는 Reserved 안내, 미사용 필드는 Reserved foldout으로 접어둠)
 
 PlayerResource (Domain)
-  ├── currentHp, maxHp
-  └── currentMp, maxMp
+  └── currentHp, maxHp   (MP 폐지 — 스킬 자원은 PlayerCombatController 의 ISkillResourceLedger 가 관리)
 
 PlayerCombatController
-  ├── PlayerResource (HP/MP 상태)
+  ├── PlayerResource (HP 상태) · ISkillResourceLedger 구현 (Bullet 탄창 / ParryStack 자원 원장)
   ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태)
   ├── AttackExecutor / SkillExecutor (스킬 실행 라우팅)
   ├── PlayerDashController (대시 코루틴, RequireComponent)
@@ -782,7 +788,7 @@ SkillSlotRuntime (1슬롯)
   ├── Data (현재 슬롯에 바인드된 SkillData)
   ├── CooldownRemaining
   ├── Bind(data) / TickCooldown(dt) / StartCooldown()
-  └── CanUse(availableMp) — 쿨다운+MP 확인
+  └── CanUse(ISkillResourceLedger) — 쿨다운 + 자원(resourceType별 required) 확인
 
 SkillCooldownController
   └── 기본 공격 쿨다운만 담당 (스킬 쿨다운은 SkillSlotRuntime이 보유)
@@ -792,29 +798,25 @@ SkillCooldownController
 
 ```
 TryBasicAttack():
-  ① _cooldownController.IsAttackReady & currentWeapon 확인
-  ② SetAttackCooldown(weapon.attackCooldown)
-  ③ ResolveTargets(weapon.attackPattern, weapon.patternRange)
-       → SkillTargetResolver.ToGridAimDirection(facing)
-       → AttackPattern.FillTargets(...)
-  ④ AttackExecutor.BeginAttackActivation()
-  ⑤ AttackExecutor.ExecuteAttack(
-       targets, TotalAttack + weapon.damage,
-       weapon.canPenetrateWalls, weapon.basicAttackMultiTarget,
-       knockback/slow, hitRadius)
-  ⑥ basicAttackSkillData ≠ null 이면
-       _formController.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection)
-       → SkillData.AnimationType (보통 Attack) 기준 Animator 트리거 발동
+  ① 가드(IsDead/Dashing/Stunned/SkillBusy) + IsAttackReady & currentWeapon 확인
+  ② 현재 폼의 BasicAttackMode 로 분기:
+     • Parry  → 데미지 없는 패리 시퀀스(선딜→무적→후딜). 무적 중 피해 1회 가로채기 → +ParryStack,
+                흰색 점멸. 선딜 중 피격 시 패리 취소. (BeginParryBasicAttack)
+     • Bullet → 탄 1발 확인 → 없으면 자동 재장전. 있으면 투사체 1발 발사 + 탄 1 소모
+                (basicAttackSkillData, executionType=Projectile). 발사로 탄 0 시 자동 재장전.
+     • Damage → 기존 근접 패턴 공격:
+                SetAttackCooldown → SkillTargetResolver → AttackExecutor.ExecuteAttackWorld(...)
+                + basicAttackSkillData 로 PlaySkillAnimation
 ```
 
-> 기본 공격 애니메이션은 별도 `SkillData` 에셋(`BasicAttackAnimation.asset`)을 `PlayerCombatController.basicAttackSkillData` 에 주입해 일반 스킬과 동일한 애니메이션 라우팅을 재사용합니다. AnimationType 만 보고 trigger 를 발동하므로 데미지/패턴 필드는 무시됩니다.
+> `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage/Parry 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 현재 단일 필드라 런타임 폼 전환이 붙으면 폼별 교체 처리 필요(미구현).
 
 ### 7-3. 스킬 실행 흐름 — SkillExecutor 라우팅
 
 ```
 TryUseSkill(slotIndex):
   ① IsDead / IsDashing / IsSkillBusy 가드
-  ② 슬롯·쿨다운·MP 확인 (SkillSlotRuntime.CanUse)
+  ② 슬롯·쿨다운·자원 확인 (SkillSlotRuntime.CanUse(ledger))
   ③ castDelay > 0 → BeginSkillCast → SkillCastRoutine(_isSkillCasting=true)
                     castDelay 만료 후 ExecuteSkillIfReady 호출
      castDelay == 0 → 즉시 ExecuteSkillIfReady
@@ -825,14 +827,15 @@ ExecuteSkillIfReady(slotIndex, expectedSkill):
   ③ SkillExecutionContext 생성
        (caster, transform, skill, slotIndex, aim, gridFacing,
         TotalAttack, hitRadius)
-  ④ SkillExecutor.Execute(context)
+  ④ SkillExecutor.Execute(context) → SkillExecutionResult{Success, ResourceConsumed}
        switch (skill.executionType):
-         InstantArea  → ExecuteInstantArea()
-         Projectile   → ExecuteProjectile()
+         InstantArea  → ExecuteInstantArea()  (소모 = consumeAmount)
+         Projectile   → ExecuteProjectile()   (Bullet AllowPartialUse 면 실제 발사 수 = 소모)
          Dash         → ExecuteDash()
          AreaOverTime/Buff → 미구현 (경고 로그 1회)
-  ⑤ 성공 시 SpendMp / slot.StartCooldown / StartSkillRecovery(recoveryDelay)
-            / RaiseSkillUsed
+  ⑤ 성공 시 Spend(resourceType, result.ResourceConsumed) / ApplySkillReload /
+            TryStartAutoReloadIfEmpty / slot.StartCooldown / StartSkillRecovery / RaiseSkillUsed
+     실패 시 자원 소모·쿨다운 둘 다 없음
 
 InstantArea:
   SkillTargetResolver.ResolveTargets(context)
@@ -1344,18 +1347,21 @@ Pool<EnemyType>:
 
 ### 10-1. 플레이어 상태바 (PlayerStatusBarUI)
 
-`CombatEventChannel` 이벤트를 구독해 HP·MP를 실시간으로 표시합니다.
+`CombatEventChannel` 이벤트를 구독해 HP를 실시간으로 표시합니다 (MP 바는 폐지, 폼 고유 자원은 별도 UI).
 
 ```
 PlayerStatusBarUI:
   ├── HP 슬라이더 (Slider) — 수치 비율에 따라 갱신
-  ├── MP 슬라이더 (Slider) — 수치 비율에 따라 갱신
-  ├── HP 텍스트 (cur / max 형식)
-  └── MP 텍스트 (cur / max 형식)
+  └── HP 텍스트 (cur / max 형식)
 
 구독 이벤트:
   OnPlayerHpChanged(cur, max) → HP 슬라이더 + 텍스트 갱신
-  OnPlayerMpChanged(cur, max) → MP 슬라이더 + 텍스트 갱신
+  (MP 바·OnPlayerMpChanged 는 폐지됨)
+
+폼 고유 자원 UI (구 MP 영역 재사용, 현재 폼 BasicAttackMode 기준 표시):
+  Parry  → ParryStackBarUI (ParryStack 슬라이더)
+  Bullet → FreischutzMagazineUI (탄창 칸 Bullet/Bullet_empty + x/max·Reloading)
+  Damage → 자원 UI 숨김
 ```
 
 ### 10-1-1. 플레이어 상태이상 아이콘 UI (PlayerStatusEffectUI)
@@ -2044,9 +2050,8 @@ WeaponData → PlayerCombatController
                  │                   └──▶ RoomSpawner.CheckRoomClear()
                  │
                  └──▶ PlayerCombatController (적이 공격 시)
-                           ├── PlayerResource (HP/MP 갱신)
-                           ├── CombatEventChannel.RaisePlayerHpChanged()
-                           └── CombatEventChannel.RaisePlayerMpChanged()
+                           ├── PlayerResource (HP 갱신)
+                           └── CombatEventChannel.RaisePlayerHpChanged()
                                      └──▶ PlayerStatusBarUI (UI 갱신)
 ```
 
@@ -2176,8 +2181,9 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 1. `PlayerFormId` enum 에 새 식별자 추가
 2. `Create > JBRogLike > Player > Form` 으로 `PlayerFormData` 에셋 생성 — `animatorController` (Idle/Walk/Attack/Spin/Dash/Death 등 트리거를 가진 controller), `defaultSprite`, `defaultSpriteFacesRight`, `useHorizontalFlipForFacing`, dash 회전 옵션 입력
-3. 런타임 폼 전환은 `PlayerFormController.SetCurrentForm(formData)` 호출 — Animator runtime controller + 기본 sprite + 캐시된 trigger flag 가 일괄 갱신됨
-4. 폼 전용 스킬/무기는 `PlayerFormData.defaultWeapon` / `skills` 가 향후 확장 자리 (현재는 인스펙터 노출만 되어 있으며 자동 장착 로직은 미구현)
+3. `basicAttackMode`(Damage/Parry/Bullet) 선택 + `defaultWeapon` 에 그 폼의 loadout WeaponData(stats + skills[4], 마탄이면 탄창 필드) 연결
+4. `SetCurrentForm(formData)` 또는 `ApplyForm` 시 Animator/sprite/trigger 갱신 + 실제 폼 변경이면 `EquipWeapon(defaultWeapon)` 로 무기·스킬 자동 장착 (loadout 단일 소스 = WeaponData, `PlayerFormData.skills` 는 폐지)
+   ※ 런타임 폼 전환 트리거(아이템/소울 등)는 아직 미구현 — 현재는 시작 시 `currentForm` 1회 적용
 
 ### 새 스킬 애니메이션 분기 추가
 
@@ -2204,7 +2210,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **계단 상호작용** | Z키, 쿨다운 포함 |
 | **전투 데이터 구조** | WeaponData, SkillData, EnemyData (ScriptableObject) |
 | **공격 패턴 시스템** | 6종 패턴, 데이터 드리븐 |
-| **플레이어 전투** | 기본 공격, 스킬 4슬롯, HP/MP 관리 (PlayerResource) |
+| **플레이어 전투** | 기본 공격, 스킬 4슬롯, HP 관리 (PlayerResource) + 폼 고유 자원(Bullet/ParryStack) 원장 (MP 폐지) |
 | **공격 판정 분리** | AttackExecutor — 히트 감지·데미지 적용 독립 처리 |
 | **스킬 실행 라우팅** | SkillExecutor — InstantArea/Projectile/Dash/AreaOverTime/Buff 분기 |
 | **스킬 슬롯 런타임 분리** | SkillSlotRuntime — MonoBehaviour 미의존 슬롯 상태(데이터·쿨다운) |
@@ -2228,7 +2234,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **적 상태이상** | 넉백, 슬로우 (지속시간 기반) |
 | **적 스폰 시스템** | 방 진입 트리거, 예산 기반 스폰, 방 클리어 감지 |
 | **오브젝트 풀링** | EnemyPoolManager (적 재사용) |
-| **HP/MP 상태바 UI** | PlayerStatusBarUI — 슬라이더 + 텍스트, 이벤트 구독 갱신 |
+| **HP 상태바 UI** | PlayerStatusBarUI — HP 슬라이더 + 텍스트, 이벤트 구독 갱신 (MP 바 폐지) |
+| **폼 고유 자원 UI** | ParryStackBarUI(패리 스택 슬라이더) / FreischutzMagazineUI(탄창 칸 Bullet/Bullet_empty) — 현재 폼 BasicAttackMode 로 표시 분기, 구 MP 영역 재사용 |
 | **스킬 UI** | 4슬롯 아이콘·쿨타임 표시 |
 | **스킬 범위 미리보기** | 키 홀드 시 LineRenderer로 공격 범위 시각화 |
 | **이벤트 버스** | DungeonEventChannel, CombatEventChannel |
@@ -2355,6 +2362,10 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **미사용 코드 정리** | `Projectile.cs`(구 트리거 발사체) / `DoorController.cs`(문 위임 thin wrapper) / `DungeonPortal.cs`(마을 측 진입 트리거) / `NormalEnemyAI.cs`(NormalEnemyBrain Obsolete 래퍼) 삭제 — 모든 호출처가 새 경로(ProjectileController·DungeonManager 직접 호출·TeleportService·NormalEnemyBrain) 로 이관 완료. 함께 `DungeonManager.FindStairPos`/`DungeonQueryService.FindStairPos`, `LocationTransitionManager.EnterDungeon/EnterTown`, `EliteArenaEncounterController` 의 5개 walkability passthrough, `WalkabilityArea` 의 Vector2 오버로드 등 미사용 API 도 제거 (commit 50aa15fb) |
 | **플레이어 폼 시스템** | `PlayerFormController` (MonoBehaviour) + `PlayerFormData` ScriptableObject + `PlayerFormId` enum(Normal/Sword/Dagger/Freischutz/Parry) — `ApplyForm(formData)` 가 Animator runtime controller·default Sprite 스왑, `ApplyFacing(direction)` 가 `useHorizontalFlipForFacing` 옵션으로 SpriteRenderer.flipX 갱신, dash 시 `rotateDashAnimationByDirection` 활성 폼은 visualTransform 을 `Atan2(dir)+dashBaseAngle` 로 회전하고 dash visual token 으로 movement/state 종료 시점에 안전 복귀. 첫 Sword form 프리팹/애니메이션(Idle/Walk/Attack/Spin/Dash/Death) 추가 (commit 3d82b687) |
 | **스킬 애니메이션 SkillData 이관** | `SkillData` 에 Animation 섹션(`animationType`(None/Attack/Spin/Dash/CustomTrigger) · `customAnimationTrigger` · `rotateAnimationByDirection` · `animationBaseAngle`) 추가. `SkillExecutionContext.CasterForm` 으로 `PlayerFormController` 가 컨텍스트에 노출되고, `SkillExecutor.Execute` 가 실행 직전 `CasterForm.PlaySkillAnimation(skill, direction)` 호출 — 애니메이션 트리거가 SkillExecutor / WeaponData 가 아닌 SkillData 한 곳에서만 관리됨. Dash 는 `PlayerDashController` 가 SkillData 의 AnimationType=Dash 분기로 토큰 발급, 기본 공격은 `PlayerCombatController.basicAttackSkillData` (전용 `BasicAttackAnimation.asset`) 로 동일 경로 재사용. `SkillDataEditor` 에 Animation 섹션 인스펙터 추가 (commit c192604b) |
+| **MP 폐지 + 스킬 자원 시스템** | MP/mpCost/MaxMp/RaisePlayerMpChanged 전면 제거. `SkillData` 에 `SkillResourceType`(None/Bullet/ParryStack) + `requiredAmount`/`consumeAmount` 추가. `PlayerCombatController` 가 `ISkillResourceLedger`(Has/Spend/GetAmount) 구현, `SkillSlotRuntime.CanUse(ledger)` 로 게이팅. `SkillExecutor.Execute` 가 `SkillExecutionResult`(Success+실제 ResourceConsumed) 반환 → 실제 소모만 Spend, 실패 시 소모·쿨다운 둘 다 없음. 밸런스는 쿨타임 + 폼 고유 자원 |
+| **패리 폼** | `PlayerBasicAttackMode.Parry`. 기본공격 = 데미지 없는 패리(선딜→무적→후딜 각 설정값). 무적구간 동안 흰색 점멸, 방향 무관 모든 피해 1회 가로채기 → +ParryStack(`CompleteParryIntercept`). 첫 가로채기 즉시 무적 종료. 선딜 중 피격 시 패리 취소. ParryStack 은 자원(스킬 소모) + 유예시간 후 점감, 방/문/층 이동 시 초기화. 임시 `ParryStackBarUI` 슬라이더 |
+| **마탄(Freischutz) 폼** | `PlayerBasicAttackMode.Bullet`. 탄창(Bullet) 자원 = `WeaponData`(usesMagazine/magazineSize/reloadTime/reloadAmount)에서 EquipWeapon 시 주입+풀충전, **방/층 이동 시 유지**. 기본공격 = 투사체 1발+탄 1소모(탄 0이면 자동 재장전). 스킬: `projectileCount`(발사)+`consumeAmount`(탄) 분리, `BulletShortageMode`(RequireFullCost/AllowPartialUse). 재장전: 자동(탄0)/수동(A키, 마탄폼만)/스킬(`reloadAmount`), 공격만 차단·이동 허용. `FreischutzMagazineUI`(Bullet/Bullet_empty 칸). 식별자 `PlayerFormId.Freischutz`(구 Bow) |
+| **Form→loadout 단일 소스(안 B)** | `PlayerFormData.skills[]` 제거. `ApplyForm` 이 실제 폼 변경 시 `EquipWeapon(form.DefaultWeapon)` 호출 → 무기·스킬·탄창이 폼에 맞게 일괄 교체. loadout = WeaponData 단일 소스. ParryForm→ParryWeapon, FreischutzForm→FreischutzWeapon, Normal·Sword→TestSword |
 
 ### 미구현 (다음 단계)
 
@@ -2362,6 +2373,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 |------|----------|------|
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 |
 | Buff 스킬 핸들러 | 중간 | 동일 — caster 자체에 효과를 적용하는 형태 |
+| 런타임 폼 전환 트리거 | 중간 | `ApplyForm`→`EquipWeapon` loadout 연결은 완료. 아이템/소울 등으로 런타임에 폼을 바꾸는 진입점 미구현(현재 시작 시 `currentForm` 1회). 전환 시 `basicAttackSkillData` 폼별 교체도 함께 필요 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. `WalkabilityArea` + `WalkabilityQuery` 인프라가 Boss Arena 에도 동일 적용 가능 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
