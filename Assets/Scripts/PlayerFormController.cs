@@ -319,6 +319,7 @@ public sealed class PlayerFormController : MonoBehaviour
     private void ApplyDashVisualRotation(Vector2 direction, bool rotateByDirection, float baseAngle)
     {
         if (CurrentForm == null ||
+            !CurrentForm.RotateDashAnimationByDirection ||
             !rotateByDirection ||
             spriteRenderer == null ||
             visualTransform == null ||

@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 989
   m_ShowMode: 4
-  m_Title: Inspector
+  m_Title: Game
   m_RootView: {fileID: 9}
   m_MinSize: {x: 875, y: 338}
   m_MaxSize: {x: 10000, y: 10000}
@@ -179,7 +179,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 112}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 16
+  controlID: 75
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -354,6 +354,7 @@ MonoBehaviour:
     - {fileID: 110700000, guid: b81af1499d3d40d0ae772e884a5fccdb, type: 2}
     - {fileID: 110700000, guid: 3374587ea9b44b528893e4fbe4499b92, type: 2}
     - {fileID: 110700000, guid: aed69813a6df4e6cacad48975acaae41, type: 2}
+    - {fileID: 110700000, guid: efa9756cec8248588ba0cf731eac5f1c, type: 2}
     m_ValueSerializationHelper:
     - e00: 0.92348653
       e01: 0
@@ -483,11 +484,25 @@ MonoBehaviour:
       e31: 0
       e32: 0
       e33: 1
+    - e00: 1.5003574
+      e01: 0
+      e02: 0
+      e03: -156.005
+      e10: 0
+      e11: 1.5003574
+      e12: 0
+      e13: 284.1745
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
   m_PreviewAnimator: {fileID: 0}
-  m_AnimatorController: {fileID: 9100000, guid: aed69813a6df4e6cacad48975acaae41, type: 2}
-  m_BreadCrumbs:
-  - m_Target: {fileID: 110700000, guid: aed69813a6df4e6cacad48975acaae41, type: 2}
-    m_ScrollPosition: {x: 0, y: 0}
+  m_AnimatorController: {fileID: 0}
+  m_BreadCrumbs: []
   stateMachineGraph: {fileID: 0}
   stateMachineGraphGUI: {fileID: 0}
   blendTreeGraph: {fileID: 0}
@@ -804,7 +819,7 @@ MonoBehaviour:
     m_OverlaysVisible: 1
     m_DynamicPanelBehavior: 0
   m_SearchFilter:
-    m_NameFilter: 
+    m_NameFilter: projectile
     m_ClassNames: []
     m_AssetLabels: []
     m_AssetBundleNames: []
@@ -814,48 +829,53 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Sprite/Chara/Forms/Sword
+    - Assets/Scripts/Enemy
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
-    m_OriginalText: 
+    m_OriginalText: projectile
     m_ImportLogFlags: 0
     m_FilterByTypeIntersection: 0
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Sprite/Chara/Forms/Sword
+  - Assets/Scripts/Enemy
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 260}
+    scrollPos: {x: 0, y: 192}
     m_SelectedIDs:
-    - m_Data: 62612
+    - m_Data: 57922
     m_LastClickedID:
-      m_Data: 62612
+      m_Data: 57922
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 57184
-    - m_Data: 57186
-    - m_Data: 57188
-    - m_Data: 57190
-    - m_Data: 57192
-    - m_Data: 57194
-    - m_Data: 57196
-    - m_Data: 57198
-    - m_Data: 57200
-    - m_Data: 57202
-    - m_Data: 57204
-    - m_Data: 57206
-    - m_Data: 57208
-    - m_Data: 57210
-    - m_Data: 57212
-    - m_Data: 57214
-    - m_Data: 57216
-    - m_Data: 57218
+    - m_Data: 57338
+    - m_Data: 57340
+    - m_Data: 57342
+    - m_Data: 57344
+    - m_Data: 57346
+    - m_Data: 57348
+    - m_Data: 57350
+    - m_Data: 57352
+    - m_Data: 57354
+    - m_Data: 57356
+    - m_Data: 57358
+    - m_Data: 57360
+    - m_Data: 57362
+    - m_Data: 57364
+    - m_Data: 57366
+    - m_Data: 57368
+    - m_Data: 57370
+    - m_Data: 57372
+    - m_Data: 57374
+    - m_Data: 57376
+    - m_Data: 57378
+    - m_Data: 57380
+    - m_Data: 57382
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -889,24 +909,29 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 57184
-    - m_Data: 57186
-    - m_Data: 57188
-    - m_Data: 57190
-    - m_Data: 57192
-    - m_Data: 57194
-    - m_Data: 57196
-    - m_Data: 57198
-    - m_Data: 57200
-    - m_Data: 57202
-    - m_Data: 57204
-    - m_Data: 57206
-    - m_Data: 57208
-    - m_Data: 57210
-    - m_Data: 57212
-    - m_Data: 57214
-    - m_Data: 57216
-    - m_Data: 57218
+    - m_Data: 57338
+    - m_Data: 57340
+    - m_Data: 57342
+    - m_Data: 57344
+    - m_Data: 57346
+    - m_Data: 57348
+    - m_Data: 57350
+    - m_Data: 57352
+    - m_Data: 57354
+    - m_Data: 57356
+    - m_Data: 57358
+    - m_Data: 57360
+    - m_Data: 57362
+    - m_Data: 57364
+    - m_Data: 57366
+    - m_Data: 57368
+    - m_Data: 57370
+    - m_Data: 57372
+    - m_Data: 57374
+    - m_Data: 57376
+    - m_Data: 57378
+    - m_Data: 57380
+    - m_Data: 57382
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -935,9 +960,9 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 62616
+    - m_Data: 47020
     m_LastClickedEntityId:
-      m_Data: 62616
+      m_Data: 47020
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 52286
@@ -978,7 +1003,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 0}
+    m_ScrollPosition: {x: 0, y: 4311}
     m_GridSize: 64
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 264
@@ -1079,10 +1104,15 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -2698
+      - m_Data: -133990
+      - m_Data: -104328
+      - m_Data: -103708
+      - m_Data: -49078
+      - m_Data: -38746
+      - m_Data: -9956
       - m_Data: -1382
-      - m_Data: 57914
-      - m_Data: 58284
+      - m_Data: 61810
+      - m_Data: 63732
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1606,9 +1636,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 396.61868, y: -34.400745, z: -0.38452086}
+    m_Target: {x: 1.5239148, y: 0.13927014, z: -7.659386}
     speed: 2
-    m_Value: {x: 396.61868, y: -34.400745, z: -0.38452086}
+    m_Value: {x: 1.5239148, y: 0.13927014, z: -7.659386}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1659,9 +1689,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 61.79733
+    m_Target: 4.4871736
     speed: 2
-    m_Value: 61.79733
+    m_Value: 4.4871736
   m_Ortho:
     m_Target: 1
     speed: 2

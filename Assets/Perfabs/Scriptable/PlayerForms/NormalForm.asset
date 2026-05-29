@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c471fe3838749d2a4f99ddbe73d5210, type: 3}
+  m_Name: NormalForm
+  m_EditorClassIdentifier:
+  formId: 4
+  displayName: Normal Form
+  animatorController: {fileID: 9100000, guid: 8df3482fa6a24ba386949c1a53a00fd4, type: 2}
+  defaultSprite: {fileID: 6829737506971320684, guid: 3a56783b4a77a1b43876c1cf695a1d3c, type: 3}
+  defaultSpriteFacesRight: 1
+  useHorizontalFlipForFacing: 0
+  rotateDashAnimationByDirection: 0
+  dashBaseAngle: 0
+  defaultWeapon: {fileID: 0}
+  skills: []

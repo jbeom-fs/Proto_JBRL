@@ -20,7 +20,7 @@ MonoBehaviour:
   cooldown: 1
   castDelay: 0
   recoveryDelay: 0
-  animationType: 1
+  animationType: 0
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0

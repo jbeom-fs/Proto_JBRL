@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-05-27  
+> 작성 기준일: 2026-05-28  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -66,8 +66,8 @@
 │  Application Layer (MonoBehaviour)                           │
 │  PlayerController · PlayerInputReader · PlayerInventory      │
 │  PlayerCombatController · PlayerDashController               │
-│  PlayerAnimationController                                   │
-│  DungeonManager · FloorTransitionService · DungeonPortal     │
+│  PlayerAnimationController · PlayerFormController            │
+│  DungeonManager · FloorTransitionService                     │
 │  LocationTransitionManager (구 TownDungeonTransitionManager) · LocationRoot │
 │  TeleportService                                             │
 │  EnemyBrain · NormalEnemyBrain · RoomSpawner                 │
@@ -90,6 +90,7 @@
 │  DungeonData · DungeonGenerator · RoomRegistry               │
 │  DungeonQueryService · SpawnPositionService                  │
 │  WeaponData · SkillData · EnemyData · ItemData               │
+│  PlayerFormData · PlayerFormId                               │
 │  InventoryItemStack                                          │
 │  ElitePatternSet · ElitePatternData · ElitePatternRuntime    │
 │  ElitePatternContext (+ EliteProjectile/Dash/Jump 변형)      │
@@ -106,7 +107,7 @@
 │  WalkabilityArea                                             │
 ├──────────────────────────────────────────────────────────────┤
 │  Presentation Layer                                          │
-│  DungeonTilemapRenderer · DoorController                     │
+│  DungeonTilemapRenderer                                      │
 │  EnemyHealthBar · PlayerStatusBarUI                          │
 │  SkillSlotUI · SkillUIManager · SkillRangePreviewer          │
 │  PlayerStatusEffectUI · StatusEffectIconView                 │
@@ -154,17 +155,17 @@ Assets/Scripts/
 ├── PlayerController.cs             # 입력·이동·방 감지·대시 중 이동 위임 + Elite Door 접촉 시 자동 개방(TryOpenEliteDoorOnContact, PlayerInventory + elite_key ItemData 조회)
 ├── PlayerInputReader.cs            # 키보드 입력 단일 집계 (실행 순서 제어) — PlayerInputKeySettings 참조
 ├── PlayerInputKeySettings.cs       # 키 바인딩 ScriptableObject (이동·액션·스킬 12 키)
-├── PlayerAnimationController.cs    # 4방향 이동 애니메이션 (MoveX/Y, LastMoveX/Y)
+├── PlayerAnimationController.cs    # 4방향 이동 애니메이션 (MoveX/Y, LastMoveX/Y) — PlayerFormController 와 협력
+├── PlayerFormController.cs         # 플레이어 시각 폼 (PlayerFormData) 적용 — AnimatorController 스왑, default sprite, facing flipX, dash visual rotation/token, SkillData.AnimationType (Attack/Spin/Dash/CustomTrigger) 별 trigger 발동
 ├── GameLocationType.cs             # 위치 분류 enum (Town/Dungeon)
 │
 ├── DungeonManager.cs               # 던전 생애주기 조율 (Facade) — extraCandidateCount/extraOverlapScoreWeight 등 EXTRA 점수 weight 노출, PrepareEliteKeyPlan
 │                                    #   FloorTransition 시 CleanupPlayerInventoryForFloorTransition(RemoveOnFloorTransition) + Dungeon 런타임 오브젝트 일괄 정리
-├── DoorController.cs               # 문 열기 위임 (DungeonManager로 라우팅)
-├── DungeonPortal.cs                # 마을 측 던전 진입 트리거 — EnterDungeon() 에서 TeleportService.RequestTeleport(PlayerController.Active) 호출
 │
 ├── LocationTransitionManager.cs # 마을↔던전 전환 조율 (TeleportDestinationDatabase 기반)
 │                                    #   SetDungeonSource/SetTilemapSource → MinimapController 라우팅
 │                                    #   CleanupDungeonRuntime (투사체·적·드랍 아이템·Elite Key 일괄 회수) / StartNewDungeonRun
+│                                    #   (구 EnterDungeon/EnterTown 디버그 메서드는 제거됨 — 디버그 진입은 콘솔 /tp 명령만 사용)
 │
 ├── TeleportService.cs              # 텔레포트 트리거 (OnTriggerEnter2D + 쿨다운 + transitionManager 위임)
 ├── TeleportDestinationDatabase.cs  # 텔레포트 목적지 ScriptableObject DB
@@ -177,8 +178,10 @@ Assets/Scripts/
 ├── Data/
 │   ├── DungeonData.cs              # 타일 그리드 + 방 목록 (Domain)
 │   ├── WeaponData.cs               # 무기 ScriptableObject
-│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드)
+│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드: animationType/customAnimationTrigger/rotateAnimationByDirection/animationBaseAngle)
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
+│   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/defaultSpriteFacesRight/useHorizontalFlipForFacing/rotateDashAnimationByDirection/dashBaseAngle + 예약 defaultWeapon/skills)
+│   ├── PlayerFormId.cs             # 폼 식별 enum (Sword/Slime/Dagger/Bow)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
 │   └── EnemyData.cs                # 적 ScriptableObject — Contact(+Special Rush/Jump) / Ranged + 투사체 패턴
 │                                    #   (EnemySpecialAttackType: None/Rush/Jump + 전용 파라미터 그룹)
@@ -243,7 +246,6 @@ Assets/Scripts/
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
 │   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성, 회전 모드 (KeepPrefab/FaceMoveDirection)
 │   ├── ProjectilePool.cs           # 투사체 사전 풀링 (SetActive/DisableComponents 모드) — ReleaseAllActiveProjectiles로 층 이동 시 일괄 회수
-│   ├── Projectile.cs               # (구) 트리거 기반 발사체 — 호환 유지용
 │   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
 │   ├── PlayerInvincibilityFlashFeedback.cs # 무적 시 셰이더 _FlashAmount 보간 (PropertyBlock)
 │   ├── CombatEventChannel.cs       # 전투 이벤트 버스 (ScriptableObject)
@@ -262,7 +264,6 @@ Assets/Scripts/
 │   │                               #   + LockSpecialFacing/UnlockSpecialFacing/HandleDeathStarted
 │   │                               #   (상태 인스턴스는 EnemyStates.cs에 정의, BossEnemyBrain은 CreateState 오버라이드)
 │   ├── NormalEnemyBrain.cs         # 기본 몬스터용 경량 Brain (커스텀 상태 없음)
-│   ├── NormalEnemyAI.cs            # [Obsolete] NormalEnemyBrain을 상속만 하는 호환 래퍼 (기존 프리팹 유지용)
 │   ├── EnemyStates.cs              # IdleState · ChaseState · AttackState (internal sealed, A* 추격 포함)
 │   ├── EnemyMovementHandler.cs     # A* 이동 + 군중 분리 + Ranged 이동 분기 (Chase/Kiting/Random)
 │   ├── EnemyTargetHandler.cs       # 플레이어 감지·시야 갱신
@@ -548,7 +549,7 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 | `OnRoomDoorsClosed(RoomInfo)` | DungeonManager | FogOfWarController |
 | `OnRoomDoorsOpened(RoomInfo)` | DungeonManager | FogOfWarController |
 
-> **참고**: `DoorController`는 이벤트를 구독하지 않습니다. 문 개폐는 `RoomSpawner` → `DungeonManager.CloseCurrentRoomDoors / OpenCurrentRoomDoors`로 직접 호출됩니다. 다만 DungeonManager는 실제 문 상태 전환이 발생한 직후 `OnRoomDoorsClosed` / `OnRoomDoorsOpened`를 발행해, `closedDoorsBlockVision`을 사용하는 FogOfWarController가 즉시 시야를 재계산할 수 있도록 합니다.
+> **참고**: 문 개폐는 `RoomSpawner` → `DungeonManager.CloseCurrentRoomDoors / OpenCurrentRoomDoors`로 직접 호출됩니다 (`DoorController` 위임 클래스는 제거되었습니다). DungeonManager는 실제 문 상태 전환이 발생한 직후 `OnRoomDoorsClosed` / `OnRoomDoorsOpened`를 발행해, `closedDoorsBlockVision`을 사용하는 FogOfWarController가 즉시 시야를 재계산할 수 있도록 합니다.
 
 ### CombatEventChannel
 
@@ -728,6 +729,9 @@ SkillData (ScriptableObject)
   ├── 공통: isMultiTarget, canPenetrateWalls
   ├── 공통: attackPattern, patternRange, coneHalfAngle
   ├── 공통: knockback/slow 파라미터
+  ├── Animation: animationType(None/Attack/Spin/Dash/CustomTrigger),
+  │              customAnimationTrigger, rotateAnimationByDirection,
+  │              animationBaseAngle  ← PlayerFormController.PlaySkillAnimation 가 사용
   ├── Projectile: prefab, speed, lifetime, count, spreadAngle,
   │              firePattern, wallHitMode, targetHitMode,
   │              maxBounceCount, spawnOffset, burstInterval, burstSpacing
@@ -798,7 +802,12 @@ TryBasicAttack():
        targets, TotalAttack + weapon.damage,
        weapon.canPenetrateWalls, weapon.basicAttackMultiTarget,
        knockback/slow, hitRadius)
+  ⑥ basicAttackSkillData ≠ null 이면
+       _formController.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection)
+       → SkillData.AnimationType (보통 Attack) 기준 Animator 트리거 발동
 ```
+
+> 기본 공격 애니메이션은 별도 `SkillData` 에셋(`BasicAttackAnimation.asset`)을 `PlayerCombatController.basicAttackSkillData` 에 주입해 일반 스킬과 동일한 애니메이션 라우팅을 재사용합니다. AnimationType 만 보고 trigger 를 발동하므로 데미지/패턴 필드는 무시됩니다.
 
 ### 7-3. 스킬 실행 흐름 — SkillExecutor 라우팅
 
@@ -894,7 +903,7 @@ ExecuteAttack(gridPositions, damage,
 
 ### 7-6. 발사체 — 적·플레이어 공유 파이프라인
 
-플레이어 스킬과 적 원거리 공격 모두 `ProjectileFireService` → `ProjectilePool` → `ProjectileController` 동일 경로를 사용합니다. (구 `Projectile.cs`는 호환 유지용으로 남아 있음)
+플레이어 스킬과 적 원거리 공격 모두 `ProjectileFireService` → `ProjectilePool` → `ProjectileController` 동일 경로를 사용합니다.
 
 **ProjectileFireService — 패턴 처리**
 
@@ -1622,7 +1631,7 @@ LocationTransitionManager.TeleportPlayer(player, destinationId):
          player.TeleportTo(worldPos)
 ```
 
-`debugDungeonEntranceDestinationId` / `debugReturnDestinationId` 는 개발자 콘솔 `/tp` 명령 또는 `EnterDungeon()` / `EnterTown()` 디버그 API 진입점입니다 (전용 키 바인딩은 제거되어 콘솔 `/tp` 로만 호출).
+`debugDungeonEntranceDestinationId` / `debugReturnDestinationId` 는 개발자 콘솔 `/tp` 명령의 기본 목적지 ID 후보입니다 (구 `EnterDungeon()` / `EnterTown()` 디버그 메서드는 제거되어 콘솔 `/tp` 로만 호출).
 
 **목적지 데이터 (TeleportLocationData)**
 
@@ -2163,6 +2172,19 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 2. `PlayerInputReader` 에 `WasXxxPressedThisFrame` 프로퍼티/플래그 추가, `Update` 에서 `WasPressedThisFrame(keyboard, settings.xxx)` 로 갱신
 3. 호출자 코드(`PlayerController` 등)에서 해당 프로퍼티 참조
 
+### 새 플레이어 폼 추가
+
+1. `PlayerFormId` enum 에 새 식별자 추가
+2. `Create > JBRogLike > Player > Form` 으로 `PlayerFormData` 에셋 생성 — `animatorController` (Idle/Walk/Attack/Spin/Dash/Death 등 트리거를 가진 controller), `defaultSprite`, `defaultSpriteFacesRight`, `useHorizontalFlipForFacing`, dash 회전 옵션 입력
+3. 런타임 폼 전환은 `PlayerFormController.SetCurrentForm(formData)` 호출 — Animator runtime controller + 기본 sprite + 캐시된 trigger flag 가 일괄 갱신됨
+4. 폼 전용 스킬/무기는 `PlayerFormData.defaultWeapon` / `skills` 가 향후 확장 자리 (현재는 인스펙터 노출만 되어 있으며 자동 장착 로직은 미구현)
+
+### 새 스킬 애니메이션 분기 추가
+
+1. `SkillAnimationType` enum 에 새 값 추가 (예: `Sweep`)
+2. `PlayerFormController.PlaySkillAnimation` switch 에 케이스 추가 — 신규 trigger hash 캐싱(`CacheAnimatorParameters`) + `PlayTriggerAnimation` 또는 전용 헬퍼 호출
+3. SkillData 에셋에서 `animationType` 을 새 값으로 지정. `customAnimationTrigger` 가 필요한 비표준 trigger 라면 `CustomTrigger` 를 사용
+
 ---
 
 ## 15. 개발 현황
@@ -2317,7 +2339,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Elite Pattern Set** | `EnemyData.isElite + elitePatternSet` + `ElitePatternRunner` — Projectile/Dash/Jump ScriptableObject 패턴이 cooldown/minRange/maxRange/weight 조건을 만족하면 순서대로 실행. Contact Special 과 독립된 사이클 |
 | **Elite Pattern 런타임** | `ElitePatternData`(abstract SO) + `ElitePatternRuntime`(abstract) + `ElitePatternContext`(Brain/Enemy/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 일괄 노출) — 새 패턴 추가는 두 클래스(Data+Runtime) 작성 + CreateAssetMenu 만으로 가능 |
 | **게임 일시정지 컨트롤러** | `GamePauseController` + `GamePauseSource`(DeveloperConsole/Inventory/PauseMenu/Cutscene) — 출처별 카운터 + Time.timeScale 토글, OnDisable 시 이전 timeScale 복원 |
-| **DungeonPortal 진입 트리거** | `DungeonPortal.EnterDungeon()` — 마을 측에서 TeleportService 를 호출해 던전으로 전환 (UI 버튼 / 트리거 모두 사용 가능) |
+| ~~**DungeonPortal 진입 트리거**~~ | (제거됨) `DungeonPortal.cs` 는 미사용 코드로 정리되어 삭제. 마을→던전 진입은 `TeleportService` + `TeleportDestinationDatabase` 의 trigger 콜라이더로 일원화됨 |
 | **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경 담당) + 7개 내장 명령(/help /clear /echo /tp /dooropen /kill /floor) |
 | **개발자 콘솔 실행 분리** | `DeveloperConsoleCommandExecutor` (MonoBehaviour) — 구 `DeveloperConsoleCommandContext` (readonly struct) 대체. 파싱·등록은 Service, 게임 상태 변경은 Executor 로 책임 분리 |
 | **개발자 콘솔 /kill 명령** | `DeveloperConsoleCommandExecutor.ExecuteKill` → `RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug()` — 일반 방이면 현재 방 생존 적, Elite Arena 인카운터 중이면 `EliteArenaEncounterController.ForceKillActiveEliteForDebug()` 로 분기 |
@@ -2330,6 +2352,9 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Elite Arena 복귀 시 미니맵 즉시 복원** | `EliteArenaEncounterController.TryReturnFromArena` 가 `LocationTransitionManager.RestoreDungeonMinimapSource` 호출 — Arena 진입 중 Tilemap 미니맵으로 전환됐던 source 를 Dungeon source 로 복귀 (commit 07be7b2e) |
 | **TilemapMinimapSource Layer 자동 분류** | `autoDiscoverChildren=true` 시 자식 Tilemap 을 GameObject Layer(Walkable/Wall/Door, 인스펙터에서 이름 재정의 가능)로 한 번에 분류해 `_walkableTilemaps`/`_wallTilemaps`/`_doorTilemaps` 세 List 구성. 명시 모드와 병행 가능, 매칭 0개 시 1회 경고 |
 | **전투 판정 World Environment Query 일원화** | 모든 전투 코드(`PlayerController.CanMoveTo`(Dungeon/Arena 한정), `PlayerDashController`, `EnemyController.IsFootprintWalkable`, `EnemyMovementHandler.CanMoveTo`, Kiting/Random 후퇴 검사, Elite Dash/Jump `CanOccupy`, `AttackExecutor.HasGeometryLineOfSight`, `ProjectileController.IsWallPosition`/`IsOutOfDungeonBounds`)가 `WorldEnvironmentQuery` 1개 facade 만 호출. Dungeon/Arena 라우팅은 `WalkabilityQuery` static 이 처리 (commit 7335129d, 85dce89e) |
+| **미사용 코드 정리** | `Projectile.cs`(구 트리거 발사체) / `DoorController.cs`(문 위임 thin wrapper) / `DungeonPortal.cs`(마을 측 진입 트리거) / `NormalEnemyAI.cs`(NormalEnemyBrain Obsolete 래퍼) 삭제 — 모든 호출처가 새 경로(ProjectileController·DungeonManager 직접 호출·TeleportService·NormalEnemyBrain) 로 이관 완료. 함께 `DungeonManager.FindStairPos`/`DungeonQueryService.FindStairPos`, `LocationTransitionManager.EnterDungeon/EnterTown`, `EliteArenaEncounterController` 의 5개 walkability passthrough, `WalkabilityArea` 의 Vector2 오버로드 등 미사용 API 도 제거 (commit 50aa15fb) |
+| **플레이어 폼 시스템** | `PlayerFormController` (MonoBehaviour) + `PlayerFormData` ScriptableObject + `PlayerFormId` enum(Sword/Slime/Dagger/Bow) — `ApplyForm(formData)` 가 Animator runtime controller·default Sprite 스왑, `ApplyFacing(direction)` 가 `useHorizontalFlipForFacing` 옵션으로 SpriteRenderer.flipX 갱신, dash 시 `rotateDashAnimationByDirection` 활성 폼은 visualTransform 을 `Atan2(dir)+dashBaseAngle` 로 회전하고 dash visual token 으로 movement/state 종료 시점에 안전 복귀. 첫 Sword form 프리팹/애니메이션(Idle/Walk/Attack/Spin/Dash/Death) 추가 (commit 3d82b687) |
+| **스킬 애니메이션 SkillData 이관** | `SkillData` 에 Animation 섹션(`animationType`(None/Attack/Spin/Dash/CustomTrigger) · `customAnimationTrigger` · `rotateAnimationByDirection` · `animationBaseAngle`) 추가. `SkillExecutionContext.CasterForm` 으로 `PlayerFormController` 가 컨텍스트에 노출되고, `SkillExecutor.Execute` 가 실행 직전 `CasterForm.PlaySkillAnimation(skill, direction)` 호출 — 애니메이션 트리거가 SkillExecutor / WeaponData 가 아닌 SkillData 한 곳에서만 관리됨. Dash 는 `PlayerDashController` 가 SkillData 의 AnimationType=Dash 분기로 토큰 발급, 기본 공격은 `PlayerCombatController.basicAttackSkillData` (전용 `BasicAttackAnimation.asset`) 로 동일 경로 재사용. `SkillDataEditor` 에 Animation 섹션 인스펙터 추가 (commit c192604b) |
 
 ### 미구현 (다음 단계)
 
