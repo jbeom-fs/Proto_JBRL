@@ -11,6 +11,7 @@ public class PlayerInputReader : MonoBehaviour
     public bool InteractConfirmPressedThisFrame { get; private set; }
     public bool InventoryPressedThisFrame { get; private set; }
     public bool WasBasicAttackPressed { get; private set; }
+    public bool WasReloadPressed { get; private set; }
 
     public bool WasStairPressed => InteractConfirmPressedThisFrame;
     public bool IsGamePaused => GamePauseController.IsPaused;
@@ -74,6 +75,7 @@ public class PlayerInputReader : MonoBehaviour
 
         InteractConfirmPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.interactConfirm : Key.Z);
         WasBasicAttackPressed = WasPressedThisFrame(keyboard, settings != null ? settings.basicAttack : Key.Space);
+        WasReloadPressed = WasPressedThisFrame(keyboard, settings != null ? settings.reload : Key.A);
 
         for (int i = 0; i < _wasSkillPressed.Length; i++)
             _wasSkillPressed[i] = WasPressedThisFrame(keyboard, settings != null ? settings.GetSkillSlotKey(i) : GetDefaultSkillSlotKey(i));
@@ -141,6 +143,7 @@ public class PlayerInputReader : MonoBehaviour
         MoveInput = Vector2.zero;
         InteractConfirmPressedThisFrame = false;
         WasBasicAttackPressed = false;
+        WasReloadPressed = false;
         _wasSkillPressed[0] = _wasSkillPressed[1] = _wasSkillPressed[2] = _wasSkillPressed[3] = false;
     }
 }

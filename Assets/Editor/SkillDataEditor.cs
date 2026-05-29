@@ -12,6 +12,8 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _resourceType;
     private SerializedProperty _requiredAmount;
     private SerializedProperty _consumeAmount;
+    private SerializedProperty _bulletShortageMode;
+    private SerializedProperty _reloadAmount;
     private SerializedProperty _cooldown;
     private SerializedProperty _castDelay;
     private SerializedProperty _recoveryDelay;
@@ -64,6 +66,8 @@ public sealed class SkillDataEditor : Editor
         _resourceType = serializedObject.FindProperty("resourceType");
         _requiredAmount = serializedObject.FindProperty("requiredAmount");
         _consumeAmount = serializedObject.FindProperty("consumeAmount");
+        _bulletShortageMode = serializedObject.FindProperty("bulletShortageMode");
+        _reloadAmount = serializedObject.FindProperty("reloadAmount");
         _cooldown = serializedObject.FindProperty("cooldown");
         _castDelay = serializedObject.FindProperty("castDelay");
         _recoveryDelay = serializedObject.FindProperty("recoveryDelay");
@@ -173,6 +177,9 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_resourceType);
         DrawProperty(_requiredAmount);
         DrawProperty(_consumeAmount);
+        if (GetResourceType() == SkillResourceType.Bullet)
+            DrawProperty(_bulletShortageMode);
+        DrawProperty(_reloadAmount);
     }
 
     private void DrawAnimationSection()
@@ -308,6 +315,7 @@ public sealed class SkillDataEditor : Editor
     {
         DrawNegativeWarning(_requiredAmount, "Required Amount");
         DrawNegativeWarning(_consumeAmount, "Consume Amount");
+        DrawNegativeWarning(_reloadAmount, "Reload Amount");
         DrawNegativeWarning(_cooldown, "Cooldown");
         DrawNegativeWarning(_castDelay, "Cast Delay");
         DrawNegativeWarning(_recoveryDelay, "Recovery Delay");
@@ -326,6 +334,16 @@ public sealed class SkillDataEditor : Editor
                 DrawNonPositiveWarning(_projectileCount, "Projectile Count");
             if (GetProjectileFirePattern() == ProjectileFirePattern.Burst)
                 DrawNonPositiveWarning(_projectileBurstInterval, "Burst Interval");
+        }
+
+        if (GetResourceType() == SkillResourceType.Bullet &&
+            GetBulletShortageMode() == BulletShortageMode.AllowPartialUse &&
+            executionType == SkillExecutionType.Projectile &&
+            GetEffectiveProjectileCountForEditor() != Mathf.Max(0, GetIntValue(_consumeAmount)))
+        {
+            EditorGUILayout.HelpBox(
+                "AllowPartialUse expects effective projectile count to match consumeAmount. Runtime falls back to full-cost behavior when they differ.",
+                MessageType.Warning);
         }
 
         if (executionType == SkillExecutionType.Dash)
@@ -351,12 +369,47 @@ public sealed class SkillDataEditor : Editor
         return (SkillAnimationType)_animationType.enumValueIndex;
     }
 
+    private SkillResourceType GetResourceType()
+    {
+        if (_resourceType == null || _resourceType.hasMultipleDifferentValues)
+            return SkillResourceType.None;
+
+        return (SkillResourceType)_resourceType.enumValueIndex;
+    }
+
+    private BulletShortageMode GetBulletShortageMode()
+    {
+        if (_bulletShortageMode == null || _bulletShortageMode.hasMultipleDifferentValues)
+            return BulletShortageMode.RequireFullCost;
+
+        return (BulletShortageMode)_bulletShortageMode.enumValueIndex;
+    }
+
     private ProjectileFirePattern GetProjectileFirePattern()
     {
         if (_projectileFirePattern == null || _projectileFirePattern.hasMultipleDifferentValues)
             return ProjectileFirePattern.Single;
 
         return (ProjectileFirePattern)_projectileFirePattern.enumValueIndex;
+    }
+
+    private int GetEffectiveProjectileCountForEditor()
+    {
+        switch (GetProjectileFirePattern())
+        {
+            case ProjectileFirePattern.Burst:
+            case ProjectileFirePattern.Spread:
+            case ProjectileFirePattern.Circle:
+                return Mathf.Max(1, GetIntValue(_projectileCount));
+
+            default:
+                return 1;
+        }
+    }
+
+    private static int GetIntValue(SerializedProperty property)
+    {
+        return property != null && !property.hasMultipleDifferentValues ? property.intValue : 0;
     }
 
     private bool IsAttackPattern(AttackPatternType pattern)

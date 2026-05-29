@@ -53,8 +53,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [SerializeField, Min(0f)] private float damageInvincibleDuration = 0.5f;
 
     [Header("Skill Resources")]
-    [SerializeField, Min(0)] private int maxBullet = 0;
-    [SerializeField, Min(0)] private int startingBullet = 0;
     [SerializeField, Min(0)] private int maxParryStack = 4;
     [SerializeField, Min(0f)] private float parryStackGraceDuration = 3f;
     [SerializeField, Min(0.01f)] private float parryStackDecayInterval = 1f;
@@ -94,6 +92,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private float _skillRecoveryTimer;
     private Coroutine _skillCastRoutine;
     private Coroutine _parryRoutine;
+    private Coroutine _reloadRoutine;
     private Coroutine _enemyKnockbackRoutine;
     private readonly List<PlayerSlowEffect> _enemySlows = new();
     private float _enemySlowMultiplier = 1f;
@@ -105,7 +104,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private bool _isParryInvincibleWindowActive;
     private bool _parryIntercepted;
     private bool _parryCancelled;
+    private bool _isReloading;
     private bool _isDungeonChannelSubscribed;
+    private int maxBullet;
 
     private struct PlayerSlowEffect
     {
@@ -123,11 +124,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack;
     public int MaxParryStack => maxParryStack;
+    public bool IsReloading => _isReloading;
+    public PlayerBasicAttackMode CurrentBasicAttackMode => GetCurrentBasicAttackMode();
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
     public bool IsParryBusy => _isParrySequenceActive;
-    public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f || _isParrySequenceActive;
+    public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f || _isParrySequenceActive || _isReloading;
     public bool IsSlowed => _enemySlows.Count > 0;
     public float SlowRemainingTime => GetSlowRemainingTime();
     public float SlowTotalDurationForUi => _slowTotalDurationForUi;
@@ -164,7 +167,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void Awake()
     {
         _resource.Initialize(maxHp);
-        _currentBullet = Mathf.Clamp(startingBullet, 0, maxBullet);
         CachePlayerHitInfo();
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
@@ -205,6 +207,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         ClearSkillTimingState();
         ClearParryState();
+        ClearReloadState();
         ClearEnemyImpactState();
     }
 
@@ -264,7 +267,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     /// </summary>
     public void EquipWeapon(WeaponData weapon)
     {
+        ClearReloadState();
         currentWeapon   = weapon;
+        ApplyWeaponMagazine(weapon);
         _cooldownController.ResetAll();
         BindSkillSlots(weapon);
 #if UNITY_EDITOR
@@ -275,6 +280,19 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     // ══════════════════════════════════════════════════════════════
     //  매 프레임 처리
     // ══════════════════════════════════════════════════════════════
+
+    private void ApplyWeaponMagazine(WeaponData weapon)
+    {
+        if (weapon != null && weapon.usesMagazine)
+        {
+            maxBullet = Mathf.Max(0, weapon.magazineSize);
+            _currentBullet = maxBullet;
+            return;
+        }
+
+        maxBullet = 0;
+        _currentBullet = 0;
+    }
 
     private void Update()
     {
@@ -298,9 +316,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsCombatBlockedByLocation()) return;
         if (IsDashing) return;
         if (IsStunned) return;
-        if (IsSkillBusy) return;
 
         RefreshAimDirection();
+
+        if (_inputReader.WasReloadPressed && IsCurrentFormBulletMode())
+            TryStartReload();
+        if (IsSkillBusy) return;
 
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
         if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
@@ -335,12 +356,20 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsSkillBusy) return;
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
-        _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
         if (IsCurrentFormParryMode())
         {
+            _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
             BeginParryBasicAttack();
             return;
         }
+
+        if (IsCurrentFormBulletMode())
+        {
+            TryBulletBasicAttack();
+            return;
+        }
+
+        _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
 
         _attackExecutor.BeginAttackActivation();
         if (basicAttackSkillData != null)
@@ -369,8 +398,41 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private bool IsCurrentFormParryMode()
     {
+        return GetCurrentBasicAttackMode() == PlayerBasicAttackMode.Parry;
+    }
+
+    private bool IsCurrentFormBulletMode()
+    {
+        return GetCurrentBasicAttackMode() == PlayerBasicAttackMode.Bullet;
+    }
+
+    private PlayerBasicAttackMode GetCurrentBasicAttackMode()
+    {
         PlayerFormData form = _formController != null ? _formController.CurrentForm : null;
-        return form != null && form.BasicAttackMode == PlayerBasicAttackMode.Parry;
+        return form != null ? form.BasicAttackMode : PlayerBasicAttackMode.Damage;
+    }
+
+    private void TryBulletBasicAttack()
+    {
+        if (!CanUseMagazine())
+            return;
+
+        if (_currentBullet <= 0)
+        {
+            TryStartReload();
+            return;
+        }
+
+        if (basicAttackSkillData == null || basicAttackSkillData.executionType != SkillExecutionType.Projectile)
+            return;
+
+        SkillExecutionContext context = CreateSkillExecutionContext(basicAttackSkillData, -1);
+        if (!_skillExecutor.ExecuteBasicProjectile(context, 1))
+            return;
+
+        _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
+        Spend(SkillResourceType.Bullet, 1);
+        TryStartAutoReloadIfEmpty();
     }
 
     private void BeginParryBasicAttack()
@@ -523,9 +585,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         SkillData skill = slot.Data;
         SkillExecutionContext context = CreateSkillExecutionContext(skill, slotIndex);
-        if (!_skillExecutor.Execute(context)) return false;
+        SkillExecutionResult result = _skillExecutor.Execute(context);
+        if (!result.Success) return false;
 
-        SpendSkillResource(skill);
+        Spend(skill.resourceType, result.ResourceConsumed);
+        ApplySkillReload(skill);
+        TryStartAutoReloadIfEmpty();
         slot.StartCooldown();
         StartSkillRecovery(skill.recoveryDelay);
         combatChannel?.RaiseSkillUsed(skill);
@@ -557,6 +622,84 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _isSkillCasting = false;
         _skillRecoveryTimer = 0f;
+    }
+
+    private bool CanUseMagazine()
+    {
+        return currentWeapon != null && currentWeapon.usesMagazine && maxBullet > 0;
+    }
+
+    private bool TryStartReload()
+    {
+        if (!CanUseMagazine())
+            return false;
+        if (_isSkillCasting || _skillRecoveryTimer > 0f || _isParrySequenceActive)
+            return false;
+        if (_isReloading)
+            return false;
+        if (_currentBullet >= maxBullet)
+            return false;
+
+        _reloadRoutine = StartCoroutine(ReloadRoutine());
+        return true;
+    }
+
+    private IEnumerator ReloadRoutine()
+    {
+        _isReloading = true;
+        float remaining = currentWeapon != null ? Mathf.Max(0f, currentWeapon.reloadTime) : 0f;
+        while (remaining > 0f)
+        {
+            if (IsDead || !isActiveAndEnabled || !CanUseMagazine())
+            {
+                FinishReloadState();
+                yield break;
+            }
+
+            remaining -= Time.deltaTime;
+            yield return null;
+        }
+
+        int amount = ResolveReloadAmount();
+        _currentBullet = Mathf.Min(maxBullet, _currentBullet + amount);
+        FinishReloadState();
+    }
+
+    private int ResolveReloadAmount()
+    {
+        if (currentWeapon == null)
+            return maxBullet;
+
+        return currentWeapon.reloadAmount > 0 ? currentWeapon.reloadAmount : maxBullet;
+    }
+
+    private void TryStartAutoReloadIfEmpty()
+    {
+        if (_currentBullet <= 0)
+            TryStartReload();
+    }
+
+    private void ApplySkillReload(SkillData skill)
+    {
+        if (skill != null && skill.reloadAmount > 0)
+            RestoreSkillResource(SkillResourceType.Bullet, skill.reloadAmount);
+    }
+
+    private void ClearReloadState()
+    {
+        if (_reloadRoutine != null)
+        {
+            StopCoroutine(_reloadRoutine);
+            _reloadRoutine = null;
+        }
+
+        _isReloading = false;
+    }
+
+    private void FinishReloadState()
+    {
+        _reloadRoutine = null;
+        _isReloading = false;
     }
 
     private void ClearParryState()
@@ -830,6 +973,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _externalInvincibilityCount = 0;
         ClearSkillTimingState();
         ClearParryState();
+        ClearReloadState();
         ClearEnemyImpactState();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
@@ -1000,12 +1144,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 AddParryStack(amount);
                 break;
         }
-    }
-
-    private void SpendSkillResource(SkillData skill)
-    {
-        if (skill != null)
-            Spend(skill.resourceType, skill.consumeAmount);
     }
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────

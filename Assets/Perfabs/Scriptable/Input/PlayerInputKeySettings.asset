@@ -19,6 +19,7 @@ MonoBehaviour:
   interactConfirm: 40
   inventory: 23
   basicAttack: 1
+  reload: 15
   skillSlot1: 31
   skillSlot2: 37
   skillSlot3: 19

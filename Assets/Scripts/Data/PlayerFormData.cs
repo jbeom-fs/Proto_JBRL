@@ -3,7 +3,8 @@ using UnityEngine;
 public enum PlayerBasicAttackMode
 {
     Damage = 0,
-    Parry = 1
+    Parry = 1,
+    Bullet = 2
 }
 
 [CreateAssetMenu(fileName = "NewPlayerForm", menuName = "JBRogLike/Player/Form")]

@@ -16,6 +16,12 @@ public enum SkillResourceType
     ParryStack = 2
 }
 
+public enum BulletShortageMode
+{
+    RequireFullCost = 0,
+    AllowPartialUse = 1
+}
+
 /// <summary>
 /// Skill data assigned from WeaponData.skills[].
 /// Create from Assets > Create > JBRogLike > Combat > Skill.
@@ -48,6 +54,13 @@ public class SkillData : ScriptableObject
     [Tooltip("Resource consumed after successful execution.")]
     [Min(0)]
     public int consumeAmount = 0;
+
+    [Tooltip("Bullet skills may require the full cost or fire as many shots as remaining bullets allow.")]
+    public BulletShortageMode bulletShortageMode = BulletShortageMode.RequireFullCost;
+
+    [Tooltip("Bullet amount restored after this skill succeeds.")]
+    [Min(0)]
+    public int reloadAmount = 0;
 
     [Tooltip("Cooldown in seconds after the skill is cast.")]
     [Min(0f)]

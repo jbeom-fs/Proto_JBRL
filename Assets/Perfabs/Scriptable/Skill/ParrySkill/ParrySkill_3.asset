@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ParrySkill_3
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   skillName: "\uD328\uB9AC\uC2A4\uD0AC 1"
-  icon: {fileID: 0}
+  icon: {fileID: -2224474878120320963, guid: 97e217bf083729f42a8239ef77b258a9, type: 3}
   description: 
   executionType: 0
   resourceType: 2
@@ -30,7 +30,7 @@ MonoBehaviour:
   attackPattern: 2
   patternRange: 5
   coneHalfAngle: 45
-  isMultiTarget: 0
+  isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0

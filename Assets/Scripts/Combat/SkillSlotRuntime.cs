@@ -39,7 +39,7 @@ public sealed class SkillSlotRuntime
         if (!HasSkill || !IsCooldownReady)
             return false;
 
-        int required = Mathf.Max(Data.requiredAmount, Data.consumeAmount);
+        int required = ResolveRequiredAmount(Data);
         return resources == null || resources.Has(Data.resourceType, required);
     }
 
@@ -51,5 +51,20 @@ public sealed class SkillSlotRuntime
     public void ResetRuntimeState()
     {
         CooldownRemaining = 0f;
+    }
+
+    private static int ResolveRequiredAmount(SkillData skill)
+    {
+        if (skill == null || skill.resourceType == SkillResourceType.None)
+            return 0;
+
+        if (skill.resourceType == SkillResourceType.Bullet &&
+            skill.bulletShortageMode == BulletShortageMode.AllowPartialUse &&
+            SkillProjectileUtility.GetEffectiveProjectileCount(skill) == skill.consumeAmount)
+        {
+            return Mathf.Max(0, skill.requiredAmount);
+        }
+
+        return Mathf.Max(skill.requiredAmount, skill.consumeAmount);
     }
 }

@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -600,13 +600,14 @@ GameObject:
   - component: {fileID: 158114376}
   - component: {fileID: 158114378}
   - component: {fileID: 158114377}
+  - component: {fileID: 158114379}
   m_Layer: 5
-  m_Name: RetiredResourceText
+  m_Name: FreischutzMagazine_Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &158114376
 RectTransform:
   m_ObjectHideFlags: 0
@@ -619,12 +620,12 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 628099136}
+  m_Father: {fileID: 1237912036}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &158114377
 MonoBehaviour:
@@ -725,6 +726,136 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 158114375}
+  m_CullTransparentMesh: 1
+--- !u!114 &158114379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158114375}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6757d9439b84d4da5c8eb55ddc0a4a6, type: 3}
+  m_Name: FreischutzMagazineUI
+  m_EditorClassIdentifier: Assembly-CSharp::FreischutzMagazineUI
+  combat: {fileID: 1562452756}
+  bulletSprite: {fileID: -4735188967676587534, guid: 77310cbdc2993ec4dbb2cf9b8a110489, type: 3}
+  bulletEmptySprite: {fileID: 2208703988740019828, guid: 09a6777812a0c8a4f9b640133cb55866, type: 3}
+  cellContainer: {fileID: 158114380}
+  cellTemplate: {fileID: 158114384}
+  magazineText: {fileID: 158114377}
+  cellSpacing: 2
+--- !u!224 &158114380
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158114381}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 158114383}
+  m_Father: {fileID: 1237912036}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &158114381
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 158114380}
+  m_Layer: 5
+  m_Name: FreischutzMagazine_Cells
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!1 &158114382
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 158114383}
+  - component: {fileID: 158114385}
+  - component: {fileID: 158114384}
+  m_Layer: 5
+  m_Name: BulletCell_Template
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &158114383
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158114382}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 158114380}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 12, y: 24}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &158114384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158114382}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: -4735188967676587534, guid: 77310cbdc2993ec4dbb2cf9b8a110489, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &158114385
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 158114382}
   m_CullTransparentMesh: 1
 --- !u!1 &175907014
 GameObject:
@@ -4707,7 +4838,6 @@ RectTransform:
   m_Children:
   - {fileID: 349507241}
   - {fileID: 186462598}
-  - {fileID: 158114376}
   m_Father: {fileID: 2001000002}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4776,7 +4906,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b461b6f6fb264f13bd908f2958d2e87c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParryStackBarUI
   combat: {fileID: 1562452756}
   stackSlider: {fileID: 628099137}
@@ -15918,6 +16048,43 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1209699566}
   m_CullTransparentMesh: 1
+--- !u!1 &1237912035
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1237912036}
+  m_Layer: 5
+  m_Name: Freischutz_UI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1237912036
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1237912035}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 158114380}
+  - {fileID: 158114376}
+  m_Father: {fileID: 2001000002}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -20.000027}
+  m_SizeDelta: {x: 320, y: 20}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1244589952
 GameObject:
   m_ObjectHideFlags: 0
@@ -62547,12 +62714,10 @@ MonoBehaviour:
   maxHp: 10000
   baseAttack: 0
   baseDefense: 1
-  currentWeapon: {fileID: 11400000, guid: 2e0541ebeb850ba42860fab7419d8403, type: 2}
-  basicAttackSkillData: {fileID: 11400000, guid: 5ebbea7a1b464df294f062ad5be22510, type: 2}
+  currentWeapon: {fileID: 11400000, guid: 8d4f0edb16dd4f88a98db580508d1a22, type: 2}
+  basicAttackSkillData: {fileID: 11400000, guid: ee7ce463d16647b8aa6d4309d5c51015, type: 2}
   hitRadius: 0.3
   damageInvincibleDuration: 0.2
-  maxBullet: 0
-  startingBullet: 0
   maxParryStack: 4
   parryStackGraceDuration: 3
   parryStackDecayInterval: 1
@@ -62863,7 +63028,7 @@ MonoBehaviour:
   animator: {fileID: 2005918157}
   visualTransform: {fileID: 2005918155}
   defaultForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
-  currentForm: {fileID: 11400000, guid: 9c8a0e89a0df4f64b83062d17b0f9821, type: 2}
+  currentForm: {fileID: 11400000, guid: 6f3f0c9ddbb542d4ac51501acfb9d4e1, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -68912,6 +69077,7 @@ RectTransform:
   m_Children:
   - {fileID: 51986289}
   - {fileID: 1962379075}
+  - {fileID: 1237912036}
   - {fileID: 628099136}
   - {fileID: 1835927402}
   m_Father: {fileID: 571178752}

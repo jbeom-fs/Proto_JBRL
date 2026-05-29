@@ -1,6 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public readonly struct SkillExecutionResult
+{
+    public SkillExecutionResult(bool success, int resourceConsumed)
+    {
+        Success = success;
+        ResourceConsumed = Mathf.Max(0, resourceConsumed);
+    }
+
+    public bool Success { get; }
+    public int ResourceConsumed { get; }
+
+    public static SkillExecutionResult Failure => new(false, 0);
+    public static SkillExecutionResult SuccessWithCost(int resourceConsumed) => new(true, resourceConsumed);
+}
+
 /// <summary>
 /// Executes skill effects.
 /// This first version preserves the existing immediate area-damage behavior;
@@ -22,12 +37,12 @@ public sealed class SkillExecutor
         _projectileFireService = new ProjectileFireService();
     }
 
-    public bool Execute(SkillExecutionContext context)
+    public SkillExecutionResult Execute(SkillExecutionContext context)
     {
-        if (context == null) return false;
-        if (context.Skill == null) return false;
-        if (context.CasterTransform == null) return false;
-        if (_attackExecutor == null) return false;
+        if (context == null) return SkillExecutionResult.Failure;
+        if (context.Skill == null) return SkillExecutionResult.Failure;
+        if (context.CasterTransform == null) return SkillExecutionResult.Failure;
+        if (_attackExecutor == null) return SkillExecutionResult.Failure;
 
         switch (context.Skill.executionType)
         {
@@ -44,11 +59,16 @@ public sealed class SkillExecutor
             case SkillExecutionType.Buff:
             default:
                 ReportUnsupportedExecutionType(context.Skill.executionType);
-                return false;
+                return SkillExecutionResult.Failure;
         }
     }
 
-    private bool ExecuteInstantArea(SkillExecutionContext context)
+    public bool ExecuteBasicProjectile(SkillExecutionContext context, int projectileCount)
+    {
+        return ExecuteProjectile(context, Mathf.Max(1, projectileCount), 0).Success;
+    }
+
+    private SkillExecutionResult ExecuteInstantArea(SkillExecutionContext context)
     {
         List<Vector3> targets = _targetResolver.ResolveWorldTargets(context);
         _attackExecutor.BeginAttackActivation();
@@ -64,39 +84,61 @@ public sealed class SkillExecutor
             context.HitRadius);
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
-        return true;
+        return SkillExecutionResult.SuccessWithCost(context.Skill.consumeAmount);
     }
 
-    private bool ExecuteProjectile(SkillExecutionContext context)
+    private SkillExecutionResult ExecuteProjectile(SkillExecutionContext context)
+    {
+        SkillData skill = context.Skill;
+        int projectileCount = SkillProjectileUtility.GetEffectiveProjectileCount(skill);
+        int resourceConsumed = Mathf.Max(0, skill.consumeAmount);
+
+        if (SkillProjectileUtility.AllowsPartialBulletUse(skill))
+        {
+            int available = context.CasterCombat != null ? context.CasterCombat.CurrentBullet : 0;
+            int required = Mathf.Max(0, skill.requiredAmount);
+            if (available < required)
+                return SkillExecutionResult.Failure;
+
+            projectileCount = Mathf.Min(projectileCount, available);
+            resourceConsumed = projectileCount;
+            if (projectileCount <= 0)
+                return SkillExecutionResult.Failure;
+        }
+
+        return ExecuteProjectile(context, projectileCount, resourceConsumed);
+    }
+
+    private SkillExecutionResult ExecuteProjectile(SkillExecutionContext context, int projectileCount, int resourceConsumed)
     {
         SkillData skill = context.Skill;
         if (skill.projectilePrefab == null)
         {
             ReportMissingProjectilePrefab(skill);
-            return false;
+            return SkillExecutionResult.Failure;
         }
 
         Vector2 direction = ResolveExecutionDirection(context);
-        if (!_projectileFireService.Fire(CreateProjectileFireRequest(context, direction)))
-            return false;
+        if (!_projectileFireService.Fire(CreateProjectileFireRequest(context, direction, projectileCount)))
+            return SkillExecutionResult.Failure;
 
         PlayConfiguredAnimation(context, skill, direction);
-        return true;
+        return SkillExecutionResult.SuccessWithCost(resourceConsumed);
     }
 
-    private bool ExecuteDash(SkillExecutionContext context)
+    private SkillExecutionResult ExecuteDash(SkillExecutionContext context)
     {
         PlayerDashController dashController = context.CasterDash;
         if (dashController == null)
         {
             ReportMissingDashController(context.CasterCombat);
-            return false;
+            return SkillExecutionResult.Failure;
         }
 
         SkillData skill = context.Skill;
         Vector2 direction = ResolveExecutionDirection(context);
         bool invincibleDuringDash = skill.dashInvincibleDuringDash;
-        return dashController.TryStartDash(
+        bool success = dashController.TryStartDash(
             context.CasterCombat,
             direction,
             skill.dashDistance,
@@ -105,6 +147,7 @@ public sealed class SkillExecutor
             invincibleDuringDash,
             CreateDashDamageRequest(context),
             skill);
+        return success ? SkillExecutionResult.SuccessWithCost(skill.consumeAmount) : SkillExecutionResult.Failure;
     }
 
     private static void PlayConfiguredAnimation(SkillExecutionContext context, SkillData skill, Vector2 direction)
@@ -131,7 +174,7 @@ public sealed class SkillExecutor
         };
     }
 
-    private static ProjectileFireRequest CreateProjectileFireRequest(SkillExecutionContext context, Vector2 direction)
+    private static ProjectileFireRequest CreateProjectileFireRequest(SkillExecutionContext context, Vector2 direction, int projectileCount)
     {
         SkillData skill = context.Skill;
         return new ProjectileFireRequest
@@ -145,7 +188,7 @@ public sealed class SkillExecutor
             Damage = context.TotalAttack + skill.damage,
             Speed = skill.projectileSpeed,
             Lifetime = skill.projectileLifetime,
-            ProjectileCount = skill.projectileCount,
+            ProjectileCount = Mathf.Max(1, projectileCount),
             SpreadAngle = skill.projectileSpreadAngle,
             FirePattern = skill.projectileFirePattern,
             WallHitMode = skill.projectileWallHitMode,

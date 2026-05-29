@@ -35,5 +35,12 @@ public class WeaponData : ScriptableObject
     public bool canPenetrateWalls = false;
 
     [Header("스킬 슬롯 (Q / W / E / R 키)")]
+    [Header("Magazine")]
+    public bool usesMagazine = false;
+    [Min(0)] public int magazineSize = 0;
+    [Min(0f)] public float reloadTime = 1f;
+    [Min(0)] public int reloadAmount = 0;
+
+    [Header("Skills (Q / W / E / R)")]
     public SkillData[] skills = new SkillData[4];
 }
