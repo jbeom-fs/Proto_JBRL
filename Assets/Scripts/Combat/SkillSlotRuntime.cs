@@ -1,5 +1,12 @@
 using UnityEngine;
 
+public interface ISkillResourceLedger
+{
+    bool Has(SkillResourceType type, int requiredAmount);
+    bool Spend(SkillResourceType type, int consumeAmount);
+    int GetAmount(SkillResourceType type);
+}
+
 /// <summary>
 /// Runtime state for one skill slot.
 /// Currently used by the player Q/W/E/R slots, but kept independent from
@@ -27,9 +34,13 @@ public sealed class SkillSlotRuntime
             CooldownRemaining -= deltaTime;
     }
 
-    public bool CanUse(int availableMp)
+    public bool CanUse(ISkillResourceLedger resources)
     {
-        return HasSkill && IsCooldownReady && availableMp >= Data.mpCost;
+        if (!HasSkill || !IsCooldownReady)
+            return false;
+
+        int required = Mathf.Max(Data.requiredAmount, Data.consumeAmount);
+        return resources == null || resources.Has(Data.resourceType, required);
     }
 
     public void StartCooldown()

@@ -5,7 +5,7 @@
 //  책임:
 //    • WeaponData 기반 기본 공격 (Space)
 //    • SkillData 기반 스킬 사용 (1~4)
-//    • HP / MP 관리 및 이벤트 발행
+//    • HP / skill resource 관리 및 이벤트 발행
 //
 //  알지 말아야 할 것:
 //    • 이동 로직 (PlayerController 담당)
@@ -20,7 +20,7 @@ using UnityEngine;
 
 [RequireComponent(typeof(PlayerDashController))]
 [RequireComponent(typeof(PlayerInputReader))]
-public class PlayerCombatController : MonoBehaviour, IDamageable
+public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResourceLedger
 {
     private const int SkillSlotCount = 4;
     private const float DefaultPlayerHitRadius = 0.5f;
@@ -31,11 +31,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     [Header("Dependencies")]
     public CombatEventChannel combatChannel;
+    [SerializeField] private DungeonEventChannel dungeonChannel;
     public PlayerController  playerMovement;
 
     [Header("기본 스탯")]
     [SerializeField] private int maxHp      = 20;
-    [SerializeField] private int maxMp      = 10;
     [SerializeField] private int baseAttack  = 3;
     [SerializeField] private int baseDefense = 1;
 
@@ -51,6 +51,20 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     [Header("Damage Invincibility")]
     [SerializeField, Min(0f)] private float damageInvincibleDuration = 0.5f;
+
+    [Header("Skill Resources")]
+    [SerializeField, Min(0)] private int maxBullet = 0;
+    [SerializeField, Min(0)] private int startingBullet = 0;
+    [SerializeField, Min(0)] private int maxParryStack = 4;
+    [SerializeField, Min(0f)] private float parryStackGraceDuration = 3f;
+    [SerializeField, Min(0.01f)] private float parryStackDecayInterval = 1f;
+    [SerializeField, Min(1)] private int parryStackDecayAmount = 1;
+
+    [Header("Parry Basic Attack")]
+    [SerializeField, Min(0f)] private float parryStartupDelay = 0.08f;
+    [SerializeField, Min(0f)] private float parryInvincibleDuration = 0.2f;
+    [SerializeField, Min(0f)] private float parryRecoveryDelay = 0.18f;
+    [SerializeField] private bool blockMovementDuringParry = true;
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
@@ -68,6 +82,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private WeaponData _boundSkillWeapon;
     private float _damageInvincibleTimer;
     private int _externalInvincibilityCount;
+    private int _currentBullet;
+    private int _parryStack;
+    private float _parryStackGraceTimer;
+    private float _parryStackDecayTimer;
     private Transform _cachedTransform;
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
@@ -75,12 +93,19 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
     private Coroutine _skillCastRoutine;
+    private Coroutine _parryRoutine;
     private Coroutine _enemyKnockbackRoutine;
     private readonly List<PlayerSlowEffect> _enemySlows = new();
     private float _enemySlowMultiplier = 1f;
     private float _stunTimer;
     private float _slowTotalDurationForUi;
     private float _stunTotalDurationForUi;
+    private bool _isParrySequenceActive;
+    private bool _isParryStartupActive;
+    private bool _isParryInvincibleWindowActive;
+    private bool _parryIntercepted;
+    private bool _parryCancelled;
+    private bool _isDungeonChannelSubscribed;
 
     private struct PlayerSlowEffect
     {
@@ -94,12 +119,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool IsDead { get; private set; }
     public int  CurrentHp   => _resource.CurrentHp;
     public int  MaxHp       => maxHp;
-    public int  CurrentMp   => _resource.CurrentMp;
-    public int  MaxMp       => maxMp;
+    public int CurrentBullet => _currentBullet;
+    public int MaxBullet => maxBullet;
+    public int CurrentParryStack => _parryStack;
+    public int MaxParryStack => maxParryStack;
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
-    public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f;
+    public bool IsParryBusy => _isParrySequenceActive;
+    public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f || _isParrySequenceActive;
     public bool IsSlowed => _enemySlows.Count > 0;
     public float SlowRemainingTime => GetSlowRemainingTime();
     public float SlowTotalDurationForUi => _slowTotalDurationForUi;
@@ -110,7 +138,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public float StunTotalDurationForUi => _stunTotalDurationForUi;
     public float StunRemainingRatio =>
         _stunTotalDurationForUi > 0f ? Mathf.Clamp01(_stunTimer / _stunTotalDurationForUi) : 0f;
-    public bool BlocksPlayerMovement => IsSkillBusy;
+    public bool BlocksPlayerMovement => _isSkillCasting || _skillRecoveryTimer > 0f || (blockMovementDuringParry && _isParrySequenceActive);
     public float MoveSpeedMultiplier => IsStunned ? 0f : _enemySlowMultiplier;
 
     public Transform   CachedPlayerTransform => _cachedTransform;
@@ -135,7 +163,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void Awake()
     {
-        _resource.Initialize(maxHp, maxMp);
+        _resource.Initialize(maxHp);
+        _currentBullet = Mathf.Clamp(startingBullet, 0, maxBullet);
         CachePlayerHitInfo();
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
@@ -147,10 +176,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _hitFlash = ResolveHitFlashFeedback();
         if (invincibilityFlashFeedback == null)
             invincibilityFlashFeedback = ResolveInvincibilityFlashFeedback();
+        SubscribeDungeonChannel();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (combatChannel == null)
-            Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/MP/스킬 UI 이벤트가 발행되지 않습니다.", this);
+            Debug.LogWarning("[PlayerCombatController] CombatEventChannel 없음 — HP/스킬 UI 이벤트가 발행되지 않습니다.", this);
         if (playerMovement == null)
             Debug.LogWarning("[PlayerCombatController] PlayerController 없음 — 공격 방향이 기본 방향을 사용합니다.", this);
         if (_inputReader == null)
@@ -166,6 +196,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
     private void OnDestroy()
     {
+        UnsubscribeDungeonChannel();
         if (ReferenceEquals(Active, this))
             Active = null;
     }
@@ -173,6 +204,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private void OnDisable()
     {
         ClearSkillTimingState();
+        ClearParryState();
         ClearEnemyImpactState();
     }
 
@@ -254,6 +286,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         TickEnemyStun(Time.deltaTime);
         TickEnemySlowEffects(Time.deltaTime);
+        TickSkillResources(Time.deltaTime);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
@@ -303,6 +336,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
+        if (IsCurrentFormParryMode())
+        {
+            BeginParryBasicAttack();
+            return;
+        }
+
         _attackExecutor.BeginAttackActivation();
         if (basicAttackSkillData != null)
             _formController?.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection);
@@ -328,6 +367,86 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             hitRadius);
     }
 
+    private bool IsCurrentFormParryMode()
+    {
+        PlayerFormData form = _formController != null ? _formController.CurrentForm : null;
+        return form != null && form.BasicAttackMode == PlayerBasicAttackMode.Parry;
+    }
+
+    private void BeginParryBasicAttack()
+    {
+        if (_parryRoutine != null)
+            StopCoroutine(_parryRoutine);
+
+        if (basicAttackSkillData != null)
+            _formController?.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection);
+
+        _parryRoutine = StartCoroutine(ParryBasicAttackRoutine());
+    }
+
+    private IEnumerator ParryBasicAttackRoutine()
+    {
+        _isParrySequenceActive = true;
+        _isParryStartupActive = false;
+        _isParryInvincibleWindowActive = false;
+        _parryIntercepted = false;
+        _parryCancelled = false;
+
+        float startup = Mathf.Max(0f, parryStartupDelay);
+        _isParryStartupActive = startup > 0f;
+        while (startup > 0f && !_parryCancelled)
+        {
+            if (IsDead || !isActiveAndEnabled)
+            {
+                ClearParryState();
+                yield break;
+            }
+
+            startup -= Time.deltaTime;
+            yield return null;
+        }
+
+        _isParryStartupActive = false;
+        if (_parryCancelled)
+        {
+            ClearParryState();
+            yield break;
+        }
+
+        _isParryInvincibleWindowActive = true;
+        float active = Mathf.Max(0f, parryInvincibleDuration);
+        invincibilityFlashFeedback?.Play(active);
+        while (active > 0f && !_parryIntercepted)
+        {
+            if (IsDead || !isActiveAndEnabled)
+            {
+                ClearParryState();
+                yield break;
+            }
+
+            active -= Time.deltaTime;
+            yield return null;
+        }
+
+        _isParryInvincibleWindowActive = false;
+        invincibilityFlashFeedback?.StopAndReset();
+
+        float recovery = Mathf.Max(0f, parryRecoveryDelay);
+        while (recovery > 0f)
+        {
+            if (IsDead || !isActiveAndEnabled)
+            {
+                ClearParryState();
+                yield break;
+            }
+
+            recovery -= Time.deltaTime;
+            yield return null;
+        }
+
+        ClearParryState();
+    }
+
     // ══════════════════════════════════════════════════════════════
     //  스킬 사용
     // ══════════════════════════════════════════════════════════════
@@ -341,7 +460,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
-        if (!slot.CanUse(CurrentMp)) return;
+        if (!slot.CanUse(this)) return;
 
         SkillData skill = slot.Data;
         float castDelay = Mathf.Max(0f, skill.castDelay);
@@ -400,13 +519,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return false;
         if (!ReferenceEquals(slot.Data, expectedSkill)) return false;
-        if (!slot.CanUse(CurrentMp)) return false;
+        if (!slot.CanUse(this)) return false;
 
         SkillData skill = slot.Data;
         SkillExecutionContext context = CreateSkillExecutionContext(skill, slotIndex);
         if (!_skillExecutor.Execute(context)) return false;
 
-        SpendMp(skill.mpCost);
+        SpendSkillResource(skill);
         slot.StartCooldown();
         StartSkillRecovery(skill.recoveryDelay);
         combatChannel?.RaiseSkillUsed(skill);
@@ -438,6 +557,22 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
 
         _isSkillCasting = false;
         _skillRecoveryTimer = 0f;
+    }
+
+    private void ClearParryState()
+    {
+        if (_parryRoutine != null)
+        {
+            StopCoroutine(_parryRoutine);
+            _parryRoutine = null;
+        }
+
+        _isParrySequenceActive = false;
+        _isParryStartupActive = false;
+        _isParryInvincibleWindowActive = false;
+        _parryIntercepted = false;
+        _parryCancelled = false;
+        invincibilityFlashFeedback?.StopAndReset();
     }
 
     private void ClearEnemyImpactState()
@@ -519,6 +654,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     private bool TryApplyDamage(int incomingDamage)
     {
         if (IsDead || !IsAlive) return false;
+        if (_isParryInvincibleWindowActive)
+        {
+            CompleteParryIntercept();
+            return false;
+        }
         if (IsDamageInvincible) return false;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
@@ -526,6 +666,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _resource.TakeDamage(actual);
         if (CurrentHp >= hpBefore)
             return false;
+
+        if (_isParryStartupActive)
+            _parryCancelled = true;
 
         _damageInvincibleTimer = damageInvincibleDuration;
         _hitFlash?.Play();
@@ -537,6 +680,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
             Die();
 
         return true;
+    }
+
+    private void CompleteParryIntercept()
+    {
+        _parryIntercepted = true;
+        _isParryInvincibleWindowActive = false;
+        AddParryStack(1);
+        invincibilityFlashFeedback?.StopAndReset();
     }
 
     private void ApplyEnemyKnockback(Vector2 hitDirection, float force, float duration)
@@ -678,6 +829,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
         ClearSkillTimingState();
+        ClearParryState();
         ClearEnemyImpactState();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
@@ -709,7 +861,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     }
 
     // ══════════════════════════════════════════════════════════════
-    //  MP 관리
+    //  Skill resource 관리
     // ══════════════════════════════════════════════════════════════
 
     private HitFlashFeedback ResolveHitFlashFeedback()
@@ -722,26 +874,138 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
         return GetComponentInChildren<PlayerInvincibilityFlashFeedback>(true);
     }
 
-    private void SpendMp(int amount)
-    {
-        _resource.SpendMp(amount);
-        combatChannel?.RaisePlayerMpChanged(CurrentMp, maxMp);
-    }
-
-    public void RestoreMp(int amount)
-    {
-        if (IsDead) return;
-
-        _resource.RestoreMp(amount, maxMp);
-        combatChannel?.RaisePlayerMpChanged(CurrentMp, maxMp);
-    }
-
     public void RestoreHp(int amount)
     {
         if (IsDead) return;
 
         _resource.RestoreHp(amount, maxHp);
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
+    }
+
+    private void TickSkillResources(float deltaTime)
+    {
+        if (_parryStack <= 0)
+            return;
+
+        if (_parryStackGraceTimer > 0f)
+        {
+            _parryStackGraceTimer = Mathf.Max(0f, _parryStackGraceTimer - deltaTime);
+            if (_parryStackGraceTimer > 0f)
+                return;
+        }
+
+        _parryStackDecayTimer -= deltaTime;
+        if (_parryStackDecayTimer > 0f)
+            return;
+
+        int decay = Mathf.Max(1, parryStackDecayAmount);
+        _parryStack = Mathf.Max(0, _parryStack - decay);
+        _parryStackDecayTimer = Mathf.Max(0.01f, parryStackDecayInterval);
+        if (_parryStack == 0)
+            ResetParryStackTimers();
+    }
+
+    private void AddParryStack(int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        _parryStack = Mathf.Min(maxParryStack, _parryStack + amount);
+        if (_parryStack > 0)
+        {
+            _parryStackGraceTimer = Mathf.Max(0f, parryStackGraceDuration);
+            _parryStackDecayTimer = Mathf.Max(0.01f, parryStackDecayInterval);
+        }
+    }
+
+    private void ResetParryStack()
+    {
+        _parryStack = 0;
+        ResetParryStackTimers();
+    }
+
+    private void ResetParryStackTimers()
+    {
+        _parryStackGraceTimer = 0f;
+        _parryStackDecayTimer = 0f;
+    }
+
+    public bool Has(SkillResourceType type, int requiredAmount)
+    {
+        if (type == SkillResourceType.None)
+            return true;
+
+        int required = Mathf.Max(0, requiredAmount);
+        return GetAmount(type) >= required;
+    }
+
+    public bool Spend(SkillResourceType type, int consumeAmount)
+    {
+        if (type == SkillResourceType.None)
+            return true;
+
+        int amount = Mathf.Max(0, consumeAmount);
+        if (amount == 0)
+            return true;
+
+        if (!Has(type, amount))
+            return false;
+
+        switch (type)
+        {
+            case SkillResourceType.Bullet:
+                _currentBullet = Mathf.Max(0, _currentBullet - amount);
+                return true;
+
+            case SkillResourceType.ParryStack:
+                _parryStack = Mathf.Max(0, _parryStack - amount);
+                if (_parryStack == 0)
+                    ResetParryStackTimers();
+                return true;
+
+            case SkillResourceType.None:
+            default:
+                return true;
+        }
+    }
+
+    public int GetAmount(SkillResourceType type)
+    {
+        switch (type)
+        {
+            case SkillResourceType.Bullet:
+                return _currentBullet;
+
+            case SkillResourceType.ParryStack:
+                return _parryStack;
+
+            case SkillResourceType.None:
+            default:
+                return 0;
+        }
+    }
+
+    public void RestoreSkillResource(SkillResourceType type, int amount)
+    {
+        if (IsDead || amount <= 0)
+            return;
+
+        switch (type)
+        {
+            case SkillResourceType.Bullet:
+                _currentBullet = Mathf.Min(maxBullet, _currentBullet + amount);
+                break;
+
+            case SkillResourceType.ParryStack:
+                AddParryStack(amount);
+                break;
+        }
+    }
+
+    private void SpendSkillResource(SkillData skill)
+    {
+        if (skill != null)
+            Spend(skill.resourceType, skill.consumeAmount);
     }
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
@@ -779,7 +1043,51 @@ public class PlayerCombatController : MonoBehaviour, IDamageable
     public bool CanUseSkill(int slotIndex)
     {
         EnsureSkillSlotsBound();
-        return !IsDead && !IsSkillBusy && !IsCombatBlockedByLocation() && (GetSkillSlot(slotIndex)?.CanUse(CurrentMp) ?? false);
+        return !IsDead && !IsSkillBusy && !IsCombatBlockedByLocation() && (GetSkillSlot(slotIndex)?.CanUse(this) ?? false);
+    }
+
+    private void SubscribeDungeonChannel()
+    {
+        if (_isDungeonChannelSubscribed)
+            return;
+
+        DungeonEventChannel channel = dungeonChannel;
+        if (channel == null && DungeonManager.Instance != null)
+            channel = DungeonManager.Instance.eventChannel;
+        if (channel == null)
+            return;
+
+        dungeonChannel = channel;
+        dungeonChannel.OnRoomEntered += HandleRoomEntered;
+        dungeonChannel.OnRoomDoorsOpened += HandleRoomDoorsOpened;
+        dungeonChannel.OnFloorChanged += HandleFloorChanged;
+        _isDungeonChannelSubscribed = true;
+    }
+
+    private void UnsubscribeDungeonChannel()
+    {
+        if (!_isDungeonChannelSubscribed || dungeonChannel == null)
+            return;
+
+        dungeonChannel.OnRoomEntered -= HandleRoomEntered;
+        dungeonChannel.OnRoomDoorsOpened -= HandleRoomDoorsOpened;
+        dungeonChannel.OnFloorChanged -= HandleFloorChanged;
+        _isDungeonChannelSubscribed = false;
+    }
+
+    private void HandleRoomEntered(RoomEnteredEventArgs args)
+    {
+        ResetParryStack();
+    }
+
+    private void HandleRoomDoorsOpened(RoomInfo room)
+    {
+        ResetParryStack();
+    }
+
+    private void HandleFloorChanged(int previousFloor, int newFloor)
+    {
+        ResetParryStack();
     }
 
     private static bool IsCombatBlockedByLocation()

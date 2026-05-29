@@ -9,6 +9,13 @@ public enum SkillAnimationType
     CustomTrigger = 4
 }
 
+public enum SkillResourceType
+{
+    None = 0,
+    Bullet = 1,
+    ParryStack = 2
+}
+
 /// <summary>
 /// Skill data assigned from WeaponData.skills[].
 /// Create from Assets > Create > JBRogLike > Combat > Skill.
@@ -30,9 +37,17 @@ public class SkillData : ScriptableObject
     [Tooltip("Execution route for this skill. AreaOverTime and Buff are reserved and not implemented yet.")]
     public SkillExecutionType executionType = SkillExecutionType.InstantArea;
 
-    [Tooltip("MP consumed when the skill is cast.")]
+    [Header("Resource")]
+    [Tooltip("Resource consumed when the skill succeeds. None ignores resource checks.")]
+    public SkillResourceType resourceType = SkillResourceType.None;
+
+    [Tooltip("Minimum resource required to cast this skill.")]
     [Min(0)]
-    public int mpCost = 3;
+    public int requiredAmount = 0;
+
+    [Tooltip("Resource consumed after successful execution.")]
+    [Min(0)]
+    public int consumeAmount = 0;
 
     [Tooltip("Cooldown in seconds after the skill is cast.")]
     [Min(0f)]

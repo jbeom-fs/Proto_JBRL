@@ -36,10 +36,12 @@ public sealed class PlayerFormController : MonoBehaviour
     private int _activeDashVisualToken;
     private int _dashVisualStartFrame;
     private bool _isInitialized;
+    private PlayerCombatController _combat;
 
     private void Awake()
     {
         CacheVisualDefaults();
+        _combat = GetComponent<PlayerCombatController>();
         _isInitialized = true;
 
         PlayerFormData initialForm = currentForm != null ? currentForm : defaultForm;
@@ -105,6 +107,8 @@ public sealed class PlayerFormController : MonoBehaviour
         currentForm = formData;
         _appliedForm = formData;
         ResetDashVisualRotation();
+        if (formData.DefaultWeapon != null && _combat != null)
+            _combat.EquipWeapon(formData.DefaultWeapon);
 
         if (formData.DefaultSprite != null)
             spriteRenderer.sprite = formData.DefaultSprite;

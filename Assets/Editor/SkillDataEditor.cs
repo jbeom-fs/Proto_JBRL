@@ -9,7 +9,9 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _icon;
     private SerializedProperty _description;
     private SerializedProperty _executionType;
-    private SerializedProperty _mpCost;
+    private SerializedProperty _resourceType;
+    private SerializedProperty _requiredAmount;
+    private SerializedProperty _consumeAmount;
     private SerializedProperty _cooldown;
     private SerializedProperty _castDelay;
     private SerializedProperty _recoveryDelay;
@@ -59,7 +61,9 @@ public sealed class SkillDataEditor : Editor
         _icon = serializedObject.FindProperty("icon");
         _description = serializedObject.FindProperty("description");
         _executionType = serializedObject.FindProperty("executionType");
-        _mpCost = serializedObject.FindProperty("mpCost");
+        _resourceType = serializedObject.FindProperty("resourceType");
+        _requiredAmount = serializedObject.FindProperty("requiredAmount");
+        _consumeAmount = serializedObject.FindProperty("consumeAmount");
         _cooldown = serializedObject.FindProperty("cooldown");
         _castDelay = serializedObject.FindProperty("castDelay");
         _recoveryDelay = serializedObject.FindProperty("recoveryDelay");
@@ -107,6 +111,7 @@ public sealed class SkillDataEditor : Editor
         serializedObject.Update();
 
         DrawBasicSection();
+        DrawResourceSection();
         DrawAnimationSection();
         SkillExecutionType executionType = GetExecutionType();
 
@@ -156,11 +161,18 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_icon);
         DrawProperty(_description);
         DrawProperty(_executionType);
-        DrawProperty(_mpCost);
         DrawProperty(_cooldown);
         DrawProperty(_castDelay);
         DrawProperty(_recoveryDelay);
         DrawProperty(_damage);
+    }
+
+    private void DrawResourceSection()
+    {
+        DrawSectionHeader("Resource");
+        DrawProperty(_resourceType);
+        DrawProperty(_requiredAmount);
+        DrawProperty(_consumeAmount);
     }
 
     private void DrawAnimationSection()
@@ -294,7 +306,8 @@ public sealed class SkillDataEditor : Editor
 
     private void DrawValidationWarnings(SkillExecutionType executionType)
     {
-        DrawNegativeWarning(_mpCost, "MP Cost");
+        DrawNegativeWarning(_requiredAmount, "Required Amount");
+        DrawNegativeWarning(_consumeAmount, "Consume Amount");
         DrawNegativeWarning(_cooldown, "Cooldown");
         DrawNegativeWarning(_castDelay, "Cast Delay");
         DrawNegativeWarning(_recoveryDelay, "Recovery Delay");

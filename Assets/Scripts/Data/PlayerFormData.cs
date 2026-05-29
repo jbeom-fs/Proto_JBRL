@@ -1,5 +1,11 @@
 using UnityEngine;
 
+public enum PlayerBasicAttackMode
+{
+    Damage = 0,
+    Parry = 1
+}
+
 [CreateAssetMenu(fileName = "NewPlayerForm", menuName = "JBRogLike/Player/Form")]
 public sealed class PlayerFormData : ScriptableObject
 {
@@ -16,8 +22,8 @@ public sealed class PlayerFormData : ScriptableObject
     [SerializeField] private float dashBaseAngle;
 
     [Header("Future Extensions")]
+    [SerializeField] private PlayerBasicAttackMode basicAttackMode = PlayerBasicAttackMode.Damage;
     [SerializeField] private WeaponData defaultWeapon;
-    [SerializeField] private SkillData[] skills;
 
     public PlayerFormId FormId => formId;
     public string DisplayName => displayName;
@@ -27,6 +33,6 @@ public sealed class PlayerFormData : ScriptableObject
     public bool UseHorizontalFlipForFacing => useHorizontalFlipForFacing;
     public bool RotateDashAnimationByDirection => rotateDashAnimationByDirection;
     public float DashBaseAngle => dashBaseAngle;
+    public PlayerBasicAttackMode BasicAttackMode => basicAttackMode;
     public WeaponData DefaultWeapon => defaultWeapon;
-    public SkillData[] Skills => skills;
 }

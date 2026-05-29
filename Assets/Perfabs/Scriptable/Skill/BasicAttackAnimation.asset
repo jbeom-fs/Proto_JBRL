@@ -16,7 +16,9 @@ MonoBehaviour:
   icon: {fileID: 0}
   description: Animation config for player basic attack.
   executionType: 0
-  mpCost: 0
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0

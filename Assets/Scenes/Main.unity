@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -601,12 +601,12 @@ GameObject:
   - component: {fileID: 158114378}
   - component: {fileID: 158114377}
   m_Layer: 5
-  m_Name: MPText
+  m_Name: RetiredResourceText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &158114376
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4685,8 +4685,9 @@ GameObject:
   m_Component:
   - component: {fileID: 628099136}
   - component: {fileID: 628099137}
+  - component: {fileID: 628099138}
   m_Layer: 5
-  m_Name: MP_Slider
+  m_Name: ParryStack_Slider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4753,7 +4754,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 0}
   m_FillRect: {fileID: 1395039077}
   m_HandleRect: {fileID: 0}
@@ -4765,6 +4766,20 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &628099138
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 628099135}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b461b6f6fb264f13bd908f2958d2e87c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ParryStackBarUI
+  combat: {fileID: 1562452756}
+  stackSlider: {fileID: 628099137}
 --- !u!1 &697083393
 GameObject:
   m_ObjectHideFlags: 0
@@ -62527,15 +62542,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatController
   combatChannel: {fileID: 11400000, guid: 4c3a1bb8383d07b40a109c40577c0f17, type: 2}
+  dungeonChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
   playerMovement: {fileID: 1562452755}
   maxHp: 10000
-  maxMp: 10
   baseAttack: 0
   baseDefense: 1
-  currentWeapon: {fileID: 11400000, guid: 76534a25531f9ee479638279ac83fdf5, type: 2}
+  currentWeapon: {fileID: 11400000, guid: 2e0541ebeb850ba42860fab7419d8403, type: 2}
   basicAttackSkillData: {fileID: 11400000, guid: 5ebbea7a1b464df294f062ad5be22510, type: 2}
   hitRadius: 0.3
   damageInvincibleDuration: 0.2
+  maxBullet: 0
+  startingBullet: 0
+  maxParryStack: 4
+  parryStackGraceDuration: 3
+  parryStackDecayInterval: 1
+  parryStackDecayAmount: 1
+  parryStartupDelay: 0.08
+  parryInvincibleDuration: 0.2
+  parryRecoveryDelay: 0.18
+  blockMovementDuringParry: 1
   invincibilityFlashFeedback: {fileID: 1562452772}
 --- !u!114 &1562452758
 MonoBehaviour:
@@ -62838,7 +62863,7 @@ MonoBehaviour:
   animator: {fileID: 2005918157}
   visualTransform: {fileID: 2005918155}
   defaultForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
-  currentForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
+  currentForm: {fileID: 11400000, guid: 9c8a0e89a0df4f64b83062d17b0f9821, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -68273,12 +68298,12 @@ GameObject:
   - component: {fileID: 1835927404}
   - component: {fileID: 1835927403}
   m_Layer: 5
-  m_Name: MP_Bar
+  m_Name: RetiredResourceBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1835927402
 RectTransform:
   m_ObjectHideFlags: 0
@@ -68911,9 +68936,7 @@ MonoBehaviour:
   combat: {fileID: 1562452756}
   combatChannel: {fileID: 11400000, guid: 4c3a1bb8383d07b40a109c40577c0f17, type: 2}
   hpSlider: {fileID: 51986290}
-  mpSlider: {fileID: 628099137}
   hpText: {fileID: 526732946}
-  mpText: {fileID: 158114377}
 --- !u!1 &2005918154
 GameObject:
   m_ObjectHideFlags: 0

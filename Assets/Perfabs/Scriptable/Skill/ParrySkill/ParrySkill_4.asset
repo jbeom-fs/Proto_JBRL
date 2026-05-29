@@ -10,32 +10,32 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: TestSkill_1
+  m_Name: ParrySkill_4
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: TestSkill
-  icon: {fileID: -3859272008004827343, guid: 8e48bf0ec9762e94aab377d59d969b45, type: 3}
-  description: Test
+  skillName: "\uD328\uB9AC\uC2A4\uD0AC 1"
+  icon: {fileID: 0}
+  description: 
   executionType: 0
-  resourceType: 0
-  requiredAmount: 0
-  consumeAmount: 0
-  cooldown: 1
-  castDelay: 0.3
-  recoveryDelay: 1
-  animationType: 1
+  resourceType: 2
+  requiredAmount: 4
+  consumeAmount: 4
+  cooldown: 0
+  castDelay: 0
+  recoveryDelay: 0
+  animationType: 0
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 1
-  attackPattern: 5
-  patternRange: 14
+  damage: 100
+  attackPattern: 3
+  patternRange: 10
   coneHalfAngle: 45
-  isMultiTarget: 1
+  isMultiTarget: 0
   canPenetrateWalls: 0
-  knockbackForce: 30
-  knockbackDuration: 0.15
-  slowPercentage: 0.5
-  slowDuration: 1.5
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3

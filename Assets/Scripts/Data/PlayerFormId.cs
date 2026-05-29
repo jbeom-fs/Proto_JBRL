@@ -1,8 +1,8 @@
 public enum PlayerFormId
 {
-    Sword = 0,
-    Slime = 1,
+    Normal = 0,
+    Sword = 1,
     Dagger = 2,
     Bow = 3,
-    Normal = 4
+    Parry = 4
 }

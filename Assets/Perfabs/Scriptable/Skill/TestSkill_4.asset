@@ -16,7 +16,9 @@ MonoBehaviour:
   icon: {fileID: 5936356172364887011, guid: e7d82edd42ae8b748b7e3716eb88f36c, type: 3}
   description: Test
   executionType: 0
-  mpCost: 0
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0

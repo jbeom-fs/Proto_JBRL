@@ -179,6 +179,7 @@
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />
+    <Compile Include="Assets\Scripts\UI\ParryStackBarUI.cs" />
     <Compile Include="Assets\Scripts\UI\MinimapController.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\LocationTransitionManager.cs" />
