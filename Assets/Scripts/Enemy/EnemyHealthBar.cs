@@ -46,6 +46,7 @@ public class EnemyHealthBar : MonoBehaviour
     private Transform      _fillTf;
     private Transform      _bgTf;
     private CircleCollider2D _collider;
+    private Vector3        _invScale = Vector3.one;
     private float          _hideTimer;
     private float          _anchorY;
     private bool           _isVisible;
@@ -70,6 +71,7 @@ public class EnemyHealthBar : MonoBehaviour
         if (_initialized) return;
 
         if (s_Pixel == null) s_Pixel = BuildPixelSprite();
+        ResolveInverseScale();
         CreateBarObjects();
         SetVisible(!hideWhenFull);
 
@@ -82,11 +84,11 @@ public class EnemyHealthBar : MonoBehaviour
         _fillTf = CreateBarChild("HPBar_Fill", fillColorFull, sortingOrder + 1, out _fillSr);
         float y = ResolveAnchorY();
 
-        _bgTf.localScale    = new Vector3(barWidth,  barHeight, 1f);
+        _bgTf.localScale    = new Vector3(barWidth * _invScale.x,  barHeight * _invScale.y, 1f);
         _bgTf.localPosition = new Vector3(0f, y, 0f);
 
         // Fill 초기 상태 = 가득 참
-        _fillTf.localScale    = new Vector3(barWidth, barHeight, 1f);
+        _fillTf.localScale    = new Vector3(barWidth * _invScale.x, barHeight * _invScale.y, 1f);
         _fillTf.localPosition = new Vector3(0f, y, 0f);
     }
 
@@ -126,8 +128,8 @@ public class EnemyHealthBar : MonoBehaviour
 
         // Fill 스케일 & 위치 — 왼쪽 앵커, 오른쪽에서 줄어듦
         float fillW = barWidth * ratio;
-        _fillTf.localScale    = new Vector3(fillW, barHeight, 1f);
-        _fillTf.localPosition = new Vector3(barWidth * (ratio - 1f) * 0.5f, y, 0f);
+        _fillTf.localScale    = new Vector3(fillW * _invScale.x, barHeight * _invScale.y, 1f);
+        _fillTf.localPosition = new Vector3(barWidth * (ratio - 1f) * 0.5f * _invScale.x, y, 0f);
 
         // 색상 그라디언트
         if (colorGradient)
@@ -180,5 +182,16 @@ public class EnemyHealthBar : MonoBehaviour
         }
 
         return yOffset;
+    }
+
+    private void ResolveInverseScale()
+    {
+        Vector3 scale = transform.lossyScale;
+        _invScale = new Vector3(SafeInv(scale.x), SafeInv(scale.y), 1f);
+    }
+
+    private static float SafeInv(float value)
+    {
+        return Mathf.Abs(value) > 1e-4f ? 1f / value : 1f;
     }
 }
