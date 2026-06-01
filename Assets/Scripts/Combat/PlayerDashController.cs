@@ -170,8 +170,7 @@ public sealed class PlayerDashController : MonoBehaviour
     private bool IsFootprintWalkable(Vector3 position)
     {
         float radius = ResolveFootprintRadius();
-        return WorldEnvironmentQuery.IsFootprintWalkable(position, radius) &&
-               !MovementBlockerQuery.IsPlayerMovementBlocked(position, radius);
+        return WorldEnvironmentQuery.IsFootprintWalkable(position, radius);
     }
 
     private float ResolveTileSize()
@@ -301,6 +300,7 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private void ApplyDamageToEnemy(EnemyController enemy, Vector3 hitOrigin)
     {
+        _damageRequest.OnEnemyHit?.Invoke(enemy);
         enemy.ApplyCombatImpact(
             _damageRequest.Damage,
             hitOrigin,
@@ -308,7 +308,6 @@ public sealed class PlayerDashController : MonoBehaviour
             _damageRequest.KnockbackDuration,
             _damageRequest.SlowPercentage,
             _damageRequest.SlowDuration);
-        _damageRequest.OnEnemyHit?.Invoke(enemy);
     }
 
     private static EnemyController ResolveEnemy(Collider2D hit)

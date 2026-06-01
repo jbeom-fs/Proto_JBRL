@@ -4,10 +4,16 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class DaggerMarkerVisualPool : MonoBehaviour
 {
+    private const string RuntimePoolName = "DaggerMarkerVisualPool";
+    private const string DefaultMarkerResourcePath = "Dagger/Test_Marker";
+
     [SerializeField] private GameObject markerPrefab;
     [SerializeField] private GameObject burstPrefab;
+    [SerializeField] private Sprite markerSprite;
     [SerializeField] private Vector3 markerOffset = new(0f, 0.45f, 0f);
     [SerializeField, Min(0.01f)] private float burstLifetime = 0.5f;
+    [SerializeField] private string markerSortingLayerName = "Default";
+    [SerializeField] private int markerSortingOrder = 50;
 
     private readonly Dictionary<EnemyController, GameObject> _activeMarkers = new();
     private readonly List<GameObject> _markerPool = new();
@@ -23,6 +29,16 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
         public float Remaining;
     }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void Bootstrap()
+    {
+        if (Active != null)
+            return;
+
+        GameObject poolObject = new GameObject(RuntimePoolName, typeof(DaggerMarkerVisualPool));
+        DontDestroyOnLoad(poolObject);
+    }
+
     private void Awake()
     {
         if (Active != null && Active != this)
@@ -32,6 +48,7 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
         }
 
         Active = this;
+        ResolveMarkerSprite();
     }
 
     private void OnDestroy()
@@ -48,12 +65,15 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
 
     public void Show(EnemyController enemy)
     {
-        if (enemy == null || !enemy.IsAlive || markerPrefab == null)
+        if (enemy == null || !enemy.IsAlive)
             return;
 
         if (!_activeMarkers.TryGetValue(enemy, out GameObject marker) || marker == null)
         {
-            marker = Get(markerPrefab, _markerPool);
+            marker = GetMarker();
+            if (marker == null)
+                return;
+
             _activeMarkers[enemy] = marker;
         }
 
@@ -129,6 +149,46 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
 
             _activeBursts[i] = state;
         }
+    }
+
+    private GameObject GetMarker()
+    {
+        if (markerPrefab != null)
+            return Get(markerPrefab, _markerPool);
+
+        ResolveMarkerSprite();
+        if (markerSprite == null)
+            return null;
+
+        return GetGeneratedMarker();
+    }
+
+    private GameObject GetGeneratedMarker()
+    {
+        for (int i = 0; i < _markerPool.Count; i++)
+        {
+            GameObject instance = _markerPool[i];
+            if (instance != null && !instance.activeSelf)
+                return instance;
+        }
+
+        GameObject marker = new GameObject("DaggerMarker", typeof(SpriteRenderer));
+        marker.transform.SetParent(transform, false);
+        SpriteRenderer spriteRenderer = marker.GetComponent<SpriteRenderer>();
+        spriteRenderer.sprite = markerSprite;
+        spriteRenderer.sortingLayerName = markerSortingLayerName;
+        spriteRenderer.sortingOrder = markerSortingOrder;
+        marker.SetActive(false);
+        _markerPool.Add(marker);
+        return marker;
+    }
+
+    private void ResolveMarkerSprite()
+    {
+        if (markerSprite != null)
+            return;
+
+        markerSprite = Resources.Load<Sprite>(DefaultMarkerResourcePath);
     }
 
     private GameObject Get(GameObject prefab, List<GameObject> pool)
