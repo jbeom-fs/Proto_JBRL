@@ -63028,7 +63028,7 @@ MonoBehaviour:
   animator: {fileID: 2005918157}
   visualTransform: {fileID: 2005918155}
   defaultForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
-  currentForm: {fileID: 11400000, guid: 6f3f0c9ddbb542d4ac51501acfb9d4e1, type: 2}
+  currentForm: {fileID: 11400000, guid: a9be9c0330ca47fda8dbe3ac9be0a0f4, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -128091,12 +128091,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: aee2f65dd8244f81b1dbb7d9be8edbe7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DaggerMarkerVisualPool
-  markerPrefab: {fileID: 0}
+  markerPrefab: {fileID: 100000, guid: 3a19dd40296742b486914fd7409c33ad, type: 3}
   burstPrefab: {fileID: 0}
   markerSprite: {fileID: 21300000, guid: 5c4433f15a1c4354ab9496aed577921c, type: 3}
-  markerOffset: {x: 0, y: 0.45, z: 0}
+  markerOffset: {x: 0, y: 0.5, z: 0}
   burstLifetime: 0.5
   markerSortingLayerName: Default
   markerSortingOrder: 50
