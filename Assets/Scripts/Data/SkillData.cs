@@ -188,6 +188,31 @@ public class SkillData : ScriptableObject
     [Tooltip("Ignore incoming damage while executionType is Dash.")]
     public bool dashInvincibleDuringDash = false;
 
+    [Space(8)]
+    [Header("Dagger Marker")]
+    [Tooltip("Projectile, Blink, or buffed basic-attack hits apply a Dagger marker.")]
+    public bool appliesDaggerMarker = false;
+
+    [Tooltip("Dash hits detonate Dagger markers.")]
+    public bool detonatesDaggerMarker = false;
+
+    [Tooltip("Extra damage dealt when a Dagger marker detonates. 0 reuses damage.")]
+    [Min(0)]
+    public int markerDetonationDamage = 0;
+
+    [Tooltip("Reset this skill cooldown once when this cast detonates at least one marker.")]
+    public bool resetCooldownOnMarkerDetonate = false;
+
+    [Tooltip("Marker lifetime in seconds. 0 uses registry default.")]
+    [Min(0f)]
+    public float markerDuration = 5f;
+
+    [Space(8)]
+    [Header("Blink")]
+    [Tooltip("World-space offset from the target, away from caster, for Blink execution.")]
+    [Min(0f)]
+    public float blinkBehindOffset = 0.75f;
+
     public SkillAnimationType AnimationType => animationType;
     public string CustomAnimationTrigger => customAnimationTrigger;
     public bool RotateAnimationByDirection => rotateAnimationByDirection;

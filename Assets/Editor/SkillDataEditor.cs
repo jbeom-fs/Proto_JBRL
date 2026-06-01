@@ -54,6 +54,12 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _dashDamageOnPath;
     private SerializedProperty _dashDamageOnContact;
     private SerializedProperty _dashInvincibleDuringDash;
+    private SerializedProperty _appliesDaggerMarker;
+    private SerializedProperty _detonatesDaggerMarker;
+    private SerializedProperty _markerDetonationDamage;
+    private SerializedProperty _resetCooldownOnMarkerDetonate;
+    private SerializedProperty _markerDuration;
+    private SerializedProperty _blinkBehindOffset;
 
     private bool _reservedFoldout;
 
@@ -108,6 +114,12 @@ public sealed class SkillDataEditor : Editor
         _dashDamageOnPath = serializedObject.FindProperty("dashDamageOnPath");
         _dashDamageOnContact = serializedObject.FindProperty("dashDamageOnContact");
         _dashInvincibleDuringDash = serializedObject.FindProperty("dashInvincibleDuringDash");
+        _appliesDaggerMarker = serializedObject.FindProperty("appliesDaggerMarker");
+        _detonatesDaggerMarker = serializedObject.FindProperty("detonatesDaggerMarker");
+        _markerDetonationDamage = serializedObject.FindProperty("markerDetonationDamage");
+        _resetCooldownOnMarkerDetonate = serializedObject.FindProperty("resetCooldownOnMarkerDetonate");
+        _markerDuration = serializedObject.FindProperty("markerDuration");
+        _blinkBehindOffset = serializedObject.FindProperty("blinkBehindOffset");
     }
 
     public override void OnInspectorGUI()
@@ -143,10 +155,20 @@ public sealed class SkillDataEditor : Editor
                     DrawDashSection();
                     if (HasDashDamageEnabled())
                         DrawCombatImpactSection("Dash Damage Impact");
+                    DrawDaggerMarkerSection();
+                    break;
+
+                case SkillExecutionType.Blink:
+                    DrawBlinkSection();
+                    DrawDaggerMarkerSection();
+                    break;
+
+                case SkillExecutionType.Buff:
+                    DrawBuffSection();
+                    DrawDaggerMarkerSection();
                     break;
 
                 case SkillExecutionType.AreaOverTime:
-                case SkillExecutionType.Buff:
                     DrawReservedExecutionType(executionType);
                     break;
             }
@@ -276,6 +298,32 @@ public sealed class SkillDataEditor : Editor
                 "Dash movement is enabled, but dash damage is off. Damage and combat impact fields are not used unless Path or Contact damage is enabled.",
                 MessageType.Info);
         }
+    }
+
+    private void DrawBlinkSection()
+    {
+        DrawSectionHeader("Blink");
+        DrawProperty(_patternRange);
+        DrawProperty(_blinkBehindOffset);
+    }
+
+    private void DrawDaggerMarkerSection()
+    {
+        DrawSectionHeader("Dagger Marker");
+        DrawProperty(_appliesDaggerMarker);
+        DrawProperty(_detonatesDaggerMarker);
+        if (IsBoolEnabled(_detonatesDaggerMarker))
+        {
+            DrawProperty(_markerDetonationDamage);
+            DrawProperty(_resetCooldownOnMarkerDetonate);
+        }
+        DrawProperty(_markerDuration);
+    }
+
+    private void DrawBuffSection()
+    {
+        DrawSectionHeader("Buff");
+        EditorGUILayout.HelpBox("Buff execution succeeds immediately. Dagger marker flags currently drive timed basic-attack marker behavior.", MessageType.Info);
     }
 
     private void DrawCombatImpactSection(string title)

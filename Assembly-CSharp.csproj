@@ -85,6 +85,7 @@
     <Compile Include="Assets\Scripts\Generate\FogOfWarController.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteProjectilePatternData.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomSpawner.cs" />
+    <Compile Include="Assets\Scripts\Combat\DaggerMarkerVisualPool.cs" />
     <Compile Include="Assets\Scripts\Items\ItemData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
@@ -188,6 +189,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Creeper.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
+    <Compile Include="Assets\Scripts\Combat\DaggerMarkerRegistry.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaEncounterController.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />

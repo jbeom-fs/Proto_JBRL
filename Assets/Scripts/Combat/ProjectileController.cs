@@ -52,6 +52,8 @@ public class ProjectileController : MonoBehaviour
     private FogVisibilityRenderer _fogVisibility;
     private Quaternion _initialLocalRotation;
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
+    private Action<EnemyController, ProjectileController> _onEnemyHit;
+    private float _daggerMarkerDuration;
     private bool _released;
     private readonly HashSet<EnemyController> _hitEnemies = new();
 
@@ -148,7 +150,9 @@ public class ProjectileController : MonoBehaviour
         float knockbackDuration,
         float slowPercentage,
         float slowDuration,
-        float stunDuration)
+        float stunDuration,
+        Action<EnemyController, ProjectileController> onEnemyHit = null,
+        float daggerMarkerDuration = 0f)
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
@@ -159,6 +163,8 @@ public class ProjectileController : MonoBehaviour
         _slowPercentage = Mathf.Clamp01(slowPercentage);
         _slowDuration = Mathf.Max(0f, slowDuration);
         _stunDuration = Mathf.Max(0f, stunDuration);
+        _onEnemyHit = onEnemyHit;
+        _daggerMarkerDuration = Mathf.Max(0f, daggerMarkerDuration);
         _speed = Mathf.Max(0f, speed);
         _lifetime = Mathf.Max(0.01f, lifetime);
         _wallHitMode = wallHitMode;
@@ -170,6 +176,8 @@ public class ProjectileController : MonoBehaviour
         _hitEnemies.Clear();
         ApplyFogVisibilityForActiveProjectile();
     }
+
+    public float DaggerMarkerDuration => _daggerMarkerDuration;
 
     private void ApplyFogVisibilityForActiveProjectile()
     {
@@ -418,6 +426,7 @@ public class ProjectileController : MonoBehaviour
                 _knockbackDuration,
                 _slowPercentage,
                 _slowDuration);
+            _onEnemyHit?.Invoke(enemy, this);
             if (_targetHitMode == ProjectileTargetHitMode.DestroyOnHit)
             {
                 Release(ProjectileReleaseReason.EnemyHit);

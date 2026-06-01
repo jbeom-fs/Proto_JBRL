@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public sealed class ProjectileFireRequest
@@ -6,7 +7,7 @@ public sealed class ProjectileFireRequest
     public Transform OriginTransform;
     public MonoBehaviour CoroutineRunner;
     public IDamageable Caster;
-    public Object Owner;
+    public UnityEngine.Object Owner;
     public Vector2 Direction;
     public int Damage;
     public float Speed;
@@ -25,4 +26,6 @@ public sealed class ProjectileFireRequest
     public float SlowPercentage;
     public float SlowDuration;
     public float StunDuration;
+    public Action<EnemyController, ProjectileController> OnEnemyHit;
+    public float DaggerMarkerDuration;
 }

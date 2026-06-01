@@ -9,6 +9,7 @@ public class AttackExecutor
     private readonly IDamageable _owner;
     private readonly ContactFilter2D _targetFilter;
     private readonly HashSet<IDamageable> _hitTargetsThisAttack = new();
+    private readonly List<EnemyController> _hitEnemiesThisAttack = new();
     private readonly List<HitCandidate> _hitCandidates = new();
     private bool _isAttackAlreadyProcessed;
 
@@ -29,7 +30,15 @@ public class AttackExecutor
     {
         _isAttackAlreadyProcessed = false;
         _hitTargetsThisAttack.Clear();
+        _hitEnemiesThisAttack.Clear();
         _hitCandidates.Clear();
+    }
+
+    public int HitEnemyCount => _hitEnemiesThisAttack.Count;
+
+    public EnemyController GetHitEnemy(int index)
+    {
+        return (uint)index < (uint)_hitEnemiesThisAttack.Count ? _hitEnemiesThisAttack[index] : null;
     }
 
     public void ExecuteAttackWorld(
@@ -121,6 +130,7 @@ public class AttackExecutor
                 knockbackDuration,
                 slowPercentage,
                 slowDuration);
+            _hitEnemiesThisAttack.Add(enemy);
             return;
         }
 

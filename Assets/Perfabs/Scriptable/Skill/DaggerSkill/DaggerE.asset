@@ -1,0 +1,64 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
+  m_Name: DaggerE
+  m_EditorClassIdentifier: Assembly-CSharp::SkillData
+  skillName: Dagger E
+  icon: {fileID: 0}
+  description: Dash through enemies. Marker hit detonates for extra damage and resets E cooldown once per dash. TODO: assign dagger dash animation.
+  executionType: 2
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 5
+  castDelay: 0
+  recoveryDelay: 0.05
+  animationType: 3
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 1
+  animationBaseAngle: 0
+  damage: 4
+  attackPattern: 0
+  patternRange: 1
+  coneHalfAngle: 45
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 1
+  knockbackDuration: 0.08
+  slowPercentage: 0
+  slowDuration: 0
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 8
+  projectileLifetime: 3
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 0
+  projectileMaxBounceCount: 1
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 4
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 1
+  dashDamageOnContact: 1
+  dashInvincibleDuringDash: 1
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 1
+  markerDetonationDamage: 8
+  resetCooldownOnMarkerDetonate: 1
+  markerDuration: 5
+  blinkBehindOffset: 0.75

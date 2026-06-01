@@ -8,5 +8,6 @@ public enum SkillExecutionType
     Projectile = 1,
     Dash = 2,
     AreaOverTime = 3,
-    Buff = 4
+    Buff = 4,
+    Blink = 5
 }

@@ -23,12 +23,15 @@ public readonly struct SkillExecutionResult
 /// </summary>
 public sealed class SkillExecutor
 {
+    private const int BlinkEnemyBufferSize = 64;
+
     private readonly AttackExecutor _attackExecutor;
     private readonly SkillTargetResolver _targetResolver;
     private readonly ProjectileFireService _projectileFireService;
     private readonly HashSet<SkillExecutionType> _reportedUnsupportedTypes = new();
     private readonly HashSet<SkillData> _reportedMissingProjectilePrefabs = new();
     private readonly HashSet<PlayerCombatController> _reportedMissingDashControllers = new();
+    private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
 
     public SkillExecutor(AttackExecutor attackExecutor)
     {
@@ -55,8 +58,13 @@ public sealed class SkillExecutor
             case SkillExecutionType.Dash:
                 return ExecuteDash(context);
 
-            case SkillExecutionType.AreaOverTime:
+            case SkillExecutionType.Blink:
+                return ExecuteBlink(context);
+
             case SkillExecutionType.Buff:
+                return ExecuteBuff(context);
+
+            case SkillExecutionType.AreaOverTime:
             default:
                 ReportUnsupportedExecutionType(context.Skill.executionType);
                 return SkillExecutionResult.Failure;
@@ -150,6 +158,55 @@ public sealed class SkillExecutor
         return success ? SkillExecutionResult.SuccessWithCost(skill.consumeAmount) : SkillExecutionResult.Failure;
     }
 
+    private SkillExecutionResult ExecuteBlink(SkillExecutionContext context)
+    {
+        SkillData skill = context.Skill;
+        if (!TryFindNearestEnemy(context, out EnemyController target))
+            return SkillExecutionResult.Failure;
+
+        Vector3 start = context.CasterTransform.position;
+        Vector3 targetPosition = target.transform.position;
+        Vector3 awayFromCaster = targetPosition - start;
+        if (awayFromCaster.sqrMagnitude <= 0.0001f)
+            awayFromCaster = ResolveExecutionDirection(context);
+        awayFromCaster.Normalize();
+
+        Vector3 desired = targetPosition + awayFromCaster * Mathf.Max(0f, skill.blinkBehindOffset);
+        float radius = context.CasterCombat != null ? context.CasterCombat.CachedHitRadius : Mathf.Max(0.01f, context.HitRadius);
+        Vector3 blinkPosition = desired;
+        if (!WorldEnvironmentQuery.IsFootprintWalkable(blinkPosition, radius) &&
+            !WorldEnvironmentQuery.TryFindNearestWalkable(
+                desired,
+                targetPosition,
+                Mathf.Max(skill.blinkBehindOffset + radius, radius),
+                radius,
+                4,
+                out blinkPosition))
+        {
+            return SkillExecutionResult.Failure;
+        }
+
+        context.CasterTransform.position = blinkPosition;
+        if (skill.appliesDaggerMarker)
+            DaggerMarkerRegistry.Instance.Apply(target, skill.markerDuration);
+
+        PlayConfiguredAnimation(context, skill, (targetPosition - start).normalized);
+        return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
+    }
+
+    private SkillExecutionResult ExecuteBuff(SkillExecutionContext context)
+    {
+        if (context.CasterCombat == null)
+            return SkillExecutionResult.Failure;
+
+        SkillData skill = context.Skill;
+        if (skill.appliesDaggerMarker)
+            context.CasterCombat.BeginDaggerBasicAttackMarkerBuff(skill);
+
+        PlayConfiguredAnimation(context, skill, ResolveExecutionDirection(context));
+        return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
+    }
+
     private static void PlayConfiguredAnimation(SkillExecutionContext context, SkillData skill, Vector2 direction)
     {
         if (context.CasterForm == null || skill == null)
@@ -170,7 +227,10 @@ public sealed class SkillExecutor
             KnockbackForce = skill.knockbackForce,
             KnockbackDuration = skill.knockbackDuration,
             SlowPercentage = skill.slowPercentage,
-            SlowDuration = skill.slowDuration
+            SlowDuration = skill.slowDuration,
+            OnEnemyHit = skill.detonatesDaggerMarker && context.CasterCombat != null
+                ? context.CasterCombat.PrepareDaggerDashHitCallback(skill, context.SlotIndex)
+                : null
         };
     }
 
@@ -200,8 +260,35 @@ public sealed class SkillExecutor
             KnockbackForce = skill.knockbackForce,
             KnockbackDuration = skill.knockbackDuration,
             SlowPercentage = skill.slowPercentage,
-            SlowDuration = skill.slowDuration
+            SlowDuration = skill.slowDuration,
+            OnEnemyHit = skill.appliesDaggerMarker && context.CasterCombat != null
+                ? context.CasterCombat.DaggerProjectileEnemyHitCallback
+                : null,
+            DaggerMarkerDuration = skill.markerDuration
         };
+    }
+
+    private bool TryFindNearestEnemy(SkillExecutionContext context, out EnemyController nearest)
+    {
+        nearest = null;
+        float range = Mathf.Max(0.01f, context.Skill.patternRange * WorldEnvironmentQuery.GetCellSize(context.CasterPosition));
+        int count = Physics2D.OverlapCircle(context.CasterPosition, range, CombatLayers.EnemyFilter, _blinkEnemyBuffer);
+        float bestSqrDistance = float.MaxValue;
+
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D hit = _blinkEnemyBuffer[i];
+            if (hit == null) continue;
+            if (!hit.TryGetComponent(out EnemyController enemy) || !enemy.IsAlive) continue;
+
+            float sqrDistance = ((Vector2)enemy.transform.position - (Vector2)context.CasterPosition).sqrMagnitude;
+            if (sqrDistance >= bestSqrDistance) continue;
+
+            bestSqrDistance = sqrDistance;
+            nearest = enemy;
+        }
+
+        return nearest != null;
     }
 
     private static Vector2 ResolveExecutionDirection(SkillExecutionContext context)

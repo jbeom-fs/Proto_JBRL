@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 /// <summary>
@@ -307,6 +308,7 @@ public sealed class PlayerDashController : MonoBehaviour
             _damageRequest.KnockbackDuration,
             _damageRequest.SlowPercentage,
             _damageRequest.SlowDuration);
+        _damageRequest.OnEnemyHit?.Invoke(enemy);
     }
 
     private static EnemyController ResolveEnemy(Collider2D hit)
@@ -326,6 +328,7 @@ public struct DashDamageRequest
     public float KnockbackDuration;
     public float SlowPercentage;
     public float SlowDuration;
+    public Action<EnemyController> OnEnemyHit;
 
     public bool Enabled => DamageOnPath || DamageOnContact;
 }

@@ -10,43 +10,43 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: FreischutzE
+  m_Name: DaggerQ
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: Freischutz E
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: Charged bullet. Requires full cost.
-  executionType: 1
-  resourceType: 1
-  requiredAmount: 1
-  consumeAmount: 5
-  bulletShortageMode: 1
+  skillName: Dagger Q
+  icon: {fileID: 0}
+  description: Blink behind nearest enemy and apply marker. TODO: assign dagger icon/animation.
+  executionType: 5
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 3
+  cooldown: 4
   castDelay: 0
-  recoveryDelay: 0.18
-  animationType: 1
+  recoveryDelay: 0.08
+  animationType: 4
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 14
-  attackPattern: 4
-  patternRange: 10
+  damage: 0
+  attackPattern: 0
+  patternRange: 8
   coneHalfAngle: 45
   isMultiTarget: 0
-  canPenetrateWalls: 1
-  knockbackForce: 2
-  knockbackDuration: 0.12
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
-  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-  projectileSpeed: 22
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 8
   projectileLifetime: 3
-  projectileCount: 5
+  projectileCount: 1
   projectileSpreadAngle: 15
-  projectileFirePattern: 1
+  projectileFirePattern: 0
   projectileWallHitMode: 0
-  projectileTargetHitMode: 1
-  projectileMaxBounceCount: 0
+  projectileTargetHitMode: 0
+  projectileMaxBounceCount: 1
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
@@ -56,3 +56,9 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 1
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75

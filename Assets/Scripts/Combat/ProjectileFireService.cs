@@ -151,7 +151,9 @@ public sealed class ProjectileFireService
             request.KnockbackDuration,
             request.SlowPercentage,
             request.SlowDuration,
-            request.StunDuration);
+            request.StunDuration,
+            request.OnEnemyHit,
+            request.DaggerMarkerDuration);
         return true;
     }
 

@@ -10,27 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: da2e6558fddd658418a7f92243a3f20e, type: 3}
-  m_Name: FreischutzWeapon
+  m_Name: DaggerWeapon
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
-  weaponName: Freischutz
-  damage: 0
-  attackCooldown: 0.25
+  weaponName: Dagger
+  damage: 2
+  attackCooldown: 0.22
   attackPattern: 0
   patternRange: 1
   basicAttackMultiTarget: 0
-  knockbackForce: 0
-  knockbackDuration: 0
+  knockbackForce: 0.5
+  knockbackDuration: 0.05
   slowPercentage: 0
   slowDuration: 0
   bonusAttack: 0
   bonusDefense: 0
-  canPenetrateWalls: 1
-  usesMagazine: 1
-  magazineSize: 15
-  reloadTime: 2
-  reloadAmount: 15
+  canPenetrateWalls: 0
+  usesMagazine: 0
+  magazineSize: 0
+  reloadTime: 1
+  reloadAmount: 0
   skills:
-  - {fileID: 11400000, guid: a1fb3fbe46cc40e9a30f740d4dba0011, type: 2}
-  - {fileID: 11400000, guid: c0f53636d3d34a31ab23c2f4ca5edb12, type: 2}
-  - {fileID: 11400000, guid: 33dbd45dc8db4661b8a388b2ff7a5b15, type: 2}
-  - {fileID: 11400000, guid: 60551841cb2a494eb0950122e708fddc, type: 2}
+  - {fileID: 11400000, guid: 18c14bc6eb23479ea0693d47af2ed2eb, type: 2}
+  - {fileID: 11400000, guid: ad364fb893314c01a2e20ae06bbd2d09, type: 2}
+  - {fileID: 11400000, guid: c4f044548540473587632ee52d73c7c4, type: 2}
+  - {fileID: 11400000, guid: c84457e2c0f04d0aa8d2270da868524c, type: 2}

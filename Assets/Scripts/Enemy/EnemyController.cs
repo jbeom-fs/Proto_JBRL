@@ -85,6 +85,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     /// <summary>프리팹 풀에서 꺼낼 때 데이터를 주입합니다.</summary>
     public void Initialize(EnemyData enemyData)
     {
+        DaggerMarkerRegistry.Instance.Clear(this);
         data       = enemyData;
         if (_inventory == null)
             _inventory = GetComponent<EnemyInventory>();

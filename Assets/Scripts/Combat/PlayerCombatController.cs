@@ -69,6 +69,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private readonly PlayerResource _resource = new();
     private readonly SkillCooldownController _cooldownController = new();
     private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
+    private readonly DaggerMarkerRegistry _daggerMarkers = DaggerMarkerRegistry.Instance;
     private AttackExecutor _attackExecutor;
     private SkillExecutor _skillExecutor;
     private readonly List<Vector3> _basicAttackWorldTargets = new();
@@ -107,6 +108,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private bool _isReloading;
     private bool _isDungeonChannelSubscribed;
     private int maxBullet;
+    private SkillData _activeDaggerDashSkill;
+    private int _activeDaggerDashSlotIndex = -1;
+    private bool _daggerDashCooldownResetThisDash;
+    private int _pendingDaggerCooldownResetSlot = -1;
+    private float _daggerBasicAttackMarkerBuffTimer;
+    private float _daggerBasicAttackMarkerDuration;
+    private Action<EnemyController> _daggerDashEnemyHitCallback;
+    private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
 
     private struct PlayerSlowEffect
     {
@@ -171,6 +180,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
         _skillExecutor = new SkillExecutor(_attackExecutor);
+        _daggerDashEnemyHitCallback = HandleDaggerDashEnemyHit;
+        _daggerProjectileEnemyHitCallback = HandleDaggerProjectileEnemyHit;
         BindSkillSlots(currentWeapon);
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
@@ -209,6 +220,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearParryState();
         ClearReloadState();
         ClearEnemyImpactState();
+        ClearDaggerRuntimeState();
     }
 
     private void RegisterAsActive()
@@ -309,6 +321,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
         TickSkillRecovery(Time.deltaTime);
+        TickDaggerState(Time.deltaTime);
 
         if (_inputReader == null) return;
 
@@ -394,6 +407,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             currentWeapon.slowPercentage,
             currentWeapon.slowDuration,
             hitRadius);
+
+        ApplyDaggerMarkersFromBasicAttack();
     }
 
     private bool IsCurrentFormParryMode()
@@ -592,6 +607,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ApplySkillReload(skill);
         TryStartAutoReloadIfEmpty();
         slot.StartCooldown();
+        ConsumePendingDaggerCooldownReset(slotIndex);
         StartSkillRecovery(skill.recoveryDelay);
         combatChannel?.RaiseSkillUsed(skill);
 #if UNITY_EDITOR
@@ -599,6 +615,102 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 #endif
 
         return true;
+    }
+
+    public void ResetSkillCooldown(int slotIndex)
+    {
+        EnsureSkillSlotsBound();
+        GetSkillSlot(slotIndex)?.ResetRuntimeState();
+    }
+
+    public Action<EnemyController> PrepareDaggerDashHitCallback(SkillData skill, int slotIndex)
+    {
+        _activeDaggerDashSkill = skill;
+        _activeDaggerDashSlotIndex = slotIndex;
+        _daggerDashCooldownResetThisDash = false;
+        return _daggerDashEnemyHitCallback;
+    }
+
+    public Action<EnemyController, ProjectileController> DaggerProjectileEnemyHitCallback => _daggerProjectileEnemyHitCallback;
+
+    public void BeginDaggerBasicAttackMarkerBuff(SkillData skill)
+    {
+        if (skill == null)
+            return;
+
+        float duration = skill.markerDuration > 0f ? skill.markerDuration : 5f;
+        _daggerBasicAttackMarkerBuffTimer = duration;
+        _daggerBasicAttackMarkerDuration = duration;
+    }
+
+    private void HandleDaggerProjectileEnemyHit(EnemyController enemy, ProjectileController projectile)
+    {
+        if (enemy == null || projectile == null)
+            return;
+
+        _daggerMarkers.Apply(enemy, projectile.DaggerMarkerDuration);
+    }
+
+    private void HandleDaggerDashEnemyHit(EnemyController enemy)
+    {
+        SkillData skill = _activeDaggerDashSkill;
+        if (enemy == null || skill == null || !skill.detonatesDaggerMarker)
+            return;
+
+        if (!_daggerMarkers.Detonate(enemy))
+            return;
+
+        int detonationDamage = skill.markerDetonationDamage > 0
+            ? skill.markerDetonationDamage
+            : skill.damage;
+        if (detonationDamage > 0 && enemy.IsAlive)
+        {
+            enemy.ApplyCombatImpact(
+                detonationDamage,
+                transform.position,
+                0f,
+                0f,
+                0f,
+                0f);
+        }
+
+        if (skill.resetCooldownOnMarkerDetonate && !_daggerDashCooldownResetThisDash)
+        {
+            if (GetSkillCooldownRemaining(_activeDaggerDashSlotIndex) > 0f)
+                ResetSkillCooldown(_activeDaggerDashSlotIndex);
+            else
+                _pendingDaggerCooldownResetSlot = _activeDaggerDashSlotIndex;
+            _daggerDashCooldownResetThisDash = true;
+        }
+    }
+
+    private void ApplyDaggerMarkersFromBasicAttack()
+    {
+        if (_daggerBasicAttackMarkerBuffTimer <= 0f)
+            return;
+
+        for (int i = 0; i < _attackExecutor.HitEnemyCount; i++)
+        {
+            EnemyController enemy = _attackExecutor.GetHitEnemy(i);
+            if (enemy != null && enemy.IsAlive)
+                _daggerMarkers.Apply(enemy, _daggerBasicAttackMarkerDuration);
+        }
+    }
+
+    private void TickDaggerState(float deltaTime)
+    {
+        _daggerMarkers.Tick(deltaTime);
+        if (_daggerBasicAttackMarkerBuffTimer > 0f)
+            _daggerBasicAttackMarkerBuffTimer = Mathf.Max(0f, _daggerBasicAttackMarkerBuffTimer - deltaTime);
+    }
+
+    private void ConsumePendingDaggerCooldownReset(int slotIndex)
+    {
+        if (_pendingDaggerCooldownResetSlot != slotIndex)
+            return;
+
+        ResetSkillCooldown(slotIndex);
+        _pendingDaggerCooldownResetSlot = -1;
     }
 
     private void TickSkillRecovery(float deltaTime)
@@ -739,6 +851,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Slow);
         if (wasStunned)
             OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Stun);
+    }
+
+    private void ClearDaggerRuntimeState()
+    {
+        _activeDaggerDashSkill = null;
+        _activeDaggerDashSlotIndex = -1;
+        _daggerDashCooldownResetThisDash = false;
+        _pendingDaggerCooldownResetSlot = -1;
+        _daggerBasicAttackMarkerBuffTimer = 0f;
+        _daggerBasicAttackMarkerDuration = 0f;
     }
 
     private SkillExecutionContext CreateSkillExecutionContext(SkillData skill, int slotIndex)

@@ -34,7 +34,7 @@ public class WeaponData : ScriptableObject
     [Tooltip("false: 벽에 막힘 / true: 벽을 무시하고 유닛에게 피해")]
     public bool canPenetrateWalls = false;
 
-    [Header("스킬 슬롯 (Q / W / E / R 키)")]
+  
     [Header("Magazine")]
     public bool usesMagazine = false;
     [Min(0)] public int magazineSize = 0;

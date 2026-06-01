@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c471fe3838749d2a4f99ddbe73d5210, type: 3}
+  m_Name: DaggerForm
+  m_EditorClassIdentifier: 
+  formId: 2
+  displayName: Dagger Form
+  animatorController: {fileID: 0}
+  defaultSprite: {fileID: 0}
+  defaultSpriteFacesRight: 1
+  useHorizontalFlipForFacing: 1
+  rotateDashAnimationByDirection: 1
+  dashBaseAngle: 0
+  basicAttackMode: 0
+  defaultWeapon: {fileID: 11400000, guid: 6a741af1948e433daf0c51edef4272ef, type: 2}
