@@ -833,7 +833,7 @@ ExecuteSkillIfReady(slotIndex, expectedSkill):
          Projectile   → ExecuteProjectile()   (Bullet AllowPartialUse 면 실제 발사 수 = 소모)
          Dash         → ExecuteDash()
          Blink        → ExecuteBlink()  (가장 가까운 적 뒤로 순간이동, Dagger Q)
-         Buff         → ExecuteBuff()   (caster 타임드 효과, Dagger R 마커 버프)
+         Buff         → ExecuteBuff()   (현재 Dagger R 마커 버프 전용 — 범용 버프 미구현)
          AreaOverTime → 미구현 (경고 로그 1회)
   ⑤ 성공 시 Spend(resourceType, result.ResourceConsumed) / ApplySkillReload /
             TryStartAutoReloadIfEmpty / slot.StartCooldown / StartSkillRecovery / RaiseSkillUsed
@@ -2378,7 +2378,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 | 항목 | 우선순위 | 비고 |
 |------|----------|------|
-| AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink/Buff 는 구현 완료) |
+| AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
+| 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 런타임 폼 전환 트리거 | 중간 | `ApplyForm`→`EquipWeapon` loadout 연결은 완료. 아이템/소울 등으로 런타임에 폼을 바꾸는 진입점 미구현(현재 시작 시 `currentForm` 1회). 전환 시 `basicAttackSkillData` 폼별 교체도 함께 필요 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. `WalkabilityArea` + `WalkabilityQuery` 인프라가 Boss Arena 에도 동일 적용 가능 |
