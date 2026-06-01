@@ -22,6 +22,7 @@ public class EnemyHealthBar : MonoBehaviour
     [SerializeField] private float barWidth  = 0.8f;
     [SerializeField] private float barHeight = 0.08f;
     [SerializeField] private float yOffset   = 0.55f;
+    [SerializeField] private float barMargin = 0.15f;
 
     [Header("색상")]
     [SerializeField] private bool  colorGradient = true;  // HP 비율에 따라 녹→적 전환
@@ -44,9 +45,12 @@ public class EnemyHealthBar : MonoBehaviour
     private SpriteRenderer _fillSr;
     private Transform      _fillTf;
     private Transform      _bgTf;
+    private CircleCollider2D _collider;
     private float          _hideTimer;
+    private float          _anchorY;
     private bool           _isVisible;
     private bool           _initialized;
+    private bool           _anchorResolved;
 
     // ── 정적 픽셀 스프라이트 (적 N마리가 공유, 텍스처 1회만 생성) ────
 
@@ -76,13 +80,14 @@ public class EnemyHealthBar : MonoBehaviour
     {
         _bgTf  = CreateBarChild("HPBar_BG",   bgColor,            sortingOrder,     out _);
         _fillTf = CreateBarChild("HPBar_Fill", fillColorFull, sortingOrder + 1, out _fillSr);
+        float y = ResolveAnchorY();
 
         _bgTf.localScale    = new Vector3(barWidth,  barHeight, 1f);
-        _bgTf.localPosition = new Vector3(0f, yOffset, 0f);
+        _bgTf.localPosition = new Vector3(0f, y, 0f);
 
         // Fill 초기 상태 = 가득 참
         _fillTf.localScale    = new Vector3(barWidth, barHeight, 1f);
-        _fillTf.localPosition = new Vector3(0f, yOffset, 0f);
+        _fillTf.localPosition = new Vector3(0f, y, 0f);
     }
 
     private Transform CreateBarChild(string childName, Color color, int order, out SpriteRenderer sr)
@@ -115,11 +120,14 @@ public class EnemyHealthBar : MonoBehaviour
         EnsureInitialized();
 
         float ratio = max > 0 ? Mathf.Clamp01((float)current / max) : 0f;
+        float y = ResolveAnchorY();
+        if (_bgTf != null)
+            _bgTf.localPosition = new Vector3(0f, y, 0f);
 
         // Fill 스케일 & 위치 — 왼쪽 앵커, 오른쪽에서 줄어듦
         float fillW = barWidth * ratio;
         _fillTf.localScale    = new Vector3(fillW, barHeight, 1f);
-        _fillTf.localPosition = new Vector3(barWidth * (ratio - 1f) * 0.5f, yOffset, 0f);
+        _fillTf.localPosition = new Vector3(barWidth * (ratio - 1f) * 0.5f, y, 0f);
 
         // 색상 그라디언트
         if (colorGradient)
@@ -154,5 +162,23 @@ public class EnemyHealthBar : MonoBehaviour
         _isVisible = v;
         _bgTf?.gameObject.SetActive(v);
         _fillTf?.gameObject.SetActive(v);
+    }
+
+    private float ResolveAnchorY()
+    {
+        if (_anchorResolved)
+            return _anchorY;
+
+        if (_collider == null)
+            _collider = GetComponent<CircleCollider2D>();
+
+        if (_collider != null)
+        {
+            _anchorY = _collider.offset.y + _collider.radius + barMargin;
+            _anchorResolved = true;
+            return _anchorY;
+        }
+
+        return yOffset;
     }
 }
