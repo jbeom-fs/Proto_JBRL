@@ -58,6 +58,11 @@ public class EnemyController : MonoBehaviour, IDamageable
     public bool IsKnockbackLocked => _knockbackLockTimer > 0f;
     public float MoveSpeedMultiplier => Mathf.Clamp01(1f - _activeSlowPercentage);
     public float CollisionFootprintRadius => GetWorldColliderRadius();
+    /// <summary>Marker anchor in world space. Uses collider center instead of transform pivot.</summary>
+    public Vector3 MarkerAnchorWorld =>
+        _circleCollider != null
+            ? transform.TransformPoint(_circleCollider.offset)
+            : transform.position;
 
     public event Action<EnemyController> OnDied;
     public event Action<EnemyController> OnDeathFinished;

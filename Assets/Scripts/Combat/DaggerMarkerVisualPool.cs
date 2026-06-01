@@ -10,7 +10,7 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
     [SerializeField] private GameObject markerPrefab;
     [SerializeField] private GameObject burstPrefab;
     [SerializeField] private Sprite markerSprite;
-    [SerializeField] private Vector3 markerOffset = new(0f, 0.45f, 0f);
+    [SerializeField] private Vector3 markerOffset = Vector3.zero;
     [SerializeField, Min(0.01f)] private float burstLifetime = 0.5f;
     [SerializeField] private string markerSortingLayerName = "Default";
     [SerializeField] private int markerSortingOrder = 50;
@@ -77,7 +77,7 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
             _activeMarkers[enemy] = marker;
         }
 
-        marker.transform.position = enemy.transform.position + markerOffset;
+        marker.transform.position = enemy.MarkerAnchorWorld + markerOffset;
         marker.SetActive(true);
     }
 
@@ -100,7 +100,7 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
             return;
 
         GameObject burst = Get(burstPrefab, _burstPool);
-        burst.transform.position = enemy.transform.position;
+        burst.transform.position = enemy.MarkerAnchorWorld;
         burst.SetActive(true);
         _activeBursts.Add(new BurstState
         {
@@ -125,7 +125,7 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
                 continue;
             }
 
-            marker.transform.position = enemy.transform.position + markerOffset;
+            marker.transform.position = enemy.MarkerAnchorWorld + markerOffset;
         }
 
         for (int i = 0; i < _scratchInvalidEnemies.Count; i++)

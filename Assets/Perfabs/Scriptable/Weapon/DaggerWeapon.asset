@@ -15,8 +15,8 @@ MonoBehaviour:
   weaponName: Dagger
   damage: 2
   attackCooldown: 0.22
-  attackPattern: 0
-  patternRange: 1
+  attackPattern: 5
+  patternRange: 2
   basicAttackMultiTarget: 0
   knockbackForce: 0.5
   knockbackDuration: 0.05
