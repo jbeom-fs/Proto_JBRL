@@ -620,7 +620,7 @@ LateUpdate() — 최종 안전장치:
 
 ### 6-2-1. 적 블로커 차단 (MovementBlockerQuery)
 
-`EnemyData.blocksMovement = true` 로 설정된 적은 플레이어의 일반 이동과 대시 모두를 물리적으로 막습니다. 적 AI 자체의 이동·넉백에는 영향이 없습니다.
+`EnemyData.blocksMovement = true` 로 설정된 적은 플레이어의 **일반 이동**을 물리적으로 막습니다. 적 AI 자체의 이동·넉백에는 영향이 없으며, **대시는 적을 통과**하므로 이 쿼리를 쓰지 않습니다(대시는 벽/지형 walkable 만 검사).
 
 ```
 MovementBlockerQuery.IsPlayerMovementBlocked(worldPos, radius):
@@ -630,7 +630,7 @@ MovementBlockerQuery.IsPlayerMovementBlocked(worldPos, radius):
 
 사용처:
   PlayerController.CanMoveTo       — 일반 이동 ⊃ Diagonal slide 후보
-  PlayerDashController.IsFootprintWalkable — 대시 경로 / 종착 위치
+  (대시 PlayerDashController 는 적 통과를 허용 → 이 쿼리 미사용, 벽/지형만 검사)
 ```
 
 `s_BlockerBuffer`(크기 128) 와 `s_EnemyCache` 는 정적으로 재사용되며 매 호출 0 할당입니다. cache 는 Collider 가 destroy 되면 다음 lookup 시 lazy purge 됩니다.
@@ -832,7 +832,9 @@ ExecuteSkillIfReady(slotIndex, expectedSkill):
          InstantArea  → ExecuteInstantArea()  (소모 = consumeAmount)
          Projectile   → ExecuteProjectile()   (Bullet AllowPartialUse 면 실제 발사 수 = 소모)
          Dash         → ExecuteDash()
-         AreaOverTime/Buff → 미구현 (경고 로그 1회)
+         Blink        → ExecuteBlink()  (가장 가까운 적 뒤로 순간이동, Dagger Q)
+         Buff         → ExecuteBuff()   (caster 타임드 효과, Dagger R 마커 버프)
+         AreaOverTime → 미구현 (경고 로그 1회)
   ⑤ 성공 시 Spend(resourceType, result.ResourceConsumed) / ApplySkillReload /
             TryStartAutoReloadIfEmpty / slot.StartCooldown / StartSkillRecovery / RaiseSkillUsed
      실패 시 자원 소모·쿨다운 둘 다 없음
@@ -963,7 +965,7 @@ TryStartDash(caster, direction, distance, duration,
              stopOnWall, invincibleDuringDash, DashDamageRequest):
   ① 진행 중/사망/방향0 가드
   ② TryResolveDestination(start, dir, distance, stopOnWall):
-       0.05~타일×0.25 간격으로 IsFootprintWalkable(4코너 IsWalkable) 검사
+       0.05~타일×0.25 간격으로 IsFootprintWalkable(4코너, 벽/지형만·적 블로커 무시) 검사
        stopOnWall = true → 마지막 통과 지점에서 정지
        stopOnWall = false → 막히면 실패
   ③ invincibleDuringDash → caster.BeginExternalInvincibility(duration)
@@ -981,6 +983,7 @@ TryStartDash(caster, direction, distance, duration,
 DashDamageRequest 플래그:
   DamageOnPath    — 이동 경로 위 적 모두에 데미지 (segment 보간 샘플링)
   DamageOnContact — 대시 종료 지점에서만 데미지 (최종 프레임)
+  OnEnemyHit      — 히트된 적마다 콜백 (데미지 적용 직전 호출). Dagger E 가 마커 폭발 + E 쿨 1회 리셋에 사용
   두 플래그는 독립이며, 둘 다 켜면 path 적 + 종착 적 모두 처리 (1회 제한)
 
 PlayerController는 IsDashing 동안 Move/입력 처리를 스킵하고
@@ -2212,7 +2215,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **공격 패턴 시스템** | 6종 패턴, 데이터 드리븐 |
 | **플레이어 전투** | 기본 공격, 스킬 4슬롯, HP 관리 (PlayerResource) + 폼 고유 자원(Bullet/ParryStack) 원장 (MP 폐지) |
 | **공격 판정 분리** | AttackExecutor — 히트 감지·데미지 적용 독립 처리 |
-| **스킬 실행 라우팅** | SkillExecutor — InstantArea/Projectile/Dash/AreaOverTime/Buff 분기 |
+| **스킬 실행 라우팅** | SkillExecutor — InstantArea/Projectile/Dash/Blink/Buff 분기 (AreaOverTime 미구현) |
 | **스킬 슬롯 런타임 분리** | SkillSlotRuntime — MonoBehaviour 미의존 슬롯 상태(데이터·쿨다운) |
 | **스킬 타겟 공통화** | SkillTargetResolver — 미리보기·기본공격·스킬이 동일한 셀 계산 사용 |
 | **스킬 실행 컨텍스트** | SkillExecutionContext — caster/aim/grid/totalAttack/hitRadius 일체 전달 |
@@ -2221,7 +2224,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **투사체 발사 공통화** | ProjectileFireService — 적 원거리·플레이어 스킬이 Single/Burst/Spread/Circle 동일 처리 |
 | **투사체 타겟 정책** | ProjectileTargetHitMode — DestroyOnHit / Pierce / HitOncePerTarget |
 | **플레이어 투사체 스킬** | SkillData.executionType=Projectile — prefab/속도/수명/패턴/벽반사 인스펙터 설정 |
-| **플레이어 대시 스킬** | PlayerDashController — 발자국 검사 이동, 경로 데미지·무적 옵션, 외부 무적 카운터 |
+| **플레이어 대시 스킬** | PlayerDashController — 발자국 검사 이동(적 통과·벽만 검사), 경로/접촉 데미지·무적 옵션, 외부 무적 카운터, `OnEnemyHit` 콜백(Dagger E 마커 폭발 훅) |
 | **외부 무적 시스템** | BeginExternalInvincibility/EndExternalInvincibility — 다중 출처(대시 등) 무적 중첩 처리 |
 | **무적 셰이더 플래시** | PlayerInvincibilityFlashFeedback — MaterialPropertyBlock 기반 _FlashAmount 보간 |
 | **일반 피격/외부 무적 분리** | HitFlashFeedback(피격 색상) ↔ PlayerInvincibilityFlashFeedback(셰이더) 독립 |
@@ -2229,7 +2232,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **기본 공격 미리보기** | Space 홀드 시 무기 attackPattern 시각화 (스킬 미리보기와 우선순위 분리) |
 | **Fog of War** | FogOfWarController — 미탐사/탐사/현재시야 3상태, Bresenham LoS, 닫힌 문 시야 차단 |
 | **적 전투** | IDamageable, 방어력 계산, 사망 처리 |
-| **적 체력바** | 실시간 갱신, 색상 그라디언트, 자동 숨김 |
+| **적 체력바** | 실시간 갱신, 색상 그라디언트, 자동 숨김, collider 윗변 기준 위치 + root lossyScale 역수로 월드 크기 정규화(적 스케일 무관 일정) |
 | **적 AI (FSM)** | Idle/Chase/Attack 상태, A* 경로탐색, 군중 분리 |
 | **적 상태이상** | 넉백, 슬로우 (지속시간 기반) |
 | **적 스폰 시스템** | 방 진입 트리거, 예산 기반 스폰, 방 클리어 감지 |
@@ -2366,13 +2369,16 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **패리 폼** | `PlayerBasicAttackMode.Parry`. 기본공격 = 데미지 없는 패리(선딜→무적→후딜 각 설정값). 무적구간 동안 흰색 점멸, 방향 무관 모든 피해 1회 가로채기 → +ParryStack(`CompleteParryIntercept`). 첫 가로채기 즉시 무적 종료. 선딜 중 피격 시 패리 취소. ParryStack 은 자원(스킬 소모) + 유예시간 후 점감, 방/문/층 이동 시 초기화. 임시 `ParryStackBarUI` 슬라이더 |
 | **마탄(Freischutz) 폼** | `PlayerBasicAttackMode.Bullet`. 탄창(Bullet) 자원 = `WeaponData`(usesMagazine/magazineSize/reloadTime/reloadAmount)에서 EquipWeapon 시 주입+풀충전, **방/층 이동 시 유지**. 기본공격 = 투사체 1발+탄 1소모(탄 0이면 자동 재장전). 스킬: `projectileCount`(발사)+`consumeAmount`(탄) 분리, `BulletShortageMode`(RequireFullCost/AllowPartialUse). 재장전: 자동(탄0)/수동(A키, 마탄폼만)/스킬(`reloadAmount`), 공격만 차단·이동 허용. `FreischutzMagazineUI`(Bullet/Bullet_empty 칸). 식별자 `PlayerFormId.Freischutz`(구 Bow) |
 | **Form→loadout 단일 소스(안 B)** | `PlayerFormData.skills[]` 제거. `ApplyForm` 이 실제 폼 변경 시 `EquipWeapon(form.DefaultWeapon)` 호출 → 무기·스킬·탄창이 폼에 맞게 일괄 교체. loadout = WeaponData 단일 소스. ParryForm→ParryWeapon, FreischutzForm→FreischutzWeapon, Normal·Sword→TestSword |
+| **대거(Dagger) 폼** | `PlayerFormId.Dagger`, basicAttackMode=Damage. 마커 기반 암살 루프 — Q=Blink(가장 가까운 적 뒤 순간이동+마커), W=Projectile(단검 투척+마커), E=Dash(마커 적 폭발+추가뎀+E 쿨 1회 리셋, 적 통과), R=Buff(N초간 기본공격 hit 적에 마커). DaggerForm/DaggerWeapon/DaggerQWER 에셋 + `SkillExecutionType.Blink` 신설 |
+| **Dagger 마커 시스템** | `DaggerMarkerRegistry`(중앙 단일·비중첩 마커, 재부착 시 지속시간 갱신, 적 `OnDied` + `EnemyController.Initialize` 풀 재사용 양쪽 clear) + `SkillData` 마커 플래그(appliesDaggerMarker/detonatesDaggerMarker/markerDetonationDamage/resetCooldownOnMarkerDetonate/markerDuration). 부착 훅 = projectile·blink hit·Buff 중 평타 hit, 폭발 훅 = dash `OnEnemyHit`(데미지 적용 **직전** 호출 → 마커 적이 그 대시로 죽어도 폭발·쿨리셋 보장) |
+| **Dagger 마커 비주얼** | `DaggerMarkerVisualPool`(Main.unity 루트 배치 + `RuntimeInitializeOnLoadMethod` 폴백, markerSprite 직접 연결/Resources fallback, 풀링) — 부착 적 위 `Test_Marker` 표시·`MarkerAnchorWorld` 추적, 폭발 시 burst |
+| **EnemyController.MarkerAnchorWorld** | collider 중심(`TransformPoint(offset)`) 월드 앵커 — 마커/표식이 pivot(발밑) 대신 몸 중앙 기준에 표시 |
 
 ### 미구현 (다음 단계)
 
 | 항목 | 우선순위 | 비고 |
 |------|----------|------|
-| AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 |
-| Buff 스킬 핸들러 | 중간 | 동일 — caster 자체에 효과를 적용하는 형태 |
+| AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink/Buff 는 구현 완료) |
 | 런타임 폼 전환 트리거 | 중간 | `ApplyForm`→`EquipWeapon` loadout 연결은 완료. 아이템/소울 등으로 런타임에 폼을 바꾸는 진입점 미구현(현재 시작 시 `currentForm` 1회). 전환 시 `basicAttackSkillData` 폼별 교체도 함께 필요 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. `WalkabilityArea` + `WalkabilityQuery` 인프라가 Boss Arena 에도 동일 적용 가능 |
