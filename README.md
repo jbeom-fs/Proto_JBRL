@@ -41,8 +41,8 @@
 | 시점 | 탑다운 2D |
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
 | 거점 구조 | 마을(Town) ↔ 던전(Dungeon) ↔ Elite Arena 전환 (`LocationTransitionManager`, 구 `TownDungeonTransitionManager`) — 마을·Arena는 Tilemap 고정 맵, 던전은 절차적 생성 |
-| 이동 방식 | 실시간 8방향 이동 + 그리드 충돌 + 대시 스킬 |
-| 조준 방식 | 8방향 입력 기반 (`AimDirectionUtility`) — 스킬 / 투사체 / 대시 공통 |
+| 이동 방식 | 실시간 8방향 이동(Classic=방향키 / ActionMouseAim=WASD) + 그리드 충돌 + 대시 스킬 |
+| 조준 방식 | **2가지 프리셋**(`PlayerControlScheme`): Classic = 8방향 입력 기반(`AimDirectionUtility`) / ActionMouseAim = 마우스 커서 기반 **360° 자유조준** — 기본공격 / 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
 | 플레이어 상태이상 | 적 공격에서 받는 넉백·슬로우·스턴 (`ApplyEnemyCombatImpact` 단일 진입점, `EnemyAttackImpactData`) |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair · Elite (5의 배수+5 층 자동) |
@@ -53,7 +53,7 @@
 | Elite 적 | `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner`(MonoBehaviour)가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·사거리 조건 만족 패턴 1개를 실행. 패턴 종류: Projectile / Dash / Jump (ScriptableObject 변형) |
 | 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
 | 진행 방식 | 계단을 통한 층 이동 (무한 층 구조) |
-| 입력 키 | `PlayerInputKeySettings` ScriptableObject — 이동/액션/스킬 키 4 + 4 + 4를 에셋 1개로 일괄 설정, 중복 키·`Key.None` 자동 경고 |
+| 입력 키 | `PlayerInputKeySettings` ScriptableObject — `controlScheme`(Classic/ActionMouseAim) + 이동/액션/스킬 키를 에셋 1개로 일괄 설정. ActionMouseAim 은 마우스 버튼 바인딩(`InputBinding`/`PointerButton`) 지원. 중복 키·`Key.None` 자동 경고 |
 
 ---
 
@@ -129,12 +129,12 @@
 - **스킬 실행 라우팅**: SkillData.executionType → SkillExecutor 가 InstantArea / Projectile / Dash 분기로 라우팅, MonoBehaviour와 분리된 순수 서비스 계층
 - **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀 계산 제공
 - **공유 투사체 발사**: ProjectileFireService가 적 원거리·플레이어 스킬 모두에 동일한 패턴(Single/Burst/Spread/Circle) 처리
-- **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용)
+- **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용). ActionMouseAim 프리셋에서는 커서 방향을 양자화 없이 연속 벡터로 사용해 **360° 자유조준** — grid 패턴은 `AttackPattern.FillTargets` 의 `Vector2 facing` 연속 오버로드(Cone=연속 각도 / Line·Single=셀 반올림)로 처리
 - **적 공격 임팩트 통합**: `EnemyAttackImpactData`(knockback·slow·stun) 구조로 Rush·Jump·Projectile 의 부가 효과를 동일하게 관리, `PlayerCombatController.ApplyEnemyCombatImpact()` 단일 진입점으로 데미지·넉백·슬로우·스턴 적용
 - **런타임 탐색 캐싱**: `DungeonManager` 가 `RoomSpawner` 참조를 SerializeField + 1회 경고로 캐싱, 매 `FindAnyObjectByType` 호출 회피 (다른 컨트롤러도 동일 패턴 사용)
 - **위치 기반 미니맵 전환**: `LocationMinimapRegistry`(static Dict) + `TilemapMinimapSource.OnEnable/OnDisable` 자동 등록으로, `MinimapController`가 씬 계층을 직접 탐색하지 않고 locationId 조회만으로 소스 전환
 - **텔레포트 데이터 드리븐**: `TeleportDestinationDatabase` ScriptableObject 가 목적지(id · displayName · description · locationType · locationRootId · localSpawnPosition · minimapLocationId)를 보유하고, `LocationRootRegistry`(static Dict, `LocationRoot.OnEnable/OnDisable` 자동 등록)가 씬 내 LocationRoot 트랜스폼을 노출 — 텔레포트 시 `root.TransformPoint(localSpawnPosition)` 으로 월드 좌표가 계산됨 (씬 마커 MonoBehaviour는 더 이상 없음)
-- **입력 키 데이터 드리븐**: `PlayerInputKeySettings` ScriptableObject 1개가 이동/액션/스킬 12개 키를 보유, `PlayerInputReader` 가 매 프레임 참조 — 에셋 교체만으로 키 매핑 변경, OnValidate 단계에서 `Key.None` / 중복 키 자동 경고
+- **입력 키 데이터 드리븐**: `PlayerInputKeySettings` ScriptableObject 1개가 `controlScheme`(Classic/ActionMouseAim) + 이동/액션/스킬 키(키보드 + 마우스 버튼)를 보유, `PlayerInputReader` 가 매 프레임 참조 — 에셋 교체·프리셋 전환만으로 조작 변경, OnValidate 단계에서 `Key.None` / 중복 키·마우스 버튼 자동 경고
 - **아이템 데이터 드리븐**: `ItemDatabase` ScriptableObject 가 `itemCode` 키로 `ItemData` (DisplayName/Icon/ItemType/Stackable/MaxStack)를 보관, `EnemyInventory.AddDropItem(itemCode)` → `DropItemSpawner.SpawnDrops` → `DroppedItem.Initialize` 파이프라인이 코드 수정 없이 새 아이템을 지원
 - **Elite Floor 자동화**: `floor % 10 == 5` 인 층에서 `DungeonGenerator.AssignEliteRoom` 이 시작 방에서 MST 깊이 최대 leaf(동률 시 거리 최대)를 Elite Room 으로 선정, `DungeonTilemapRenderer.PlaceEliteDoors` 가 perimeter 의 corridor-인접 셀에 `eliteDoorTile` 배치 — `RoomSpawner.PrepareEliteKeyPlan` 이 결정론적 RNG (`EliteKeyDomain`) 로 같은 층의 일반 방 적 1마리에 `elite_key` 드랍 부여, 플레이어가 키 보유 상태로 Elite Door 접촉 시 `TryOpenEliteDoorWithKey(PlayerInventory, ItemData)` 가 한 셀 카빙 + 인벤토리에서 키 1개 제거
 - **Elite 적 패턴 시스템**: `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner` (MonoBehaviour) 가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·`MinRange`/`MaxRange`·weight 조건을 만족하는 첫 패턴을 실행. 패턴 종류는 `EliteProjectilePatternData` / `EliteDashPatternData` / `EliteJumpPatternData` ScriptableObject 변형이며 각각 windup·animation key·EnemyAttackImpactData 를 보유. 기존 Contact Special(Rush/Jump)와는 독립된 사이클 — Special 은 모든 Contact 적의 1개 고정 공격, Elite Pattern 은 Elite 전용 다중 패턴 풀
@@ -153,8 +153,8 @@
 Assets/Scripts/
 │
 ├── PlayerController.cs             # 입력·이동·방 감지·대시 중 이동 위임 + Elite Door 접촉 시 자동 개방(TryOpenEliteDoorOnContact, PlayerInventory + elite_key ItemData 조회)
-├── PlayerInputReader.cs            # 키보드 입력 단일 집계 (실행 순서 제어) — PlayerInputKeySettings 참조
-├── PlayerInputKeySettings.cs       # 키 바인딩 ScriptableObject (이동·액션·스킬 12 키)
+├── PlayerInputReader.cs            # 키보드/마우스 입력 단일 집계 (실행 순서 제어) — PlayerInputKeySettings 참조, ActionMouseAim 시 커서 월드 조준(HasMouseAim/AimWorldPoint) + UI 위 클릭 차단
+├── PlayerInputKeySettings.cs       # 키 바인딩 ScriptableObject — controlScheme(Classic/ActionMouseAim) + 키보드/마우스 바인딩(InputBinding/PointerButton)
 ├── PlayerAnimationController.cs    # 4방향 이동 애니메이션 (MoveX/Y, LastMoveX/Y) — PlayerFormController 와 협력
 ├── PlayerFormController.cs         # 플레이어 시각 폼 (PlayerFormData) 적용 — AnimatorController 스왑, default sprite, facing flipX, dash visual rotation/token, SkillData.AnimationType (Attack/Spin/Dash/CustomTrigger) 별 trigger 발동. ApplyForm 시 실제 폼 변경이면 EquipWeapon(form.DefaultWeapon) 로 loadout(무기·스킬) 동시 적용
 ├── GameLocationType.cs             # 위치 분류 enum (Town/Dungeon)
@@ -646,18 +646,40 @@ CheckRoomEntry():
   → 이벤트 발행
 ```
 
-### 6-4. 입력 키 맵 (PlayerInputKeySettings ScriptableObject 기본값)
+### 6-4. 입력 키 맵 (PlayerInputKeySettings ScriptableObject)
+
+`controlScheme` 필드로 2가지 프리셋 중 하나를 선택합니다 (0=ClassicKeyboard, 1=ActionMouseAim). 코드 기본값은 Classic 이라 기존 동작은 회귀 없이 보존되며, 에셋 필드 하나로 조작계가 통째로 전환됩니다.
+
+**ClassicKeyboard**
 
 | 키 | 동작 | 설정 필드 |
 |----|------|----------|
 | ↑↓←→ | 이동 + Facing 방향 갱신 + 8방향 조준 raw 입력 | `up/down/left/right` |
 | Z | 계단·상호작용 (`InteractConfirmPressedThisFrame`, `WasStairPressed` alias) | `interactConfirm` |
 | I | 인벤토리(예약) — `InventoryPressedThisFrame` flag만 노출 | `inventory` |
-| F10 | 디버그 문 열기 | `openDoorDebug` |
 | Space | 기본 공격 (홀드 시 범위 미리보기) — Facing 4방향 기준 | `basicAttack` |
-| Q / W / E / R | 스킬 슬롯 1~4 — InstantArea / Projectile / Dash 라우팅 (홀드 시 범위 미리보기) | `skillSlot1~4` |
+| A | 재장전 (Bullet 폼) | `reload` |
+| Q / W / E / R | 스킬 슬롯 1~4 (홀드 시 범위 미리보기) | `skillSlot1~4` |
 
-`PlayerInputReader` 는 `keySettings` SerializeField 가 비어 있으면 위 기본 키로 폴백하고 1회 경고를 출력합니다. `PlayerInputKeySettings.OnValidate` 가 `Key.None` 사용과 동일 키 중복 할당을 에디터에서 자동 감지합니다.
+**ActionMouseAim (현재 활성)**
+
+이동/조준을 분리한 액션 조작계. 왼손 WASD + Q/E, 오른손 마우스. 조준은 커서 방향 **360° 연속**.
+
+| 입력 | 동작 | 설정 필드 |
+|----|------|----------|
+| WASD | 이동 | `actionMouseUp/Down/Left/Right` |
+| 마우스 커서 | 360° 조준 (`HasMouseAim`/`AimWorldPoint`) | — |
+| 좌클릭 | 기본 공격 | `actionMouseBasicAttack` |
+| 우클릭 | 스킬 1 | `actionMouseSkillSlot1` |
+| Q / E | 스킬 2 / 3 | `actionMouseSkillSlot2/3` |
+| 4 | 스킬 4 | `actionMouseSkillSlot4` |
+| Space | 재장전 (Bullet 폼) | `actionMouseReload` |
+
+- 스킬 슬롯 인덱스(0~3)는 `WeaponData.skills` 순서 고정 — 프리셋은 입력 키만 다르게 매핑합니다.
+- 마우스 버튼 바인딩은 `InputBinding`(`Key` + `PointerButton`) 구조. UI 위(`EventSystem.IsPointerOverGameObject`)에서는 좌/우클릭 전투 입력이 차단됩니다.
+- 커서 월드 좌표는 `PlayerInputReader.aimCamera`(미지정 시 `Camera.main`) 기준으로 계산합니다.
+
+`PlayerInputReader` 는 `keySettings` 가 비어 있으면 Classic 기본 키로 폴백하고 1회 경고를 출력합니다. `PlayerInputKeySettings.OnValidate` 가 `Key.None`·동일 키 중복·마우스 버튼 중복을 에디터에서 자동 감지합니다.
 
 `PlayerInventory` 가 `elite_key` ItemData 를 보유하면 `PlayerController` 가 매 프레임 `TryOpenEliteDoorOnContact` 를 호출 — 별도 키 입력 없이 접촉만으로 Elite Door 가 열립니다 (`TryGetDatabaseItem("elite_key", out keyItem)` → `dungeonRenderer.TryOpenEliteDoorWithKey(_inventory, keyItem)`). 구 `PlayerEliteKeyInventory` 는 제거되었고 Elite Key 는 일반 ItemData 한 항목으로 통합됨.
 
@@ -710,7 +732,9 @@ PlayerCombatController:
 
 > 사망 / 대시 시작 / 풀링 비활성화 등에서는 `ClearSkillTimingState()`가 진행 중 코루틴을 중단하고 `_skillRecoveryTimer` 를 0 으로 리셋합니다.
 
-> **조준 방향 결정**: 기본 공격(Space)은 `PlayerController.FacingDirection`(이동 키 우선 → 카디널 4방향)을, 스킬·투사체·대시는 `AimDirectionUtility.TryGetEightWayRaw(MoveInput)` 으로 얻은 8방향 raw 입력을 사용합니다. 입력이 비어 있을 때는 `PlayerCombatController._lastAimDirection`(기본값 down)으로 폴백합니다. 미리보기도 동일한 raw 방향을 사용해 실제 발사 결과와 시각이 일치합니다.
+> **조준 방향 결정**: ClassicKeyboard 에서는 기본 공격이 `PlayerController.FacingDirection`(이동 키 우선 → 카디널 4방향)을, 스킬·투사체·대시는 `AimDirectionUtility.TryGetEightWayRaw(MoveInput)` 으로 얻은 8방향 raw 입력을 사용합니다(입력이 비면 `_lastAimDirection`, 기본값 down 폴백). **ActionMouseAim 에서는 커서 방향을 양자화 없이 연속 벡터(`_aimDirectionContinuous`)로 사용해 기본공격 포함 모든 스킬이 360° 자유조준** — grid 패턴은 월드→그리드 Y 반전(`(x,-y)`) 후 `AttackPattern` 의 연속 `Vector2 facing` 오버로드로 해석합니다. 미리보기(`SkillRangePreviewer`)도 실행과 동일 소스(`CurrentAimDirection`)·동일 Y 반전·동일 패턴 함수를 사용해 발사 결과와 시각이 일치합니다.
+>
+> 참고: 연속 조준 도입으로 Classic 에서도 **대각 이동 중 grid 패턴(Cone/Line/Single·근접 기본공격) 방향이 X우선 카디널(→) → 실제 대각(↗)** 으로 따라가도록 통일되었습니다(투사체는 원래 대각). 상하좌우 직선 이동은 종전과 동일하며, 이는 의도된 동작입니다.
 
 ---
 
@@ -1404,7 +1428,7 @@ SkillUIManager:
 
 ### 10-3. 스킬 범위 미리보기 (SkillRangePreviewer)
 
-Q/W/E/R 홀드 시 스킬 범위, Space 홀드 시 기본 공격 범위를 LineRenderer로 시각화합니다.
+스킬 키 홀드 시 스킬 범위, 기본 공격 키 홀드 시 기본 공격 범위를 LineRenderer로 시각화합니다(슬롯별 홀드 감지는 바인딩과 무관한 `IsSkillHeld(slot)`/`IsBasicAttackHeld` 사용 — 두 프리셋 공용).
 
 ```
 입력 분기:
@@ -1427,7 +1451,7 @@ Q/W/E/R 홀드 시 스킬 범위, Space 홀드 시 기본 공격 범위를 LineR
   미설정 시 DungeonData.IsWalkable 그리드 샘플링 폴백
 
 재계산 조건:
-  슬롯 변경 시 즉시 / FacingDirection 변경 시 (Line/Cone/Single/Projectile/Dash)
+  슬롯 변경 시 즉시 / 조준 방향 변경 시 (Classic=FacingDirection / ActionMouseAim=커서 연속 방향) — Line/Cone/Single/Projectile/Dash
 ```
 
 플레이어가 사망(`PlayerCombatController.IsDead`)한 경우 활성 미리보기를 즉시 숨기고 입력 처리도 중단합니다.
