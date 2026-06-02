@@ -70,6 +70,8 @@ public class SkillRangePreviewer : MonoBehaviour
     private bool         _isBasicAttackPreview  = false;
     private Vector2Int   _lastFacing;
     private Vector2Int   _lastAimDirection = Vector2Int.down;
+    private Vector2      _lastPreviewDirection = Vector2.down;
+    private const float PreviewDirectionRefreshEpsilonSqr = 0.0001f;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화
@@ -143,11 +145,23 @@ public class SkillRangePreviewer : MonoBehaviour
             var weapon = combat?.currentWeapon;
             if (weapon != null && SkillTargetResolver.IsDirectional(weapon.attackPattern))
             {
-                Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-                if (facing != _lastFacing)
+                if (IsMouseAimPreview())
                 {
-                    _lastFacing = facing;
-                    BuildBasicAttackPreview(weapon);
+                    Vector2 direction = GetPreviewDirection();
+                    if (!IsSamePreviewDirection(direction, _lastPreviewDirection))
+                    {
+                        _lastPreviewDirection = direction;
+                        BuildBasicAttackPreview(weapon);
+                    }
+                }
+                else
+                {
+                    Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+                    if (facing != _lastFacing)
+                    {
+                        _lastFacing = facing;
+                        BuildBasicAttackPreview(weapon);
+                    }
                 }
             }
         }
@@ -208,6 +222,7 @@ public class SkillRangePreviewer : MonoBehaviour
         _activeSlot   = slot;
         _lastFacing   = movement != null ? movement.FacingDirection : Vector2Int.down;
         _lastAimDirection = GetPreviewRawDirection();
+        _lastPreviewDirection = GetPreviewDirection();
 
         BuildPreview(_currentSkill);
         _lr.enabled = true;
@@ -229,6 +244,7 @@ public class SkillRangePreviewer : MonoBehaviour
 
         _isBasicAttackPreview = true;
         _lastFacing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        _lastPreviewDirection = GetPreviewDirection();
         BuildBasicAttackPreview(weapon);
         _lr.enabled = true;
     }
@@ -272,8 +288,24 @@ public class SkillRangePreviewer : MonoBehaviour
     private void BuildInstantAreaPreview(SkillData skill)
     {
         Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-        Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(facing);
-        SkillTargetResolver.ResolveShapeCells(skill, Vector2Int.zero, gridFacing, _previewShapeCells);
+        bool useMouseAim = IsMouseAimPreview();
+        Vector2 previewDirection = useMouseAim ? GetPreviewDirection() : Vector2.down;
+        if (useMouseAim)
+        {
+            SkillTargetResolver.ResolveShapeCells(
+                skill,
+                Vector2Int.zero,
+                ToDungeonGridFacing(previewDirection),
+                _previewShapeCells);
+        }
+        else
+        {
+            SkillTargetResolver.ResolveShapeCells(
+                skill,
+                Vector2Int.zero,
+                SkillTargetResolver.ToGridAimDirection(facing),
+                _previewShapeCells);
+        }
 
         switch (skill.attackPattern)
         {
@@ -284,17 +316,26 @@ public class SkillRangePreviewer : MonoBehaviour
 
             case AttackPatternType.Cone:
                 // 정면+좌우45° 각 range칸 — 대각 방향이 가장 멀리 뻗음
-                BuildCone(facing, SkillTargetResolver.GetPreviewRadius(skill.patternRange) * tileSize, skill.coneHalfAngle);
+                if (useMouseAim)
+                    BuildCone(previewDirection, SkillTargetResolver.GetPreviewRadius(skill.patternRange) * tileSize, skill.coneHalfAngle);
+                else
+                    BuildCone(facing, SkillTargetResolver.GetPreviewRadius(skill.patternRange) * tileSize, skill.coneHalfAngle);
                 break;
 
             case AttackPatternType.Line:
                 // 정면 직선 range칸 직사각형
-                BuildRectangle(facing, tileSize * 0.5f, skill.patternRange * tileSize, tileSize);
+                if (useMouseAim)
+                    BuildRectangle(previewDirection, tileSize * 0.5f, skill.patternRange * tileSize, tileSize);
+                else
+                    BuildRectangle(facing, tileSize * 0.5f, skill.patternRange * tileSize, tileSize);
                 break;
 
             case AttackPatternType.Single:
                 // range칸 거리의 1×1 정사각형
-                BuildRectangle(facing, (skill.patternRange - 0.5f) * tileSize, tileSize, tileSize);
+                if (useMouseAim)
+                    BuildRectangle(previewDirection, (skill.patternRange - 0.5f) * tileSize, tileSize, tileSize);
+                else
+                    BuildRectangle(facing, (skill.patternRange - 0.5f) * tileSize, tileSize, tileSize);
                 break;
 
             case AttackPatternType.Cross:
@@ -346,6 +387,15 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private Vector2 GetPreviewDirection()
     {
+        if (combat != null)
+        {
+            combat.RefreshAimDirection();
+            Vector2 direction = combat.CurrentAimDirection;
+            return direction.sqrMagnitude > PreviewDirectionRefreshEpsilonSqr
+                ? direction.normalized
+                : Vector2.down;
+        }
+
         return AimDirectionUtility.ToNormalizedDirection(GetPreviewRawDirection());
     }
 
@@ -455,6 +505,29 @@ public class SkillRangePreviewer : MonoBehaviour
     private void BuildBasicAttackPreview(WeaponData weapon)
     {
         Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        bool useMouseAim = IsMouseAimPreview();
+        Vector2 previewDirection = useMouseAim ? GetPreviewDirection() : Vector2.down;
+        _previewShapeCells.Clear();
+        if (useMouseAim)
+        {
+            AttackPattern.FillTargets(
+                weapon.attackPattern,
+                Vector2Int.zero,
+                ToDungeonGridFacing(previewDirection),
+                Mathf.Max(0, weapon.patternRange),
+                45f,
+                _previewShapeCells);
+        }
+        else
+        {
+            AttackPattern.FillTargets(
+                weapon.attackPattern,
+                Vector2Int.zero,
+                SkillTargetResolver.ToGridAimDirection(facing),
+                Mathf.Max(0, weapon.patternRange),
+                45f,
+                _previewShapeCells);
+        }
 
         switch (weapon.attackPattern)
         {
@@ -462,13 +535,22 @@ public class SkillRangePreviewer : MonoBehaviour
                 BuildCircle(SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize);
                 break;
             case AttackPatternType.Cone:
-                BuildCone(facing, SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize, 45f);
+                if (useMouseAim)
+                    BuildCone(previewDirection, SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize, 45f);
+                else
+                    BuildCone(facing, SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize, 45f);
                 break;
             case AttackPatternType.Line:
-                BuildRectangle(facing, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);
+                if (useMouseAim)
+                    BuildRectangle(previewDirection, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);
+                else
+                    BuildRectangle(facing, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);
                 break;
             case AttackPatternType.Single:
-                BuildRectangle(facing, (weapon.patternRange - 0.5f) * tileSize, tileSize, tileSize);
+                if (useMouseAim)
+                    BuildRectangle(previewDirection, (weapon.patternRange - 0.5f) * tileSize, tileSize, tileSize);
+                else
+                    BuildRectangle(facing, (weapon.patternRange - 0.5f) * tileSize, tileSize, tileSize);
                 break;
             case AttackPatternType.Cross:
                 BuildCross(weapon.patternRange);
@@ -501,6 +583,11 @@ public class SkillRangePreviewer : MonoBehaviour
     // loop = true 로 마지막 호점 → 중심이 자동 연결되어 부채꼴 완성
     private void BuildCone(Vector2Int facing, float radius, float halfAngleDeg)
     {
+        BuildCone(new Vector2(facing.x, facing.y), radius, halfAngleDeg);
+    }
+
+    private void BuildCone(Vector2 facing, float radius, float halfAngleDeg)
+    {
         float baseAngle = Mathf.Atan2(facing.y, facing.x);
         float halfRad   = halfAngleDeg * Mathf.Deg2Rad;
         // 호 분절 수: 전체 원 대비 차지하는 각도 비율로 결정
@@ -532,6 +619,21 @@ public class SkillRangePreviewer : MonoBehaviour
         s_Buf[1] = fwd * (startOffset + length)  - right * hw;
         s_Buf[2] = fwd * (startOffset + length)  + right * hw;
         s_Buf[3] = fwd * startOffset             + right * hw;
+        Apply(4);
+    }
+
+    private void BuildRectangle(Vector2 facing, float startOffset, float length, float width)
+    {
+        Vector2 fwd = facing.sqrMagnitude > PreviewDirectionRefreshEpsilonSqr
+            ? facing.normalized
+            : Vector2.down;
+        Vector2 right = new Vector2(-fwd.y, fwd.x);
+        float hw = width * 0.5f;
+
+        s_Buf[0] = fwd * startOffset - right * hw;
+        s_Buf[1] = fwd * (startOffset + length) - right * hw;
+        s_Buf[2] = fwd * (startOffset + length) + right * hw;
+        s_Buf[3] = fwd * startOffset + right * hw;
         Apply(4);
     }
 
@@ -658,6 +760,17 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private void RefreshDirectionalPreview(SkillData skill)
     {
+        if (IsMouseAimPreview())
+        {
+            Vector2 direction = GetPreviewDirection();
+            if (IsSamePreviewDirection(direction, _lastPreviewDirection))
+                return;
+
+            _lastPreviewDirection = direction;
+            BuildPreview(skill);
+            return;
+        }
+
         if (UsesEightWayPreviewDirection(skill))
         {
             Vector2Int aimDirection = GetPreviewRawDirection();
@@ -675,6 +788,24 @@ public class SkillRangePreviewer : MonoBehaviour
 
         _lastFacing = facing;
         BuildPreview(skill);
+    }
+
+    private bool IsMouseAimPreview()
+    {
+        return inputReader != null && inputReader.HasMouseAim;
+    }
+
+    private static bool IsSamePreviewDirection(Vector2 a, Vector2 b)
+    {
+        return (a - b).sqrMagnitude <= PreviewDirectionRefreshEpsilonSqr;
+    }
+
+    private static Vector2 ToDungeonGridFacing(Vector2 screenDirection)
+    {
+        if (screenDirection.sqrMagnitude <= PreviewDirectionRefreshEpsilonSqr)
+            return Vector2.down;
+
+        return new Vector2(screenDirection.x, -screenDirection.y).normalized;
     }
 
     private static bool UsesEightWayPreviewDirection(SkillData skill)

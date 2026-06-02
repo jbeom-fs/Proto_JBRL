@@ -90,6 +90,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
     private Vector2Int _lastAimDirection = Vector2Int.down;
+    private Vector2 _aimDirectionContinuous = Vector2.down;
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
     private Coroutine _skillCastRoutine;
@@ -157,7 +158,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
     public float       CachedHitRadius       => _cachedHitRadius;
-    public Vector2     CurrentAimDirection   => AimDirectionUtility.ToNormalizedDirection(_lastAimDirection);
+    public Vector2     CurrentAimDirection   =>
+        _inputReader != null && _inputReader.HasMouseAim
+            ? _aimDirectionContinuous
+            : AimDirectionUtility.ToNormalizedDirection(_lastAimDirection);
     public Vector2Int  CurrentAimRawDirection => _lastAimDirection;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
@@ -352,10 +356,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (_inputReader != null && _inputReader.HasMouseAim)
         {
             Vector2 aim = _inputReader.AimWorldPoint - (Vector2)transform.position;
-            if (aim.sqrMagnitude > MouseAimEpsilonSqr &&
-                AimDirectionUtility.TryGetEightWayRaw(aim, out Vector2Int mouseRawDirection))
+            if (aim.sqrMagnitude > MouseAimEpsilonSqr)
             {
-                _lastAimDirection = mouseRawDirection;
+                _aimDirectionContinuous = aim.normalized;
+
+                if (AimDirectionUtility.TryGetEightWayRaw(aim, out Vector2Int mouseRawDirection))
+                    _lastAimDirection = mouseRawDirection;
             }
 
             _formController?.ApplyFacing(CurrentAimDirection);

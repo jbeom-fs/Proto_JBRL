@@ -8,6 +8,7 @@ using UnityEngine;
 /// </summary>
 public sealed class SkillTargetResolver
 {
+    private const float AimDirectionEpsilonSqr = 0.0001f;
     private readonly List<Vector3> _worldTargetBuffer = new();
 
     public List<Vector3> ResolveWorldTargets(SkillExecutionContext context)
@@ -30,6 +31,25 @@ public sealed class SkillTargetResolver
         SkillData skill,
         Vector2Int origin,
         Vector2Int gridAimDirection,
+        List<Vector2Int> results)
+    {
+        if (results == null) return;
+        results.Clear();
+        if (skill == null) return;
+
+        AttackPattern.FillTargets(
+            skill.attackPattern,
+            origin,
+            gridAimDirection,
+            skill.patternRange,
+            skill.coneHalfAngle,
+            results);
+    }
+
+    public static void ResolveShapeCells(
+        SkillData skill,
+        Vector2Int origin,
+        Vector2 gridAimDirection,
         List<Vector2Int> results)
     {
         if (results == null) return;
@@ -94,14 +114,28 @@ public sealed class SkillTargetResolver
         if (dungeonManager == null) return;
 
         Vector2Int origin = dungeonManager.WorldToGrid(originWorld);
+        Vector2 gridFacing = ResolveDungeonGridFacing(aimDirection, dungeonGridAimDirection);
         s_TempGridTargets.Clear();
-        AttackPattern.FillTargets(
-            pattern,
-            origin,
-            dungeonGridAimDirection,
-            Mathf.Max(0, range),
-            coneHalfAngle,
-            s_TempGridTargets);
+        if (ShouldUseDiscreteGridFacing(aimDirection, dungeonGridAimDirection))
+        {
+            AttackPattern.FillTargets(
+                pattern,
+                origin,
+                dungeonGridAimDirection,
+                Mathf.Max(0, range),
+                coneHalfAngle,
+                s_TempGridTargets);
+        }
+        else
+        {
+            AttackPattern.FillTargets(
+                pattern,
+                origin,
+                gridFacing,
+                Mathf.Max(0, range),
+                coneHalfAngle,
+                s_TempGridTargets);
+        }
 
         for (int i = 0; i < s_TempGridTargets.Count; i++)
             results.Add(dungeonManager.GridToWorld(s_TempGridTargets[i]));
@@ -117,15 +151,28 @@ public sealed class SkillTargetResolver
         float coneHalfAngle,
         List<Vector3> results)
     {
-        Vector2Int facing = ResolveWorldFacing(aimDirection);
+        Vector2 facing = ResolveWorldFacing(aimDirection);
         s_TempGridTargets.Clear();
-        AttackPattern.FillTargets(
-            pattern,
-            Vector2Int.zero,
-            facing,
-            Mathf.Max(0, range),
-            coneHalfAngle,
-            s_TempGridTargets);
+        if (TryResolveSnappedRaw(aimDirection, out Vector2Int rawFacing))
+        {
+            AttackPattern.FillTargets(
+                pattern,
+                Vector2Int.zero,
+                rawFacing,
+                Mathf.Max(0, range),
+                coneHalfAngle,
+                s_TempGridTargets);
+        }
+        else
+        {
+            AttackPattern.FillTargets(
+                pattern,
+                Vector2Int.zero,
+                facing,
+                Mathf.Max(0, range),
+                coneHalfAngle,
+                s_TempGridTargets);
+        }
 
         float cellSize = WorldEnvironmentQuery.GetCellSize(originWorld);
         for (int i = 0; i < s_TempGridTargets.Count; i++)
@@ -138,11 +185,47 @@ public sealed class SkillTargetResolver
         }
     }
 
-    private static Vector2Int ResolveWorldFacing(Vector2 aimDirection)
+    private static Vector2 ResolveDungeonGridFacing(Vector2 aimDirection, Vector2Int fallback)
     {
-        if (AimDirectionUtility.TryGetEightWayRaw(aimDirection, out Vector2Int raw))
-            return raw;
+        if (aimDirection.sqrMagnitude > AimDirectionEpsilonSqr)
+            return new Vector2(aimDirection.x, -aimDirection.y).normalized;
 
-        return Vector2Int.down;
+        return fallback != Vector2Int.zero ? (Vector2)fallback : Vector2.down;
+    }
+
+    private static Vector2 ResolveWorldFacing(Vector2 aimDirection)
+    {
+        if (aimDirection.sqrMagnitude > AimDirectionEpsilonSqr)
+            return aimDirection.normalized;
+
+        return Vector2.down;
+    }
+
+    private static bool ShouldUseDiscreteGridFacing(Vector2 aimDirection, Vector2Int fallback)
+    {
+        if (fallback == Vector2Int.zero)
+            return false;
+        if (!TryResolveSnappedRaw(aimDirection, out Vector2Int screenRaw))
+            return false;
+
+        return fallback == ToGridAimDirection(screenRaw);
+    }
+
+    private static bool TryResolveSnappedRaw(Vector2 direction, out Vector2Int raw)
+    {
+        raw = Vector2Int.zero;
+        if (direction.sqrMagnitude <= AimDirectionEpsilonSqr)
+            return false;
+        if (!AimDirectionUtility.TryGetEightWayRaw(direction, out raw))
+            return false;
+
+        Vector2 normalized = direction.normalized;
+        float absX = Mathf.Abs(normalized.x);
+        float absY = Mathf.Abs(normalized.y);
+        const float snappedEpsilon = 0.001f;
+
+        return absX <= snappedEpsilon ||
+               absY <= snappedEpsilon ||
+               Mathf.Abs(absX - absY) <= snappedEpsilon;
     }
 }

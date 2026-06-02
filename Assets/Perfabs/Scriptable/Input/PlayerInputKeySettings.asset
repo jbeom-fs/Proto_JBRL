@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a7e254638a94cb4a51181cecf1a7e59, type: 3}
   m_Name: PlayerInputKeySettings
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   controlScheme: 1
   up: 63
   down: 64
@@ -25,3 +25,23 @@ MonoBehaviour:
   skillSlot2: 37
   skillSlot3: 19
   skillSlot4: 32
+  actionMouseUp: 37
+  actionMouseDown: 33
+  actionMouseLeft: 15
+  actionMouseRight: 18
+  actionMouseBasicAttack:
+    key: 0
+    mouseButton: 1
+  actionMouseReload: 1
+  actionMouseSkillSlot1:
+    key: 0
+    mouseButton: 2
+  actionMouseSkillSlot2:
+    key: 31
+    mouseButton: 0
+  actionMouseSkillSlot3:
+    key: 19
+    mouseButton: 0
+  actionMouseSkillSlot4:
+    key: 32
+    mouseButton: 0
