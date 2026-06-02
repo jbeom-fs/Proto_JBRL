@@ -15,6 +15,7 @@ public class PlayerAnimationController : MonoBehaviour
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
     private static readonly int IsDeadHash = Animator.StringToHash("IsDead");
 
+    private const float MouseAimFacingEpsilonSqr = 0.0001f;
     private Vector2 _lastMoveDirection = Vector2.down;
 
     private void Awake()
@@ -61,6 +62,10 @@ public class PlayerAnimationController : MonoBehaviour
             return;
         }
 
+        bool useMouseFacing = inputReader.HasMouseAim;
+        if (useMouseFacing)
+            ApplyMouseAimFacing();
+
         Vector2 input = inputReader.MoveInput;
         if (input.sqrMagnitude <= inputDeadZone * inputDeadZone)
         {
@@ -72,13 +77,23 @@ public class PlayerAnimationController : MonoBehaviour
 
         Vector2 direction = ResolveCardinalDirection(input);
         _lastMoveDirection = direction;
-        formController?.ApplyFacing(direction);
+        if (!useMouseFacing)
+            formController?.ApplyFacing(direction);
 
         animator.SetBool(IsMovingHash, true);
         animator.SetFloat(MoveXHash, direction.x);
         animator.SetFloat(MoveYHash, direction.y);
         animator.SetFloat(LastMoveXHash, _lastMoveDirection.x);
         animator.SetFloat(LastMoveYHash, _lastMoveDirection.y);
+    }
+
+    private void ApplyMouseAimFacing()
+    {
+        Vector2 aim = inputReader.AimWorldPoint - (Vector2)transform.position;
+        if (aim.sqrMagnitude <= MouseAimFacingEpsilonSqr)
+            return;
+
+        formController?.ApplyFacing(aim);
     }
 
     private void ApplyIdleParameters()

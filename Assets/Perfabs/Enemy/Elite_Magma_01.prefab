@@ -138,6 +138,7 @@ MonoBehaviour:
   barWidth: 0.8
   barHeight: 0.08
   yOffset: 0.55
+  barMargin: 0.15
   colorGradient: 1
   fillColorFull: {r: 0.2, g: 0.85, b: 0.2, a: 1}
   fillColorEmpty: {r: 1, g: 0, b: 0, a: 1}

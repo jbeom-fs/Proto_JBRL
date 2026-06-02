@@ -24,6 +24,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 {
     private const int SkillSlotCount = 4;
     private const float DefaultPlayerHitRadius = 0.5f;
+    private const float MouseAimEpsilonSqr = 0.0001f;
 
     public static PlayerCombatController Active { get; private set; }
 
@@ -347,6 +348,19 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         if (IsStunned)
             return CurrentAimDirection;
+
+        if (_inputReader != null && _inputReader.HasMouseAim)
+        {
+            Vector2 aim = _inputReader.AimWorldPoint - (Vector2)transform.position;
+            if (aim.sqrMagnitude > MouseAimEpsilonSqr &&
+                AimDirectionUtility.TryGetEightWayRaw(aim, out Vector2Int mouseRawDirection))
+            {
+                _lastAimDirection = mouseRawDirection;
+            }
+
+            _formController?.ApplyFacing(CurrentAimDirection);
+            return CurrentAimDirection;
+        }
 
         if (_inputReader != null &&
             AimDirectionUtility.TryGetEightWayRaw(_inputReader.MoveInput, out Vector2Int rawDirection))
@@ -865,8 +879,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private SkillExecutionContext CreateSkillExecutionContext(SkillData skill, int slotIndex)
     {
-        Vector2Int gridFacing = GetGridAimDirection();
         Vector2 aimDirection = RefreshAimDirection();
+        Vector2Int gridFacing = GetGridAimDirection();
 
         return new SkillExecutionContext(
             this,
@@ -883,6 +897,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private Vector2Int GetGridAimDirection()
     {
+        if (_inputReader != null && _inputReader.HasMouseAim)
+            return SkillTargetResolver.ToGridAimDirection(
+                AimDirectionUtility.ToCardinalDirection(_lastAimDirection));
+
         Vector2Int screenFacing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
         return SkillTargetResolver.ToGridAimDirection(screenFacing);
     }

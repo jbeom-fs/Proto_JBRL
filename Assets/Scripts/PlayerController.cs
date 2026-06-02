@@ -49,6 +49,7 @@ public class PlayerController : MonoBehaviour
     private float      _tileSize;
     private float      _stairCooldown;
     private const float STAIR_COOLDOWN = 0.5f;
+    private const float MOUSE_FACING_EPSILON_SQR = 0.0001f;
 
     /// <summary>마지막 이동 입력 방향 (그리드 단위). PlayerCombatController가 공격 방향으로 사용.</summary>
     public Vector2Int FacingDirection { get; private set; } = Vector2Int.down;
@@ -211,6 +212,7 @@ public class PlayerController : MonoBehaviour
         }
 
         if (_inputReader == null) return;
+        RefreshActionMouseFacing();
 
         if (_combat != null && _combat.IsStunned)
         {
@@ -241,9 +243,12 @@ public class PlayerController : MonoBehaviour
         if (input != Vector2.zero)
         {
             // 대각선 입력 시 X 축 우선으로 facing 결정
-            FacingDirection = input.x != 0f
-                ? new Vector2Int((int)Mathf.Sign(input.x), 0)
-                : new Vector2Int(0, (int)Mathf.Sign(input.y));
+            if (!_inputReader.HasMouseAim)
+            {
+                FacingDirection = input.x != 0f
+                    ? new Vector2Int((int)Mathf.Sign(input.x), 0)
+                    : new Vector2Int(0, (int)Mathf.Sign(input.y));
+            }
 
             if (input.x != 0f && input.y != 0f)
                 input = input.normalized;
@@ -254,6 +259,19 @@ public class PlayerController : MonoBehaviour
         {
             CheckRoomEntry();
         }
+    }
+
+    private void RefreshActionMouseFacing()
+    {
+        if (_inputReader == null || !_inputReader.HasMouseAim)
+            return;
+
+        Vector2 aim = _inputReader.AimWorldPoint - (Vector2)transform.position;
+        if (aim.sqrMagnitude <= MOUSE_FACING_EPSILON_SQR)
+            return;
+
+        if (AimDirectionUtility.TryGetEightWayRaw(aim, out Vector2Int rawDirection))
+            FacingDirection = AimDirectionUtility.ToCardinalDirection(rawDirection);
     }
 
     private void TryOpenEliteDoorOnContact()

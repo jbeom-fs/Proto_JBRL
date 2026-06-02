@@ -11,7 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a7e254638a94cb4a51181cecf1a7e59, type: 3}
   m_Name: PlayerInputKeySettings
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  controlScheme: 1
   up: 63
   down: 64
   left: 61
