@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   formId: 3
   displayName: Freischutz Form
-  animatorController: {fileID: 9100000, guid: 8df3482fa6a24ba386949c1a53a00fd4, type: 2}
-  defaultSprite: {fileID: 6829737506971320684, guid: 3a56783b4a77a1b43876c1cf695a1d3c, type: 3}
+  animatorController: {fileID: 9100000, guid: 2366aebfcd0a4c8997c138f6670520db, type: 2}
+  defaultSprite: {fileID: 4197712490486490289, guid: bab466143b45d5a42b748e20482498c3, type: 3}
   defaultSpriteFacesRight: 1
-  useHorizontalFlipForFacing: 0
+  useHorizontalFlipForFacing: 1
   rotateDashAnimationByDirection: 0
   dashBaseAngle: 0
   basicAttackMode: 2

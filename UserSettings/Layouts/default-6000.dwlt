@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 989
   m_ShowMode: 4
-  m_Title: Project
+  m_Title: Scene
   m_RootView: {fileID: 9}
   m_MinSize: {x: 875, y: 338}
   m_MaxSize: {x: 10000, y: 10000}
@@ -126,7 +126,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 88
+  controlID: 76
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -819,7 +819,7 @@ MonoBehaviour:
     m_OverlaysVisible: 1
     m_DynamicPanelBehavior: 0
   m_SearchFilter:
-    m_NameFilter: projectile
+    m_NameFilter: 
     m_ClassNames: []
     m_AssetLabels: []
     m_AssetBundleNames: []
@@ -829,28 +829,28 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Perfabs/Scriptable/Enemy
+    - Assets/Perfabs/Scriptable/Input
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
-    m_OriginalText: projectile
+    m_OriginalText: 
     m_ImportLogFlags: 0
     m_FilterByTypeIntersection: 0
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Perfabs/Scriptable/Enemy
+  - Assets/Perfabs/Scriptable/Input
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 116}
+    scrollPos: {x: 0, y: 236}
     m_SelectedIDs:
-    - m_Data: 57708
+    - m_Data: 57604
     m_LastClickedID:
-      m_Data: 57708
+      m_Data: 57604
     m_ExpandedIDs:
     - m_Data: 0
     - m_Data: 57442
@@ -877,7 +877,6 @@ MonoBehaviour:
     - m_Data: 57484
     - m_Data: 57486
     - m_Data: 57488
-    - m_Data: 57490
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -935,7 +934,6 @@ MonoBehaviour:
     - m_Data: 57484
     - m_Data: 57486
     - m_Data: 57488
-    - m_Data: 57490
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -964,10 +962,10 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 37134
+    - m_Data: 54012
     m_LastClickedEntityId:
-      m_Data: 37134
-    m_HadKeyboardFocusLastEvent: 0
+      m_Data: 54012
+    m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 52286
     - m_Data: 52364
@@ -1007,7 +1005,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 300}
+    m_ScrollPosition: {x: 0, y: 0}
     m_GridSize: 64
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 267
@@ -1108,12 +1106,9 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -96658
-      - m_Data: -65404
-      - m_Data: -46742
       - m_Data: -1382
-      - m_Data: 54260
-      - m_Data: 54786
+      - m_Data: 54806
+      - m_Data: 54890
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1637,9 +1632,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 215.12642, y: -42.408672, z: -0.55174917}
+    m_Target: {x: 208.02458, y: -50.398266, z: -0.55174917}
     speed: 2
-    m_Value: {x: 215.12642, y: -42.408672, z: -0.55174917}
+    m_Value: {x: 208.02458, y: -50.398266, z: -0.55174917}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1797,7 +1792,7 @@ MonoBehaviour:
     m_HSlider: 0
     m_VSlider: 0
     m_IgnoreScrollWheelUntilClicked: 0
-    m_EnableMouseInput: 0
+    m_EnableMouseInput: 1
     m_EnableSliderZoomHorizontal: 0
     m_EnableSliderZoomVertical: 0
     m_UniformScale: 1

@@ -1,0 +1,1621 @@
+fileFormatVersion: 2
+guid: bab466143b45d5a42b748e20482498c3
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 4197712490486490289
+    second: FreischutzForm_0
+  - first:
+      213: -6003220171965040307
+    second: FreischutzForm_1
+  - first:
+      213: -697118989887104134
+    second: FreischutzForm_2
+  - first:
+      213: 4241881063857613148
+    second: FreischutzForm_3
+  - first:
+      213: -5026804010854449964
+    second: FreischutzForm_4
+  - first:
+      213: 1577784441808428145
+    second: FreischutzForm_5
+  - first:
+      213: 835305447217823910
+    second: FreischutzForm_6
+  - first:
+      213: 6646817552611980025
+    second: FreischutzForm_7
+  - first:
+      213: 4427996947562755670
+    second: FreischutzForm_8
+  - first:
+      213: 6349201931352501882
+    second: FreischutzForm_9
+  - first:
+      213: -8613083884966780171
+    second: FreischutzForm_10
+  - first:
+      213: -4652759431572407509
+    second: FreischutzForm_11
+  - first:
+      213: 5675656393130431571
+    second: FreischutzForm_12
+  - first:
+      213: -2048952470731427913
+    second: FreischutzForm_13
+  - first:
+      213: -4063872809875150096
+    second: FreischutzForm_14
+  - first:
+      213: -5075891168386064683
+    second: FreischutzForm_15
+  - first:
+      213: 3737293174865109248
+    second: FreischutzForm_16
+  - first:
+      213: 9114212446913129734
+    second: FreischutzForm_17
+  - first:
+      213: -2059391480919984903
+    second: FreischutzForm_18
+  - first:
+      213: -1608938264168418262
+    second: FreischutzForm_19
+  - first:
+      213: -7046049945658301624
+    second: FreischutzForm_20
+  - first:
+      213: -6590677284760154589
+    second: FreischutzForm_21
+  - first:
+      213: -8545795208501362999
+    second: FreischutzForm_22
+  - first:
+      213: -4519236780193069835
+    second: FreischutzForm_23
+  - first:
+      213: 4730482879246497500
+    second: FreischutzForm_24
+  - first:
+      213: 8163718244635426446
+    second: FreischutzForm_25
+  - first:
+      213: -8871409620476167088
+    second: FreischutzForm_26
+  - first:
+      213: 2849188517606137923
+    second: FreischutzForm_27
+  - first:
+      213: 1479431491205914630
+    second: FreischutzForm_28
+  - first:
+      213: -3855973491262537648
+    second: FreischutzForm_29
+  - first:
+      213: 1953982103691694697
+    second: FreischutzForm_30
+  - first:
+      213: 4829985746179527099
+    second: FreischutzForm_31
+  - first:
+      213: 2158764030759828758
+    second: FreischutzForm_32
+  - first:
+      213: 3425157236772838331
+    second: FreischutzForm_33
+  - first:
+      213: 6176574905590318206
+    second: FreischutzForm_34
+  - first:
+      213: -5369045777793156453
+    second: FreischutzForm_35
+  - first:
+      213: -8358788581372183915
+    second: FreischutzForm_36
+  - first:
+      213: 4364780038246985053
+    second: FreischutzForm_37
+  - first:
+      213: -4102548357460309161
+    second: FreischutzForm_38
+  - first:
+      213: -6415057549368559662
+    second: FreischutzForm_39
+  - first:
+      213: 7695919260238634462
+    second: FreischutzForm_40
+  - first:
+      213: 7905653687052335259
+    second: FreischutzForm_41
+  - first:
+      213: 2180082169433506390
+    second: FreischutzForm_42
+  - first:
+      213: 5094998550029857923
+    second: FreischutzForm_43
+  - first:
+      213: -5578406786784474428
+    second: FreischutzForm_44
+  - first:
+      213: -5552673604180318144
+    second: FreischutzForm_45
+  - first:
+      213: -6102208829852113900
+    second: FreischutzForm_46
+  - first:
+      213: 2616313522216221181
+    second: FreischutzForm_47
+  - first:
+      213: -4696552736556925359
+    second: FreischutzForm_48
+  - first:
+      213: -3359991565521721659
+    second: FreischutzForm_49
+  - first:
+      213: -6422584776621398478
+    second: FreischutzForm_50
+  - first:
+      213: 6364120292895489567
+    second: FreischutzForm_51
+  - first:
+      213: 5544181945050988411
+    second: FreischutzForm_52
+  - first:
+      213: 2428213568595500373
+    second: FreischutzForm_53
+  - first:
+      213: 4179242424781010833
+    second: FreischutzForm_54
+  - first:
+      213: 8304543802254042460
+    second: FreischutzForm_55
+  - first:
+      213: -7020552603670576970
+    second: FreischutzForm_56
+  - first:
+      213: -6623852074635848859
+    second: FreischutzForm_57
+  - first:
+      213: -7031767798170341557
+    second: FreischutzForm_58
+  - first:
+      213: -3285038257199734498
+    second: FreischutzForm_59
+  - first:
+      213: 5787208815492668479
+    second: FreischutzForm_60
+  - first:
+      213: 1953234797038416858
+    second: FreischutzForm_61
+  - first:
+      213: 5388756731705247701
+    second: FreischutzForm_62
+  - first:
+      213: -2848995646373141969
+    second: FreischutzForm_63
+  - first:
+      213: 2784766596195074932
+    second: FreischutzForm_64
+  - first:
+      213: 2235483684375561195
+    second: FreischutzForm_65
+  - first:
+      213: 3153444092781484822
+    second: FreischutzForm_66
+  - first:
+      213: 9166743919486672779
+    second: FreischutzForm_67
+  - first:
+      213: -4489705116131589995
+    second: FreischutzForm_68
+  - first:
+      213: 645601162460330777
+    second: FreischutzForm_69
+  - first:
+      213: 7718213361791024477
+    second: FreischutzForm_70
+  - first:
+      213: -3651692304913305587
+    second: FreischutzForm_71
+  - first:
+      213: 6433398480933613115
+    second: FreischutzForm_72
+  - first:
+      213: -8738557029650267116
+    second: FreischutzForm_73
+  - first:
+      213: -7119523546758444803
+    second: FreischutzForm_74
+  - first:
+      213: 3310122139167595434
+    second: FreischutzForm_75
+  - first:
+      213: -6160756701041085972
+    second: FreischutzForm_76
+  - first:
+      213: 5504243584929312778
+    second: FreischutzForm_77
+  - first:
+      213: 333489295080093237
+    second: FreischutzForm_78
+  - first:
+      213: 8579294710252189303
+    second: FreischutzForm_79
+  - first:
+      213: -8608277529119976216
+    second: FreischutzForm_80
+  - first:
+      213: 490268563808550237
+    second: FreischutzForm_81
+  - first:
+      213: 7190166676317778278
+    second: FreischutzForm_82
+  - first:
+      213: 4192122190042994006
+    second: FreischutzForm_83
+  - first:
+      213: 1807653799199536913
+    second: FreischutzForm_84
+  - first:
+      213: 9205017952466032536
+    second: FreischutzForm_85
+  - first:
+      213: -9148369795833723296
+    second: FreischutzForm_86
+  - first:
+      213: 8335186998610290185
+    second: FreischutzForm_87
+  - first:
+      213: 442178885443369159
+    second: FreischutzForm_88
+  - first:
+      213: 6028639699194996156
+    second: FreischutzForm_89
+  - first:
+      213: -7308488218351717333
+    second: FreischutzForm_90
+  - first:
+      213: 7582382322277299453
+    second: FreischutzForm_91
+  - first:
+      213: 1943556938130696322
+    second: FreischutzForm_92
+  - first:
+      213: -6993843103738109963
+    second: FreischutzForm_93
+  - first:
+      213: -2647249854211951321
+    second: FreischutzForm_94
+  - first:
+      213: 2799356015380932392
+    second: FreischutzForm_95
+  - first:
+      213: -4833391413457169059
+    second: FreischutzForm_96
+  - first:
+      213: -5159115976364410808
+    second: FreischutzForm_97
+  - first:
+      213: 1483214187261690351
+    second: FreischutzForm_98
+  - first:
+      213: -4744942691997670023
+    second: FreischutzForm_99
+  - first:
+      213: -4244691132528779712
+    second: FreischutzForm_100
+  - first:
+      213: -4619391619045158279
+    second: FreischutzForm_101
+  - first:
+      213: 8275616258742456037
+    second: FreischutzForm_102
+  - first:
+      213: -624813277302657082
+    second: FreischutzForm_103
+  - first:
+      213: 465734198521828528
+    second: FreischutzForm_104
+  - first:
+      213: -2024942918495385635
+    second: FreischutzForm_105
+  - first:
+      213: -2772867827832284112
+    second: FreischutzForm_106
+  - first:
+      213: -4456077428565790536
+    second: FreischutzForm_107
+  - first:
+      213: -8123406519917948580
+    second: FreischutzForm_108
+  - first:
+      213: 5945766357411254755
+    second: FreischutzForm_109
+  - first:
+      213: 6684351028302724538
+    second: FreischutzForm_110
+  - first:
+      213: -801124245596760090
+    second: FreischutzForm_111
+  - first:
+      213: 1459136018966335285
+    second: FreischutzForm_112
+  - first:
+      213: -6865000419133027553
+    second: FreischutzForm_113
+  - first:
+      213: -6312299461569720318
+    second: FreischutzForm_114
+  - first:
+      213: -3143932894398440509
+    second: FreischutzForm_115
+  - first:
+      213: -7628067958312127616
+    second: FreischutzForm_116
+  - first:
+      213: -3556378337497375657
+    second: FreischutzForm_117
+  - first:
+      213: 354939595585390905
+    second: FreischutzForm_118
+  - first:
+      213: -1710080245715254224
+    second: FreischutzForm_119
+  - first:
+      213: -5225440007048441526
+    second: FreischutzForm_120
+  - first:
+      213: -2047612137257648903
+    second: FreischutzForm_121
+  - first:
+      213: -3888394798500146064
+    second: FreischutzForm_122
+  - first:
+      213: -3656320804637915736
+    second: FreischutzForm_123
+  - first:
+      213: 2464323917539919384
+    second: FreischutzForm_124
+  - first:
+      213: -7085985904311187692
+    second: FreischutzForm_125
+  - first:
+      213: -8569256646829078681
+    second: FreischutzForm_126
+  - first:
+      213: 4505959383537652126
+    second: FreischutzForm_127
+  - first:
+      213: -8523091765669944636
+    second: FreischutzForm_128
+  - first:
+      213: 5835522731834606354
+    second: FreischutzForm_129
+  - first:
+      213: 4418330895331876888
+    second: FreischutzForm_130
+  - first:
+      213: -114438140943126438
+    second: FreischutzForm_131
+  - first:
+      213: -4156139666607030254
+    second: FreischutzForm_132
+  - first:
+      213: 5117903512220827598
+    second: FreischutzForm_133
+  - first:
+      213: 2367071263068666970
+    second: FreischutzForm_134
+  - first:
+      213: 7241741969664244165
+    second: FreischutzForm_135
+  - first:
+      213: -7967511713856498103
+    second: FreischutzForm_136
+  - first:
+      213: -7447164939484799582
+    second: FreischutzForm_137
+  - first:
+      213: -4409828845282244475
+    second: FreischutzForm_138
+  - first:
+      213: 5679846652272102489
+    second: FreischutzForm_139
+  - first:
+      213: 6714624495538303265
+    second: FreischutzForm_140
+  - first:
+      213: -7709427042348659211
+    second: FreischutzForm_141
+  - first:
+      213: -925633765452279162
+    second: FreischutzForm_142
+  - first:
+      213: -3481340381051008808
+    second: FreischutzForm_143
+  - first:
+      213: 6138641757277828552
+    second: FreischutzForm_144
+  - first:
+      213: -2413710887318375631
+    second: FreischutzForm_145
+  - first:
+      213: -8925469403110902001
+    second: FreischutzForm_146
+  - first:
+      213: 6087592947502337788
+    second: FreischutzForm_147
+  - first:
+      213: -3158881404722962113
+    second: FreischutzForm_148
+  - first:
+      213: -1576386332027360093
+    second: FreischutzForm_149
+  - first:
+      213: 2372677165111796778
+    second: FreischutzForm_150
+  - first:
+      213: -7460238882148168525
+    second: FreischutzForm_151
+  - first:
+      213: 6293093609343105480
+    second: FreischutzForm_152
+  - first:
+      213: 181059084352428683
+    second: FreischutzForm_153
+  - first:
+      213: 63314324555751714
+    second: FreischutzForm_154
+  - first:
+      213: -3660697513755701557
+    second: FreischutzForm_155
+  - first:
+      213: -2470253949579133113
+    second: FreischutzForm_156
+  - first:
+      213: 1436521967599064659
+    second: FreischutzForm_157
+  - first:
+      213: 2751777015879667000
+    second: FreischutzForm_158
+  - first:
+      213: 8799886954565772497
+    second: FreischutzForm_159
+  - first:
+      213: -8218808107230352624
+    second: FreischutzForm_160
+  - first:
+      213: 8375425471928406171
+    second: FreischutzForm_161
+  - first:
+      213: -9111498586065299178
+    second: FreischutzForm_162
+  - first:
+      213: -3999088381910051802
+    second: FreischutzForm_163
+  - first:
+      213: 2260195916728540112
+    second: FreischutzForm_164
+  - first:
+      213: 5477887379333242705
+    second: FreischutzForm_165
+  - first:
+      213: 1430174512458580214
+    second: FreischutzForm_166
+  - first:
+      213: 8420856948375473850
+    second: FreischutzForm_167
+  - first:
+      213: 9163354774059975974
+    second: FreischutzForm_168
+  - first:
+      213: -790094064861129928
+    second: FreischutzForm_169
+  - first:
+      213: 6892893567275947978
+    second: FreischutzForm_170
+  - first:
+      213: 3492887364838538403
+    second: FreischutzForm_171
+  - first:
+      213: -7223270462830389769
+    second: FreischutzForm_172
+  - first:
+      213: -528510889442655825
+    second: FreischutzForm_173
+  - first:
+      213: -4660328110601295410
+    second: FreischutzForm_174
+  - first:
+      213: -2288602323549310551
+    second: FreischutzForm_175
+  - first:
+      213: -5364364466702941487
+    second: FreischutzForm_176
+  - first:
+      213: -6704201103665766700
+    second: FreischutzForm_177
+  - first:
+      213: 9058318383381040846
+    second: FreischutzForm_178
+  - first:
+      213: 7795446727915562082
+    second: FreischutzForm_179
+  - first:
+      213: -8730378646819474940
+    second: FreischutzForm_180
+  - first:
+      213: -3252688686205748691
+    second: FreischutzForm_181
+  - first:
+      213: -8084191989286641391
+    second: FreischutzForm_182
+  - first:
+      213: -1740996489896510613
+    second: FreischutzForm_183
+  - first:
+      213: 2777288772575518109
+    second: FreischutzForm_184
+  - first:
+      213: 4977174692887182096
+    second: FreischutzForm_185
+  - first:
+      213: -6994499658016840537
+    second: FreischutzForm_186
+  - first:
+      213: 2654470607848386008
+    second: FreischutzForm_187
+  - first:
+      213: -4698029867295079114
+    second: FreischutzForm_188
+  - first:
+      213: 9020071202474070810
+    second: FreischutzForm_189
+  - first:
+      213: 1972229203071738970
+    second: FreischutzForm_190
+  - first:
+      213: 1518289436475045996
+    second: FreischutzForm_191
+  - first:
+      213: 6971105841835956877
+    second: FreischutzForm_192
+  - first:
+      213: 3945367320466749322
+    second: FreischutzForm_193
+  - first:
+      213: 5428884407057012999
+    second: FreischutzForm_194
+  - first:
+      213: -8999518433924352966
+    second: FreischutzForm_195
+  - first:
+      213: 4043527953741540426
+    second: FreischutzForm_196
+  - first:
+      213: 8703652575878449730
+    second: FreischutzForm_197
+  - first:
+      213: -8423306774189045956
+    second: FreischutzForm_198
+  - first:
+      213: 1945779198518681028
+    second: FreischutzForm_199
+  - first:
+      213: -8886840837798458521
+    second: FreischutzForm_200
+  - first:
+      213: 3178480426046891968
+    second: FreischutzForm_201
+  - first:
+      213: 8742158179776452156
+    second: FreischutzForm_202
+  - first:
+      213: 2606239844385599575
+    second: FreischutzForm_203
+  - first:
+      213: 5086733281759797890
+    second: FreischutzForm_204
+  - first:
+      213: 8879232009821444890
+    second: FreischutzForm_205
+  - first:
+      213: 3995345571362868363
+    second: FreischutzForm_206
+  - first:
+      213: 611739814243608814
+    second: FreischutzForm_207
+  - first:
+      213: -1159847809120760225
+    second: FreischutzForm_208
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: FreischutzForm_0
+      rect:
+        serializedVersion: 2
+        x: 40
+        y: 897
+        width: 183
+        height: 199
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b4eaa80545414a30800000000000000
+      internalID: 4197712490486490289
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_1
+      rect:
+        serializedVersion: 2
+        x: 268
+        y: 896
+        width: 178
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d49709d5f0740bca0800000000000000
+      internalID: -6003220171965040307
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_2
+      rect:
+        serializedVersion: 2
+        x: 484
+        y: 894
+        width: 177
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7b9991e8f55356f0800000000000000
+      internalID: -697118989887104134
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_3
+      rect:
+        serializedVersion: 2
+        x: 704
+        y: 893
+        width: 176
+        height: 197
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5960b66a503eda30800000000000000
+      internalID: 4241881063857613148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_4
+      rect:
+        serializedVersion: 2
+        x: 926
+        y: 894
+        width: 176
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4dcf281a2643d3ab0800000000000000
+      internalID: -5026804010854449964
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_5
+      rect:
+        serializedVersion: 2
+        x: 1145
+        y: 894
+        width: 175
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 17c1122279a65e510800000000000000
+      internalID: 1577784441808428145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_6
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 684
+        width: 167
+        height: 180
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6a00e5ce0e9979b00800000000000000
+      internalID: 835305447217823910
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_7
+      rect:
+        serializedVersion: 2
+        x: 266
+        y: 684
+        width: 165
+        height: 178
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f2b446095d3e3c50800000000000000
+      internalID: 6646817552611980025
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_8
+      rect:
+        serializedVersion: 2
+        x: 483
+        y: 684
+        width: 167
+        height: 178
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 656fdf563c7637d30800000000000000
+      internalID: 4427996947562755670
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_9
+      rect:
+        serializedVersion: 2
+        x: 700
+        y: 683
+        width: 165
+        height: 179
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7e6d7d5485ec1850800000000000000
+      internalID: 6349201931352501882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_10
+      rect:
+        serializedVersion: 2
+        x: 922
+        y: 685
+        width: 166
+        height: 177
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f2e9e737dd287880800000000000000
+      internalID: -8613083884966780171
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_11
+      rect:
+        serializedVersion: 2
+        x: 1142
+        y: 684
+        width: 165
+        height: 178
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b2b37c7c2f31e6fb0800000000000000
+      internalID: -4652759431572407509
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_12
+      rect:
+        serializedVersion: 2
+        x: 40
+        y: 462
+        width: 172
+        height: 183
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 354d6bb2b6bf3ce40800000000000000
+      internalID: 5675656393130431571
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_13
+      rect:
+        serializedVersion: 2
+        x: 261
+        y: 462
+        width: 170
+        height: 183
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7bfe46c6598a093e0800000000000000
+      internalID: -2048952470731427913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_14
+      rect:
+        serializedVersion: 2
+        x: 473
+        y: 463
+        width: 190
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0fae503f5393a97c0800000000000000
+      internalID: -4063872809875150096
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_15
+      rect:
+        serializedVersion: 2
+        x: 693
+        y: 462
+        width: 196
+        height: 183
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5de5ec520efce89b0800000000000000
+      internalID: -5075891168386064683
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_16
+      rect:
+        serializedVersion: 2
+        x: 915
+        y: 463
+        width: 195
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 001a35d67588dd330800000000000000
+      internalID: 3737293174865109248
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_17
+      rect:
+        serializedVersion: 2
+        x: 1131
+        y: 463
+        width: 199
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60d63b96eef2c7e70800000000000000
+      internalID: 9114212446913129734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_18
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 283
+        width: 177
+        height: 130
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2435ba5c27eba9e0800000000000000
+      internalID: -1608938264168418262
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_19
+      rect:
+        serializedVersion: 2
+        x: 250
+        y: 283
+        width: 188
+        height: 130
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 843606fe7e6673e90800000000000000
+      internalID: -7046049945658301624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_20
+      rect:
+        serializedVersion: 2
+        x: 468
+        y: 283
+        width: 188
+        height: 129
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32e82acade53984a0800000000000000
+      internalID: -6590677284760154589
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_21
+      rect:
+        serializedVersion: 2
+        x: 689
+        y: 283
+        width: 187
+        height: 129
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ce7a02198c376980800000000000000
+      internalID: -8545795208501362999
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_22
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 283
+        width: 200
+        height: 129
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f446b4a7127841c0800000000000000
+      internalID: -4519236780193069835
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_23
+      rect:
+        serializedVersion: 2
+        x: 1123
+        y: 280
+        width: 200
+        height: 132
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd6fd819d1d06a140800000000000000
+      internalID: 4730482879246497500
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_24
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 212
+        height: 239
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e8ebed18d7a5b4170800000000000000
+      internalID: 8163718244635426446
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_25
+      rect:
+        serializedVersion: 2
+        x: 257
+        y: 42
+        width: 188
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 048e42db6c0f0f2b0800000000000000
+      internalID: -5552673604180318144
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_26
+      rect:
+        serializedVersion: 2
+        x: 477
+        y: 43
+        width: 188
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 414043e2ea86ab680800000000000000
+      internalID: -8738557029650267116
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_27
+      rect:
+        serializedVersion: 2
+        x: 698
+        y: 42
+        width: 186
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb5e5558dd70aa350800000000000000
+      internalID: 6028639699194996156
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_28
+      rect:
+        serializedVersion: 2
+        x: 928
+        y: 41
+        width: 170
+        height: 184
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 725fdf78844134bd0800000000000000
+      internalID: -2647249854211951321
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FreischutzForm_29
+      rect:
+        serializedVersion: 2
+        x: 1145
+        y: 41
+        width: 164
+        height: 184
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ac6abaabfc8f1ae0800000000000000
+      internalID: -1576386332027360093
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: cd191449c0c1afd4cb0dd94fb05dcd1d
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      FreischutzForm_0: 4197712490486490289
+      FreischutzForm_1: -6003220171965040307
+      FreischutzForm_10: -8613083884966780171
+      FreischutzForm_100: -4244691132528779712
+      FreischutzForm_101: -4619391619045158279
+      FreischutzForm_102: 8275616258742456037
+      FreischutzForm_103: -624813277302657082
+      FreischutzForm_104: 465734198521828528
+      FreischutzForm_105: -2024942918495385635
+      FreischutzForm_106: -2772867827832284112
+      FreischutzForm_107: -4456077428565790536
+      FreischutzForm_108: -8123406519917948580
+      FreischutzForm_109: 5945766357411254755
+      FreischutzForm_11: -4652759431572407509
+      FreischutzForm_110: 6684351028302724538
+      FreischutzForm_111: -801124245596760090
+      FreischutzForm_112: 1459136018966335285
+      FreischutzForm_113: -6865000419133027553
+      FreischutzForm_114: -6312299461569720318
+      FreischutzForm_115: -3143932894398440509
+      FreischutzForm_116: -7628067958312127616
+      FreischutzForm_117: -3556378337497375657
+      FreischutzForm_118: 354939595585390905
+      FreischutzForm_119: -1710080245715254224
+      FreischutzForm_12: 5675656393130431571
+      FreischutzForm_120: -5225440007048441526
+      FreischutzForm_121: -2047612137257648903
+      FreischutzForm_122: -3888394798500146064
+      FreischutzForm_123: -3656320804637915736
+      FreischutzForm_124: 2464323917539919384
+      FreischutzForm_125: -7085985904311187692
+      FreischutzForm_126: -8569256646829078681
+      FreischutzForm_127: 4505959383537652126
+      FreischutzForm_128: -8523091765669944636
+      FreischutzForm_129: 5835522731834606354
+      FreischutzForm_13: -2048952470731427913
+      FreischutzForm_130: 4418330895331876888
+      FreischutzForm_131: -114438140943126438
+      FreischutzForm_132: -4156139666607030254
+      FreischutzForm_133: 5117903512220827598
+      FreischutzForm_134: 2367071263068666970
+      FreischutzForm_135: 7241741969664244165
+      FreischutzForm_136: -7967511713856498103
+      FreischutzForm_137: -7447164939484799582
+      FreischutzForm_138: -4409828845282244475
+      FreischutzForm_139: 5679846652272102489
+      FreischutzForm_14: -4063872809875150096
+      FreischutzForm_140: 6714624495538303265
+      FreischutzForm_141: -7709427042348659211
+      FreischutzForm_142: -925633765452279162
+      FreischutzForm_143: -3481340381051008808
+      FreischutzForm_144: 6138641757277828552
+      FreischutzForm_145: -2413710887318375631
+      FreischutzForm_146: -8925469403110902001
+      FreischutzForm_147: 6087592947502337788
+      FreischutzForm_148: -3158881404722962113
+      FreischutzForm_15: -5075891168386064683
+      FreischutzForm_150: 2372677165111796778
+      FreischutzForm_151: -7460238882148168525
+      FreischutzForm_152: 6293093609343105480
+      FreischutzForm_153: 181059084352428683
+      FreischutzForm_154: 63314324555751714
+      FreischutzForm_155: -3660697513755701557
+      FreischutzForm_156: -2470253949579133113
+      FreischutzForm_157: 1436521967599064659
+      FreischutzForm_158: 2751777015879667000
+      FreischutzForm_159: 8799886954565772497
+      FreischutzForm_16: 3737293174865109248
+      FreischutzForm_160: -8218808107230352624
+      FreischutzForm_161: 8375425471928406171
+      FreischutzForm_162: -9111498586065299178
+      FreischutzForm_163: -3999088381910051802
+      FreischutzForm_164: 2260195916728540112
+      FreischutzForm_165: 5477887379333242705
+      FreischutzForm_166: 1430174512458580214
+      FreischutzForm_167: 8420856948375473850
+      FreischutzForm_168: 9163354774059975974
+      FreischutzForm_169: -790094064861129928
+      FreischutzForm_17: 9114212446913129734
+      FreischutzForm_170: 6892893567275947978
+      FreischutzForm_171: 3492887364838538403
+      FreischutzForm_172: -7223270462830389769
+      FreischutzForm_173: -528510889442655825
+      FreischutzForm_174: -4660328110601295410
+      FreischutzForm_175: -2288602323549310551
+      FreischutzForm_176: -5364364466702941487
+      FreischutzForm_177: -6704201103665766700
+      FreischutzForm_178: 9058318383381040846
+      FreischutzForm_179: 7795446727915562082
+      FreischutzForm_18: -1608938264168418262
+      FreischutzForm_180: -8730378646819474940
+      FreischutzForm_181: -3252688686205748691
+      FreischutzForm_182: -8084191989286641391
+      FreischutzForm_183: -1740996489896510613
+      FreischutzForm_184: 2777288772575518109
+      FreischutzForm_185: 4977174692887182096
+      FreischutzForm_186: -6994499658016840537
+      FreischutzForm_187: 2654470607848386008
+      FreischutzForm_188: -4698029867295079114
+      FreischutzForm_189: 9020071202474070810
+      FreischutzForm_19: -7046049945658301624
+      FreischutzForm_190: 1972229203071738970
+      FreischutzForm_191: 1518289436475045996
+      FreischutzForm_192: 6971105841835956877
+      FreischutzForm_193: 3945367320466749322
+      FreischutzForm_194: 5428884407057012999
+      FreischutzForm_195: -8999518433924352966
+      FreischutzForm_196: 4043527953741540426
+      FreischutzForm_197: 8703652575878449730
+      FreischutzForm_198: -8423306774189045956
+      FreischutzForm_199: 1945779198518681028
+      FreischutzForm_2: -697118989887104134
+      FreischutzForm_20: -6590677284760154589
+      FreischutzForm_200: -8886840837798458521
+      FreischutzForm_201: 3178480426046891968
+      FreischutzForm_202: 8742158179776452156
+      FreischutzForm_203: 2606239844385599575
+      FreischutzForm_204: 5086733281759797890
+      FreischutzForm_205: 8879232009821444890
+      FreischutzForm_206: 3995345571362868363
+      FreischutzForm_207: 611739814243608814
+      FreischutzForm_208: -1159847809120760225
+      FreischutzForm_21: -8545795208501362999
+      FreischutzForm_22: -4519236780193069835
+      FreischutzForm_23: 4730482879246497500
+      FreischutzForm_24: 8163718244635426446
+      FreischutzForm_25: -5552673604180318144
+      FreischutzForm_26: -8738557029650267116
+      FreischutzForm_27: 6028639699194996156
+      FreischutzForm_28: -2647249854211951321
+      FreischutzForm_29: -1576386332027360093
+      FreischutzForm_3: 4241881063857613148
+      FreischutzForm_30: 1953982103691694697
+      FreischutzForm_31: 4829985746179527099
+      FreischutzForm_32: 2158764030759828758
+      FreischutzForm_33: 3425157236772838331
+      FreischutzForm_34: 6176574905590318206
+      FreischutzForm_35: -5369045777793156453
+      FreischutzForm_36: -8358788581372183915
+      FreischutzForm_37: 4364780038246985053
+      FreischutzForm_38: -4102548357460309161
+      FreischutzForm_39: -6415057549368559662
+      FreischutzForm_4: -5026804010854449964
+      FreischutzForm_40: 7695919260238634462
+      FreischutzForm_41: 7905653687052335259
+      FreischutzForm_42: 2180082169433506390
+      FreischutzForm_43: 5094998550029857923
+      FreischutzForm_44: -5578406786784474428
+      FreischutzForm_46: -6102208829852113900
+      FreischutzForm_47: 2616313522216221181
+      FreischutzForm_48: -4696552736556925359
+      FreischutzForm_49: -3359991565521721659
+      FreischutzForm_5: 1577784441808428145
+      FreischutzForm_50: -6422584776621398478
+      FreischutzForm_51: 6364120292895489567
+      FreischutzForm_52: 5544181945050988411
+      FreischutzForm_53: 2428213568595500373
+      FreischutzForm_54: 4179242424781010833
+      FreischutzForm_55: 8304543802254042460
+      FreischutzForm_56: -7020552603670576970
+      FreischutzForm_57: -6623852074635848859
+      FreischutzForm_58: -7031767798170341557
+      FreischutzForm_59: -3285038257199734498
+      FreischutzForm_6: 835305447217823910
+      FreischutzForm_60: 5787208815492668479
+      FreischutzForm_61: 1953234797038416858
+      FreischutzForm_62: 5388756731705247701
+      FreischutzForm_63: -2848995646373141969
+      FreischutzForm_64: 2784766596195074932
+      FreischutzForm_65: 2235483684375561195
+      FreischutzForm_66: 3153444092781484822
+      FreischutzForm_67: 9166743919486672779
+      FreischutzForm_68: -4489705116131589995
+      FreischutzForm_69: 645601162460330777
+      FreischutzForm_7: 6646817552611980025
+      FreischutzForm_70: 7718213361791024477
+      FreischutzForm_71: -3651692304913305587
+      FreischutzForm_72: 6433398480933613115
+      FreischutzForm_74: -7119523546758444803
+      FreischutzForm_75: 3310122139167595434
+      FreischutzForm_76: -6160756701041085972
+      FreischutzForm_77: 5504243584929312778
+      FreischutzForm_78: 333489295080093237
+      FreischutzForm_79: 8579294710252189303
+      FreischutzForm_8: 4427996947562755670
+      FreischutzForm_80: -8608277529119976216
+      FreischutzForm_81: 490268563808550237
+      FreischutzForm_82: 7190166676317778278
+      FreischutzForm_83: 4192122190042994006
+      FreischutzForm_84: 1807653799199536913
+      FreischutzForm_85: 9205017952466032536
+      FreischutzForm_86: -9148369795833723296
+      FreischutzForm_87: 8335186998610290185
+      FreischutzForm_88: 442178885443369159
+      FreischutzForm_9: 6349201931352501882
+      FreischutzForm_90: -7308488218351717333
+      FreischutzForm_91: 7582382322277299453
+      FreischutzForm_92: 1943556938130696322
+      FreischutzForm_93: -6993843103738109963
+      FreischutzForm_95: 2799356015380932392
+      FreischutzForm_96: -4833391413457169059
+      FreischutzForm_97: -5159115976364410808
+      FreischutzForm_98: 1483214187261690351
+      FreischutzForm_99: -4744942691997670023
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

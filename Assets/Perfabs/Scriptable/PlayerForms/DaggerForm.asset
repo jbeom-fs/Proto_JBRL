@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   formId: 2
   displayName: Dagger Form
-  animatorController: {fileID: 0}
-  defaultSprite: {fileID: 0}
+  animatorController: {fileID: 9100000, guid: a2c98a7c1d1c4cf3a59f8720e6da4674, type: 2}
+  defaultSprite: {fileID: 3810574824250202413, guid: 9a2b4bbab4f9c084a94dc96abe9ba6a6, type: 3}
   defaultSpriteFacesRight: 1
   useHorizontalFlipForFacing: 1
   rotateDashAnimationByDirection: 1

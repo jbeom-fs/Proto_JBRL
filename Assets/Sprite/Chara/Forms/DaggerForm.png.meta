@@ -1,0 +1,909 @@
+fileFormatVersion: 2
+guid: 9a2b4bbab4f9c084a94dc96abe9ba6a6
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3810574824250202413
+    second: DaggerForm_0
+  - first:
+      213: -242916859242817848
+    second: DaggerForm_1
+  - first:
+      213: -38078996475991051
+    second: DaggerForm_2
+  - first:
+      213: 4942168852293175737
+    second: DaggerForm_3
+  - first:
+      213: -5924645675019505901
+    second: DaggerForm_4
+  - first:
+      213: -6816640554870629986
+    second: DaggerForm_5
+  - first:
+      213: -5730628635798643321
+    second: DaggerForm_6
+  - first:
+      213: -4337756074939361904
+    second: DaggerForm_7
+  - first:
+      213: 5232325728222286160
+    second: DaggerForm_8
+  - first:
+      213: 533198165985089382
+    second: DaggerForm_9
+  - first:
+      213: 5934819433319108105
+    second: DaggerForm_10
+  - first:
+      213: 8305299287917664229
+    second: DaggerForm_11
+  - first:
+      213: 8849957429052707131
+    second: DaggerForm_12
+  - first:
+      213: -7242168309318532854
+    second: DaggerForm_13
+  - first:
+      213: 6520304508209982436
+    second: DaggerForm_14
+  - first:
+      213: -1595948473812274896
+    second: DaggerForm_15
+  - first:
+      213: -8975663905916609922
+    second: DaggerForm_16
+  - first:
+      213: -5508132398729208551
+    second: DaggerForm_17
+  - first:
+      213: -42033995389237257
+    second: DaggerForm_18
+  - first:
+      213: -1566929681124964507
+    second: DaggerForm_19
+  - first:
+      213: -1828000316287815746
+    second: DaggerForm_20
+  - first:
+      213: -5272749810308317292
+    second: DaggerForm_21
+  - first:
+      213: -3045600630359362097
+    second: DaggerForm_22
+  - first:
+      213: 37165562540005959
+    second: DaggerForm_23
+  - first:
+      213: 9108028339428392201
+    second: DaggerForm_24
+  - first:
+      213: 7652071160241293032
+    second: DaggerForm_25
+  - first:
+      213: -8785081795820658286
+    second: DaggerForm_26
+  - first:
+      213: 5888910626727963975
+    second: DaggerForm_27
+  - first:
+      213: -4528311235299369885
+    second: DaggerForm_28
+  - first:
+      213: 8274272427870519502
+    second: DaggerForm_29
+  - first:
+      213: 65666843024757736
+    second: DaggerForm_30
+  - first:
+      213: -8647141562508451206
+    second: DaggerForm_31
+  - first:
+      213: 4928171532424839301
+    second: DaggerForm_32
+  - first:
+      213: -8012421014918052478
+    second: DaggerForm_33
+  - first:
+      213: -6162921873721832114
+    second: DaggerForm_34
+  - first:
+      213: -7470719712819803121
+    second: DaggerForm_35
+  - first:
+      213: 2255724336210410339
+    second: DaggerForm_36
+  - first:
+      213: -368355525532065226
+    second: DaggerForm_37
+  - first:
+      213: -956239994936927621
+    second: DaggerForm_38
+  - first:
+      213: 7076647319321119695
+    second: DaggerForm_39
+  - first:
+      213: -7509907309237561819
+    second: DaggerForm_40
+  - first:
+      213: 3417319525417242464
+    second: DaggerForm_41
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: DaggerForm_0
+      rect:
+        serializedVersion: 2
+        x: 25
+        y: 925
+        width: 162
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d29da750d91e1e430800000000000000
+      internalID: 3810574824250202413
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_1
+      rect:
+        serializedVersion: 2
+        x: 250
+        y: 925
+        width: 166
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8c6d0ee476cf0acf0800000000000000
+      internalID: -242916859242817848
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_2
+      rect:
+        serializedVersion: 2
+        x: 473
+        y: 925
+        width: 166
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5fb25adba57b87ff0800000000000000
+      internalID: -38078996475991051
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_3
+      rect:
+        serializedVersion: 2
+        x: 693
+        y: 925
+        width: 164
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b94fece26c169440800000000000000
+      internalID: 4942168852293175737
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_4
+      rect:
+        serializedVersion: 2
+        x: 921
+        y: 925
+        width: 166
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31f6860162e67cda0800000000000000
+      internalID: -5924645675019505901
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_5
+      rect:
+        serializedVersion: 2
+        x: 1161
+        y: 925
+        width: 166
+        height: 195
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e991a6d088d6661a0800000000000000
+      internalID: -6816640554870629986
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_6
+      rect:
+        serializedVersion: 2
+        x: 20
+        y: 745
+        width: 196
+        height: 151
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 78d5a8f2e97b870b0800000000000000
+      internalID: -5730628635798643321
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_7
+      rect:
+        serializedVersion: 2
+        x: 278
+        y: 749
+        width: 206
+        height: 147
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 09552fe05d13dc3c0800000000000000
+      internalID: -4337756074939361904
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_8
+      rect:
+        serializedVersion: 2
+        x: 525
+        y: 754
+        width: 213
+        height: 145
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05193db1784fc9840800000000000000
+      internalID: 5232325728222286160
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_9
+      rect:
+        serializedVersion: 2
+        x: 833
+        y: 755
+        width: 208
+        height: 138
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90e0211a4d6bc5250800000000000000
+      internalID: 5934819433319108105
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_10
+      rect:
+        serializedVersion: 2
+        x: 1126
+        y: 755
+        width: 215
+        height: 141
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b311404846d51da70800000000000000
+      internalID: 8849957429052707131
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_11
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 503
+        width: 171
+        height: 200
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4ebeb377766cc7a50800000000000000
+      internalID: 6520304508209982436
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_12
+      rect:
+        serializedVersion: 2
+        x: 275
+        y: 497
+        width: 115
+        height: 199
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 031b79a915d0ad9e0800000000000000
+      internalID: -1595948473812274896
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_13
+      rect:
+        serializedVersion: 2
+        x: 499
+        y: 498
+        width: 110
+        height: 197
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 91ddce544ce2f83b0800000000000000
+      internalID: -5508132398729208551
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_14
+      rect:
+        serializedVersion: 2
+        x: 720
+        y: 518
+        width: 151
+        height: 177
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f7855ccd4aaa6ff0800000000000000
+      internalID: -42033995389237257
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_15
+      rect:
+        serializedVersion: 2
+        x: 947
+        y: 518
+        width: 151
+        height: 177
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 567c788c1c5214ae0800000000000000
+      internalID: -1566929681124964507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_16
+      rect:
+        serializedVersion: 2
+        x: 1163
+        y: 503
+        width: 175
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ebfec52c563a1a6e0800000000000000
+      internalID: -1828000316287815746
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_17
+      rect:
+        serializedVersion: 2
+        x: 22
+        y: 324
+        width: 222
+        height: 106
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 49f7017dbfd63d6b0800000000000000
+      internalID: -5272749810308317292
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_18
+      rect:
+        serializedVersion: 2
+        x: 291
+        y: 323
+        width: 218
+        height: 107
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc579bbec5adbb5d0800000000000000
+      internalID: -3045600630359362097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_19
+      rect:
+        serializedVersion: 2
+        x: 543
+        y: 315
+        width: 231
+        height: 109
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74a1319d1e9048000800000000000000
+      internalID: 37165562540005959
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_20
+      rect:
+        serializedVersion: 2
+        x: 808
+        y: 316
+        width: 236
+        height: 109
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90df1dfa487366e70800000000000000
+      internalID: 9108028339428392201
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_21
+      rect:
+        serializedVersion: 2
+        x: 1081
+        y: 319
+        width: 252
+        height: 105
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e681368d2e913a60800000000000000
+      internalID: 7652071160241293032
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_22
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 47
+        width: 136
+        height: 209
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 291eb5de6ae151680800000000000000
+      internalID: -8785081795820658286
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_23
+      rect:
+        serializedVersion: 2
+        x: 246
+        y: 47
+        width: 139
+        height: 218
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 36c129b6ce43821c0800000000000000
+      internalID: -4528311235299369885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_24
+      rect:
+        serializedVersion: 2
+        x: 452
+        y: 43
+        width: 157
+        height: 203
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a72ea2c309e2ff780800000000000000
+      internalID: -8647141562508451206
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_25
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 42
+        width: 175
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f0c0ed4b00ca25890800000000000000
+      internalID: -7470719712819803121
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_26
+      rect:
+        serializedVersion: 2
+        x: 914
+        y: 38
+        width: 184
+        height: 194
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7a53cd7ac0cab2f0800000000000000
+      internalID: -956239994936927621
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: DaggerForm_27
+      rect:
+        serializedVersion: 2
+        x: 1150
+        y: 36
+        width: 195
+        height: 188
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52619c8671377c790800000000000000
+      internalID: -7509907309237561819
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 189b72d9c3becd34ea3c06c1d350ae5e
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      DaggerForm_0: 3810574824250202413
+      DaggerForm_1: -242916859242817848
+      DaggerForm_10: 8849957429052707131
+      DaggerForm_11: 6520304508209982436
+      DaggerForm_12: -1595948473812274896
+      DaggerForm_13: -5508132398729208551
+      DaggerForm_14: -42033995389237257
+      DaggerForm_15: -1566929681124964507
+      DaggerForm_16: -1828000316287815746
+      DaggerForm_17: -5272749810308317292
+      DaggerForm_18: -3045600630359362097
+      DaggerForm_19: 37165562540005959
+      DaggerForm_2: -38078996475991051
+      DaggerForm_20: 9108028339428392201
+      DaggerForm_21: 7652071160241293032
+      DaggerForm_22: -8785081795820658286
+      DaggerForm_23: -4528311235299369885
+      DaggerForm_24: -8647141562508451206
+      DaggerForm_25: -7470719712819803121
+      DaggerForm_26: -956239994936927621
+      DaggerForm_27: -7509907309237561819
+      DaggerForm_29: 8274272427870519502
+      DaggerForm_3: 4942168852293175737
+      DaggerForm_30: 65666843024757736
+      DaggerForm_32: 4928171532424839301
+      DaggerForm_33: -8012421014918052478
+      DaggerForm_34: -6162921873721832114
+      DaggerForm_36: 2255724336210410339
+      DaggerForm_37: -368355525532065226
+      DaggerForm_39: 7076647319321119695
+      DaggerForm_4: -5924645675019505901
+      DaggerForm_41: 3417319525417242464
+      DaggerForm_5: -6816640554870629986
+      DaggerForm_6: -5730628635798643321
+      DaggerForm_7: -4337756074939361904
+      DaggerForm_8: 5232325728222286160
+      DaggerForm_9: 5934819433319108105
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
