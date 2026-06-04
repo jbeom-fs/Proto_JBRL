@@ -2397,6 +2397,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Dagger 마커 시스템** | `DaggerMarkerRegistry`(중앙 단일·비중첩 마커, 재부착 시 지속시간 갱신, 적 `OnDied` + `EnemyController.Initialize` 풀 재사용 양쪽 clear) + `SkillData` 마커 플래그(appliesDaggerMarker/detonatesDaggerMarker/markerDetonationDamage/resetCooldownOnMarkerDetonate/markerDuration). 부착 훅 = projectile·blink hit·Buff 중 평타 hit, 폭발 훅 = dash `OnEnemyHit`(데미지 적용 **직전** 호출 → 마커 적이 그 대시로 죽어도 폭발·쿨리셋 보장) |
 | **Dagger 마커 비주얼** | `DaggerMarkerVisualPool`(Main.unity 루트 배치 + `RuntimeInitializeOnLoadMethod` 폴백, markerSprite 직접 연결/Resources fallback, 풀링) — 부착 적 위 `Test_Marker` 표시·`MarkerAnchorWorld` 추적, 폭발 시 burst |
 | **EnemyController.MarkerAnchorWorld** | collider 중심(`TransformPoint(offset)`) 월드 앵커 — 마커/표식이 pivot(발밑) 대신 몸 중앙 기준에 표시 |
+| **Freischutz·Dagger 폼 애니메이션** | 두 폼 전용 스프라이트시트(FreischutzForm.png 6×5 30프레임 / DaggerForm.png 6·5·6·5·6 28프레임)를 Idle/Walk/Attack/Dash/Death 5클립(@12fps)으로 슬라이스·구성하고 `Player_FreischutzForm`/`Player_DaggerForm` AnimatorController(SwordForm 구조 = MoveX/Y·LastMoveX/Y·IsMoving·IsDead·AttackTrigger·SpinTrigger·DashTrigger·DeathTrigger) 신설. `FreischutzForm.asset`(구 Player_Movement 공용 컨트롤러 placeholder 교체)·`DaggerForm.asset`(빈 필드 신규 연결)의 `animatorController`/`defaultSprite` 결선. 스킬은 기존 `animationType=Attack` → `AttackTrigger` 경로로 자동 연결(스킬 에셋 무수정). Dagger 는 `useHorizontalFlipForFacing`+`rotateDashAnimationByDirection` 유지 |
 
 ### 미구현 (다음 단계)
 
