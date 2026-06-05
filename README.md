@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-04  
+> 작성 기준일: 2026-06-05  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -833,7 +833,7 @@ TryBasicAttack():
                 + basicAttackSkillData 로 PlaySkillAnimation
 ```
 
-> `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage/Parry 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 현재 단일 필드라 런타임 폼 전환이 붙으면 폼별 교체 처리 필요(미구현).
+> `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage/Parry 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 런타임 폼 전환 시 `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선, 비면 SerializeField fallback)로 폼별 자동 교체됨(§15 런타임 폼 전환).
 
 ### 7-3. 스킬 실행 흐름 — SkillExecutor 라우팅
 
@@ -2210,7 +2210,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 2. `Create > JBRogLike > Player > Form` 으로 `PlayerFormData` 에셋 생성 — `animatorController` (Idle/Walk/Attack/Spin/Dash/Death 등 트리거를 가진 controller), `defaultSprite`, `defaultSpriteFacesRight`, `useHorizontalFlipForFacing`, dash 회전 옵션 입력
 3. `basicAttackMode`(Damage/Parry/Bullet) 선택 + `defaultWeapon` 에 그 폼의 loadout WeaponData(stats + skills[4], 마탄이면 탄창 필드) 연결
 4. `SetCurrentForm(formData)` 또는 `ApplyForm` 시 Animator/sprite/trigger 갱신 + 실제 폼 변경이면 `EquipWeapon(defaultWeapon)` 로 무기·스킬 자동 장착 (loadout 단일 소스 = WeaponData, `PlayerFormData.skills` 는 폐지)
-   ※ 런타임 폼 전환 트리거(아이템/소울 등)는 아직 미구현 — 현재는 시작 시 `currentForm` 1회 적용
+   ※ 런타임 폼 전환은 `PlayerFormController.TrySwitchForm(PlayerFormId)`(+`PlayerFormDatabase` formId→asset 매핑)로 구현됨 — 콘솔 `/form set <id>` 진입점. 게임플레이 진입점(소울/아이템)·가용 폼 게이팅만 미구현
 
 ### 새 스킬 애니메이션 분기 추가
 
@@ -2398,6 +2398,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Dagger 마커 비주얼** | `DaggerMarkerVisualPool`(Main.unity 루트 배치 + `RuntimeInitializeOnLoadMethod` 폴백, markerSprite 직접 연결/Resources fallback, 풀링) — 부착 적 위 `Test_Marker` 표시·`MarkerAnchorWorld` 추적, 폭발 시 burst |
 | **EnemyController.MarkerAnchorWorld** | collider 중심(`TransformPoint(offset)`) 월드 앵커 — 마커/표식이 pivot(발밑) 대신 몸 중앙 기준에 표시 |
 | **Freischutz·Dagger 폼 애니메이션** | 두 폼 전용 스프라이트시트(FreischutzForm.png 6×5 30프레임 / DaggerForm.png 6·5·6·5·6 28프레임)를 Idle/Walk/Attack/Dash/Death 5클립(@12fps)으로 슬라이스·구성하고 `Player_FreischutzForm`/`Player_DaggerForm` AnimatorController(SwordForm 구조 = MoveX/Y·LastMoveX/Y·IsMoving·IsDead·AttackTrigger·SpinTrigger·DashTrigger·DeathTrigger) 신설. `FreischutzForm.asset`(구 Player_Movement 공용 컨트롤러 placeholder 교체)·`DaggerForm.asset`(빈 필드 신규 연결)의 `animatorController`/`defaultSprite` 결선. 스킬은 기존 `animationType=Attack` → `AttackTrigger` 경로로 자동 연결(스킬 에셋 무수정). Dagger 는 `useHorizontalFlipForFacing`+`rotateDashAnimationByDirection` 유지 |
+| **런타임 폼 전환** | `PlayerFormDatabase`(formId→PlayerFormData SO 매핑) + `PlayerFormController.TrySwitchForm(PlayerFormId)` — DB 조회 → `CanSwitchNow()` 가드(dash/skill/dead/stun 중 거부) → `ApplyForm` 재사용. 반환 `FormSwitchResult`(Switched/AlreadyActive/NoDatabase/UnknownForm/Busy). `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선 fallback)로 폼별 평타 교체. `CombatEventChannel.OnLoadoutChanged`(EquipWeapon 발행)→`SkillUIManager.RefreshAllSlots` 구독으로 전환 시 스킬 UI 자동 갱신. 콘솔 `/form set <id>` 진입점(자동완성 2층, UI 3토큰 확장). 게이팅 없는 순수 메커니즘 |
 
 ### 미구현 (다음 단계)
 
@@ -2405,7 +2406,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 |------|----------|------|
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
-| 런타임 폼 전환 트리거 | 중간 | `ApplyForm`→`EquipWeapon` loadout 연결은 완료. 아이템/소울 등으로 런타임에 폼을 바꾸는 진입점 미구현(현재 시작 시 `currentForm` 1회). 전환 시 `basicAttackSkillData` 폼별 교체도 함께 필요 |
+| 폼 전환 게임플레이 진입점·게이팅 | 중간 | `TrySwitchForm` 메커니즘 + 콘솔 `/form set` 구현 완료. 인게임 진입점(소울/아이템 획득 시 전환)·가용 폼 게이팅(소유 폼만 전환)은 미구현 — 소울 시스템과 함께 설계 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. `WalkabilityArea` + `WalkabilityQuery` 인프라가 Boss Arena 에도 동일 적용 가능 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
