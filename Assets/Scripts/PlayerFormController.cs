@@ -1,5 +1,14 @@
 using UnityEngine;
 
+public enum FormSwitchResult
+{
+    Switched,
+    AlreadyActive,
+    NoDatabase,
+    UnknownForm,
+    Busy,
+}
+
 [DisallowMultipleComponent]
 [RequireComponent(typeof(PlayerAnimationController))]
 public sealed class PlayerFormController : MonoBehaviour
@@ -138,27 +147,27 @@ public sealed class PlayerFormController : MonoBehaviour
         ApplyForm(formData);
     }
 
-    public bool TrySwitchForm(PlayerFormId id)
+    public FormSwitchResult TrySwitchForm(PlayerFormId id)
     {
         if (formDatabase == null)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning("[PlayerFormController] PlayerFormDatabase is not assigned.", this);
 #endif
-            return false;
+            return FormSwitchResult.NoDatabase;
         }
 
-        if (!CanSwitchNow())
-            return false;
-
         if (!formDatabase.TryGet(id, out PlayerFormData formData) || formData == null)
-            return false;
+            return FormSwitchResult.UnknownForm;
+
+        if (!CanSwitchNow())
+            return FormSwitchResult.Busy;
 
         if (formData == currentForm)
-            return true;
+            return FormSwitchResult.AlreadyActive;
 
         ApplyForm(formData);
-        return true;
+        return FormSwitchResult.Switched;
     }
 
     private bool CanSwitchNow()

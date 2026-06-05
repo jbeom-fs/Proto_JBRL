@@ -139,9 +139,21 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         if (!System.Enum.TryParse(formName, true, out PlayerFormId id))
             return DeveloperConsoleCommandResult.Error("Unknown form: " + formName);
 
-        return playerFormController.TrySwitchForm(id)
-            ? DeveloperConsoleCommandResult.Success("Form switched to " + id)
-            : DeveloperConsoleCommandResult.Error("Form switch rejected (busy/stunned/unknown).");
+        switch (playerFormController.TrySwitchForm(id))
+        {
+            case FormSwitchResult.Switched:
+                return DeveloperConsoleCommandResult.Success("Form switched to " + id);
+            case FormSwitchResult.AlreadyActive:
+                return DeveloperConsoleCommandResult.Success("Already in form " + id);
+            case FormSwitchResult.NoDatabase:
+                return DeveloperConsoleCommandResult.Error("Form database is not assigned on PlayerFormController.");
+            case FormSwitchResult.UnknownForm:
+                return DeveloperConsoleCommandResult.Error("Form not registered in database: " + id);
+            case FormSwitchResult.Busy:
+                return DeveloperConsoleCommandResult.Error("Form switch blocked: player is busy/dashing/stunned.");
+            default:
+                return DeveloperConsoleCommandResult.Error("Form switch failed.");
+        }
     }
 
     public void GetFormIds(List<string> output)
