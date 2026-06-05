@@ -12,6 +12,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private LocationTransitionManager transitionManager;
     [SerializeField] private EliteArenaEncounterController eliteArenaEncounterController;
     [SerializeField] private PlayerController player;
+    [SerializeField] private PlayerFormController playerFormController;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
     public bool HasTeleportDestinationDatabase => teleportDestinationDatabase != null;
@@ -125,6 +126,31 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         }
 
         return ExecuteFloorTransition(manager, targetFloor);
+    }
+
+    public DeveloperConsoleCommandResult ExecuteSetForm(string formName)
+    {
+        if (playerFormController == null)
+        {
+            WarnMissing(nameof(PlayerFormController));
+            return DeveloperConsoleCommandResult.Error("PlayerFormController is not assigned.");
+        }
+
+        if (!System.Enum.TryParse(formName, true, out PlayerFormId id))
+            return DeveloperConsoleCommandResult.Error("Unknown form: " + formName);
+
+        return playerFormController.TrySwitchForm(id)
+            ? DeveloperConsoleCommandResult.Success("Form switched to " + id)
+            : DeveloperConsoleCommandResult.Error("Form switch rejected (busy/stunned/unknown).");
+    }
+
+    public void GetFormIds(List<string> output)
+    {
+        if (output == null)
+            return;
+
+        foreach (string name in System.Enum.GetNames(typeof(PlayerFormId)))
+            output.Add(name);
     }
 
     private RoomSpawner ResolveRoomSpawner()

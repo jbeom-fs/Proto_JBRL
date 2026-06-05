@@ -12,9 +12,11 @@ public class CombatEventChannel : ScriptableObject
     public event Action<int, int>        OnPlayerHpChanged;  // (current, max)
     public event Action<PlayerCombatController> OnPlayerDied;
     public event Action<SkillData>       OnSkillUsed;
+    public event Action                  OnLoadoutChanged;
 
     public void RaiseEnemyKilled(EnemyController enemy)     => OnEnemyKilled?.Invoke(enemy);
     public void RaisePlayerHpChanged(int cur, int max)      => OnPlayerHpChanged?.Invoke(cur, max);
     public void RaisePlayerDied(PlayerCombatController player) => OnPlayerDied?.Invoke(player);
     public void RaiseSkillUsed(SkillData skill)             => OnSkillUsed?.Invoke(skill);
+    public void RaiseLoadoutChanged()                       => OnLoadoutChanged?.Invoke();
 }

@@ -74,12 +74,16 @@ public class SkillUIManager : MonoBehaviour
     {
         if (dungeonChannel != null)
             dungeonChannel.OnFloorChanged += HandleFloorChanged;
+        if (combatChannel != null)
+            combatChannel.OnLoadoutChanged += RefreshAllSlots;
     }
 
     private void OnDisable()
     {
         if (dungeonChannel != null)
             dungeonChannel.OnFloorChanged -= HandleFloorChanged;
+        if (combatChannel != null)
+            combatChannel.OnLoadoutChanged -= RefreshAllSlots;
     }
 
     private void HandleFloorChanged(int prevFloor, int newFloor) => RefreshAllSlots();

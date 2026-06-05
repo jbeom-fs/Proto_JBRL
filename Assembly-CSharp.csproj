@@ -119,6 +119,7 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\CharacterPhysicsSetup.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomRegistry.cs" />
+    <Compile Include="Assets\Scripts\Data\PlayerFormDatabase.cs" />
     <Compile Include="Assets\Scripts\UI\SkillSlotUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternData.cs" />
     <Compile Include="Assets\Scripts\Items\DropItemSpawner.cs" />

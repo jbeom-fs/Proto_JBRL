@@ -158,6 +158,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
     public float       CachedHitRadius       => _cachedHitRadius;
+    private SkillData ActiveBasicAttack =>
+        currentWeapon != null && currentWeapon.basicAttackSkillData != null
+            ? currentWeapon.basicAttackSkillData
+            : basicAttackSkillData;
     public Vector2     CurrentAimDirection   =>
         _inputReader != null && _inputReader.HasMouseAim
             ? _aimDirectionContinuous
@@ -289,6 +293,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ApplyWeaponMagazine(weapon);
         _cooldownController.ResetAll();
         BindSkillSlots(weapon);
+        combatChannel?.RaiseLoadoutChanged();
 #if UNITY_EDITOR
         Debug.Log($"[Combat] 무기 장착: {weapon?.weaponName ?? "없음"}");
 #endif
@@ -404,9 +409,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
 
+        SkillData basicAttack = ActiveBasicAttack;
         _attackExecutor.BeginAttackActivation();
-        if (basicAttackSkillData != null)
-            _formController?.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection);
+        if (basicAttack != null)
+            _formController?.PlaySkillAnimation(basicAttack, CurrentAimDirection);
 
         SkillTargetResolver.FillWorldTargets(
             currentWeapon.attackPattern,
@@ -458,10 +464,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
         }
 
-        if (basicAttackSkillData == null || basicAttackSkillData.executionType != SkillExecutionType.Projectile)
+        SkillData basicAttack = ActiveBasicAttack;
+        if (basicAttack == null || basicAttack.executionType != SkillExecutionType.Projectile)
             return;
 
-        SkillExecutionContext context = CreateSkillExecutionContext(basicAttackSkillData, -1);
+        SkillExecutionContext context = CreateSkillExecutionContext(basicAttack, -1);
         if (!_skillExecutor.ExecuteBasicProjectile(context, 1))
             return;
 
@@ -475,8 +482,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (_parryRoutine != null)
             StopCoroutine(_parryRoutine);
 
-        if (basicAttackSkillData != null)
-            _formController?.PlaySkillAnimation(basicAttackSkillData, CurrentAimDirection);
+        SkillData basicAttack = ActiveBasicAttack;
+        if (basicAttack != null)
+            _formController?.PlaySkillAnimation(basicAttack, CurrentAimDirection);
 
         _parryRoutine = StartCoroutine(ParryBasicAttackRoutine());
     }

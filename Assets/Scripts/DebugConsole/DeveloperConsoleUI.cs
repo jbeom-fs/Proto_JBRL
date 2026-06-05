@@ -255,6 +255,21 @@ public sealed class DeveloperConsoleUI : MonoBehaviour
                 _autocompleteSuggestions.Add(commandPrefix + " " + _commandNamesBuffer[i]);
             _commandNamesBuffer.Clear();
         }
+        else if ((tokenCount == 2 && trailingSpace) || (tokenCount == 3 && !trailingSpace))
+        {
+            string rawCmd = _commandNamesBuffer[0];
+            string subCommand = _commandNamesBuffer[1];
+            string currentArg = tokenCount == 3 ? _commandNamesBuffer[2] : string.Empty;
+            _commandNamesBuffer.Clear();
+
+            string commandName = rawCmd.Length > 0 && rawCmd[0] == '/' ? rawCmd.Substring(1) : rawCmd;
+            string commandPrefix = (rawCmd.Length > 0 && rawCmd[0] == '/' ? rawCmd : "/" + rawCmd) + " " + subCommand;
+
+            _service.GetSubArgumentSuggestions(commandName, subCommand, currentArg, _commandNamesBuffer, MaxAutocompleteSuggestions);
+            for (int i = 0; i < _commandNamesBuffer.Count; i++)
+                _autocompleteSuggestions.Add(commandPrefix + " " + _commandNamesBuffer[i]);
+            _commandNamesBuffer.Clear();
+        }
         else
         {
             _commandNamesBuffer.Clear();

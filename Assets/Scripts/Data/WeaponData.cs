@@ -14,6 +14,8 @@ public class WeaponData : ScriptableObject
     public int            damage         = 5;
     public float          attackCooldown = 0.3f;
     public AttackPatternType attackPattern  = AttackPatternType.Single;
+    [Tooltip("SkillData used for this weapon's basic attack animation and projectile execution. PlayerCombatController fallback is used when empty.")]
+    public SkillData basicAttackSkillData;
     [Tooltip("모든 패턴의 사정거리(칸). Line=직선N칸, Cross/Diagonal=각방향N칸, Circle=체비쇼프N, Cone=부채꼴N칸, Single=N칸 거리 1타겟")]
     public int            patternRange   = 1;
     [Tooltip("true면 기본 공격이 범위 내 모든 적에게 피해를 줍니다. false면 가장 가까운 적 1명에게만 피해.")]

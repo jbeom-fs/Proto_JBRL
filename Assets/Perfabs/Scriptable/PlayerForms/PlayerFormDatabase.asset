@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b3f286d3f946d254a86ac3dd1f57190f, type: 3}
+  m_Name: PlayerFormDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFormDatabase
+  forms:
+  - {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
+  - {fileID: 11400000, guid: 426305cbe569421b9896d689bacd474d, type: 2}
+  - {fileID: 11400000, guid: 9c8a0e89a0df4f64b83062d17b0f9821, type: 2}
+  - {fileID: 11400000, guid: a9be9c0330ca47fda8dbe3ac9be0a0f4, type: 2}
+  - {fileID: 11400000, guid: 6f3f0c9ddbb542d4ac51501acfb9d4e1, type: 2}

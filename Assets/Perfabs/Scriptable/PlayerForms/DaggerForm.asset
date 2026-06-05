@@ -18,7 +18,7 @@ MonoBehaviour:
   defaultSprite: {fileID: 3810574824250202413, guid: 9a2b4bbab4f9c084a94dc96abe9ba6a6, type: 3}
   defaultSpriteFacesRight: 1
   useHorizontalFlipForFacing: 1
-  rotateDashAnimationByDirection: 1
+  rotateDashAnimationByDirection: 0
   dashBaseAngle: 0
   basicAttackMode: 0
   defaultWeapon: {fileID: 11400000, guid: 6a741af1948e433daf0c51edef4272ef, type: 2}

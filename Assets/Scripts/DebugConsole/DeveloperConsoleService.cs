@@ -6,12 +6,16 @@ public sealed class DeveloperConsoleService
 {
     private delegate DeveloperConsoleCommandResult CommandHandler(string arguments);
     private delegate void ArgumentSuggestionProvider(string currentArg, List<string> output, int maxCount);
+    private delegate void SubArgumentSuggestionProvider(string subCommand, string currentArg, List<string> output, int maxCount);
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
+    private static readonly string[] s_FormArgs = { "set" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, SubArgumentSuggestionProvider> _subArgumentProviders =
+        new Dictionary<string, SubArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
     private readonly List<string> _destinationIdBuffer = new List<string>(16);
     private readonly DeveloperConsoleCommandExecutor _executor;
 
@@ -44,6 +48,17 @@ public sealed class DeveloperConsoleService
         provider(currentArg, output, maxCount);
     }
 
+    public void GetSubArgumentSuggestions(string commandName, string subCommand, string currentArg, List<string> output, int maxCount)
+    {
+        if (output == null || string.IsNullOrWhiteSpace(commandName) || string.IsNullOrWhiteSpace(subCommand))
+            return;
+
+        if (!_subArgumentProviders.TryGetValue(commandName, out SubArgumentSuggestionProvider provider))
+            return;
+
+        provider(subCommand, currentArg, output, maxCount);
+    }
+
     public DeveloperConsoleCommandResult Execute(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -71,10 +86,14 @@ public sealed class DeveloperConsoleService
         _commands["dooropen"] = ExecuteDoorOpen;
         _commands["kill"] = ExecuteKill;
         _commands["floor"] = ExecuteFloor;
+        _commands["form"] = ExecuteForm;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
+        _argumentProviders["form"] = ProvideFormSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
+
+        _subArgumentProviders["form"] = ProvideFormSubArgumentSuggestions;
     }
 
     private static void ProvideFloorSuggestions(string currentArg, List<string> output, int maxCount)
@@ -90,6 +109,19 @@ public sealed class DeveloperConsoleService
 
         _destinationIdBuffer.Clear();
         _executor.GetTeleportDestinationIds(_destinationIdBuffer);
+        FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
+    }
+
+    private static void ProvideFormSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_FormArgs, currentArg, output, maxCount);
+
+    private void ProvideFormSubArgumentSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
+    {
+        if (!string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _destinationIdBuffer.Clear();
+        _executor?.GetFormIds(_destinationIdBuffer);
         FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
     }
 
@@ -121,6 +153,7 @@ public sealed class DeveloperConsoleService
             "\nUsage: /TP [destinationId]" +
             "\nUsage: /DoorOpen [normal|elite]" +
             "\nUsage: /kill" +
+            "\nUsage: /form set [id]" +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -206,6 +239,23 @@ public sealed class DeveloperConsoleService
         }
 
         return DeveloperConsoleCommandResult.Error(GetFloorUsage());
+    }
+
+    private DeveloperConsoleCommandResult ExecuteForm(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (!TryReadFloorArguments(arguments, out string subCommand, out string valueText))
+            return DeveloperConsoleCommandResult.Error("Usage: /form set [id]");
+
+        if (!string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(valueText))
+        {
+            return DeveloperConsoleCommandResult.Error("Usage: /form set [id]");
+        }
+
+        return _executor.ExecuteSetForm(valueText);
     }
 
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)

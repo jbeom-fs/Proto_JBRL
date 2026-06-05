@@ -17,6 +17,7 @@ public sealed class PlayerFormController : MonoBehaviour
     [SerializeField] private Transform visualTransform;
 
     [Header("Form")]
+    [SerializeField] private PlayerFormDatabase formDatabase;
     [SerializeField] private PlayerFormData defaultForm;
     [SerializeField] private PlayerFormData currentForm;
 
@@ -135,6 +136,37 @@ public sealed class PlayerFormController : MonoBehaviour
         }
 
         ApplyForm(formData);
+    }
+
+    public bool TrySwitchForm(PlayerFormId id)
+    {
+        if (formDatabase == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[PlayerFormController] PlayerFormDatabase is not assigned.", this);
+#endif
+            return false;
+        }
+
+        if (!CanSwitchNow())
+            return false;
+
+        if (!formDatabase.TryGet(id, out PlayerFormData formData) || formData == null)
+            return false;
+
+        if (formData == currentForm)
+            return true;
+
+        ApplyForm(formData);
+        return true;
+    }
+
+    private bool CanSwitchNow()
+    {
+        if (_combat == null)
+            return true;
+
+        return !_combat.IsDashing && !_combat.IsSkillBusy && !_combat.IsDead && !_combat.IsStunned;
     }
 
     public void ApplyFacing(Vector2 direction)
