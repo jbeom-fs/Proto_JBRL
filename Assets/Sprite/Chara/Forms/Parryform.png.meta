@@ -1,0 +1,1050 @@
+fileFormatVersion: 2
+guid: 54dc5d67495c63241927401030a0faf7
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -3725903924401333143
+    second: Parryform_0
+  - first:
+      213: 136536725134127457
+    second: Parryform_1
+  - first:
+      213: 2273944951563209325
+    second: Parryform_2
+  - first:
+      213: 8881381480522472534
+    second: Parryform_3
+  - first:
+      213: 8755308095082971645
+    second: Parryform_4
+  - first:
+      213: 1977936578006909463
+    second: Parryform_5
+  - first:
+      213: 7415379793001520991
+    second: Parryform_6
+  - first:
+      213: 6106781402595486558
+    second: Parryform_7
+  - first:
+      213: -5913863497029026981
+    second: Parryform_8
+  - first:
+      213: 3142852719978381208
+    second: Parryform_9
+  - first:
+      213: 8682126279967866400
+    second: Parryform_10
+  - first:
+      213: 3835838046223228315
+    second: Parryform_11
+  - first:
+      213: -99953441934970221
+    second: Parryform_12
+  - first:
+      213: 3764076221414855396
+    second: Parryform_13
+  - first:
+      213: 5172097701430939063
+    second: Parryform_14
+  - first:
+      213: -1916825346666563429
+    second: Parryform_15
+  - first:
+      213: 6727195493355984247
+    second: Parryform_16
+  - first:
+      213: -5098072547273157644
+    second: Parryform_17
+  - first:
+      213: 6896174731937171722
+    second: Parryform_18
+  - first:
+      213: -4352414005455203246
+    second: Parryform_19
+  - first:
+      213: -4492227780816498415
+    second: Parryform_20
+  - first:
+      213: 5445685992066138828
+    second: Parryform_21
+  - first:
+      213: -7887129050613895594
+    second: Parryform_22
+  - first:
+      213: -1214742001245437995
+    second: Parryform_23
+  - first:
+      213: 5727769168448496743
+    second: Parryform_24
+  - first:
+      213: -1694370620034954414
+    second: Parryform_25
+  - first:
+      213: -5473138773971126515
+    second: Parryform_26
+  - first:
+      213: -6012300351737016161
+    second: Parryform_27
+  - first:
+      213: -2060982314294848866
+    second: Parryform_28
+  - first:
+      213: -5535907611097332070
+    second: Parryform_29
+  - first:
+      213: 5263739724695719244
+    second: Parryform_30
+  - first:
+      213: -3973784968196383845
+    second: Parryform_31
+  - first:
+      213: 7641154157677954811
+    second: Parryform_32
+  - first:
+      213: 1004602952407220720
+    second: Parryform_33
+  - first:
+      213: -1817915350387622697
+    second: Parryform_34
+  - first:
+      213: -6168286135381131938
+    second: Parryform_35
+  - first:
+      213: -4764941473916316308
+    second: Parryform_36
+  - first:
+      213: -5714406888976137332
+    second: Parryform_37
+  - first:
+      213: -2397690527214290969
+    second: Parryform_38
+  - first:
+      213: 7745117475494443375
+    second: Parryform_39
+  - first:
+      213: 4122499103642574569
+    second: Parryform_40
+  - first:
+      213: -6389181376025916863
+    second: Parryform_41
+  - first:
+      213: 1885186853341616351
+    second: Parryform_42
+  - first:
+      213: -1501064931105007886
+    second: Parryform_43
+  - first:
+      213: 320828328798237744
+    second: Parryform_44
+  - first:
+      213: 231900081928229156
+    second: Parryform_45
+  - first:
+      213: -2048610731484179225
+    second: Parryform_46
+  - first:
+      213: 1762983560454386093
+    second: Parryform_47
+  - first:
+      213: -9221736759529260205
+    second: Parryform_48
+  - first:
+      213: -8609224681503539399
+    second: Parryform_49
+  - first:
+      213: -8654640120344549975
+    second: Parryform_50
+  - first:
+      213: 339589490035328435
+    second: Parryform_51
+  - first:
+      213: 1034163393471634456
+    second: Parryform_52
+  - first:
+      213: -1829586480621747763
+    second: Parryform_53
+  - first:
+      213: -4406438187198814124
+    second: Parryform_54
+  - first:
+      213: -4298717895781419407
+    second: Parryform_55
+  - first:
+      213: -6028896661862599455
+    second: Parryform_56
+  - first:
+      213: -4631288517906478724
+    second: Parryform_57
+  - first:
+      213: 5222958617033785072
+    second: Parryform_58
+  - first:
+      213: 840386669672579308
+    second: Parryform_59
+  - first:
+      213: -4033208870314333860
+    second: Parryform_60
+  - first:
+      213: 3934284490075524989
+    second: Parryform_61
+  - first:
+      213: 7492116227479480160
+    second: Parryform_62
+  - first:
+      213: 2297938157946226095
+    second: Parryform_63
+  - first:
+      213: -1820809805890798735
+    second: Parryform_64
+  - first:
+      213: -4431626258268951673
+    second: Parryform_65
+  - first:
+      213: 5146954381117552359
+    second: Parryform_66
+  - first:
+      213: 1149366417988092623
+    second: Parryform_67
+  - first:
+      213: -810623669670716425
+    second: Parryform_68
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Parryform_0
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 815
+        width: 175
+        height: 191
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96c13d61f1eea4cc0800000000000000
+      internalID: -3725903924401333143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_1
+      rect:
+        serializedVersion: 2
+        x: 308
+        y: 815
+        width: 174
+        height: 191
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1613a689d6315e100800000000000000
+      internalID: 136536725134127457
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_2
+      rect:
+        serializedVersion: 2
+        x: 562
+        y: 816
+        width: 173
+        height: 190
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d6ac7b4b2ecae8f10800000000000000
+      internalID: 2273944951563209325
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_3
+      rect:
+        serializedVersion: 2
+        x: 813
+        y: 815
+        width: 174
+        height: 191
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65c5645a661014b70800000000000000
+      internalID: 8881381480522472534
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_4
+      rect:
+        serializedVersion: 2
+        x: 1067
+        y: 815
+        width: 174
+        height: 191
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df1c58a235a118970800000000000000
+      internalID: 8755308095082971645
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_5
+      rect:
+        serializedVersion: 2
+        x: 1313
+        y: 815
+        width: 172
+        height: 191
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7128a5096da037b10800000000000000
+      internalID: 1977936578006909463
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_6
+      rect:
+        serializedVersion: 2
+        x: 39
+        y: 632
+        width: 191
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5f177422a8b8e660800000000000000
+      internalID: 7415379793001520991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_7
+      rect:
+        serializedVersion: 2
+        x: 280
+        y: 629
+        width: 197
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b5b7f618b7cbdeda0800000000000000
+      internalID: -5913863497029026981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_8
+      rect:
+        serializedVersion: 2
+        x: 549
+        y: 637
+        width: 194
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02e719c0adb1d7870800000000000000
+      internalID: 8682126279967866400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_9
+      rect:
+        serializedVersion: 2
+        x: 791
+        y: 637
+        width: 191
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3927367cfd4ec9ef0800000000000000
+      internalID: -99953441934970221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_10
+      rect:
+        serializedVersion: 2
+        x: 1036
+        y: 616
+        width: 197
+        height: 188
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e25de4616fac3430800000000000000
+      internalID: 3764076221414855396
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_11
+      rect:
+        serializedVersion: 2
+        x: 1284
+        y: 611
+        width: 200
+        height: 188
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7bdc76dd47bf6c740800000000000000
+      internalID: 5172097701430939063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_12
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 417
+        width: 172
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a968923bb518c23b0800000000000000
+      internalID: -5535907611097332070
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_13
+      rect:
+        serializedVersion: 2
+        x: 304
+        y: 417
+        width: 174
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4dc990246f8c0940800000000000000
+      internalID: 5263739724695719244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_14
+      rect:
+        serializedVersion: 2
+        x: 556
+        y: 417
+        width: 174
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b9b1edc10a74ad8c0800000000000000
+      internalID: -3973784968196383845
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_15
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 417
+        width: 173
+        height: 181
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf6c46ac835da0a60800000000000000
+      internalID: 7641154157677954811
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_16
+      rect:
+        serializedVersion: 2
+        x: 1059
+        y: 416
+        width: 172
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0f18a86001111fd00800000000000000
+      internalID: 1004602952407220720
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_17
+      rect:
+        serializedVersion: 2
+        x: 1311
+        y: 416
+        width: 170
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7dc7a6cde9775c6e0800000000000000
+      internalID: -1817915350387622697
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_19
+      rect:
+        serializedVersion: 2
+        x: 311
+        y: 240
+        width: 155
+        height: 173
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c834880f53952b0b0800000000000000
+      internalID: -5714406888976137332
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_20
+      rect:
+        serializedVersion: 2
+        x: 561
+        y: 237
+        width: 149
+        height: 175
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f69348efe4f2c7b60800000000000000
+      internalID: 7745117475494443375
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_21
+      rect:
+        serializedVersion: 2
+        x: 818
+        y: 237
+        width: 146
+        height: 174
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14a0f6cc3611557a0800000000000000
+      internalID: -6389181376025916863
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_22
+      rect:
+        serializedVersion: 2
+        x: 1062
+        y: 233
+        width: 146
+        height: 175
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fd8d9a87477892a10800000000000000
+      internalID: 1885186853341616351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_23
+      rect:
+        serializedVersion: 2
+        x: 1313
+        y: 231
+        width: 142
+        height: 177
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f690bce5652b2be0800000000000000
+      internalID: -1501064931105007886
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_24
+      rect:
+        serializedVersion: 2
+        x: 46
+        y: 28
+        width: 176
+        height: 196
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 034b6eb4aafc37400800000000000000
+      internalID: 320828328798237744
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_25
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 34
+        width: 144
+        height: 182
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 35bb81ca64fc50080800000000000000
+      internalID: -9221736759529260205
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_26
+      rect:
+        serializedVersion: 2
+        x: 527
+        y: 36
+        width: 147
+        height: 170
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93fb47b04c3e58880800000000000000
+      internalID: -8609224681503539399
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_27
+      rect:
+        serializedVersion: 2
+        x: 778
+        y: 36
+        width: 178
+        height: 149
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b5030b87d676b400800000000000000
+      internalID: 339589490035328435
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_28
+      rect:
+        serializedVersion: 2
+        x: 1034
+        y: 29
+        width: 177
+        height: 117
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81cd69b80261a5e00800000000000000
+      internalID: 1034163393471634456
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_29
+      rect:
+        serializedVersion: 2
+        x: 1271
+        y: 25
+        width: 217
+        height: 78
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce0cec73937a9ab00800000000000000
+      internalID: 840386669672579308
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Parryform_18
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 228
+        width: 176
+        height: 184
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 6d0c52575f267074883eea765e7d64e3
+      internalID: 6896174731937171722
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5f1bc5aae1288dc4c80e1dd867d71034
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Parryform_0: -3725903924401333143
+      Parryform_1: 136536725134127457
+      Parryform_10: 3764076221414855396
+      Parryform_11: 5172097701430939063
+      Parryform_12: -5535907611097332070
+      Parryform_13: 5263739724695719244
+      Parryform_14: -3973784968196383845
+      Parryform_15: 7641154157677954811
+      Parryform_16: 1004602952407220720
+      Parryform_17: -1817915350387622697
+      Parryform_18: 6896174731937171722
+      Parryform_19: -5714406888976137332
+      Parryform_2: 2273944951563209325
+      Parryform_20: 7745117475494443375
+      Parryform_21: -6389181376025916863
+      Parryform_22: 1885186853341616351
+      Parryform_23: -1501064931105007886
+      Parryform_24: 320828328798237744
+      Parryform_25: -9221736759529260205
+      Parryform_26: -8609224681503539399
+      Parryform_27: 339589490035328435
+      Parryform_28: 1034163393471634456
+      Parryform_29: 840386669672579308
+      Parryform_3: 8881381480522472534
+      Parryform_35: -6168286135381131938
+      Parryform_36: -4764941473916316308
+      Parryform_38: -2397690527214290969
+      Parryform_4: 8755308095082971645
+      Parryform_40: 4122499103642574569
+      Parryform_45: 231900081928229156
+      Parryform_46: -2048610731484179225
+      Parryform_47: 1762983560454386093
+      Parryform_5: 1977936578006909463
+      Parryform_50: -8654640120344549975
+      Parryform_53: -1829586480621747763
+      Parryform_54: -4406438187198814124
+      Parryform_55: -4298717895781419407
+      Parryform_56: -6028896661862599455
+      Parryform_57: -4631288517906478724
+      Parryform_58: 5222958617033785072
+      Parryform_6: 7415379793001520991
+      Parryform_60: -4033208870314333860
+      Parryform_61: 3934284490075524989
+      Parryform_62: 7492116227479480160
+      Parryform_63: 2297938157946226095
+      Parryform_64: -1820809805890798735
+      Parryform_65: -4431626258268951673
+      Parryform_66: 5146954381117552359
+      Parryform_67: 1149366417988092623
+      Parryform_68: -810623669670716425
+      Parryform_7: -5913863497029026981
+      Parryform_8: 8682126279967866400
+      Parryform_9: -99953441934970221
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

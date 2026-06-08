@@ -18,7 +18,10 @@ public sealed class PlayerFormController : MonoBehaviour
     private static readonly int SpinTriggerHash = Animator.StringToHash("SpinTrigger");
     private static readonly int DashTriggerHash = Animator.StringToHash("DashTrigger");
     private static readonly int DeathTriggerHash = Animator.StringToHash("DeathTrigger");
+    private static readonly int ParryFacingHash = Animator.StringToHash("ParryFacing");
     private static readonly int DashStateHash = Animator.StringToHash("Dash");
+    private const int ParryFacingFront = 0;
+    private const int ParryFacingSide = 1;
 
     [Header("Dependencies")]
     [SerializeField] private SpriteRenderer spriteRenderer;
@@ -39,6 +42,7 @@ public sealed class PlayerFormController : MonoBehaviour
     private bool _hasSpinTrigger;
     private bool _hasDashTrigger;
     private bool _hasDeathTrigger;
+    private bool _hasParryFacing;
     private bool _dashVisualRotationActive;
     private bool _dashStateObserved;
     private bool _dashMovementCompleted;
@@ -218,7 +222,7 @@ public sealed class PlayerFormController : MonoBehaviour
         switch (animationType)
         {
             case SkillAnimationType.Attack:
-                PlayTriggerAnimation(AttackTriggerHash, _hasAttackTrigger, direction);
+                PlayAttackAnimation(direction);
                 return 0;
 
             case SkillAnimationType.Spin:
@@ -290,6 +294,43 @@ public sealed class PlayerFormController : MonoBehaviour
             SetTrigger(triggerHash);
     }
 
+    private void PlayAttackAnimation(Vector2 direction)
+    {
+        ResetDashVisualRotation();
+
+        if (_hasParryFacing)
+            ApplyParryFacing(direction);
+        else
+            ApplyFacing(direction);
+
+        if (_hasAttackTrigger)
+            SetTrigger(AttackTriggerHash);
+    }
+
+    private void ApplyParryFacing(Vector2 direction)
+    {
+        if (animator == null)
+            return;
+
+        bool hasAimDirection = direction.sqrMagnitude > FacingDeadZone * FacingDeadZone;
+        if (!hasAimDirection)
+        {
+            animator.SetInteger(ParryFacingHash, ParryFacingFront);
+            if (spriteRenderer != null)
+                spriteRenderer.flipX = false;
+            return;
+        }
+
+        animator.SetInteger(ParryFacingHash, ParryFacingSide);
+        if (spriteRenderer == null || CurrentForm == null || !CurrentForm.UseHorizontalFlipForFacing)
+            return;
+
+        if (Mathf.Abs(direction.x) <= FacingDeadZone)
+            return;
+
+        spriteRenderer.flipX = ResolveFlipX(direction);
+    }
+
     private void PlayCustomTriggerAnimation(string triggerName, Vector2 direction)
     {
         if (string.IsNullOrWhiteSpace(triggerName))
@@ -315,6 +356,7 @@ public sealed class PlayerFormController : MonoBehaviour
         _hasSpinTrigger = false;
         _hasDashTrigger = false;
         _hasDeathTrigger = false;
+        _hasParryFacing = false;
         if (animator == null)
             return;
 
@@ -322,17 +364,22 @@ public sealed class PlayerFormController : MonoBehaviour
         for (int i = 0; i < parameters.Length; i++)
         {
             AnimatorControllerParameter parameter = parameters[i];
-            if (parameter.type != AnimatorControllerParameterType.Trigger)
-                continue;
-
-            if (parameter.nameHash == AttackTriggerHash)
-                _hasAttackTrigger = true;
-            else if (parameter.nameHash == SpinTriggerHash)
-                _hasSpinTrigger = true;
-            else if (parameter.nameHash == DashTriggerHash)
-                _hasDashTrigger = true;
-            else if (parameter.nameHash == DeathTriggerHash)
-                _hasDeathTrigger = true;
+            if (parameter.type == AnimatorControllerParameterType.Trigger)
+            {
+                if (parameter.nameHash == AttackTriggerHash)
+                    _hasAttackTrigger = true;
+                else if (parameter.nameHash == SpinTriggerHash)
+                    _hasSpinTrigger = true;
+                else if (parameter.nameHash == DashTriggerHash)
+                    _hasDashTrigger = true;
+                else if (parameter.nameHash == DeathTriggerHash)
+                    _hasDeathTrigger = true;
+            }
+            else if (parameter.type == AnimatorControllerParameterType.Int &&
+                parameter.nameHash == ParryFacingHash)
+            {
+                _hasParryFacing = true;
+            }
         }
     }
 

@@ -126,7 +126,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 76
+  controlID: 82
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -782,12 +782,12 @@ MonoBehaviour:
       displayed: 1
       id: Play Mode Controls
       index: 0
-      contents: '{"m_Layout":4,"m_Collapsed":false,"m_Folded":false,"m_Floating":false,"m_FloatingSnapOffset":{"x":0.0,"y":0.0},"m_SnapOffsetDelta":{"x":0.0,"y":0.0},"m_FloatingSnapCorner":0,"m_Size":{"x":0.0,"y":0.0},"m_SizeOverridden":false}'
+      contents: '{"m_Layout":4,"m_Collapsed":false,"m_Folded":false,"m_Floating":false,"m_FloatingSnapOffset":{"x":-942.0,"y":-36.0},"m_SnapOffsetDelta":{"x":0.0,"y":0.0},"m_FloatingSnapCorner":3,"m_Size":{"x":0.0,"y":0.0},"m_SizeOverridden":false}'
       floating: 0
       collapsed: 0
-      snapOffset: {x: 0, y: 0}
+      snapOffset: {x: -942, y: -36}
       snapOffsetDelta: {x: 0, y: 0}
-      snapCorner: 0
+      snapCorner: 3
       layout: 4
       size: {x: 0, y: 0}
       sizeOverridden: 0
@@ -848,7 +848,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Perfabs/Scriptable/PlayerForms
+    - Assets/Materials
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -858,24 +858,20 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Perfabs/Scriptable/PlayerForms
+  - Assets/Materials
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 304}
+    scrollPos: {x: 0, y: 192}
     m_SelectedIDs:
-    - m_Data: 57754
+    - m_Data: 57790
     m_LastClickedID:
-      m_Data: 57754
+      m_Data: 57790
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 57640
-    - m_Data: 57642
-    - m_Data: 57644
-    - m_Data: 57646
     - m_Data: 57648
     - m_Data: 57650
     - m_Data: 57652
@@ -894,6 +890,9 @@ MonoBehaviour:
     - m_Data: 57678
     - m_Data: 57680
     - m_Data: 57682
+    - m_Data: 57684
+    - m_Data: 57686
+    - m_Data: 57688
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -927,10 +926,6 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 57640
-    - m_Data: 57642
-    - m_Data: 57644
-    - m_Data: 57646
     - m_Data: 57648
     - m_Data: 57650
     - m_Data: 57652
@@ -949,6 +944,9 @@ MonoBehaviour:
     - m_Data: 57678
     - m_Data: 57680
     - m_Data: 57682
+    - m_Data: 57684
+    - m_Data: 57686
+    - m_Data: 57688
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -977,9 +975,9 @@ MonoBehaviour:
       m_ResourceFile: 
   m_ListAreaState:
     m_SelectedInstanceIDs:
-    - m_Data: 53278
+    - m_Data: 55210
     m_LastClickedEntityId:
-      m_Data: 53278
+      m_Data: 55210
     m_HadKeyboardFocusLastEvent: 0
     m_ExpandedInstanceIDs:
     - m_Data: 52286
@@ -1122,6 +1120,12 @@ MonoBehaviour:
         m_Data: 0
       m_ExpandedIDs:
       - m_Data: -1382
+      - m_Data: 54410
+      - m_Data: 54450
+      - m_Data: 54460
+      - m_Data: 54466
+      - m_Data: 54476
+      - m_Data: 54830
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
