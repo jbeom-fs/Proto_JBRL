@@ -53,6 +53,7 @@
     <Compile Include="Assets\Scripts\Combat\PlayerResource.cs" />
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\ArenaEncounterBase.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaReturnPortal.cs" />
     <Compile Include="Assets\Scripts\Inventory\PlayerInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\WorldEnvironmentQuery.cs" />
