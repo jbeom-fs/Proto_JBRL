@@ -59,8 +59,6 @@ public sealed class BossEncounterController : ArenaEncounterBase
             return false;
         }
 
-        PrepareBossAreaMinimap(entry.AreaId);
-
         if (!TrySpawnBoss(entry.Boss))
         {
             CancelEncounter();
@@ -92,6 +90,15 @@ public sealed class BossEncounterController : ArenaEncounterBase
     {
         RestoreDungeonMinimapSource();
         CancelEncounter();
+    }
+
+    public void ResetProceedRequest()
+    {
+        if (!_hasEncounter || !_bossDefeated)
+            return;
+
+        _proceedRequested = false;
+        ShowExitPortal();
     }
 
     public void CancelEncounter()
@@ -224,15 +231,6 @@ public sealed class BossEncounterController : ArenaEncounterBase
 
         position = transform.position;
         return false;
-    }
-
-    private void PrepareBossAreaMinimap(string areaId)
-    {
-        if (string.IsNullOrWhiteSpace(areaId))
-            return;
-
-        // TODO(stage4): expose a LocationTransitionManager route that switches
-        // the dungeon-flow minimap to this fixed areaId on boss entry.
     }
 
     private void HandleFinalBossDefeated()

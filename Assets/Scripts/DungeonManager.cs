@@ -36,6 +36,9 @@ public class DungeonManager : MonoBehaviour
     [SerializeField, Tooltip("방 전투 시작/초기화 상태를 관리하는 RoomSpawner")]
     private RoomSpawner roomSpawner;
 
+    [SerializeField, Tooltip("보스층 매핑 테이블")]
+    private BossEncounterTable bossTable;
+
     [Header("Dungeon Settings")]
     [Tooltip("시드. 0이면 매 생성마다 랜덤 생성 후 저장.")]
     public long seed = 0;
@@ -119,6 +122,9 @@ public class DungeonManager : MonoBehaviour
     private DungeonQueryService    _queryService;
     private SpawnPositionService   _spawnService;
     private FloorTransitionService _transitionService;
+    private BossEncounterController _subscribedBossController;
+    private BossEncounterController _pendingBossProceedController;
+    private int _pendingBossProceedTargetFloor;
 
     // 층 전환 중복 방지 — 코루틴 실행 중 추가 요청을 차단
     private bool _isTransitioning = false;
@@ -156,6 +162,16 @@ public class DungeonManager : MonoBehaviour
             Debug.LogWarning("[DungeonManager] Awake: eventChannel이 없습니다 — 층 변경 이벤트가 발행되지 않습니다.");
 
         EnsureServices();
+    }
+
+    private void OnEnable()
+    {
+        TrySubscribeBossEncounter();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeBossEncounter();
     }
 
     // ── 생성 파이프라인 ──────────────────────────────────────────────
@@ -225,6 +241,9 @@ public class DungeonManager : MonoBehaviour
             message = "Already on floor " + floor + ".";
             return false;
         }
+
+        if (bossTable != null && bossTable.TryGetBoss(targetFloor, out BossEncounterEntry bossEntry))
+            return TryEnterBossFloor(targetFloor, bossEntry, out message);
 
         StartCoroutine(FloorTransition(targetFloor));
         message = "Moving to floor " + targetFloor + ".";
@@ -322,7 +341,97 @@ public class DungeonManager : MonoBehaviour
 
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("floor_transition_end", "floor=" + floor);
+
+        CompletePendingBossProceedIfNeeded(targetFloor);
         _isTransitioning = false;
+    }
+
+    private bool TryEnterBossFloor(int targetFloor, BossEncounterEntry entry, out string message)
+    {
+        BossEncounterController bossController = BossEncounterController.Active;
+        if (bossController == null)
+        {
+            message = "Boss encounter controller is not active.";
+            return false;
+        }
+
+        PlayerController player = PlayerController.Active;
+        if (player == null)
+        {
+            message = "Player controller is not active.";
+            return false;
+        }
+
+        TrySubscribeBossEncounter();
+
+        int previousFloor = floor;
+        floor = targetFloor;
+        if (!bossController.Begin(entry, player))
+        {
+            floor = previousFloor;
+            message = "Failed to enter boss area for floor " + targetFloor + ".";
+            return false;
+        }
+
+        message = "Entering boss area for floor " + targetFloor + ".";
+        return true;
+    }
+
+    private void TrySubscribeBossEncounter()
+    {
+        BossEncounterController controller = BossEncounterController.Active;
+        if (controller == null || controller == _subscribedBossController)
+            return;
+
+        UnsubscribeBossEncounter();
+        _subscribedBossController = controller;
+        _subscribedBossController.ProceedRequested += HandleBossProceedRequested;
+    }
+
+    private void UnsubscribeBossEncounter()
+    {
+        if (_subscribedBossController == null)
+            return;
+
+        _subscribedBossController.ProceedRequested -= HandleBossProceedRequested;
+        _subscribedBossController = null;
+    }
+
+    private void HandleBossProceedRequested(BossEncounterEntry entry, PlayerController player)
+    {
+        if (entry == null || entry.IsFinal)
+            return;
+
+        BossEncounterController controller = _subscribedBossController != null
+            ? _subscribedBossController
+            : BossEncounterController.Active;
+        int targetFloor = floor + 1;
+
+        if (!TryTransitionToFloor(targetFloor, out string message))
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[DungeonManager] Boss proceed failed: " + message, this);
+#endif
+            controller?.ResetProceedRequest();
+            return;
+        }
+
+        _pendingBossProceedController = controller;
+        _pendingBossProceedTargetFloor = targetFloor;
+    }
+
+    private void CompletePendingBossProceedIfNeeded(int completedFloor)
+    {
+        if (_pendingBossProceedController == null ||
+            _pendingBossProceedTargetFloor != completedFloor)
+        {
+            return;
+        }
+
+        BossEncounterController controller = _pendingBossProceedController;
+        _pendingBossProceedController = null;
+        _pendingBossProceedTargetFloor = 0;
+        controller.CompleteProceedToNextFloor();
     }
 
     private IEnumerator GenerateForFloorTransition(bool useChunked)
