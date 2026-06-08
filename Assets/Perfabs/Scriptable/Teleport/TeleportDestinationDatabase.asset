@@ -41,3 +41,11 @@ MonoBehaviour:
     locationRootId: elite_arena
     localSpawnPosition: {x: 0, y: 0, z: 0}
     minimapLocationId:
+  - id: boss_arena
+    displayName: boss_arena
+    description: shared boss arena room
+    locationType: 1
+    locationRootId: boss_arena
+    localSpawnPosition: {x: 0, y: 0, z: 0}
+    minimapLocationId: boss_arena
+    useTilemapMinimap: 1

@@ -53,9 +53,6 @@
     <Compile Include="Assets\Scripts\Combat\PlayerResource.cs" />
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
-    <Compile Include="Assets\Scripts\EliteArena\ArenaEncounterBase.cs" />
-    <Compile Include="Assets\Scripts\Boss\BossEncounterController.cs" />
-    <Compile Include="Assets\Scripts\Boss\BossExitPortal.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaReturnPortal.cs" />
     <Compile Include="Assets\Scripts\Inventory\PlayerInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\WorldEnvironmentQuery.cs" />
@@ -71,6 +68,7 @@
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
     <Compile Include="Assets\Scripts\PlayerFormController.cs" />
+    <Compile Include="Assets\Scripts\Boss\BossEncounterController.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\ExtendPack\2D Dungeon Tilemap\CoinSystem\Scripts\Coin.cs" />
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Dungeon\Scripts\DUN_AnimatedCharacterSelection.cs" />
@@ -114,6 +112,7 @@
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillProjectileUtility.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\ArenaEncounterBase.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
@@ -150,6 +149,7 @@
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\Data\PlayerFormData.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
+    <Compile Include="Assets\Scripts\Boss\BossExitPortal.cs" />
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleService.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Items\ItemDatabase.cs" />
