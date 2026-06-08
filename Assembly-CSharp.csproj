@@ -190,6 +190,7 @@
     <Compile Include="Assets\ExtendPack\KrishnaPalacio\MINIFANTASY - Forgotten Plains\Scripts\PropVariants\FP_Creeper.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
+    <Compile Include="Assets\Scripts\Data\BossEncounterTable.cs" />
     <Compile Include="Assets\Scripts\Combat\DaggerMarkerRegistry.cs" />
     <Compile Include="Assets\Scripts\Combat\AttackPattern.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaEncounterController.cs" />
