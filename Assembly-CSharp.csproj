@@ -54,6 +54,8 @@
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
     <Compile Include="Assets\Scripts\EliteArena\ArenaEncounterBase.cs" />
+    <Compile Include="Assets\Scripts\Boss\BossEncounterController.cs" />
+    <Compile Include="Assets\Scripts\Boss\BossExitPortal.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaReturnPortal.cs" />
     <Compile Include="Assets\Scripts\Inventory\PlayerInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\WorldEnvironmentQuery.cs" />
