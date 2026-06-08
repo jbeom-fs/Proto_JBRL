@@ -1,6 +1,6 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-05  
+> 작성 기준일: 2026-06-08  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -24,6 +24,7 @@
 11b. [시스템 10 — 아이템 / 드랍 / Elite Key](#11b-시스템-10--아이템--드랍--elite-key)
 11c. [시스템 11 — 개발자 콘솔](#11c-시스템-11--개발자-콘솔)
 11d. [시스템 12 — Elite Arena](#11d-시스템-12--elite-arena)
+11e. [시스템 13 — Boss Area](#11e-시스템-13--boss-area)
 12. [성능 전략](#12-성능-전략)
 13. [데이터 흐름](#13-데이터-흐름)
 14. [확장 포인트](#14-확장-포인트)
@@ -40,7 +41,7 @@
 | 장르 | 로그라이크 던전 탐색 |
 | 시점 | 탑다운 2D |
 | 맵 방식 | BSP 알고리즘 절차적 생성 |
-| 거점 구조 | 마을(Town) ↔ 던전(Dungeon) ↔ Elite Arena 전환 (`LocationTransitionManager`, 구 `TownDungeonTransitionManager`) — 마을·Arena는 Tilemap 고정 맵, 던전은 절차적 생성 |
+| 거점 구조 | 마을(Town) ↔ 던전(Dungeon) ↔ Elite Arena ↔ Boss Area 전환 (`LocationTransitionManager`, 구 `TownDungeonTransitionManager`) — 마을·Arena·Boss Area는 Tilemap 고정 맵, 던전은 절차적 생성. Boss Area = N층마다 진입(§11e) |
 | 이동 방식 | 실시간 8방향 이동(Classic=방향키 / ActionMouseAim=WASD) + 그리드 충돌 + 대시 스킬 |
 | 조준 방식 | **2가지 프리셋**(`PlayerControlScheme`): Classic = 8방향 입력 기반(`AimDirectionUtility`) / ActionMouseAim = 마우스 커서 기반 **360° 자유조준** — 기본공격 / 스킬 / 투사체 / 대시 공통 |
 | 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
@@ -1944,6 +1945,75 @@ EliteDashPatternRuntime / EliteJumpPatternRuntime / PlayerDashController / Enemy
 
 ---
 
+## 11e. 시스템 13 — Boss Area
+
+특정 층(예: 20·40·60)에 도달하면 일반 던전 생성 대신 전용 Boss Area(같은 씬 내 고정 fixed area)로 이동해 보스와 전투하고, 처치 후 출구로 다음 층으로 진행하는 시스템입니다. Elite Arena 의 입장/스폰/퇴장 lifecycle 을 `ArenaEncounterBase` 로 공통화해 재사용합니다. **1차 구현 완료(2026-06-08, placeholder boss/shared tilemap) — 정식 보스맵·수치·엔딩 연출은 후속.** 상세 기획: `HandOff/BOSS_AREA_DESIGN.md`.
+
+### 11e-1. 핵심 결정
+
+| 항목 | 결정 |
+|---|---|
+| 보스층 진입 | **N층 자체가 Boss Area** (일반 던전 N층 없음). 19층 출구 → Boss Area → 출구 → 21층 |
+| 맵 구성 | 같은 씬(Main.unity) 내 fixed area. Elite Arena 패턴 확장. 1차는 elite arena tilemap 공유 |
+| 사망 처리 | 기존 GameOver 흐름 재사용 (`CombatEventChannel.OnPlayerDied` → `GameOverFlowController`) |
+| 보스층 매핑 | 데이터 기반 `BossEncounterTable`(SO) — 코드 하드코딩 없음 |
+
+### 11e-2. 전체 흐름
+
+```
+층 전환 요청 시 DungeonManager.TryTransitionToFloor(targetFloor):
+  bossTable.TryGetBoss(targetFloor, out entry) 성공 →
+    TryEnterBossFloor(targetFloor, entry):
+      floor = targetFloor
+      BossEncounterController.Active.Begin(entry, player)
+        TryTeleportPlayerToArena(player, entry.BossAreaDestinationId)
+          → teleport 가 destination.minimapLocationId 로 미니맵 fixed source 자동 전환
+        SpawnArenaEnemyAtPosition(entry.Boss, spawnPos, OnBossDied)
+        출구(BossExitPortal) 잠금
+    (일반 FloorTransition 코루틴은 호출하지 않음)
+  실패(보스층 아님) → 기존 StartCoroutine(FloorTransition(targetFloor))
+
+보스 사망 시:
+  OnBossDied → _bossDefeated=true → ShowExitPortal (BossExitPortal 활성)
+
+플레이어가 출구 포탈 접촉:
+  BossExitPortal.OnTriggerEnter2D → controller.RequestProceed(player)
+    entry.IsFinal → HandleFinalBossDefeated() (엔딩 stub 로그, 층 전환 없음)
+    else → ProceedRequested 이벤트 발행
+
+DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구독)
+  TryTransitionToFloor(floor + 1)  → 일반 던전 생성 경로
+  pending(controller, targetFloor) 기록
+  FloorTransition 코루틴 끝에서 CompletePendingBossProceedIfNeeded(completedFloor):
+    targetFloor 매칭 → controller.CompleteProceedToNextFloor()
+      RestoreDungeonMinimapSource() + CancelEncounter()
+```
+
+### 11e-3. 컴포넌트 책임 분리
+
+| 컴포넌트 | 역할 |
+|---------|------|
+| `BossEncounterTable` (SO) | `floor → BossEncounterEntry`(boss EnemyData / bossAreaDestinationId / areaId / isFinal). `TryGetBoss(floor)` 선형 조회, OnValidate 중복 floor 경고 |
+| `ArenaEncounterBase` | Elite·Boss 공통 lifecycle 헬퍼 — teleport, enemy spawn, return/exit portal show·hide, minimap restore, spawn position resolve. `EliteArenaEncounterController` 도 이를 상속 |
+| `BossEncounterController` | `:ArenaEncounterBase`, static `Active`(Elite 와 별도 타입). `Begin`/`OnBossDied`/`RequestProceed`/`CompleteProceedToNextFloor`/`CancelEncounter`. `ProceedRequested` 이벤트 발행 |
+| `BossExitPortal` | 보스 처치 후 활성화되는 출구 포탈 — 접촉 시 `RequestProceed`, 잠금·중복 진입 가드 |
+| `DungeonManager` | `TryTransitionToFloor` 보스층 분기 + `ProceedRequested` 구독 + pending 완료 매칭 |
+
+### 11e-4. 미니맵·위치 처리 (Elite 와의 차이)
+
+- **진입 미니맵 전환은 별도 코드 훅 없음.** Boss Area teleport destination 에 `minimapLocationId` + `useTilemapMinimap` 를 설정하면, `LocationTransitionManager.TryTeleportPlayer` 내부의 `ApplyMinimapSourceForLocation` 이 진입 시 자동 전환. (Elite 는 컨트롤러가 직접 처리)
+- ⚠️ **Boss Area destination 은 `locationType = Dungeon(1)` 로 설정해야 한다.** 퇴장 시 `DungeonManager.TryTransitionToFloor(floor+1)` 첫 가드가 `LocationTransitionManager.IsInDungeon` 를 검사하므로, Dungeon 이 아니면 다음 층 진행이 막히고 dungeonRoot 도 비활성화됨.
+- 퇴장 시 미니맵 복원은 `CompleteProceedToNextFloor()` → `RestoreDungeonMinimapSource()`.
+- Elite 와 달리 Boss 의 다음 층 이동은 `player.TeleportTo` 직접 호출이 아니라 일반 `FloorTransition`(던전 재생성 + 플레이어 스폰 이벤트)을 경유한다.
+
+### 11e-5. 1차 구현 상태 / 후속
+
+- 1차 구성: 20/40/60층 모두 `boss_arena` destination·area 공유, placeholder 보스 `Elite_Magma_01`, 60층 `isFinal=true`.
+- Play 검증 통과: 20층 진입 → Magma elite 스폰 → 처치 → 출구 포탈 → 21층 진입.
+- 후속: 보스별 전용 맵 / 정식 보스 EnemyData·수치 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 40·60·사망·Elite 회귀 미세 검증.
+
+---
+
 ## 12. 성능 전략
 
 | 전략 | 적용 위치 | 효과 |
@@ -2399,6 +2469,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **EnemyController.MarkerAnchorWorld** | collider 중심(`TransformPoint(offset)`) 월드 앵커 — 마커/표식이 pivot(발밑) 대신 몸 중앙 기준에 표시 |
 | **Freischutz·Dagger 폼 애니메이션** | 두 폼 전용 스프라이트시트(FreischutzForm.png 6×5 30프레임 / DaggerForm.png 6·5·6·5·6 28프레임)를 Idle/Walk/Attack/Dash/Death 5클립(@12fps)으로 슬라이스·구성하고 `Player_FreischutzForm`/`Player_DaggerForm` AnimatorController(SwordForm 구조 = MoveX/Y·LastMoveX/Y·IsMoving·IsDead·AttackTrigger·SpinTrigger·DashTrigger·DeathTrigger) 신설. `FreischutzForm.asset`(구 Player_Movement 공용 컨트롤러 placeholder 교체)·`DaggerForm.asset`(빈 필드 신규 연결)의 `animatorController`/`defaultSprite` 결선. 스킬은 기존 `animationType=Attack` → `AttackTrigger` 경로로 자동 연결(스킬 에셋 무수정). Dagger 는 `useHorizontalFlipForFacing`+`rotateDashAnimationByDirection` 유지 |
 | **런타임 폼 전환** | `PlayerFormDatabase`(formId→PlayerFormData SO 매핑) + `PlayerFormController.TrySwitchForm(PlayerFormId)` — DB 조회 → `CanSwitchNow()` 가드(dash/skill/dead/stun 중 거부) → `ApplyForm` 재사용. 반환 `FormSwitchResult`(Switched/AlreadyActive/NoDatabase/UnknownForm/Busy). `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선 fallback)로 폼별 평타 교체. `CombatEventChannel.OnLoadoutChanged`(EquipWeapon 발행)→`SkillUIManager.RefreshAllSlots` 구독으로 전환 시 스킬 UI 자동 갱신. 콘솔 `/form set <id>` 진입점(자동완성 2층, UI 3토큰 확장). 게이팅 없는 순수 메커니즘 |
+| **Parry 폼 애니메이션** | `Parryform.png`(auto-slice 5행×6프레임: Idle/Walk/Parry정면/Parry측면/Death)을 5클립 + 전용 controller + `ParryForm.asset` 결선(defaultSprite=Parryform_0, useHorizontalFlipForFacing). **정면/측면 분기** = `PlayerFormController.ApplyParryFacing` — 조준 정지=정면(Int param `ParryFacing`=0, flipX=false) / 조준 방향 있음=측면(=1)+`ResolveFlipX`(순수 상하는 직전 flip 유지). 컨트롤러는 `AttackTrigger` 후 `ParryFacing` 으로 Parry_Front/Side 분기. SkillData 진입점(`PlaySkillAnimation`) 유지 |
+| **Boss Area (1차)** | `BossEncounterTable`(SO, floor→boss/destination/isFinal) + `ArenaEncounterBase`(Elite·Boss 공통 lifecycle 추출) + `BossEncounterController`(:Base, Active 싱글톤, Begin→spawn→OnBossDied→`BossExitPortal`→`ProceedRequested`) + `DungeonManager.TryTransitionToFloor` 보스층 분기·`ProceedRequested`→floor+1→`CompleteProceedToNextFloor`(미니맵 복원). N층=Boss Area(일반 던전 N층 없음), 미니맵 진입전환=destination `minimapLocationId` 자동(코드훅 없음), **destination `locationType=Dungeon` 필수**(퇴장 `IsInDungeon` 가드). 사망=기존 GameOver. placeholder boss=Elite_Magma_01·shared tilemap. 상세 §11e |
 
 ### 미구현 (다음 단계)
 
@@ -2408,7 +2480,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점·게이팅 | 중간 | `TrySwitchForm` 메커니즘 + 콘솔 `/form set` 구현 완료. 인게임 진입점(소울/아이템 획득 시 전환)·가용 폼 게이팅(소유 폼만 전환)은 미구현 — 소울 시스템과 함께 설계 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
-| 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. `WalkabilityArea` + `WalkabilityQuery` 인프라가 Boss Arena 에도 동일 적용 가능 |
+| Boss Area 정식화 | 중간 | 1차 구현 완료(§11e). 남은 건 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 40·60·사망·Elite 회귀 검증 |
+| 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
 | 상태이상 시스템 확장 | 낮음 | 독, 빙결 등 StatusEffectData 추가 |
