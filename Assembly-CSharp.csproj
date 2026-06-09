@@ -66,6 +66,7 @@
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
     <Compile Include="Assets\Scripts\PlayerFormController.cs" />
+    <Compile Include="Assets\Scripts\Combat\PlayerStatusEffects.cs" />
     <Compile Include="Assets\Scripts\Boss\BossEncounterController.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteProjectilePatternRuntime.cs" />
@@ -162,6 +163,7 @@
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternRunner.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
+    <Compile Include="Assets\Scripts\Combat\ParryStackResource.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />

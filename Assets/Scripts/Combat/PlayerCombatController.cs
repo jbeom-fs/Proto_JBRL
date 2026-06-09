@@ -83,9 +83,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private float _damageInvincibleTimer;
     private int _externalInvincibilityCount;
     private int _currentBullet;
-    private int _parryStack;
-    private float _parryStackGraceTimer;
-    private float _parryStackDecayTimer;
+    private ParryStackResource _parryStack;
     private Transform _cachedTransform;
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
@@ -96,12 +94,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Coroutine _skillCastRoutine;
     private Coroutine _parryRoutine;
     private Coroutine _reloadRoutine;
-    private Coroutine _enemyKnockbackRoutine;
-    private readonly List<PlayerSlowEffect> _enemySlows = new();
-    private float _enemySlowMultiplier = 1f;
-    private float _stunTimer;
-    private float _slowTotalDurationForUi;
-    private float _stunTotalDurationForUi;
+    private PlayerStatusEffects _status;
     private bool _isParrySequenceActive;
     private bool _isParryStartupActive;
     private bool _isParryInvincibleWindowActive;
@@ -119,12 +112,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
 
-    private struct PlayerSlowEffect
-    {
-        public float Multiplier;
-        public float Timer;
-    }
-
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
     public bool IsAlive     => _resource.IsAlive && !IsDead;
@@ -133,7 +120,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int  MaxHp       => maxHp;
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
-    public int CurrentParryStack => _parryStack;
+    public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
     public int MaxParryStack => maxParryStack;
     public bool IsReloading => _isReloading;
     public PlayerBasicAttackMode CurrentBasicAttackMode => GetCurrentBasicAttackMode();
@@ -142,18 +129,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
     public bool IsParryBusy => _isParrySequenceActive;
     public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f || _isParrySequenceActive || _isReloading;
-    public bool IsSlowed => _enemySlows.Count > 0;
-    public float SlowRemainingTime => GetSlowRemainingTime();
-    public float SlowTotalDurationForUi => _slowTotalDurationForUi;
-    public float SlowRemainingRatio =>
-        _slowTotalDurationForUi > 0f ? Mathf.Clamp01(SlowRemainingTime / _slowTotalDurationForUi) : 0f;
-    public bool IsStunned => _stunTimer > 0f;
-    public float StunRemainingTime => _stunTimer;
-    public float StunTotalDurationForUi => _stunTotalDurationForUi;
-    public float StunRemainingRatio =>
-        _stunTotalDurationForUi > 0f ? Mathf.Clamp01(_stunTimer / _stunTotalDurationForUi) : 0f;
+    public bool IsSlowed => _status != null && _status.IsSlowed;
+    public float SlowRemainingTime => _status != null ? _status.SlowRemainingTime : 0f;
+    public float SlowTotalDurationForUi => _status != null ? _status.SlowTotalDurationForUi : 0f;
+    public float SlowRemainingRatio => _status != null ? _status.SlowRemainingRatio : 0f;
+    public bool IsStunned => _status != null && _status.IsStunned;
+    public float StunRemainingTime => _status != null ? _status.StunRemainingTime : 0f;
+    public float StunTotalDurationForUi => _status != null ? _status.StunTotalDurationForUi : 0f;
+    public float StunRemainingRatio => _status != null ? _status.StunRemainingRatio : 0f;
     public bool BlocksPlayerMovement => _isSkillCasting || _skillRecoveryTimer > 0f || (blockMovementDuringParry && _isParrySequenceActive);
-    public float MoveSpeedMultiplier => IsStunned ? 0f : _enemySlowMultiplier;
+    public float MoveSpeedMultiplier => _status != null ? _status.MoveSpeedMultiplier : 1f;
 
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
@@ -191,6 +176,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _skillExecutor = new SkillExecutor(_attackExecutor);
         _daggerDashEnemyHitCallback = HandleDaggerDashEnemyHit;
         _daggerProjectileEnemyHitCallback = HandleDaggerProjectileEnemyHit;
+        _status = new PlayerStatusEffects(v => playerMovement?.TryApplyExternalDisplacement(v));
+        _status.OnApplied += HandleStatusEffectApplied;
+        _status.OnEnded += HandleStatusEffectEnded;
+        _parryStack = new ParryStackResource(
+            maxParryStack,
+            parryStackGraceDuration,
+            parryStackDecayInterval,
+            parryStackDecayAmount);
         BindSkillSlots(currentWeapon);
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
@@ -228,8 +221,18 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearSkillTimingState();
         ClearParryState();
         ClearReloadState();
-        ClearEnemyImpactState();
+        _status?.ClearAll();
         ClearDaggerRuntimeState();
+    }
+
+    private void HandleStatusEffectApplied(PlayerStatusEffectType type)
+    {
+        OnStatusEffectApplied?.Invoke(type);
+    }
+
+    private void HandleStatusEffectEnded(PlayerStatusEffectType type)
+    {
+        OnStatusEffectEnded?.Invoke(type);
     }
 
     private void RegisterAsActive()
@@ -324,9 +327,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
 
-        TickEnemyStun(Time.deltaTime);
-        TickEnemySlowEffects(Time.deltaTime);
-        TickSkillResources(Time.deltaTime);
+        _status?.Tick(Time.deltaTime);
+        _parryStack?.Tick(Time.deltaTime);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
@@ -858,29 +860,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         invincibilityFlashFeedback?.StopAndReset();
     }
 
-    private void ClearEnemyImpactState()
-    {
-        bool wasSlowed = IsSlowed;
-        bool wasStunned = IsStunned;
-
-        if (_enemyKnockbackRoutine != null)
-        {
-            StopCoroutine(_enemyKnockbackRoutine);
-            _enemyKnockbackRoutine = null;
-        }
-
-        _enemySlows.Clear();
-        _enemySlowMultiplier = 1f;
-        _slowTotalDurationForUi = 0f;
-        _stunTimer = 0f;
-        _stunTotalDurationForUi = 0f;
-
-        if (wasSlowed)
-            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Slow);
-        if (wasStunned)
-            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Stun);
-    }
-
     private void ClearDaggerRuntimeState()
     {
         _activeDaggerDashSkill = null;
@@ -942,9 +921,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsDead)
             return true;
 
-        ApplyEnemyKnockback(hitDirection, knockbackForce, knockbackDuration);
-        ApplyEnemySlow(slowMultiplier, slowDuration);
-        ApplyEnemyStun(stunDuration);
+        if (playerMovement != null && knockbackForce > 0f && knockbackDuration > 0f)
+            _status?.ApplyKnockback(ResolveEnemyImpactDirection(hitDirection), knockbackForce, knockbackDuration);
+        _status?.ApplySlow(slowMultiplier, slowDuration);
+        _status?.ApplyStun(stunDuration);
         return true;
     }
 
@@ -983,38 +963,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         _parryIntercepted = true;
         _isParryInvincibleWindowActive = false;
-        AddParryStack(1);
+        _parryStack?.Add(1);
         invincibilityFlashFeedback?.StopAndReset();
-    }
-
-    private void ApplyEnemyKnockback(Vector2 hitDirection, float force, float duration)
-    {
-        if (playerMovement == null || force <= 0f || duration <= 0f)
-            return;
-
-        if (_enemyKnockbackRoutine != null)
-            StopCoroutine(_enemyKnockbackRoutine);
-
-        _enemyKnockbackRoutine = StartCoroutine(EnemyKnockbackRoutine(
-            ResolveEnemyImpactDirection(hitDirection),
-            force,
-            duration));
-    }
-
-    private IEnumerator EnemyKnockbackRoutine(Vector2 direction, float distance, float duration)
-    {
-        float remaining = Mathf.Max(0.01f, duration);
-        float speed = Mathf.Max(0f, distance) / remaining;
-
-        while (remaining > 0f && !IsDead && playerMovement != null)
-        {
-            float deltaTime = Time.deltaTime;
-            remaining -= deltaTime;
-            playerMovement.TryApplyExternalDisplacement(direction * (speed * deltaTime));
-            yield return null;
-        }
-
-        _enemyKnockbackRoutine = null;
     }
 
     private Vector2 ResolveEnemyImpactDirection(Vector2 hitDirection)
@@ -1029,94 +979,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return -fallback.normalized;
     }
 
-    private void ApplyEnemySlow(float multiplier, float duration)
-    {
-        if (duration <= 0f || multiplier <= 0f || multiplier >= 1f)
-            return;
-
-        _slowTotalDurationForUi = Mathf.Max(_slowTotalDurationForUi, duration);
-        _enemySlows.Add(new PlayerSlowEffect
-        {
-            Multiplier = Mathf.Clamp01(multiplier),
-            Timer = duration
-        });
-        RecalculateEnemySlowMultiplier();
-        OnStatusEffectApplied?.Invoke(PlayerStatusEffectType.Slow);
-    }
-
-    private void ApplyEnemyStun(float duration)
-    {
-        if (duration <= 0f)
-            return;
-
-        _stunTimer = Mathf.Max(_stunTimer, duration);
-        _stunTotalDurationForUi = Mathf.Max(_stunTotalDurationForUi, duration);
-        OnStatusEffectApplied?.Invoke(PlayerStatusEffectType.Stun);
-    }
-
-    private void TickEnemyStun(float deltaTime)
-    {
-        if (_stunTimer <= 0f)
-            return;
-
-        _stunTimer = Mathf.Max(0f, _stunTimer - deltaTime);
-        if (_stunTimer <= 0f)
-        {
-            _stunTotalDurationForUi = 0f;
-            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Stun);
-        }
-    }
-
-    private void TickEnemySlowEffects(float deltaTime)
-    {
-        if (_enemySlows.Count == 0)
-            return;
-
-        bool changed = false;
-        bool wasSlowed = _enemySlows.Count > 0;
-        for (int i = _enemySlows.Count - 1; i >= 0; i--)
-        {
-            PlayerSlowEffect effect = _enemySlows[i];
-            effect.Timer -= deltaTime;
-            if (effect.Timer <= 0f)
-            {
-                _enemySlows.RemoveAt(i);
-                changed = true;
-            }
-            else
-            {
-                _enemySlows[i] = effect;
-            }
-        }
-
-        if (changed)
-            RecalculateEnemySlowMultiplier();
-
-        if (wasSlowed && _enemySlows.Count == 0)
-        {
-            _slowTotalDurationForUi = 0f;
-            OnStatusEffectEnded?.Invoke(PlayerStatusEffectType.Slow);
-        }
-    }
-
-    private void RecalculateEnemySlowMultiplier()
-    {
-        float multiplier = 1f;
-        for (int i = 0; i < _enemySlows.Count; i++)
-            multiplier = Mathf.Min(multiplier, _enemySlows[i].Multiplier);
-
-        _enemySlowMultiplier = multiplier;
-    }
-
-    private float GetSlowRemainingTime()
-    {
-        float remaining = 0f;
-        for (int i = 0; i < _enemySlows.Count; i++)
-            remaining = Mathf.Max(remaining, _enemySlows[i].Timer);
-
-        return remaining;
-    }
-
     private void Die()
     {
         if (IsDead)
@@ -1128,7 +990,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearSkillTimingState();
         ClearParryState();
         ClearReloadState();
-        ClearEnemyImpactState();
+        _status?.ClearAll();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
@@ -1180,54 +1042,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
     }
 
-    private void TickSkillResources(float deltaTime)
-    {
-        if (_parryStack <= 0)
-            return;
-
-        if (_parryStackGraceTimer > 0f)
-        {
-            _parryStackGraceTimer = Mathf.Max(0f, _parryStackGraceTimer - deltaTime);
-            if (_parryStackGraceTimer > 0f)
-                return;
-        }
-
-        _parryStackDecayTimer -= deltaTime;
-        if (_parryStackDecayTimer > 0f)
-            return;
-
-        int decay = Mathf.Max(1, parryStackDecayAmount);
-        _parryStack = Mathf.Max(0, _parryStack - decay);
-        _parryStackDecayTimer = Mathf.Max(0.01f, parryStackDecayInterval);
-        if (_parryStack == 0)
-            ResetParryStackTimers();
-    }
-
-    private void AddParryStack(int amount)
-    {
-        if (amount <= 0)
-            return;
-
-        _parryStack = Mathf.Min(maxParryStack, _parryStack + amount);
-        if (_parryStack > 0)
-        {
-            _parryStackGraceTimer = Mathf.Max(0f, parryStackGraceDuration);
-            _parryStackDecayTimer = Mathf.Max(0.01f, parryStackDecayInterval);
-        }
-    }
-
-    private void ResetParryStack()
-    {
-        _parryStack = 0;
-        ResetParryStackTimers();
-    }
-
-    private void ResetParryStackTimers()
-    {
-        _parryStackGraceTimer = 0f;
-        _parryStackDecayTimer = 0f;
-    }
-
     public bool Has(SkillResourceType type, int requiredAmount)
     {
         if (type == SkillResourceType.None)
@@ -1256,10 +1070,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 return true;
 
             case SkillResourceType.ParryStack:
-                _parryStack = Mathf.Max(0, _parryStack - amount);
-                if (_parryStack == 0)
-                    ResetParryStackTimers();
-                return true;
+                return _parryStack != null && _parryStack.Spend(amount);
 
             case SkillResourceType.None:
             default:
@@ -1275,7 +1086,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 return _currentBullet;
 
             case SkillResourceType.ParryStack:
-                return _parryStack;
+                return _parryStack != null ? _parryStack.Current : 0;
 
             case SkillResourceType.None:
             default:
@@ -1295,7 +1106,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 break;
 
             case SkillResourceType.ParryStack:
-                AddParryStack(amount);
+                _parryStack?.Restore(amount);
                 break;
         }
     }
@@ -1369,17 +1180,17 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void HandleRoomEntered(RoomEnteredEventArgs args)
     {
-        ResetParryStack();
+        _parryStack?.Reset();
     }
 
     private void HandleRoomDoorsOpened(RoomInfo room)
     {
-        ResetParryStack();
+        _parryStack?.Reset();
     }
 
     private void HandleFloorChanged(int previousFloor, int newFloor)
     {
-        ResetParryStack();
+        _parryStack?.Reset();
     }
 
     private static bool IsCombatBlockedByLocation()
