@@ -1,6 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-08  
+> 작성 기준일: 2026-06-09  
+> 기준 커밋: `5f95e23e` (master, HEAD)  
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -2006,11 +2007,11 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 - 퇴장 시 미니맵 복원은 `CompleteProceedToNextFloor()` → `RestoreDungeonMinimapSource()`.
 - Elite 와 달리 Boss 의 다음 층 이동은 `player.TeleportTo` 직접 호출이 아니라 일반 `FloorTransition`(던전 재생성 + 플레이어 스폰 이벤트)을 경유한다.
 
-### 11e-5. 1차 구현 상태 / 후속
+### 11e-5. 구현 상태 / 후속
 
 - 1차 구성: 20/40/60층 모두 `boss_arena` destination·area 공유, placeholder 보스 `Elite_Magma_01`, 60층 `isFinal=true`.
-- Play 검증 통과: 20층 진입 → Magma elite 스폰 → 처치 → 출구 포탈 → 21층 진입.
-- 후속: 보스별 전용 맵 / 정식 보스 EnemyData·수치 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 40·60·사망·Elite 회귀 미세 검증.
+- **통합 흐름 Play 검증 전부 통과(2026-06-09)**: 20/40/60층 진입 → 보스 스폰 → 처치 → 출구 포탈 → 다음 층 정상 진입, 60층 `isFinal` 엔딩 정지(다음 층 안 넘어감), 보스전 사망 = 기존 GameOver, Elite Arena 회귀 무손상, LocationRoot 갇힘/스폰 리스크 통과. **코드·흐름 완성.**
+- 남은 건 검증이 아니라 컨텐츠: 보스별 전용 맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프.
 
 ---
 
@@ -2401,7 +2402,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **EnemyData Contact-Special 인스펙터** | `EnemyDataEditor.DrawContactSpecialSection` — `specialAttackType` 별로 Rush/Jump 전용 필드 그룹만 노출 |
 | **EXTRA 통로 다중 후보 점수화** | `BuildExtraPathCandidatesForPair` + `ConnectExtraCorridors` — pair 마다 `ExtraCandidateCount`(기본 12) 후보를 검증·점수화하여 가장 깨끗한 1개 채택 |
 | **EXTRA 점수 weight 인스펙터화** | `DungeonManager.extraOverlapScoreWeight`/`extraPathLengthPenaltyWeight`/`extraCenterDistancePenaltyDivisor` — 점수 함수 가중치를 인스펙터로 노출, 과거 `LongestParallelCorridorRun` 항목은 단순화로 제거 |
-| **플레이어 상태이상 시스템** | `PlayerStatusEffectType`(Slow/Stun) + `PlayerCombatController.ApplyEnemyCombatImpact` — 적 공격에서 받는 데미지·넉백·슬로우·스턴을 단일 진입점으로 처리, 슬로우는 활성 효과 중 가장 강한 강도만 적용, 스턴 중 이동·방향 전환·스킬 입력 차단 |
+| **플레이어 상태이상 시스템** | `PlayerStatusEffectType`(Slow/Stun) + `PlayerCombatController.ApplyEnemyCombatImpact` — 적 공격에서 받는 데미지·넉백·슬로우·스턴을 단일 진입점으로 처리, 슬로우는 활성 효과 중 가장 강한 강도만 적용, 스턴 중 이동·방향 전환·스킬 입력 차단. **(2026-06-09 리팩터: 넉백/슬로우/스턴 로직을 `PlayerStatusEffects` 순수 C# 클래스로 분리, 넉백은 코루틴→Tick 타이머 환원·변위 콜백 주입, 컨트롤러는 facade 위임 — 동작 보존)** |
 | **플레이어 상태이상 아이콘 UI** | `PlayerStatusEffectUI` + `StatusEffectIconView` — 슬로우/스턴 아이콘과 잔여 시간 게이지·텍스트 표시, `OnStatusEffectApplied/Ended` 이벤트 구독 |
 | **마을·던전 전환 시스템** | `LocationTransitionManager` — `TeleportDestinationDatabase` ScriptableObject 기반 목적지 관리, 진입/이탈 시 CleanupDungeonRuntime + StartNewDungeonRun, minimapRoot 항상 표시 |
 | **텔레포트 시스템** | `TeleportService` + `TeleportDestinationDatabase` + `LocationRoot` + `LocationRootRegistry` — DB 조회·씬 루트 자동 등록·`root.TransformPoint(localSpawnPosition)` 으로 월드 좌표 계산 |
@@ -2457,10 +2458,12 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **TilemapMinimapSource Layer 자동 분류** | `autoDiscoverChildren=true` 시 자식 Tilemap 을 GameObject Layer(Walkable/Wall/Door, 인스펙터에서 이름 재정의 가능)로 한 번에 분류해 `_walkableTilemaps`/`_wallTilemaps`/`_doorTilemaps` 세 List 구성. 명시 모드와 병행 가능, 매칭 0개 시 1회 경고 |
 | **전투 판정 World Environment Query 일원화** | 모든 전투 코드(`PlayerController.CanMoveTo`(Dungeon/Arena 한정), `PlayerDashController`, `EnemyController.IsFootprintWalkable`, `EnemyMovementHandler.CanMoveTo`, Kiting/Random 후퇴 검사, Elite Dash/Jump `CanOccupy`, `AttackExecutor.HasGeometryLineOfSight`, `ProjectileController.IsWallPosition`/`IsOutOfDungeonBounds`)가 `WorldEnvironmentQuery` 1개 facade 만 호출. Dungeon/Arena 라우팅은 `WalkabilityQuery` static 이 처리 (commit 7335129d, 85dce89e) |
 | **미사용 코드 정리** | `Projectile.cs`(구 트리거 발사체) / `DoorController.cs`(문 위임 thin wrapper) / `DungeonPortal.cs`(마을 측 진입 트리거) / `NormalEnemyAI.cs`(NormalEnemyBrain Obsolete 래퍼) 삭제 — 모든 호출처가 새 경로(ProjectileController·DungeonManager 직접 호출·TeleportService·NormalEnemyBrain) 로 이관 완료. 함께 `DungeonManager.FindStairPos`/`DungeonQueryService.FindStairPos`, `LocationTransitionManager.EnterDungeon/EnterTown`, `EliteArenaEncounterController` 의 5개 walkability passthrough, `WalkabilityArea` 의 Vector2 오버로드 등 미사용 API 도 제거 (commit 50aa15fb) |
+| **ExtendPack 데모 정리** | 미사용 에셋팩 데모 씬 8개 + 데모 스크립트 21개(2D Dungeon Tilemap CoinSystem/SceneScripts, Minifantasy DUN_*/FP_* prop variants 등)·meta·빈 폴더 삭제. **룰타일·스프라이트·prefab 등 실사용 아트는 보존**(Main.unity 미참조 GUID 확인 후 제거). 데모 prefab missing-script 경고는 무해 (commit e50c86da, 2026-06-09) |
+| **전투 컨트롤러 책임 분리 리팩터링** | `PlayerCombatController` 비대화(1427줄) 완화 — 적 상태이상(넉백/슬로우/스턴)을 `PlayerStatusEffects`(순수 C#, 넉백 코루틴→`Tick(dt)` 타이머 환원+`Action<Vector2>` 변위 주입), 패리 스택 자원을 `ParryStackResource`(순수 C#, `[SerializeField]` 튜닝값은 컨트롤러 유지 후 Awake 생성자 주입=직렬화 경로 보존)로 추출. public API·UI 이벤트·동작 전부 보존(behavior-preserving), 컨트롤러는 facade 위임. 남은 추출 후보(MagazineReloader/Dagger/Aim)는 결합·코루틴 비용 대비 보류 (commit 5f95e23e, 2026-06-09) |
 | **플레이어 폼 시스템** | `PlayerFormController` (MonoBehaviour) + `PlayerFormData` ScriptableObject + `PlayerFormId` enum(Normal/Sword/Dagger/Freischutz/Parry) — `ApplyForm(formData)` 가 Animator runtime controller·default Sprite 스왑, `ApplyFacing(direction)` 가 `useHorizontalFlipForFacing` 옵션으로 SpriteRenderer.flipX 갱신, dash 시 `rotateDashAnimationByDirection` 활성 폼은 visualTransform 을 `Atan2(dir)+dashBaseAngle` 로 회전하고 dash visual token 으로 movement/state 종료 시점에 안전 복귀. 첫 Sword form 프리팹/애니메이션(Idle/Walk/Attack/Spin/Dash/Death) 추가 (commit 3d82b687) |
 | **스킬 애니메이션 SkillData 이관** | `SkillData` 에 Animation 섹션(`animationType`(None/Attack/Spin/Dash/CustomTrigger) · `customAnimationTrigger` · `rotateAnimationByDirection` · `animationBaseAngle`) 추가. `SkillExecutionContext.CasterForm` 으로 `PlayerFormController` 가 컨텍스트에 노출되고, `SkillExecutor.Execute` 가 실행 직전 `CasterForm.PlaySkillAnimation(skill, direction)` 호출 — 애니메이션 트리거가 SkillExecutor / WeaponData 가 아닌 SkillData 한 곳에서만 관리됨. Dash 는 `PlayerDashController` 가 SkillData 의 AnimationType=Dash 분기로 토큰 발급, 기본 공격은 `PlayerCombatController.basicAttackSkillData` (전용 `BasicAttackAnimation.asset`) 로 동일 경로 재사용. `SkillDataEditor` 에 Animation 섹션 인스펙터 추가 (commit c192604b) |
 | **MP 폐지 + 스킬 자원 시스템** | MP/mpCost/MaxMp/RaisePlayerMpChanged 전면 제거. `SkillData` 에 `SkillResourceType`(None/Bullet/ParryStack) + `requiredAmount`/`consumeAmount` 추가. `PlayerCombatController` 가 `ISkillResourceLedger`(Has/Spend/GetAmount) 구현, `SkillSlotRuntime.CanUse(ledger)` 로 게이팅. `SkillExecutor.Execute` 가 `SkillExecutionResult`(Success+실제 ResourceConsumed) 반환 → 실제 소모만 Spend, 실패 시 소모·쿨다운 둘 다 없음. 밸런스는 쿨타임 + 폼 고유 자원 |
-| **패리 폼** | `PlayerBasicAttackMode.Parry`. 기본공격 = 데미지 없는 패리(선딜→무적→후딜 각 설정값). 무적구간 동안 흰색 점멸, 방향 무관 모든 피해 1회 가로채기 → +ParryStack(`CompleteParryIntercept`). 첫 가로채기 즉시 무적 종료. 선딜 중 피격 시 패리 취소. ParryStack 은 자원(스킬 소모) + 유예시간 후 점감, 방/문/층 이동 시 초기화. 임시 `ParryStackBarUI` 슬라이더 |
+| **패리 폼** | `PlayerBasicAttackMode.Parry`. 기본공격 = 데미지 없는 패리(선딜→무적→후딜 각 설정값). 무적구간 동안 흰색 점멸, 방향 무관 모든 피해 1회 가로채기 → +ParryStack(`CompleteParryIntercept`). 첫 가로채기 즉시 무적 종료. 선딜 중 피격 시 패리 취소. ParryStack 은 자원(스킬 소모) + 유예시간 후 점감, 방/문/층 이동 시 초기화. 임시 `ParryStackBarUI` 슬라이더. **(2026-06-09 리팩터: 스택+grace/decay 로직을 `ParryStackResource` 순수 C# 클래스로 분리, 튜닝값은 컨트롤러 `[SerializeField]` 유지+생성자 주입 — 직렬화 경로·동작 보존)** |
 | **마탄(Freischutz) 폼** | `PlayerBasicAttackMode.Bullet`. 탄창(Bullet) 자원 = `WeaponData`(usesMagazine/magazineSize/reloadTime/reloadAmount)에서 EquipWeapon 시 주입+풀충전, **방/층 이동 시 유지**. 기본공격 = 투사체 1발+탄 1소모(탄 0이면 자동 재장전). 스킬: `projectileCount`(발사)+`consumeAmount`(탄) 분리, `BulletShortageMode`(RequireFullCost/AllowPartialUse). 재장전: 자동(탄0)/수동(A키, 마탄폼만)/스킬(`reloadAmount`), 공격만 차단·이동 허용. `FreischutzMagazineUI`(Bullet/Bullet_empty 칸). 식별자 `PlayerFormId.Freischutz`(구 Bow) |
 | **Form→loadout 단일 소스(안 B)** | `PlayerFormData.skills[]` 제거. `ApplyForm` 이 실제 폼 변경 시 `EquipWeapon(form.DefaultWeapon)` 호출 → 무기·스킬·탄창이 폼에 맞게 일괄 교체. loadout = WeaponData 단일 소스. ParryForm→ParryWeapon, FreischutzForm→FreischutzWeapon, Normal·Sword→TestSword |
 | **대거(Dagger) 폼** | `PlayerFormId.Dagger`, basicAttackMode=Damage. 마커 기반 암살 루프 — Q=Blink(가장 가까운 적 뒤 순간이동+마커), W=Projectile(단검 투척+마커), E=Dash(마커 적 폭발+추가뎀+E 쿨 1회 리셋, 적 통과), R=Buff(N초간 기본공격 hit 적에 마커). DaggerForm/DaggerWeapon/DaggerQWER 에셋 + `SkillExecutionType.Blink` 신설 |
@@ -2470,7 +2473,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Freischutz·Dagger 폼 애니메이션** | 두 폼 전용 스프라이트시트(FreischutzForm.png 6×5 30프레임 / DaggerForm.png 6·5·6·5·6 28프레임)를 Idle/Walk/Attack/Dash/Death 5클립(@12fps)으로 슬라이스·구성하고 `Player_FreischutzForm`/`Player_DaggerForm` AnimatorController(SwordForm 구조 = MoveX/Y·LastMoveX/Y·IsMoving·IsDead·AttackTrigger·SpinTrigger·DashTrigger·DeathTrigger) 신설. `FreischutzForm.asset`(구 Player_Movement 공용 컨트롤러 placeholder 교체)·`DaggerForm.asset`(빈 필드 신규 연결)의 `animatorController`/`defaultSprite` 결선. 스킬은 기존 `animationType=Attack` → `AttackTrigger` 경로로 자동 연결(스킬 에셋 무수정). Dagger 는 `useHorizontalFlipForFacing`+`rotateDashAnimationByDirection` 유지 |
 | **런타임 폼 전환** | `PlayerFormDatabase`(formId→PlayerFormData SO 매핑) + `PlayerFormController.TrySwitchForm(PlayerFormId)` — DB 조회 → `CanSwitchNow()` 가드(dash/skill/dead/stun 중 거부) → `ApplyForm` 재사용. 반환 `FormSwitchResult`(Switched/AlreadyActive/NoDatabase/UnknownForm/Busy). `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선 fallback)로 폼별 평타 교체. `CombatEventChannel.OnLoadoutChanged`(EquipWeapon 발행)→`SkillUIManager.RefreshAllSlots` 구독으로 전환 시 스킬 UI 자동 갱신. 콘솔 `/form set <id>` 진입점(자동완성 2층, UI 3토큰 확장). 게이팅 없는 순수 메커니즘 |
 | **Parry 폼 애니메이션** | `Parryform.png`(auto-slice 5행×6프레임: Idle/Walk/Parry정면/Parry측면/Death)을 5클립 + 전용 controller + `ParryForm.asset` 결선(defaultSprite=Parryform_0, useHorizontalFlipForFacing). **정면/측면 분기** = `PlayerFormController.ApplyParryFacing` — 조준 정지=정면(Int param `ParryFacing`=0, flipX=false) / 조준 방향 있음=측면(=1)+`ResolveFlipX`(순수 상하는 직전 flip 유지). 컨트롤러는 `AttackTrigger` 후 `ParryFacing` 으로 Parry_Front/Side 분기. SkillData 진입점(`PlaySkillAnimation`) 유지 |
-| **Boss Area (1차)** | `BossEncounterTable`(SO, floor→boss/destination/isFinal) + `ArenaEncounterBase`(Elite·Boss 공통 lifecycle 추출) + `BossEncounterController`(:Base, Active 싱글톤, Begin→spawn→OnBossDied→`BossExitPortal`→`ProceedRequested`) + `DungeonManager.TryTransitionToFloor` 보스층 분기·`ProceedRequested`→floor+1→`CompleteProceedToNextFloor`(미니맵 복원). N층=Boss Area(일반 던전 N층 없음), 미니맵 진입전환=destination `minimapLocationId` 자동(코드훅 없음), **destination `locationType=Dungeon` 필수**(퇴장 `IsInDungeon` 가드). 사망=기존 GameOver. placeholder boss=Elite_Magma_01·shared tilemap. 상세 §11e |
+| **Boss Area (1차)** | `BossEncounterTable`(SO, floor→boss/destination/isFinal) + `ArenaEncounterBase`(Elite·Boss 공통 lifecycle 추출) + `BossEncounterController`(:Base, Active 싱글톤, Begin→spawn→OnBossDied→`BossExitPortal`→`ProceedRequested`) + `DungeonManager.TryTransitionToFloor` 보스층 분기·`ProceedRequested`→floor+1→`CompleteProceedToNextFloor`(미니맵 복원). N층=Boss Area(일반 던전 N층 없음), 미니맵 진입전환=destination `minimapLocationId` 자동(코드훅 없음), **destination `locationType=Dungeon` 필수**(퇴장 `IsInDungeon` 가드). 사망=기존 GameOver. placeholder boss=Elite_Magma_01·shared tilemap. **통합 흐름 Play 검증 전부 통과(20/40/60·60층 엔딩 정지·보스전 사망·Elite 회귀, 2026-06-09) — 코드·흐름 완성, 남은 건 컨텐츠.** 상세 §11e |
 
 ### 미구현 (다음 단계)
 
@@ -2480,7 +2483,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점·게이팅 | 중간 | `TrySwitchForm` 메커니즘 + 콘솔 `/form set` 구현 완료. 인게임 진입점(소울/아이템 획득 시 전환)·가용 폼 게이팅(소유 폼만 전환)은 미구현 — 소울 시스템과 함께 설계 |
 | 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
-| Boss Area 정식화 | 중간 | 1차 구현 완료(§11e). 남은 건 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 40·60·사망·Elite 회귀 검증 |
+| Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |

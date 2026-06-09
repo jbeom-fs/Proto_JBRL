@@ -128021,7 +128021,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EliteArenaEncounterController
   transitionManager: {fileID: 920100002}
-  arenaDestinationId: elite_arena
   arenaWalkTilemap: {fileID: 1206688124}
   arenaWallTilemap: {fileID: 1309604883}
   eliteSpawnPoint: {fileID: 0}
@@ -128030,6 +128029,7 @@ MonoBehaviour:
   returnPortalSpawnPoint: {fileID: 0}
   returnPortalParent: {fileID: 0}
   walkabilityArea: {fileID: 2201000003}
+  arenaDestinationId: elite_arena
   entrancePortalInstance: {fileID: 0}
   entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
   entrancePortalParent: {fileID: 0}
@@ -128151,7 +128151,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bcfb87a4c1a24310be22670c0a3b3790, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocationRoot
   locationRootId: boss_arena
 --- !u!114 &2401000003
@@ -128164,7 +128164,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bab441a45097ecc45aa4bf6f9f030ae7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TilemapMinimapSource
   locationId: boss_arena
   groundTilemap: {fileID: 1206688124}
@@ -128281,8 +128281,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a3f9d2e8c1b4a5d6e9f0c8b2a1d3e4f, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   id: boss_arena
   walkTilemap: {fileID: 1206688124}
   wallTilemap: {fileID: 1309604883}
@@ -128429,7 +128429,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55388a40c0da4fee84ccd786b22a9994, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossExitPortal
   portalSprite: {fileID: -6350039350891915429, guid: 765a443592fe3ba48a2588535a4895e6, type: 3}
   sortingLayerName: Default
@@ -128477,7 +128477,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7dcb13e8804346eeb248696058230c0d, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossEncounterController
   transitionManager: {fileID: 920100002}
   arenaWalkTilemap: {fileID: 1206688124}
