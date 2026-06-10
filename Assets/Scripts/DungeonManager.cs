@@ -83,6 +83,15 @@ public class DungeonManager : MonoBehaviour
     [Min(1)]
     public int extraCenterDistancePenaltyDivisor = 20;
 
+    [Header("Monster Den")]
+    [Tooltip("출현 확률, 떨어지면 0개")]
+    [Range(0f, 1f)]
+    public float monsterDenChance = 0.05f;
+
+    [Tooltip("층당 최대 개수")]
+    [Min(0)]
+    public int maxMonsterDenCount = 1;
+
     [Header("Spawn Region")]
     [Tooltip("현재 층/스테이지 지역입니다. EnemyData.allowedRegions는 여러 지역을 허용할 수 있지만, 이 값은 단일 지역만 사용합니다.")]
     public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
@@ -681,6 +690,13 @@ public class DungeonManager : MonoBehaviour
         // 6. 스폰 위치 미리 계산 및 캐싱 (GetSpawnTilePos 호출 시 재계산 불필요)
         stageStart = Time.realtimeSinceStartupAsDouble;
         _cachedSpawnPos = _spawnService.ComputeSpawnPos(_data, mapWidth, mapHeight);
+        var spawnRoom = GetRoomAt(_cachedSpawnPos.x, _cachedSpawnPos.y);
+        var excludeSpawnKey = spawnRoom.HasValue
+            ? (spawnRoom.Value.X, spawnRoom.Value.Y)
+            : (int.MinValue, int.MinValue);
+        var denRng = new System.Random(DeterministicSeedUtility.CreateSeed(
+            seed, (int)currentStageRegion, floor, 0, DeterministicSeedUtility.MonsterDenDomain));
+        _registry.AssignMonsterDens(_data, denRng, monsterDenChance, maxMonsterDenCount, excludeSpawnKey);
         PrepareEliteKeyPlan();
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",

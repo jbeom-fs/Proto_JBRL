@@ -4074,6 +4074,8 @@ MonoBehaviour:
   extraOverlapScoreWeight: 10
   extraPathLengthPenaltyWeight: 8
   extraCenterDistancePenaltyDivisor: 10
+  monsterDenChance: 0.05
+  maxMonsterDenCount: 1
   currentStageRegion: 1
   postGenerateSettleSeconds: 0.25
   postGenerateSettleFrames: 2
@@ -63031,7 +63033,7 @@ MonoBehaviour:
   visualTransform: {fileID: 2005918155}
   formDatabase: {fileID: 11400000, guid: 4c2b3c25bde176f41a7030aa2a99d82f, type: 2}
   defaultForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
-  currentForm: {fileID: 11400000, guid: 9c8a0e89a0df4f64b83062d17b0f9821, type: 2}
+  currentForm: {fileID: 11400000, guid: 6f3f0c9ddbb542d4ac51501acfb9d4e1, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -68315,7 +68317,7 @@ MonoBehaviour:
   eliteArenaEncounterController: {fileID: 2201000002}
   densityFactor: 0.1
   normalMultiplier: 1
-  monsterDenMultiplier: 2.5
+  monsterDenMultiplier: 1.5
   spawnFootprintRadius: 0.65
 --- !u!1 &1767138558
 GameObject:

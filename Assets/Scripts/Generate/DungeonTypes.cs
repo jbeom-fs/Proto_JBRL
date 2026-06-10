@@ -60,6 +60,7 @@ public static class DeterministicSeedUtility
     public const string EnemySpawnDomain = "enemy_spawn";
     public const string EliteRoomSpawnDomain = "elite_room_spawn";
     public const string EliteKeyDomain = "elite_key";
+    public const string MonsterDenDomain = "monster_den_select";
 
     public static int CreateStableRoomKey(DungeonGenerator.RoomRect rect)
     {

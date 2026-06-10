@@ -54,6 +54,33 @@ public class RoomRegistry
 
     // ── 타입 조회·변경 ──────────────────────────────────────────────
 
+    /// <summary>조건을 만족하는 Normal 방 중 일부를 MonsterDen으로 지정합니다.</summary>
+    public void AssignMonsterDens(DungeonData data, System.Random rng,
+                                  float chance, int maxCount, (int x, int y) excludeSpawnKey)
+    {
+        if (data == null || rng == null || maxCount <= 0)
+            return;
+
+        var candidates = new List<RoomInfo>();
+        for (int i = 0; i < data.RoomCount; i++)
+        {
+            var room = data.GetRoom(i);
+            var key = Key(room);
+            if (GetRoomType(room) == RoomType.Normal && !room.IsElite && !key.Equals(excludeSpawnKey))
+                candidates.Add(room);
+        }
+
+        for (int i = 0; i < maxCount && candidates.Count > 0; i++)
+        {
+            if (rng.NextDouble() >= chance)
+                continue;
+
+            int selectedIndex = rng.Next(candidates.Count);
+            SetRoomType(candidates[selectedIndex], RoomType.MonsterDen);
+            candidates.RemoveAt(selectedIndex);
+        }
+    }
+
     /// <summary>방의 현재 타입을 반환합니다.</summary>
     public RoomType GetRoomType(RoomInfo room)
     {
