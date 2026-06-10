@@ -42,7 +42,14 @@ internal static class Program
         s.MinRoomSize = sceneSettings ? 10 : 5;
         s.MaxRoomSize = sceneSettings ? 50 : 14;
         s.BspDepth = 4;
-        s.ExtraConnProb = 0.5f;
+        s.ExtraConnProb = sceneSettings ? 0.3f : 0.5f;
+        if (sceneSettings)
+        {
+            s.ExtraCandidateCount = 12;
+            s.ExtraOverlapScoreWeight = 10;
+            s.ExtraPathLengthPenaltyWeight = 8;
+            s.ExtraCenterDistancePenaltyDivisor = 10;
+        }
         s.Floor = floor;
         s.MaxFloor = 100;
         s.Seed = (int)(seedLong % int.MaxValue);
@@ -71,6 +78,8 @@ internal static class Program
             Console.WriteLine($"=== Central-bottom big-ish room candidate: R{bigIdx} (X={big.X} Y={big.Y} W={big.W} H={big.H}) ===");
             DumpAroundRoom(grid, big, 3, s);
         }
+
+        DumpRegion(grid, s, 79, 116, 25, 78);
 
         Console.WriteLine();
         Console.WriteLine("=== Door candidate contiguous runs by room side ===");
@@ -366,6 +375,39 @@ internal static class Program
 
     static bool InBounds(DungeonSettings s, int col, int row)
         => col >= 0 && col < s.MapWidth && row >= 0 && row < s.MapHeight;
+
+    static void DumpRegion(int[,] grid, DungeonSettings s, int x0, int x1, int y0, int y1)
+    {
+        x0 = Math.Max(0, x0); y0 = Math.Max(0, y0);
+        x1 = Math.Min(s.MapWidth - 1, x1); y1 = Math.Min(s.MapHeight - 1, y1);
+        Console.WriteLine();
+        Console.WriteLine($"=== Wide region dump [{x0}..{x1}, {y0}..{y1}] ===");
+        Console.Write("      ");
+        for (int x = x0; x <= x1; x++) Console.Write((x / 10) % 10);
+        Console.WriteLine();
+        Console.Write("      ");
+        for (int x = x0; x <= x1; x++) Console.Write(x % 10);
+        Console.WriteLine();
+        for (int y = y0; y <= y1; y++)
+        {
+            Console.Write($"  {y,3}: ");
+            for (int x = x0; x <= x1; x++)
+            {
+                int v = grid[y, x];
+                char c = v switch
+                {
+                    DungeonGenerator.EMPTY => '.',
+                    DungeonGenerator.ROOM => '#',
+                    DungeonGenerator.CORRIDOR => '*',
+                    DungeonGenerator.STAIR_UP => '<',
+                    DungeonGenerator.DOOR_CLOSED => 'D',
+                    _ => '?',
+                };
+                Console.Write(c);
+            }
+            Console.WriteLine();
+        }
+    }
 
     static void DumpAroundRoom(int[,] grid, DungeonGenerator.RoomRect r, int padding, DungeonSettings s)
     {

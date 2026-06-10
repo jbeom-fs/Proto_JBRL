@@ -1196,10 +1196,21 @@ public static class DungeonGenerator
             sy = ClampDoorAxis(sy, src.Y, src.Y + src.H);
             ey = ClampDoorAxis(ey, dst.Y, dst.Y + dst.H);
 
-            EmitH(doorSX + stepS, farSX, sy, path);
-            EmitH(doorEX + stepE, farEX, ey, path);
-            EmitH(farSX, farEX, sy, path);
-            EmitV(sy, ey, farEX, path);
+            // 턴 라인(farEX)이 src 방의 가로 범위 안이면 가로 출구가 방 밖으로 오버슈트해
+            // 고아 stub을 남긴다(폭 넓은 방의 대칭 케이스). 가로 출구를 생략하고 세로가
+            // 위/아래 벽으로 바로 빠지게 한다.
+            if (farEX >= src.X && farEX <= src.X + src.W - 1)
+            {
+                EmitH(doorEX + stepE, farEX, ey, path);
+                EmitV(sy, ey, farEX, path);
+            }
+            else
+            {
+                EmitH(doorSX + stepS, farSX, sy, path);
+                EmitH(doorEX + stepE, farEX, ey, path);
+                EmitH(farSX, farEX, sy, path);
+                EmitV(sy, ey, farEX, path);
+            }
         }
         else
         {
@@ -1231,10 +1242,22 @@ public static class DungeonGenerator
             sx = ClampDoorAxis(sx, src.X, src.X + src.W);
             ex = ClampDoorAxis(ex, dst.X, dst.X + dst.W);
 
-            EmitV(doorSY + stepS, farSY, sx, path);
-            EmitV(doorEY + stepE, farEY, ex, path);
-            EmitV(farSY, farEY, sx, path);
-            EmitH(sx, ex, farEY, path);
+            // 턴 라인(farEY)이 src 방의 세로 범위 안이면, 세로 출구를 방 밖으로 내보내면
+            // 방 반대편에 고아 dead-end stub이 남는다(키 큰 방이 위쪽 변에서 꺾이는 방과
+            // V-first로 이어질 때). 이 경우 세로 출구를 생략하고 수평이 측벽으로 바로
+            // 빠지게 한다 — 연결성은 그대로 유지된다.
+            if (farEY >= src.Y && farEY <= src.Y + src.H - 1)
+            {
+                EmitV(doorEY + stepE, farEY, ex, path);
+                EmitH(sx, ex, farEY, path);
+            }
+            else
+            {
+                EmitV(doorSY + stepS, farSY, sx, path);
+                EmitV(doorEY + stepE, farEY, ex, path);
+                EmitV(farSY, farEY, sx, path);
+                EmitH(sx, ex, farEY, path);
+            }
         }
     }
 
