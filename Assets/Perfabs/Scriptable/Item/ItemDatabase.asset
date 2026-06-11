@@ -16,9 +16,37 @@ MonoBehaviour:
   - itemCode: elite_key
     displayName: Elite Key
     icon: {fileID: -2433734611021356490, guid: c0adb5094e8a7bc41be2e61ffe519254, type: 3}
-    description: Elite Room door를 열 수 있는 열쇠
+    description: "Elite Room door\uB97C \uC5F4 \uC218 \uC788\uB294 \uC5F4\uC1E0"
     itemType: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 1
     removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+  - itemCode: Test_Potion
+    displayName: Test_Potion
+    icon: {fileID: 6352683301991889936, guid: f7b37b91088c7d44b98c5e710477bd39, type: 3}
+    description: "\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 2
+    stackable: 1
+    maxStack: 99
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects:
+    - type: 1
+      value: 30
+    passiveEffects: []
+  - itemCode: Test_Relic
+    displayName: Test_Relic
+    icon: {fileID: -7640242614159672242, guid: f7b37b91088c7d44b98c5e710477bd39, type: 3}
+    description: "\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 4
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects:
+    - type: 2
+      value: 30

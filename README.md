@@ -50,7 +50,7 @@
 | 방 타입 | Normal · MonsterDen · Spawn · Stair · Elite (5의 배수+5 층 자동) |
 | 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기, Contact Special Attack(Rush/Jump), Elite Pattern Set(Projectile/Dash/Jump), `isStationary`/`immuneToKnockback` 플래그 |
 | 적 전투 | 근접 접촉 피해 + Contact Special(Rush 돌진 / Jump 도약 + 착지 임팩트) + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 + Elite 패턴 사이클 — Rush/Jump/Projectile/Elite 임팩트는 `EnemyAttackImpactData`(knockback·slow·stun) 적용 |
-| 아이템 / 인벤토리 | `ItemDatabase` ScriptableObject + `ItemData` (Key·Currency·Consumable·Equipment·Relic·Material) + `removeOnFloorTransition`/`removeOnDungeonExit` 플래그. `PlayerInventory`(InventoryItemStack 리스트, 스택/논-스택, 층/던전 이탈 시 자동 정리) — 적이 `EnemyInventory.AddDropItem` 으로 사망 시 `DropItemSpawner.SpawnDrops` → `DroppedItem.OnTriggerEnter2D` 에서 `PlayerInventory.AddItem` 으로 픽업 |
+| 아이템 / 인벤토리 | `ItemDatabase` ScriptableObject + `ItemData` (Key·Currency·Consumable·Equipment·Relic·Material) + `useEffects`/`passiveEffects` + `removeOnFloorTransition`/`removeOnDungeonExit` 플래그. `PlayerInventory`(InventoryItemStack 리스트, 스택/논-스택, 층/던전 이탈 시 자동 정리) — 적이 `EnemyInventory.AddDropItem` 으로 사망 시 `DropItemSpawner.SpawnDrops` → `DroppedItem.OnTriggerEnter2D` 에서 `PlayerInventory.AddItem` 으로 픽업. Consumable 은 슬롯 클릭으로 `HealHp` 사용, Relic 은 소지 중 평면 스탯 패시브를 `PlayerItemStats` 로 합산 |
 | Elite Floor / Elite Key | 층이 `% 10 == 5` 이면 MST leaf 가장 깊은 방을 Elite Room 으로 자동 지정, Elite Door 로 봉인. 같은 층의 일반 방 적 중 결정론적으로 1마리가 `elite_key` 를 드랍하며 플레이어가 습득하면 PlayerInventory 에 들어가고 Elite Door 접촉 시 자동 개방·열쇠 1개 소모 |
 | Elite 적 | `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner`(MonoBehaviour)가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·사거리 조건 만족 패턴 1개를 실행. 패턴 종류: Projectile / Dash / Jump (ScriptableObject 변형) |
 | 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
@@ -137,10 +137,10 @@
 - **위치 기반 미니맵 전환**: `LocationMinimapRegistry`(static Dict) + `TilemapMinimapSource.OnEnable/OnDisable` 자동 등록으로, `MinimapController`가 씬 계층을 직접 탐색하지 않고 locationId 조회만으로 소스 전환
 - **텔레포트 데이터 드리븐**: `TeleportDestinationDatabase` ScriptableObject 가 목적지(id · displayName · description · locationType · locationRootId · localSpawnPosition · minimapLocationId)를 보유하고, `LocationRootRegistry`(static Dict, `LocationRoot.OnEnable/OnDisable` 자동 등록)가 씬 내 LocationRoot 트랜스폼을 노출 — 텔레포트 시 `root.TransformPoint(localSpawnPosition)` 으로 월드 좌표가 계산됨 (씬 마커 MonoBehaviour는 더 이상 없음)
 - **입력 키 데이터 드리븐**: `PlayerInputKeySettings` ScriptableObject 1개가 `controlScheme`(Classic/ActionMouseAim) + 이동/액션/스킬 키(키보드 + 마우스 버튼)를 보유, `PlayerInputReader` 가 매 프레임 참조 — 에셋 교체·프리셋 전환만으로 조작 변경, OnValidate 단계에서 `Key.None` / 중복 키·마우스 버튼 자동 경고
-- **아이템 데이터 드리븐**: `ItemDatabase` ScriptableObject 가 `itemCode` 키로 `ItemData` (DisplayName/Icon/ItemType/Stackable/MaxStack)를 보관, `EnemyInventory.AddDropItem(itemCode)` → `DropItemSpawner.SpawnDrops` → `DroppedItem.Initialize` 파이프라인이 코드 수정 없이 새 아이템을 지원
+- **아이템 데이터 드리븐**: `ItemDatabase` ScriptableObject 가 `itemCode` 키로 `ItemData` (DisplayName/Icon/ItemType/Stackable/MaxStack/useEffects/passiveEffects)를 보관, `EnemyInventory.AddDropItem(itemCode)` → `DropItemSpawner.SpawnDrops` → `DroppedItem.Initialize` 파이프라인이 코드 수정 없이 새 아이템을 지원. Consumable 즉시 효과는 `ItemEffectApplier`, Relic 평면 스탯은 `PlayerItemStats` 가 담당
 - **Elite Floor 자동화**: `floor % 10 == 5` 인 층에서 `DungeonGenerator.AssignEliteRoom` 이 시작 방에서 MST 깊이 최대 leaf(동률 시 거리 최대)를 Elite Room 으로 선정, `DungeonTilemapRenderer.PlaceEliteDoors` 가 perimeter 의 corridor-인접 셀에 `eliteDoorTile` 배치 — `RoomSpawner.PrepareEliteKeyPlan` 이 결정론적 RNG (`EliteKeyDomain`) 로 같은 층의 일반 방 적 1마리에 `elite_key` 드랍 부여, 플레이어가 키 보유 상태로 Elite Door 접촉 시 `TryOpenEliteDoorWithKey(PlayerInventory, ItemData)` 가 한 셀 카빙 + 인벤토리에서 키 1개 제거
 - **Elite 적 패턴 시스템**: `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner` (MonoBehaviour) 가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·`MinRange`/`MaxRange`·weight 조건을 만족하는 첫 패턴을 실행. 패턴 종류는 `EliteProjectilePatternData` / `EliteDashPatternData` / `EliteJumpPatternData` ScriptableObject 변형이며 각각 windup·animation key·EnemyAttackImpactData 를 보유. 기존 Contact Special(Rush/Jump)와는 독립된 사이클 — Special 은 모든 Contact 적의 1개 고정 공격, Elite Pattern 은 Elite 전용 다중 패턴 풀
-- **인벤토리 데이터 드리븐**: `PlayerInventory`(MonoBehaviour, RequireComponent for PlayerController) 가 `InventoryItemStack` 리스트를 보유, stackable/maxStack 정책을 자동 적용. `ItemData.removeOnFloorTransition`/`removeOnDungeonExit` 플래그로 층/던전 이탈 시 자동 정리. Elite Key 도 일반 ItemData 한 항목으로 통합 (과거의 `PlayerEliteKeyInventory` 는 제거됨)
+- **인벤토리 데이터 드리븐**: `PlayerInventory`(MonoBehaviour, RequireComponent for PlayerController) 가 `InventoryItemStack` 리스트를 보유, stackable/maxStack 정책을 자동 적용. `ItemData.removeOnFloorTransition`/`removeOnDungeonExit` 플래그로 층/던전 이탈 시 자동 정리. `OnInventoryChanged` 는 UI 갱신과 Relic 패시브 재계산의 단일 트리거이며, Elite Key 도 일반 ItemData 한 항목으로 통합 (과거의 `PlayerEliteKeyInventory` 는 제거됨)
 - **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 - **공간 독립 walkability**: `WalkabilityQuery`(static) + `WalkabilityArea`(OnEnable/OnDisable 자동 등록) 로 Dungeon·Elite Arena·Boss Arena 등 모든 공간에서 단일 query API 사용. 전투 코드는 `WorldEnvironmentQuery` 파사드만 호출하며 공간 종류를 알지 못해도 됨 — 새 공간은 `WalkabilityArea` 컴포넌트 부착만으로 자동 등록
@@ -209,8 +209,10 @@ Assets/Scripts/
 │
 ├── Items/
 │   ├── ItemType.cs                 # 아이템 분류 enum (Key/Currency/Consumable/Equipment/Relic/Material)
-│   ├── ItemData.cs                 # 직렬화 가능한 단일 아이템 정의 (itemCode·displayName·icon·description·itemType·stackable·maxStack·removeOnFloorTransition·removeOnDungeonExit)
-│   ├── ItemDatabase.cs             # ScriptableObject — itemCode→ItemData Dictionary 캐시 + OnValidate 중복/공백 검사
+│   ├── ItemEffect.cs               # ItemEffectType + ItemEffect(value) — 사용 효과 / 패시브 평면 스탯 데이터
+│   ├── ItemEffectApplier.cs        # Consumable useEffects 적용 정적 서비스 (HealHp → PlayerCombatController.RestoreHp)
+│   ├── ItemData.cs                 # 직렬화 가능한 단일 아이템 정의 (itemCode·displayName·icon·description·itemType·stackable·maxStack·useEffects·passiveEffects·정리 플래그)
+│   ├── ItemDatabase.cs             # ScriptableObject — itemCode→ItemData Dictionary 캐시 + OnValidate 중복/공백 검사 + itemCode 자동완성 목록 제공
 │   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister)
 │   └── DropItemSpawner.cs          # 사망 위치 기준 EnemyInventory 의 드랍 목록을 Instantiate (Singleton, dropSpacing 으로 다중 아이템 정렬, ClearAllActiveDrops)
 │
@@ -218,6 +220,7 @@ Assets/Scripts/
 │   ├── PlayerInventory.cs          # MonoBehaviour — InventoryItemStack 리스트 보유, AddItem/RemoveItem/HasItem/GetItemCount,
 │   │                                #   RemoveItemsOnFloorTransition / RemoveItemsOnDungeonExit (ItemData 플래그 기반),
 │   │                                #   OnInventoryChanged 이벤트 (InventoryUIController 가 구독)
+│   ├── PlayerItemStats.cs          # 순수 C# Relic 패시브 집계기 — MaxHp/Attack/Defense/MoveSpeedBonus 합산
 │   └── InventoryItemStack.cs       # [Serializable] (ItemData, count) 스택 1개 — Add/Remove
 │
 ├── System/
@@ -316,8 +319,8 @@ Assets/Scripts/
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
 │   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
-│   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, InventorySlotUI 동적 풀, 인벤토리 키·ESC 토글, DeveloperConsoleUI 열림 시 자동 닫힘
-│   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind)
+│   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, 5개 카테고리 탭 필터/전체 그룹 정렬, 슬롯 클릭 Consumable 사용, 인벤토리 키·ESC 토글, 콘솔 열림 시 자동 닫힘
+│   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind) + IPointerClickHandler 로 컨트롤러에 클릭 위임
 │   ├── UIDraggableWindow.cs        # 드래그 가능한 UI 패널 기반 MonoBehaviour
 │   ├── GameOverUIController.cs     # 게임오버 UI 페이드 인/아웃·확인 버튼 (UI 참조 누락 시 1회 경고 후 표시 skip)
 │   ├── GameOverRestartHandler.cs   # IGameOverRestartHandler 인터페이스
@@ -658,7 +661,7 @@ CheckRoomEntry():
 |----|------|----------|
 | ↑↓←→ | 이동 + Facing 방향 갱신 + 8방향 조준 raw 입력 | `up/down/left/right` |
 | Z | 계단·상호작용 (`InteractConfirmPressedThisFrame`, `WasStairPressed` alias) | `interactConfirm` |
-| I | 인벤토리(예약) — `InventoryPressedThisFrame` flag만 노출 | `inventory` |
+| I | 인벤토리 열기/닫기 — `InventoryUIController` 가 `InventoryPressedThisFrame` 을 읽어 토글 | `inventory` |
 | Space | 기본 공격 (홀드 시 범위 미리보기) — Facing 4방향 기준 | `basicAttack` |
 | A | 재장전 (Bullet 폼) | `reload` |
 | Q / W / E / R | 스킬 슬롯 1~4 (홀드 시 범위 미리보기) | `skillSlot1~4` |
@@ -1744,10 +1747,22 @@ SetTilemapSource(locationId):
 | `displayName` / `description` / `icon` | UI 메타데이터 |
 | `itemType` | `ItemType` enum — Key / Currency / Consumable / Equipment / Relic / Material |
 | `stackable` / `maxStack` | `PlayerInventory.AddItem` 이 자동 적용 (스택 불가 항목은 amount 만큼 슬롯 분리) |
+| `useEffects` | Consumable 사용 시 1회 적용되는 `ItemEffect[]` — 현재 `HealHp` 지원 |
+| `passiveEffects` | Relic 소지 중 상시 적용되는 `ItemEffect[]` — MaxHp / Attack / Defense / MoveSpeed 평면 스탯 지원 |
 | `removeOnFloorTransition` | true 면 `PlayerInventory.RemoveItemsOnFloorTransition()` 가 층 이동 시 자동 제거 (Elite Key 가 이 플래그를 사용) |
 | `removeOnDungeonExit` | true 면 `RemoveItemsOnDungeonExit()` 가 던전 → 마을 전환 시 자동 제거 |
 
-`OnValidate` 가 `itemCode` 공백/중복을 자동 경고. 런타임 조회는 `ItemDatabase.TryGetItem(code, out item)` 으로 0-할당 캐시 lookup.
+`OnValidate` 가 `itemCode` 공백/중복을 자동 경고. 런타임 조회는 `ItemDatabase.TryGetItem(code, out item)` 으로 0-할당 캐시 lookup. 개발자 콘솔 자동완성은 `ItemDatabase.GetItemCodes(output)` → `PlayerInventory.GetDatabaseItemCodes(output)` 경로로 같은 캐시를 사용합니다.
+
+| `ItemEffectType` | 적용 위치 | 설명 |
+|------------------|-----------|------|
+| `HealHp` | `useEffects` | `ItemEffectApplier.ApplyUseEffects` 가 `PlayerCombatController.RestoreHp(value)` 호출 |
+| `MaxHpBonus` | `passiveEffects` | Relic 소지 수만큼 최대 HP 가산 |
+| `AttackBonus` | `passiveEffects` | Relic 소지 수만큼 `TotalAttack` 가산 |
+| `DefenseBonus` | `passiveEffects` | Relic 소지 수만큼 `TotalDefense` 가산 |
+| `MoveSpeedBonus` | `passiveEffects` | Relic 소지 수만큼 이동속도 % 가산 |
+
+현재 `ItemDatabase.asset` 에는 `elite_key` 외에 검증용 `Test_Potion` / `Test_Relic` 항목이 등록되어 있습니다.
 
 ### 11b-2. 드랍 파이프라인
 
@@ -1772,7 +1787,8 @@ DroppedItem.OnTriggerEnter2D(player):
   player.TryGetComponent<PlayerInventory>(out inventory) →
     inventory.AddItem(_itemData, _amount) 성공 시:
       DropItemSpawner.Instance?.Unregister(self) + Destroy(self)
-  (Currency/Consumable/Equipment 등 모든 ItemType 이 인벤토리에 들어가나, 사용·장착 로직은 미구현)
+  (Currency/Consumable/Equipment 등 모든 ItemType 이 인벤토리에 들어감.
+   Consumable 사용과 Relic 평면 패시브는 구현됨, Equipment 장착 로직은 별도 시스템으로 보류)
 ```
 
 ### 11b-3. Elite Key 결정론적 드랍 슬롯 (RoomSpawner.PrepareEliteKeyPlan)
@@ -1813,12 +1829,54 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 | `RemoveItem(item, amount)` / `RemoveAll(item)` / `RemoveAllByCode(code)` | 보유량 검사 후 제거 |
 | `HasItem(item, amount)` / `GetItemCount(item)` | 보유량 조회 |
 | `TryGetDatabaseItem(itemCode, out item)` | 부착된 `ItemDatabase` 에서 ItemData 조회 (PlayerController 의 Elite Door 처리가 사용) |
+| `GetDatabaseItemCodes(output)` | 부착된 `ItemDatabase` 의 itemCode 목록을 output List 에 추가 (개발자 콘솔 `/item give` 자동완성) |
 | `RemoveItemsOnFloorTransition()` | `ItemData.RemoveOnFloorTransition=true` 항목만 제거 — `DungeonManager.CleanupPlayerInventoryForFloorTransition` 에서 호출 |
 | `RemoveItemsOnDungeonExit()` | `ItemData.RemoveOnDungeonExit=true` 항목만 제거 — `LocationTransitionManager` 던전 이탈 시 호출 |
 | `Clear()` | 전체 비움 |
-| `OnInventoryChanged` (event) | `InventoryUIController` 가 구독해 슬롯 갱신, `PlayerStatusBarUI` 가 elite_key 보유 수로 키 아이콘 토글 |
+| `OnInventoryChanged` (event) | `InventoryUIController` 가 구독해 슬롯 갱신, `PlayerCombatController` 가 Relic 패시브 재계산, `PlayerStatusBarUI` 가 elite_key 보유 수로 키 아이콘 토글 |
 
 `PlayerController` 가 `RequireComponent<PlayerInventory>` 로 부착을 보장하며, Elite Door 접촉 시 `_inventory.TryGetDatabaseItem("elite_key", out keyItem)` → `dungeonRenderer.TryOpenEliteDoorWithKey(_inventory, keyItem)` 가 한 셀 카빙 + 인벤토리에서 키 1개 제거합니다.
+
+### 11b-5. 아이템 효과 적용 (Consumable / Relic)
+
+아이템 효과는 `ItemEffectType` 기반의 평면 스탯·즉시 효과만 담당합니다. 행동형 유물 효과(처치 시 회복, 대시 불길 등)는 이 enum 에 넣지 않고 별도 런타임 축으로 확장하는 전제입니다.
+
+```text
+Consumable 클릭:
+  InventorySlotUI.OnPointerClick
+  → InventoryUIController.HandleSlotClicked(item)
+  → item.ItemType == Consumable && useEffects 존재 && PlayerCombatController.Active 생존 확인
+  → ItemEffectApplier.ApplyUseEffects(item, combat)
+      HealHp → combat.RestoreHp(value)
+  → 적용 성공 시 PlayerInventory.RemoveItem(item, 1)
+  → OnInventoryChanged 로 UI 자동 갱신
+```
+
+Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChanged` 를 구독해 `PlayerItemStats.Recalculate(inventory.Items)` 를 호출합니다.
+
+| 집계 대상 | 규칙 |
+|----------|------|
+| 대상 ItemType | `ItemType.Relic` 만 집계. Equipment 는 아직 보류 |
+| 스택 처리 | `passiveEffects` 의 value × stack.Count |
+| 적용 스탯 | `MaxHpBonus`, `AttackBonus`, `DefenseBonus`, `MoveSpeedBonusPercent` |
+| MaxHp 변화 | `delta = 새 MaxHpBonus - 이전 MaxHpBonus`; 생존 중이면 현재 HP 도 delta 만큼 증감 후 `[1, 새 MaxHp]` 클램프 |
+| 사망 상태 | 스탯 재계산은 수행, 현재 HP 조정은 생략 |
+
+`TotalAttack` / `TotalDefense` 는 무기 보너스 뒤에 Relic 보너스를 더하고, `MoveSpeedMultiplier` 는 상태이상 배율에 `(1 + MoveSpeedBonusPercent / 100)` 을 곱합니다. `MaxHp` 프로퍼티는 `maxHp + MaxHpBonus` 를 반환하며 `RestoreHp` / 데미지 로그 / HP 이벤트도 유효 최대 HP 를 사용합니다.
+
+### 11b-6. 인벤토리 UI 탭 / 슬롯 클릭
+
+`InventoryUIController` 는 5개 고정 탭을 사용합니다. `tabButtons` 가 5개 유효 결선되지 않았으면 경고 1회 후 기존 전체 표시로 폴백합니다.
+
+| 탭 | 포함 ItemType |
+|----|---------------|
+| 전체 | 모두. 표시 순서는 소모품 → 유물 → 재료 → 기타 그룹 순서, 그룹 내부는 획득 순서 유지 |
+| 소모품 | Consumable |
+| 유물 | Relic |
+| 재료 | Material |
+| 기타 | Key / Currency / Equipment |
+
+필터링은 `_filteredBuffer` 재사용 List 로 처리하며 LINQ / `List.Sort` 를 쓰지 않습니다. 전체 탭은 그룹 순서대로 `playerInventory.Items` 를 반복 스캔해 append 하므로 안정 정렬이 보장됩니다. `InventorySlotUI` 는 `IPointerClickHandler` 로 클릭을 컨트롤러에 위임하며, 필터링은 표시만 바꾸고 실제 `ItemData` 참조와 `PlayerInventory` 저장 구조는 변경하지 않습니다.
 
 ---
 
@@ -1832,7 +1890,7 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 |------|------|
 | `DeveloperConsoleUI` | MonoBehaviour UI 컨트롤러 — `` ` `` 키 토글, `TMP_InputField` 입력, ScrollRect 로그 출력, Tab 자동완성, `GamePauseController` 연동 |
 | `DeveloperConsoleService` | 순수 C# 명령 레지스트리 — 명령 Dictionary + 인수 제안 프로바이더 Dictionary, `Execute` / `GetArgumentSuggestions` / `GetCommandNames` API |
-| `DeveloperConsoleCommandExecutor` | MonoBehaviour 실행 컨트롤러 — `DeveloperConsoleService`가 파싱·등록을 담당하고 게임 상태 변경(적 처치·문 개방·텔레포트·층 이동)은 이 컴포넌트로 위임. `RoomSpawner` · `DungeonManager` · `LocationTransitionManager` · `EliteArenaEncounterController` · `PlayerController` · `TeleportDestinationDatabase` 보유 (구 `DeveloperConsoleCommandContext` readonly struct 대체) |
+| `DeveloperConsoleCommandExecutor` | MonoBehaviour 실행 컨트롤러 — `DeveloperConsoleService`가 파싱·등록을 담당하고 게임 상태 변경(적 처치·문 개방·텔레포트·층 이동·아이템 지급)은 이 컴포넌트로 위임. `RoomSpawner` · `DungeonManager` · `LocationTransitionManager` · `EliteArenaEncounterController` · `PlayerController` · `PlayerInventory` · `TeleportDestinationDatabase` 보유 (구 `DeveloperConsoleCommandContext` readonly struct 대체) |
 | `DeveloperConsoleCommandResult` | 명령 실행 결과 (readonly struct) — `Success(msg)` / `Error(msg)` / `Clear()` / `Ignored()` 팩토리 메서드 |
 
 ### 11c-2. 등록된 명령
@@ -1848,6 +1906,8 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 | `/floor add [count]` | 현재 층 + count 이동 | `add` `sub` `set` |
 | `/floor sub [count]` | 현재 층 - count 이동 | |
 | `/floor set [floor]` | 지정 층으로 이동 | |
+| `/form set [id]` | 플레이어 폼 즉시 전환 | `set` → `PlayerFormId` 목록 |
+| `/item give <code> [count]` | PlayerInventory 에 ItemDatabase 아이템 지급 | `give` → itemCode 목록 |
 
 ### 11c-3. 자동완성 구조
 
@@ -1859,8 +1919,14 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 
 인수 제안 프로바이더 (_argumentProviders Dictionary):
   "floor"    → { "add", "sub", "set" }
+  "form"     → { "set" }
+  "item"     → { "give" }
   "dooropen" → { "normal", "elite" }
   "tp"       → TeleportDestinationDatabase.GetDestinationIds()
+
+하위 인수 제안 (_subArgumentProviders Dictionary):
+  ("form", "set") → PlayerFormId enum names
+  ("item", "give") → PlayerInventory.GetDatabaseItemCodes()
 ```
 
 Tab 키로 제안 순환·적용, Esc 로 제안 패널만 닫음 (이후 Esc 는 콘솔 전체 닫기).  
@@ -2244,10 +2310,12 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 ### 새 아이템 / 드랍 추가
 
-1. `ItemDatabase` 에셋에 새 `ItemData` 추가 (itemCode·displayName·icon·itemType·stackable·maxStack 입력, 필요 시 removeOnFloorTransition/removeOnDungeonExit 토글)
+1. `ItemDatabase` 에셋에 새 `ItemData` 추가 (itemCode·displayName·icon·itemType·stackable·maxStack 입력, 필요 시 useEffects/passiveEffects/removeOnFloorTransition/removeOnDungeonExit 설정)
 2. 적이 드랍하려면 `EnemyController.MarkAsEliteKeyHolder` 와 동일한 패턴으로 `EnemyInventory.AddDropItem("새_코드")` 호출하는 분기를 추가 (예: 보스 사망 시, 특정 RoomType 진입 시 등)
 3. 픽업 자체는 자동 — `DroppedItem.OnTriggerEnter2D` 가 모든 ItemType 을 `PlayerInventory.AddItem` 으로 추가
-4. 사용·장착 효과가 필요하면 InventoryUIController 슬롯 클릭 / 별도 시스템에서 `PlayerInventory.RemoveItem` 호출 후 효과 적용 코드 작성
+4. Consumable 즉시 효과는 `useEffects` + `ItemEffectApplier` 경로를 사용. 현재 `HealHp` 지원
+5. Relic 평면 패시브는 `passiveEffects` + `PlayerItemStats` 경로를 사용. 현재 MaxHp/Attack/Defense/MoveSpeed 지원
+6. Equipment 장착, Currency 소비처, 행동형 Relic 특수 효과는 별도 시스템으로 확장
 
 ### 새 Elite 패턴 추가
 
@@ -2419,12 +2487,12 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Elite Key 결정론적 드랍** | `RoomSpawner.PrepareEliteKeyPlan` + `DeterministicSeedUtility.EliteKeyDomain` — `CountDeterministicSpawns` dry-run 으로 모든 일반 방의 스폰 슬롯 수 집계 후, elite room StableRoomKey 기반 RNG 로 1개 슬롯 선택, `MarkAsEliteKeyHolder` 가 그 적의 EnemyInventory 에 `elite_key` 추가 |
 | ~~**PlayerEliteKeyInventory**~~ | (제거됨) Elite Key 가 일반 ItemData 로 통합되어 `PlayerInventory` 가 모든 보유 항목을 관리. 구 bool/EliteKeyChanged 이벤트 경로는 삭제 |
 | **PlayerController Elite Door 접촉 처리** | `TryOpenEliteDoorOnContact` — 매 프레임 dungeonRenderer.TryOpenEliteDoorWithKey 호출, 키 보유 시 접촉만으로 자동 개방 |
-| **아이템 데이터베이스** | `ItemDatabase` ScriptableObject + `ItemData`(itemCode/displayName/icon/itemType/stackable/maxStack) + `ItemType` enum — `TryGetItem` Dictionary 캐시, OnValidate 중복/공백 itemCode 자동 경고 |
+| **아이템 데이터베이스** | `ItemDatabase` ScriptableObject + `ItemData`(itemCode/displayName/icon/itemType/stackable/maxStack/useEffects/passiveEffects/정리 플래그) + `ItemType` enum — `TryGetItem` Dictionary 캐시, OnValidate 중복/공백 itemCode 자동 경고, `GetItemCodes` 로 콘솔 자동완성 지원 |
 | **EnemyInventory + DropItemSpawner** | `EnemyInventory.AddDropItem(itemCode)` → Die 시 `DropItemSpawner.Instance.SpawnDrops` 가 ItemDatabase 로 ItemData 해석 후 `DroppedItem` Instantiate, dropSpacing 으로 다중 드랍 정렬 |
 | **DroppedItem 픽업** | `OnTriggerEnter2D` 에서 `player.TryGetComponent<PlayerInventory>` 후 `inventory.AddItem(_itemData, _amount)` 호출 — 성공 시 `DropItemSpawner.Instance?.Unregister(self)` + `Destroy(self)`. ItemType 분기 없이 모든 아이템(Currency/Consumable/Key 등)을 인벤토리로 통합 |
 | **마을·던전 전환 시 드랍 정리** | `LocationTransitionManager.CleanupDungeonRuntime` 에 `DropItemSpawner.ClearAllActiveDrops` 추가 + 층 이동시에도 `DungeonManager.FloorTransition` 시작점에서 호출 — 이전 층 드랍이 신생 던전에 잔존하지 않음 |
 | **PlayerInputKeySettings ScriptableObject** | 이동/액션/스킬 12개 키를 단일 에셋으로 일괄 설정, `PlayerInputReader` 가 keySettings 미설정 시 기본 키 폴백 + 1회 경고, OnValidate 가 `Key.None`/중복 키 자동 검출 |
-| **PlayerInputReader 인벤토리 입력 hook** | `InventoryPressedThisFrame` flag 노출 (구독자 미구현 — 인벤토리 시스템 확장 자리) |
+| **PlayerInputReader 인벤토리 입력 hook** | `InventoryPressedThisFrame` flag 노출, `InventoryUIController.Update` 가 이를 읽어 I 키 토글 처리 |
 | **LocationRoot 기반 텔레포트** | 기존 `TeleportDestinationPoint`/`Registry` 제거, `LocationRoot`(SerializeField id + OnEnable/OnDisable 자동 등록) + `LocationRootRegistry` static Dict 로 대체. `TeleportLocationData` 가 `locationRootId` + `localSpawnPosition` 을 보유, `root.TransformPoint(localSpawnPosition)` 으로 월드 좌표 계산 |
 | **TeleportDestinationId 드롭다운** | `[TeleportDestinationId]` PropertyAttribute + Editor drawer 가 string 필드를 DB id 드롭다운으로 변환 — LocationTransitionManager / TeleportService 인스펙터에 적용 |
 | **TeleportDestinationData 메타데이터 확장** | `displayName` / `description` 필드 추가, `minimapLocationId` 가 빈 문자열일 때 `id` 폴백 |
@@ -2437,17 +2505,21 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Generator 디버그 connect-state 로그** | `DebugConnectState` + `DebugReachableRoomsFromR0` — 단계마다 connected/remaining/reachable(BFS) 비교로 logical-only / grid-only 불일치 추적 |
 | **DungeonSettings.ExtraCandidateCount** | 인스펙터 `DungeonManager.extraCandidateCount` (기본 12) — pair 당 EXTRA 후보 생성·점수화 개수 노출 |
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
-| **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
+| **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·5개 고정 탭 필터·전체 탭 그룹 정렬·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind + 클릭 위임) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
 | **플레이어 인벤토리** | `PlayerInventory` (RequireComponent on PlayerController) + `InventoryItemStack` — AddItem/RemoveItem/HasItem/GetItemCount + stackable/maxStack 정책 자동 적용, `RemoveItemsOnFloorTransition`/`RemoveItemsOnDungeonExit` 가 ItemData 플래그 기반으로 층/던전 이탈 시 자동 정리. Elite Key 가 일반 ItemData 한 항목으로 통합되어 과거 `PlayerEliteKeyInventory` 는 제거됨 |
 | **ItemData 정리 플래그** | `removeOnFloorTransition` / `removeOnDungeonExit` — 층 이동·던전 이탈 파이프라인에서 자동 청소 (elite_key 가 이 플래그 사용) |
-| **DroppedItem 일반화** | `OnTriggerEnter2D` 가 ItemType 분기 없이 `PlayerInventory.AddItem` 호출로 일원화 — Currency/Consumable 등 모든 아이템이 인벤토리에 픽업 가능 (사용·장착 로직은 별도 미구현) |
+| **DroppedItem 일반화** | `OnTriggerEnter2D` 가 ItemType 분기 없이 `PlayerInventory.AddItem` 호출로 일원화 — Currency/Consumable 등 모든 아이템이 인벤토리에 픽업 가능 |
+| **ItemEffect 1차** | `ItemEffectType` + `ItemEffect` — `useEffects`(Consumable 1회) / `passiveEffects`(Relic 소지 중 상시) 데이터 추가. 현재 HealHp, MaxHpBonus, AttackBonus, DefenseBonus, MoveSpeedBonus 지원 |
+| **Consumable 사용** | `InventorySlotUI.OnPointerClick` → `InventoryUIController.HandleSlotClicked` → `ItemEffectApplier.ApplyUseEffects` → 성공 시 `PlayerInventory.RemoveItem(item, 1)` — UI는 OnInventoryChanged 로 자동 갱신 |
+| **Relic 평면 패시브** | `PlayerItemStats.Recalculate` 가 ItemType.Relic 의 passiveEffects 를 스택 수 비례 합산, `PlayerCombatController` 가 OnInventoryChanged 에서 재계산 후 TotalAttack/TotalDefense/MaxHp/MoveSpeedMultiplier 에 반영 |
 | **Elite Pattern Set** | `EnemyData.isElite + elitePatternSet` + `ElitePatternRunner` — Projectile/Dash/Jump ScriptableObject 패턴이 cooldown/minRange/maxRange/weight 조건을 만족하면 순서대로 실행. Contact Special 과 독립된 사이클 |
 | **Elite Pattern 런타임** | `ElitePatternData`(abstract SO) + `ElitePatternRuntime`(abstract) + `ElitePatternContext`(Brain/Enemy/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 일괄 노출) — 새 패턴 추가는 두 클래스(Data+Runtime) 작성 + CreateAssetMenu 만으로 가능 |
 | **게임 일시정지 컨트롤러** | `GamePauseController` + `GamePauseSource`(DeveloperConsole/Inventory/PauseMenu/Cutscene) — 출처별 카운터 + Time.timeScale 토글, OnDisable 시 이전 timeScale 복원 |
 | ~~**DungeonPortal 진입 트리거**~~ | (제거됨) `DungeonPortal.cs` 는 미사용 코드로 정리되어 삭제. 마을→던전 진입은 `TeleportService` + `TeleportDestinationDatabase` 의 trigger 콜라이더로 일원화됨 |
-| **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경 담당) + 7개 내장 명령(/help /clear /echo /tp /dooropen /kill /floor) |
+| **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경 담당) + 9개 내장 명령(/help /clear /echo /tp /dooropen /kill /floor /form /item) |
 | **개발자 콘솔 실행 분리** | `DeveloperConsoleCommandExecutor` (MonoBehaviour) — 구 `DeveloperConsoleCommandContext` (readonly struct) 대체. 파싱·등록은 Service, 게임 상태 변경은 Executor 로 책임 분리 |
 | **개발자 콘솔 /kill 명령** | `DeveloperConsoleCommandExecutor.ExecuteKill` → `RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug()` — 일반 방이면 현재 방 생존 적, Elite Arena 인카운터 중이면 `EliteArenaEncounterController.ForceKillActiveEliteForDebug()` 로 분기 |
+| **개발자 콘솔 /item 명령** | `/item give <code> [count]` — `DeveloperConsoleCommandExecutor.ExecuteItemGive` 가 PlayerInventory 를 찾아 ItemDatabase 조회 후 AddItem. 자동완성은 `give` → itemCode 목록 |
 | **적 등장 층 범위 필터** | `EnemyData.minFloor`/`maxFloor` + `IsAvailableOnFloor(floor)` — `RoomSpawner.BuildCandidates(region, budget, currentFloor)` 가 SpawnRegion·예산 필터 직후 층 범위로 후보 차단. `EnemyDataEditor` 가 Min/Max Floor 필드 + 잘못된 범위(`HasInvalidFloorRange`) 인스펙터 경고 표시, `EnemyData.OnValidate` 가 동일 검사 후 콘솔 경고 |
 | **World Environment Query** | `WalkabilityArea`(walk/wall Tilemap 쌍 + OnEnable/OnDisable 자동 등록) + `WalkabilityQuery`(정적 라우팅 — Area 우선, DungeonData fallback) + `WorldEnvironmentQuery`(전투 코드용 파사드) — Dungeon·Elite Arena 등 공간 종류와 무관하게 단일 API로 walkability/LOS/footprint 판정 |
 | **Elite Arena 시스템** | `EliteArenaEncounterController`(static Active, 입장/복귀/취소/Elite spawn) + `EliteArenaPortal`(Elite Room 내 진입 포탈) + `EliteArenaReturnPortal`(Elite 사망 후 복귀 포탈) — `RoomSpawner.PrepareEliteRoomPortal` → `EliteArenaEncounterController.PrepareEntrancePortal` 로 Elite Room 중앙에 포탈 배치, 접촉 시 `LocationTransitionManager.TryTeleportPlayer` 로 Arena 진입, 복귀 시 `RestoreDungeonMinimapSource` 로 미니맵 복원 |
@@ -2482,7 +2554,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점·게이팅 | 중간 | `TrySwitchForm` 메커니즘 + 콘솔 `/form set` 구현 완료. 인게임 진입점(소울/아이템 획득 시 전환)·가용 폼 게이팅(소유 폼만 전환)은 미구현 — 소울 시스템과 함께 설계 |
-| 아이템 사용·장착 효과 | 중간 | 모든 아이템이 `PlayerInventory` 에 들어가지만 Currency/Consumable/Equipment/Relic/Material 의 사용·소비·장착 로직이 미구현 (Key 만 Elite Door 자동 소모 처리) |
+| 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
