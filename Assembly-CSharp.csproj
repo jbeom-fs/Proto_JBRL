@@ -123,6 +123,7 @@
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternData.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
+    <Compile Include="Assets\Scripts\Items\ItemEffect.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityArea.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
@@ -169,6 +170,7 @@
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />
     <Compile Include="Assets\Scripts\UI\ParryStackBarUI.cs" />
+    <Compile Include="Assets\Scripts\Inventory\PlayerItemStats.cs" />
     <Compile Include="Assets\Scripts\UI\MinimapController.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\LocationTransitionManager.cs" />
@@ -180,6 +182,7 @@
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaEncounterController.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
+    <Compile Include="Assets\Scripts\Items\ItemEffectApplier.cs" />
     <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>
   <ItemGroup>

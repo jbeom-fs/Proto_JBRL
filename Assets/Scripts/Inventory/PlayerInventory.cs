@@ -21,6 +21,14 @@ public sealed class PlayerInventory : MonoBehaviour
         return itemDatabase.TryGetItem(itemCode, out item);
     }
 
+    public void GetDatabaseItemCodes(List<string> output)
+    {
+        if (itemDatabase == null)
+            return;
+
+        itemDatabase.GetItemCodes(output);
+    }
+
     public bool AddItem(ItemData item, int amount)
     {
         if (item == null || amount <= 0)

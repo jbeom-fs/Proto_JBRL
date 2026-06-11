@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -15,6 +16,8 @@ public sealed class ItemData
     [SerializeField] private int maxStack = 1;
     [SerializeField] private bool removeOnFloorTransition;
     [SerializeField] private bool removeOnDungeonExit;
+    [SerializeField] private ItemEffect[] useEffects = Array.Empty<ItemEffect>();
+    [SerializeField] private ItemEffect[] passiveEffects = Array.Empty<ItemEffect>();
 
     public string ItemCode => itemCode;
     public string DisplayName => displayName;
@@ -25,4 +28,6 @@ public sealed class ItemData
     public int MaxStack => maxStack;
     public bool RemoveOnFloorTransition => removeOnFloorTransition;
     public bool RemoveOnDungeonExit => removeOnDungeonExit;
+    public IReadOnlyList<ItemEffect> UseEffects => useEffects ?? Array.Empty<ItemEffect>();
+    public IReadOnlyList<ItemEffect> PassiveEffects => passiveEffects ?? Array.Empty<ItemEffect>();
 }

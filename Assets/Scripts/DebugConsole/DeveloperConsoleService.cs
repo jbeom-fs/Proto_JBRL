@@ -11,6 +11,7 @@ public sealed class DeveloperConsoleService
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
+    private static readonly string[] s_ItemArgs = { "give" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
@@ -87,13 +88,16 @@ public sealed class DeveloperConsoleService
         _commands["kill"] = ExecuteKill;
         _commands["floor"] = ExecuteFloor;
         _commands["form"] = ExecuteForm;
+        _commands["item"] = ExecuteItem;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
+        _argumentProviders["item"] = ProvideItemSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
 
         _subArgumentProviders["form"] = ProvideFormSubArgumentSuggestions;
+        _subArgumentProviders["item"] = ProvideItemSubArgumentSuggestions;
     }
 
     private static void ProvideFloorSuggestions(string currentArg, List<string> output, int maxCount)
@@ -115,6 +119,9 @@ public sealed class DeveloperConsoleService
     private static void ProvideFormSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_FormArgs, currentArg, output, maxCount);
 
+    private static void ProvideItemSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_ItemArgs, currentArg, output, maxCount);
+
     private void ProvideFormSubArgumentSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
     {
         if (!string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase))
@@ -122,6 +129,16 @@ public sealed class DeveloperConsoleService
 
         _destinationIdBuffer.Clear();
         _executor?.GetFormIds(_destinationIdBuffer);
+        FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
+    }
+
+    private void ProvideItemSubArgumentSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
+    {
+        if (!string.Equals(subCommand, "give", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _destinationIdBuffer.Clear();
+        _executor?.GetItemCodes(_destinationIdBuffer);
         FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
     }
 
@@ -154,6 +171,7 @@ public sealed class DeveloperConsoleService
             "\nUsage: /DoorOpen [normal|elite]" +
             "\nUsage: /kill" +
             "\nUsage: /form set [id]" +
+            "\nUsage: /item give <code> [count]" +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -258,6 +276,23 @@ public sealed class DeveloperConsoleService
         return _executor.ExecuteSetForm(valueText);
     }
 
+    private DeveloperConsoleCommandResult ExecuteItem(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (!TryReadItemArguments(arguments, out string subCommand, out string itemCode, out string countText))
+            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [count]");
+
+        if (!string.Equals(subCommand, "give", StringComparison.OrdinalIgnoreCase))
+            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [count]");
+
+        if (!TryParsePositiveOptionalCount(countText, out int count))
+            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [positiveCount]");
+
+        return _executor.ExecuteItemGive(itemCode, count);
+    }
+
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
     {
         subCommand = string.Empty;
@@ -275,6 +310,31 @@ public sealed class DeveloperConsoleService
             return false;
 
         return !string.IsNullOrWhiteSpace(subCommand);
+    }
+
+    private static bool TryReadItemArguments(
+        string arguments,
+        out string subCommand,
+        out string itemCode,
+        out string countText)
+    {
+        subCommand = string.Empty;
+        itemCode = string.Empty;
+        countText = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return false;
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2 || parts.Length > 3)
+            return false;
+
+        subCommand = parts[0];
+        itemCode = parts[1];
+        if (parts.Length == 3)
+            countText = parts[2];
+
+        return !string.IsNullOrWhiteSpace(subCommand) && !string.IsNullOrWhiteSpace(itemCode);
     }
 
     private static bool TryParsePositiveOptionalCount(string valueText, out int count)

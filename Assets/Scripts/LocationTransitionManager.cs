@@ -36,6 +36,8 @@ public class LocationTransitionManager : MonoBehaviour
     public bool ShouldBlockCombat => disableCombatInTown && IsInTown;
     public bool StartsInTown => !TryGetLocation(startDestinationId, out TeleportLocationData startLocation) ||
                                 startLocation.LocationType == GameLocationType.Town;
+    internal string DebugDungeonEntranceDestinationId => debugDungeonEntranceDestinationId;
+    internal string DebugReturnDestinationId => debugReturnDestinationId;
 
     private void Awake()
     {

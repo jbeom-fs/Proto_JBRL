@@ -12,6 +12,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private LocationTransitionManager transitionManager;
     [SerializeField] private EliteArenaEncounterController eliteArenaEncounterController;
     [SerializeField] private PlayerController player;
+    [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerFormController playerFormController;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
@@ -156,6 +157,30 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         }
     }
 
+    public DeveloperConsoleCommandResult ExecuteItemGive(string itemCode, int count)
+    {
+        PlayerInventory inventory = ResolvePlayerInventory();
+        if (inventory == null)
+        {
+            WarnMissing(nameof(PlayerInventory));
+            return DeveloperConsoleCommandResult.Error("PlayerInventory is not active.");
+        }
+
+        if (string.IsNullOrWhiteSpace(itemCode))
+            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [count]");
+
+        if (count <= 0)
+            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [positiveCount]");
+
+        if (!inventory.TryGetDatabaseItem(itemCode, out ItemData item))
+            return DeveloperConsoleCommandResult.Error("Unknown itemCode: " + itemCode);
+
+        if (!inventory.AddItem(item, count))
+            return DeveloperConsoleCommandResult.Error("Failed to add item: " + itemCode);
+
+        return DeveloperConsoleCommandResult.Success("Gave " + count + " x " + item.ItemCode + ".");
+    }
+
     public void GetFormIds(List<string> output)
     {
         if (output == null)
@@ -163,6 +188,14 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         foreach (string name in System.Enum.GetNames(typeof(PlayerFormId)))
             output.Add(name);
+    }
+
+    public void GetItemCodes(List<string> output)
+    {
+        if (output == null)
+            return;
+
+        ResolvePlayerInventory()?.GetDatabaseItemCodes(output);
     }
 
     private RoomSpawner ResolveRoomSpawner()
@@ -180,6 +213,22 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         WarnMissing(nameof(DungeonManager));
         return false;
+    }
+
+    private PlayerInventory ResolvePlayerInventory()
+    {
+        if (playerInventory != null)
+            return playerInventory;
+
+        if (player != null && player.Inventory != null)
+            return player.Inventory;
+
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer != null && activePlayer.Inventory != null)
+            return activePlayer.Inventory;
+
+        playerInventory = UnityEngine.Object.FindAnyObjectByType<PlayerInventory>();
+        return playerInventory;
     }
 
     private static DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager manager, int targetFloor)

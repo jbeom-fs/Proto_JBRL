@@ -14,6 +14,16 @@ public sealed class ItemDatabase : ScriptableObject
         return _itemsByCode.TryGetValue(itemCode, out item);
     }
 
+    public void GetItemCodes(List<string> output)
+    {
+        if (output == null)
+            return;
+
+        EnsureCache();
+        foreach (string itemCode in _itemsByCode.Keys)
+            output.Add(itemCode);
+    }
+
     private void OnEnable()
     {
         RebuildCache();

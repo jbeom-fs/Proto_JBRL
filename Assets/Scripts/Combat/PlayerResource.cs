@@ -19,4 +19,10 @@ public class PlayerResource
     {
         _currentHp = System.Math.Min(maxHp, _currentHp + amount);
     }
+
+    public void AdjustHp(int delta, int maxHp)
+    {
+        int clampedMax = System.Math.Max(1, maxHp);
+        _currentHp = System.Math.Min(clampedMax, System.Math.Max(1, _currentHp + delta));
+    }
 }

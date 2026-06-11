@@ -33,6 +33,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [Header("Dependencies")]
     public CombatEventChannel combatChannel;
     [SerializeField] private DungeonEventChannel dungeonChannel;
+    [SerializeField] private PlayerInventory inventory;
     public PlayerController  playerMovement;
 
     [Header("기본 스탯")]
@@ -68,6 +69,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
     private readonly PlayerResource _resource = new();
+    private readonly PlayerItemStats _itemStats = new();
     private readonly SkillCooldownController _cooldownController = new();
     private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
     private readonly DaggerMarkerRegistry _daggerMarkers = DaggerMarkerRegistry.Instance;
@@ -111,13 +113,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private float _daggerBasicAttackMarkerDuration;
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
+    private bool _isInventorySubscribed;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
     public bool IsAlive     => _resource.IsAlive && !IsDead;
     public bool IsDead { get; private set; }
     public int  CurrentHp   => _resource.CurrentHp;
-    public int  MaxHp       => maxHp;
+    public int  MaxHp       => Mathf.Max(1, maxHp + _itemStats.MaxHpBonus);
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
@@ -138,7 +141,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public float StunTotalDurationForUi => _status != null ? _status.StunTotalDurationForUi : 0f;
     public float StunRemainingRatio => _status != null ? _status.StunRemainingRatio : 0f;
     public bool BlocksPlayerMovement => _isSkillCasting || _skillRecoveryTimer > 0f || (blockMovementDuringParry && _isParrySequenceActive);
-    public float MoveSpeedMultiplier => _status != null ? _status.MoveSpeedMultiplier : 1f;
+    public float MoveSpeedMultiplier =>
+        (_status != null ? _status.MoveSpeedMultiplier : 1f) *
+        (1f + _itemStats.MoveSpeedBonusPercent / 100f);
 
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
@@ -154,10 +159,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public Vector2Int  CurrentAimRawDirection => _lastAimDirection;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
-    public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0);
+    public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0) + _itemStats.AttackBonus;
 
     /// <summary>무기 보정치가 합산된 최종 방어력.</summary>
-    public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0);
+    public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0) + _itemStats.DefenseBonus;
 
     public event Action<PlayerCombatController> OnDied;
     public event Action<PlayerStatusEffectType> OnStatusEffectApplied;
@@ -188,6 +193,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
+        ResolveInventory();
         _hitFlash = ResolveHitFlashFeedback();
         if (invincibilityFlashFeedback == null)
             invincibilityFlashFeedback = ResolveInvincibilityFlashFeedback();
@@ -209,8 +215,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 #endif
     }
 
+    private void OnEnable()
+    {
+        SubscribeInventory();
+        RecalculateItemStats();
+    }
+
     private void OnDestroy()
     {
+        UnsubscribeInventory();
         UnsubscribeDungeonChannel();
         if (ReferenceEquals(Active, this))
             Active = null;
@@ -218,6 +231,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void OnDisable()
     {
+        UnsubscribeInventory();
         ClearSkillTimingState();
         ClearParryState();
         ClearReloadState();
@@ -233,6 +247,62 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void HandleStatusEffectEnded(PlayerStatusEffectType type)
     {
         OnStatusEffectEnded?.Invoke(type);
+    }
+
+    private void ResolveInventory()
+    {
+        if (inventory == null)
+            inventory = GetComponent<PlayerInventory>();
+    }
+
+    private void SubscribeInventory()
+    {
+        ResolveInventory();
+        if (inventory == null || _isInventorySubscribed)
+            return;
+
+        inventory.OnInventoryChanged += HandleInventoryChanged;
+        _isInventorySubscribed = true;
+    }
+
+    private void UnsubscribeInventory()
+    {
+        if (inventory != null && _isInventorySubscribed)
+            inventory.OnInventoryChanged -= HandleInventoryChanged;
+
+        _isInventorySubscribed = false;
+    }
+
+    private void HandleInventoryChanged()
+    {
+        RecalculateItemStats();
+    }
+
+    private void RecalculateItemStats()
+    {
+        int previousMaxHpBonus = _itemStats.MaxHpBonus;
+        int previousAttackBonus = _itemStats.AttackBonus;
+        int previousDefenseBonus = _itemStats.DefenseBonus;
+        int previousMoveSpeedBonusPercent = _itemStats.MoveSpeedBonusPercent;
+
+        _itemStats.Recalculate(inventory != null ? inventory.Items : null);
+
+        bool changed =
+            previousMaxHpBonus != _itemStats.MaxHpBonus ||
+            previousAttackBonus != _itemStats.AttackBonus ||
+            previousDefenseBonus != _itemStats.DefenseBonus ||
+            previousMoveSpeedBonusPercent != _itemStats.MoveSpeedBonusPercent;
+        if (!changed)
+            return;
+
+        int maxHpDelta = _itemStats.MaxHpBonus - previousMaxHpBonus;
+        if (maxHpDelta != 0 && IsAlive)
+        {
+            _resource.AdjustHp(maxHpDelta, MaxHp);
+            combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
+        }
+
+        combatChannel?.RaiseLoadoutChanged();
     }
 
     private void RegisterAsActive()
@@ -949,9 +1019,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _damageInvincibleTimer = damageInvincibleDuration;
         _hitFlash?.Play();
-        combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
+        combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
 #if UNITY_EDITOR
-        Debug.Log($"[Combat] Player -{actual} HP -> {CurrentHp}/{maxHp}");
+        Debug.Log($"[Combat] Player -{actual} HP -> {CurrentHp}/{MaxHp}");
 #endif
         if (CurrentHp == 0)
             Die();
@@ -1038,8 +1108,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         if (IsDead) return;
 
-        _resource.RestoreHp(amount, maxHp);
-        combatChannel?.RaisePlayerHpChanged(CurrentHp, maxHp);
+        _resource.RestoreHp(amount, MaxHp);
+        combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
     }
 
     public bool Has(SkillResourceType type, int requiredAmount)
