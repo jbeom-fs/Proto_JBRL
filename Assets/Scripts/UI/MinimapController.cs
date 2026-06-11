@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityEngine.UI;
@@ -32,6 +33,7 @@ public class MinimapController : MonoBehaviour
     private Texture2D  _texture;
     private Color32[]  _pixels;
     private DungeonData _data;
+    private readonly List<Vector2Int> _stairCells = new List<Vector2Int>(1);
 
     // ── Tilemap mode state ────────────────────────────────────────────
     private Texture2D          _tilemapTexture;
@@ -200,14 +202,26 @@ public class MinimapController : MonoBehaviour
 
     private void SubscribeEvents()
     {
-        if (eventChannel != null) eventChannel.OnFloorChanged  += OnFloorChanged;
-        if (fogOfWar     != null) fogOfWar.VisibilityChanged   += OnFogVisibilityChanged;
+        if (eventChannel != null)
+        {
+            eventChannel.OnFloorChanged += OnFloorChanged;
+            eventChannel.OnRoomDoorsClosed += OnRoomDoorsChanged;
+            eventChannel.OnRoomDoorsOpened += OnRoomDoorsChanged;
+        }
+
+        if (fogOfWar != null) fogOfWar.VisibilityChanged += OnFogVisibilityChanged;
     }
 
     private void UnsubscribeEvents()
     {
-        if (eventChannel != null) eventChannel.OnFloorChanged  -= OnFloorChanged;
-        if (fogOfWar     != null) fogOfWar.VisibilityChanged   -= OnFogVisibilityChanged;
+        if (eventChannel != null)
+        {
+            eventChannel.OnFloorChanged -= OnFloorChanged;
+            eventChannel.OnRoomDoorsClosed -= OnRoomDoorsChanged;
+            eventChannel.OnRoomDoorsOpened -= OnRoomDoorsChanged;
+        }
+
+        if (fogOfWar != null) fogOfWar.VisibilityChanged -= OnFogVisibilityChanged;
     }
 
     private void OnFloorChanged(int previousFloor, int newFloor)
@@ -221,6 +235,27 @@ public class MinimapController : MonoBehaviour
     }
 
     private void OnFogVisibilityChanged()
+    {
+        if (_mode != MinimapMode.Dungeon)
+            return;
+
+        DungeonData latestData = dungeonManager != null ? dungeonManager.Data : null;
+        if (_texture == null ||
+            _pixels == null ||
+            latestData == null ||
+            _data != latestData ||
+            fogOfWar == null ||
+            fogOfWar.LastRefreshWasFull)
+        {
+            InitializeFromCurrentDungeon();
+            return;
+        }
+
+        ApplyFogDelta();
+        ForceMarkerRefresh();
+    }
+
+    private void OnRoomDoorsChanged(RoomInfo room)
     {
         if (_mode != MinimapMode.Dungeon)
             return;
@@ -298,6 +333,7 @@ public class MinimapController : MonoBehaviour
             wrapMode   = TextureWrapMode.Clamp,
         };
         _pixels = new Color32[width * height];
+        CacheDungeonStairs(data);
         minimapImage.texture = _texture;
     }
 
@@ -331,6 +367,50 @@ public class MinimapController : MonoBehaviour
         _texture.Apply(false, false);
     }
 
+    private void ApplyFogDelta()
+    {
+        if (_data == null || _texture == null || _pixels == null || fogOfWar == null)
+            return;
+
+        bool changed = false;
+        IReadOnlyList<Vector2Int> hiddenCells = fogOfWar.LastHiddenCells;
+        for (int i = 0; i < hiddenCells.Count; i++)
+        {
+            Vector2Int cell = hiddenCells[i];
+            if (!_data.InBounds(cell.x, cell.y))
+                continue;
+
+            int tileType = _data.GetTileTypeUnchecked(cell.x, cell.y);
+            if (!TryGetDungeonCellColor(tileType, false, out Color32 color))
+                continue;
+
+            FillDungeonCellPixels(cell.x, cell.y, color);
+            changed = true;
+        }
+
+        IReadOnlyList<Vector2Int> revealedCells = fogOfWar.LastRevealedCells;
+        for (int i = 0; i < revealedCells.Count; i++)
+        {
+            Vector2Int cell = revealedCells[i];
+            if (!_data.InBounds(cell.x, cell.y))
+                continue;
+
+            int tileType = _data.GetTileTypeUnchecked(cell.x, cell.y);
+            if (!TryGetDungeonCellColor(tileType, true, out Color32 color))
+                continue;
+
+            FillDungeonCellPixels(cell.x, cell.y, color);
+            changed = true;
+        }
+
+        if (!changed)
+            return;
+
+        DrawDungeonStairs();
+        _texture.SetPixels32(_pixels);
+        _texture.Apply(false, false);
+    }
+
     private bool TryGetDungeonCellColor(int tileType, bool isVisible, out Color32 color)
     {
         switch (tileType)
@@ -357,20 +437,26 @@ public class MinimapController : MonoBehaviour
             return;
 
         Color32 color = stairColor;
-        for (int row = 0; row < _data.MapHeight; row++)
+        for (int i = 0; i < _stairCells.Count; i++)
         {
-            for (int col = 0; col < _data.MapWidth; col++)
-            {
-                if (_data.GetTileTypeUnchecked(col, row) != DungeonGenerator.STAIR_UP)
-                    continue;
+            Vector2Int cell = _stairCells[i];
+            if (!fogOfWar.IsExploredCell(cell))
+                continue;
 
-                var cell = new Vector2Int(col, row);
-                if (!fogOfWar.IsExploredCell(cell))
-                    continue;
-
-                FillDungeonStairMarkerPixels(col, row, color);
-            }
+            FillDungeonStairMarkerPixels(cell.x, cell.y, color);
         }
+    }
+
+    private void CacheDungeonStairs(DungeonData data)
+    {
+        _stairCells.Clear();
+        if (data == null)
+            return;
+
+        for (int row = 0; row < data.MapHeight; row++)
+            for (int col = 0; col < data.MapWidth; col++)
+                if (data.GetTileTypeUnchecked(col, row) == DungeonGenerator.STAIR_UP)
+                    _stairCells.Add(new Vector2Int(col, row));
     }
 
     private void FillDungeonStairMarkerPixels(int gridX, int gridY, Color32 color)

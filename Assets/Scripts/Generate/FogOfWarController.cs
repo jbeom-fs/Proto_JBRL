@@ -41,8 +41,12 @@ public class FogOfWarController : MonoBehaviour
 
     private HashSet<Vector2Int> _previousVisibleCells = new HashSet<Vector2Int>();
     private HashSet<Vector2Int> _currentVisibleCells = new HashSet<Vector2Int>();
+    private readonly List<Vector2Int> _lastRevealedCells = new List<Vector2Int>(128);
+    private readonly List<Vector2Int> _lastHiddenCells = new List<Vector2Int>(128);
     private readonly List<TileChangeData> _tileChangeBuffer = new List<TileChangeData>(256);
     private readonly Dictionary<int, TileChangeData[]> _tileChangeArraysBySize = new Dictionary<int, TileChangeData[]>();
+    private bool _lastRefreshWasFull;
+    private bool _nextRefreshIsFull;
     private static readonly Color ClearCellColor = Color.white;
 
     public Tilemap FogTilemap => fogTilemap;
@@ -64,6 +68,10 @@ public class FogOfWarController : MonoBehaviour
     public static FogOfWarController Active { get; private set; }
     public bool HasInitialized => _data != null && _explored != null;
     public event Action VisibilityChanged;
+    public IReadOnlyList<Vector2Int> LastRevealedCells => _lastRevealedCells;
+    public IReadOnlyList<Vector2Int> LastHiddenCells => _lastHiddenCells;
+    /// <summary>직전 VisibilityChanged가 전체 재초기화(층 변경 등)였는지 여부. true면 구독자는 델타를 무시하고 전체 리빌드해야 한다.</summary>
+    public bool LastRefreshWasFull => _lastRefreshWasFull;
 
     public bool IsExploredCell(Vector2Int gridPos)
     {
@@ -266,9 +274,13 @@ public class FogOfWarController : MonoBehaviour
         _explored = new bool[_mapWidth, _mapHeight];
         _previousVisibleCells.Clear();
         _currentVisibleCells.Clear();
+        _lastRevealedCells.Clear();
+        _lastHiddenCells.Clear();
         _tileChangeBuffer.Clear();
         _hasLastPlayerGrid = false;
         _needsFullInitialize = false;
+        _lastRefreshWasFull = true;
+        _nextRefreshIsFull = true;
 
         FillFogWithUnexplored();
         RefreshVisibility(dungeonManager.WorldToGrid(player.position));
@@ -294,9 +306,14 @@ public class FogOfWarController : MonoBehaviour
 
     private void RefreshVisibility(Vector2Int playerGrid)
     {
+        _lastRevealedCells.Clear();
+        _lastHiddenCells.Clear();
+        _lastRefreshWasFull = _nextRefreshIsFull;
+
         if (_data == null || !_data.InBounds(playerGrid.x, playerGrid.y))
             return;
 
+        _nextRefreshIsFull = false;
         _lastPlayerGrid = playerGrid;
         _hasLastPlayerGrid = true;
 
@@ -474,6 +491,7 @@ public class FogOfWarController : MonoBehaviour
                 previous,
                 GetFogTileForHiddenCell(previous),
                 GetFogColorForHiddenCell(previous));
+            _lastHiddenCells.Add(previous);
         }
 
         foreach (Vector2Int current in _currentVisibleCells)
@@ -482,6 +500,7 @@ public class FogOfWarController : MonoBehaviour
                 continue;
 
             AddFogChange(current, null, ClearCellColor);
+            _lastRevealedCells.Add(current);
         }
 
         FlushFogChanges();
