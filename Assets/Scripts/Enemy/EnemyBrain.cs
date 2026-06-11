@@ -40,6 +40,8 @@ public abstract class EnemyBrain : MonoBehaviour
 {
     protected const string ANIM_MOVING = "Walk";
     protected const string ANIM_ATTACK = "Attack";
+    private static readonly int AnimMovingHash = Animator.StringToHash(ANIM_MOVING);
+    private static readonly int AnimAttackHash = Animator.StringToHash(ANIM_ATTACK);
 
     public DungeonManager dungeonManager => DungeonManager.Instance;
     [Header("Dependencies")]
@@ -80,6 +82,8 @@ public abstract class EnemyBrain : MonoBehaviour
     private bool _animParamsScanned;
     private bool _hasMovingParam;
     private bool _hasAttackParam;
+    private bool _lastMovingAnimValue;
+    private bool _hasSetMovingAnim;
     private bool _warnedMissingElitePatternRunner;
 
     public EnemyController Enemy => _enemy;
@@ -136,6 +140,8 @@ public abstract class EnemyBrain : MonoBehaviour
         Action?.ResetRuntimeState();
         _elitePatternRunner?.ResetRuntimeState();
         _animationController?.ResetAnimationState();
+        _hasSetMovingAnim = false;
+        _lastMovingAnimValue = false;
 
         if (_idleState != null)
         {
@@ -455,8 +461,13 @@ public abstract class EnemyBrain : MonoBehaviour
         if (animator == null) return;
 
         EnsureAnimScanned();
-        if (param == ANIM_MOVING && !_hasMovingParam) return;
-        animator.SetBool(param, value);
+        if (param != ANIM_MOVING) return;
+        if (!_hasMovingParam) return;
+        if (_hasSetMovingAnim && _lastMovingAnimValue == value) return;
+
+        animator.SetBool(AnimMovingHash, value);
+        _lastMovingAnimValue = value;
+        _hasSetMovingAnim = true;
     }
 
     private void SetAnimTrigger(string param)
@@ -464,8 +475,10 @@ public abstract class EnemyBrain : MonoBehaviour
         if (animator == null) return;
 
         EnsureAnimScanned();
-        if (param == ANIM_ATTACK && !_hasAttackParam) return;
-        animator.SetTrigger(param);
+        if (param != ANIM_ATTACK) return;
+        if (!_hasAttackParam) return;
+
+        animator.SetTrigger(AnimAttackHash);
     }
 
 }

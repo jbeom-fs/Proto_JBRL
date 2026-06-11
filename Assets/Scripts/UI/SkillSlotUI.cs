@@ -36,6 +36,8 @@ public class SkillSlotUI : MonoBehaviour
     private SkillData _skill;          // 현재 슬롯에 할당된 스킬 캐시
     private float     _cooldownMax;    // 스킬 사용 시점의 최대 쿨타임
     private bool      _trackingCooldown;
+    private int       _lastDisplayedTenths = int.MinValue;
+    private bool?     _cooldownUIVisible;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화 (SkillUIManager가 호출)
@@ -90,6 +92,12 @@ public class SkillSlotUI : MonoBehaviour
             _channel.OnSkillUsed -= HandleSkillUsed;
     }
 
+    private void OnEnable()
+    {
+        _cooldownUIVisible = null;
+        _lastDisplayedTenths = int.MinValue;
+    }
+
     // ══════════════════════════════════════════════════════════════
     //  아이콘 갱신 — 무기·스킬 교체 시 SkillUIManager가 호출
     // ══════════════════════════════════════════════════════════════
@@ -114,6 +122,7 @@ public class SkillSlotUI : MonoBehaviour
         if (_skill == null)
         {
             _trackingCooldown = false;
+            _lastDisplayedTenths = int.MinValue;
             SetCooldownVisible(false);
         }
     }
@@ -128,6 +137,7 @@ public class SkillSlotUI : MonoBehaviour
 
         _cooldownMax      = _skill.cooldown;
         _trackingCooldown = true;
+        _lastDisplayedTenths = int.MinValue;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -143,13 +153,19 @@ public class SkillSlotUI : MonoBehaviour
         if (remaining <= 0f)
         {
             _trackingCooldown = false;
+            _lastDisplayedTenths = int.MinValue;
             SetCooldownVisible(false);
             return;
         }
 
         // fillAmount: 1(사용 직후) → 0(완료)
         cooldownOverlay.fillAmount = _cooldownMax > 0f ? remaining / _cooldownMax : 0f;
-        cooldownText.text          = $"{remaining:F1}s";
+        int tenths = Mathf.RoundToInt(remaining * 10f);
+        if (tenths != _lastDisplayedTenths)
+        {
+            _lastDisplayedTenths = tenths;
+            cooldownText.text = $"{tenths * 0.1f:F1}s";
+        }
         SetCooldownVisible(true);
     }
 
@@ -157,7 +173,11 @@ public class SkillSlotUI : MonoBehaviour
 
     private void SetCooldownVisible(bool visible)
     {
+        if (_cooldownUIVisible.HasValue && _cooldownUIVisible.Value == visible)
+            return;
+
         cooldownOverlay.gameObject.SetActive(visible);
         cooldownText.gameObject.SetActive(visible);
+        _cooldownUIVisible = visible;
     }
 }

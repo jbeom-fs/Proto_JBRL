@@ -44,7 +44,7 @@ public class FogOfWarController : MonoBehaviour
     private readonly List<Vector2Int> _lastRevealedCells = new List<Vector2Int>(128);
     private readonly List<Vector2Int> _lastHiddenCells = new List<Vector2Int>(128);
     private readonly List<TileChangeData> _tileChangeBuffer = new List<TileChangeData>(256);
-    private readonly Dictionary<int, TileChangeData[]> _tileChangeArraysBySize = new Dictionary<int, TileChangeData[]>();
+    private readonly TileChangeData[][] _tileChangeBuffers = new TileChangeData[16][];
     private bool _lastRefreshWasFull;
     private bool _nextRefreshIsFull;
     private static readonly Color ClearCellColor = Color.white;
@@ -301,6 +301,7 @@ public class FogOfWarController : MonoBehaviour
                     unexploredFogTile,
                     unexploredFogColor);
 
+        PadTileChangeArray(changes, total);
         fogTilemap.SetTiles(changes, true);
     }
 
@@ -542,6 +543,7 @@ public class FogOfWarController : MonoBehaviour
         for (int i = 0; i < count; i++)
             changes[i] = _tileChangeBuffer[i];
 
+        PadTileChangeArray(changes, count);
         fogTilemap.SetTiles(changes, true);
     }
 
@@ -555,12 +557,37 @@ public class FogOfWarController : MonoBehaviour
 
     private TileChangeData[] GetTileChangeArray(int count)
     {
-        if (!_tileChangeArraysBySize.TryGetValue(count, out TileChangeData[] changes))
+        int bucketIndex = GetTileChangeBucketIndex(count, out int capacity);
+        if (bucketIndex >= _tileChangeBuffers.Length)
+            return new TileChangeData[capacity];
+
+        TileChangeData[] changes = _tileChangeBuffers[bucketIndex];
+        if (changes == null)
         {
-            changes = new TileChangeData[count];
-            _tileChangeArraysBySize.Add(count, changes);
+            changes = new TileChangeData[capacity];
+            _tileChangeBuffers[bucketIndex] = changes;
         }
 
         return changes;
+    }
+
+    private static int GetTileChangeBucketIndex(int count, out int capacity)
+    {
+        capacity = 1;
+        int bucketIndex = 0;
+        while (capacity < count)
+        {
+            capacity <<= 1;
+            bucketIndex++;
+        }
+
+        return bucketIndex;
+    }
+
+    private static void PadTileChangeArray(TileChangeData[] changes, int count)
+    {
+        TileChangeData padding = changes[count - 1];
+        for (int i = count; i < changes.Length; i++)
+            changes[i] = padding;
     }
 }

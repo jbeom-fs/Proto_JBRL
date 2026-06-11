@@ -8,6 +8,8 @@ public sealed class StatusEffectIconView : MonoBehaviour
     [SerializeField] private Image fillImage;
     [SerializeField] private TMP_Text timeText;
 
+    private int _lastDisplayedTenths = int.MinValue;
+
     public void SetIcon(Sprite sprite)
     {
         if (iconImage != null)
@@ -17,6 +19,7 @@ public sealed class StatusEffectIconView : MonoBehaviour
     public void SetVisible(bool visible)
     {
         gameObject.SetActive(visible);
+        _lastDisplayedTenths = int.MinValue;
 
         if (!visible)
             SetTime(0f, 0f);
@@ -28,9 +31,18 @@ public sealed class StatusEffectIconView : MonoBehaviour
             fillImage.fillAmount = Mathf.Clamp01(ratio);
 
         if (timeText != null)
-            timeText.text = remainingTime > 0f
-                ? remainingTime.ToString("0.0")
+        {
+            int tenths = remainingTime > 0f
+                ? Mathf.RoundToInt(remainingTime * 10f)
+                : int.MinValue;
+            if (tenths == _lastDisplayedTenths)
+                return;
+
+            _lastDisplayedTenths = tenths;
+            timeText.text = tenths != int.MinValue
+                ? (tenths * 0.1f).ToString("0.0")
                 : string.Empty;
+        }
     }
 
     public void MoveToLast()
