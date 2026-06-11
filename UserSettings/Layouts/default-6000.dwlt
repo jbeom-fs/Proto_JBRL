@@ -41,7 +41,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 512
-    width: 306
+    width: 423
     height: 421
   m_MinSize: {x: 102, y: 126}
   m_MaxSize: {x: 4002, y: 4026}
@@ -69,7 +69,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 1133
     y: 0
-    width: 306
+    width: 423
     height: 933
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
@@ -93,7 +93,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 527
-    width: 481
+    width: 364
     height: 406
   m_MinSize: {x: 231, y: 276}
   m_MaxSize: {x: 10001, y: 10026}
@@ -119,9 +119,9 @@ MonoBehaviour:
   - {fileID: 4}
   m_Position:
     serializedVersion: 2
-    x: 1439
+    x: 1556
     y: 0
-    width: 481
+    width: 364
     height: 933
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
@@ -145,7 +145,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 0
-    width: 306
+    width: 423
     height: 512
   m_MinSize: {x: 202, y: 226}
   m_MaxSize: {x: 4002, y: 4026}
@@ -198,7 +198,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 0
-    width: 481
+    width: 364
     height: 527
   m_MinSize: {x: 276, y: 76}
   m_MaxSize: {x: 4001, y: 4026}
@@ -822,7 +822,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 1
     y: 551
-    width: 480
+    width: 363
     height: 380
   m_SerializedDataModeController:
     m_DataMode: 0
@@ -838,7 +838,7 @@ MonoBehaviour:
     m_OverlaysVisible: 1
     m_DynamicPanelBehavior: 0
   m_SearchFilter:
-    m_NameFilter: 
+    m_NameFilter: pool
     m_ClassNames: []
     m_AssetLabels: []
     m_AssetBundleNames: []
@@ -848,17 +848,17 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Scripts
+    - Assets/Scripts/Combat
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
-    m_OriginalText: 
+    m_OriginalText: pool
     m_ImportLogFlags: 0
     m_FilterByTypeIntersection: 0
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Scripts
+  - Assets/Scripts/Combat
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
@@ -867,9 +867,9 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 360}
     m_SelectedIDs:
-    - m_Data: 57994
+    - m_Data: 57704
     m_LastClickedID:
-      m_Data: 57994
+      m_Data: 57704
     m_ExpandedIDs:
     - m_Data: 0
     - m_Data: 57508
@@ -974,9 +974,10 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: []
+    m_SelectedInstanceIDs:
+    - m_Data: 54344
     m_LastClickedEntityId:
-      m_Data: 0
+      m_Data: 54344
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 52286
@@ -1017,7 +1018,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 727.5}
+    m_ScrollPosition: {x: 0, y: 0}
     m_GridSize: 64
   m_SkipHiddenPackages: 0
   m_DirectoriesAreaWidth: 267
@@ -1044,7 +1045,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 1
     y: 24
-    width: 480
+    width: 363
     height: 501
   m_SerializedDataModeController:
     m_DataMode: 0
@@ -1067,7 +1068,7 @@ MonoBehaviour:
     m_PrefName: Preview_InspectorPreview
   m_LastInspectedObjectEntityId:
     m_Data: 0
-  m_LastVerticalScrollValue: 3424
+  m_LastVerticalScrollValue: 324
   m_GlobalObjectId: 
   m_InspectorMode: 0
   m_LockTracker:
@@ -1096,7 +1097,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 1
     y: 24
-    width: 304
+    width: 421
     height: 486
   m_SerializedDataModeController:
     m_DataMode: 0
@@ -1119,7 +1120,7 @@ MonoBehaviour:
         m_Data: 0
       m_ExpandedIDs:
       - m_Data: -1382
-      - m_Data: 55008
+      - m_Data: 54566
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1643,9 +1644,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 0, y: 0, z: 0}
+    m_Target: {x: 214.0932, y: -43.989586, z: -0.45881593}
     speed: 2
-    m_Value: {x: 0, y: 0, z: 0}
+    m_Value: {x: 214.0932, y: -43.989586, z: -0.45881593}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1696,9 +1697,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 10
+    m_Target: 55.881454
     speed: 2
-    m_Value: 10
+    m_Value: 55.881454
   m_Ortho:
     m_Target: 1
     speed: 2
@@ -1858,7 +1859,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 1
     y: 536
-    width: 304
+    width: 421
     height: 395
   m_SerializedDataModeController:
     m_DataMode: 0

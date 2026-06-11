@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DungeonGenDebug")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+56934c86eda812691ea0e1a011e59b9e95d8dab1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a652bcdfac0c2fcc9aa3e5f1032fa98f53a5b988")]
 [assembly: System.Reflection.AssemblyProductAttribute("DungeonGenDebug")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DungeonGenDebug")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

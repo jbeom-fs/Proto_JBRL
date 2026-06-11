@@ -63,13 +63,17 @@ public class DungeonManager : MonoBehaviour
     [Range(1, 7)]
     public int bspDepth = 4;
 
-    [Tooltip("MST 완료 후 각 EXTRA attempt에서 통로 생성을 시도할 확률")]
+    [Tooltip("MST 완료 후 각 EXTRA 엣지 후보에서 통로 생성을 시도할 확률")]
     [Range(0f, 1f)]
     public float extraConnProb = 0.5f;
 
     [Tooltip("각 방 pair마다 생성/점수화할 EXTRA path 후보 수")]
     [Min(0)]
     public int extraCandidateCount = 12;
+
+    [Tooltip("각 방마다 EXTRA 통로 엣지 후보로 고려할 최근접 이웃 방 수 (k)")]
+    [Min(0)]
+    public int extraNeighborCount = 3;
 
     [Tooltip("기존 corridor와 겹치는 cell 1개당 EXTRA 후보 점수 보너스")]
     [Min(0)]
@@ -717,6 +721,7 @@ public class DungeonManager : MonoBehaviour
         s.BspDepth      = bspDepth;
         s.ExtraConnProb = extraConnProb;
         s.ExtraCandidateCount = extraCandidateCount;
+        s.ExtraNeighborCount = extraNeighborCount;
         s.ExtraOverlapScoreWeight = extraOverlapScoreWeight;
         s.ExtraPathLengthPenaltyWeight = extraPathLengthPenaltyWeight;
         s.ExtraCenterDistancePenaltyDivisor = extraCenterDistancePenaltyDivisor;

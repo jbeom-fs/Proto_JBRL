@@ -32,6 +32,9 @@ public struct DungeonSettings
     /// <summary>각 방 pair마다 생성/점수화할 EXTRA path 후보 수</summary>
     public int ExtraCandidateCount;
 
+    /// <summary>각 방마다 EXTRA 통로 엣지 후보로 고려할 최근접 이웃 방 수 (k)</summary>
+    public int ExtraNeighborCount;
+
     /// <summary>EXTRA score bonus per cell overlapping an existing corridor.</summary>
     public int ExtraOverlapScoreWeight;
 
@@ -70,6 +73,7 @@ public struct DungeonSettings
         Padding       = 2,
         ExtraConnProb = 0.5f,
         ExtraCandidateCount = 12,
+        ExtraNeighborCount = 3,
         ExtraOverlapScoreWeight = 20,
         ExtraPathLengthPenaltyWeight = 8,
         ExtraCenterDistancePenaltyDivisor = 20,
@@ -441,82 +445,67 @@ public static class DungeonGenerator
         List<(int x, int y)> pathBuf,
         int eliteRoomIndex)
     {
-        if (s.ExtraConnProb <= 0f || s.ExtraCandidateCount <= 0) return;
+        if (s.ExtraConnProb <= 0f || s.ExtraCandidateCount <= 0 || s.ExtraNeighborCount <= 0) return;
 
-        var pairBestCandidates = new List<ExtraCorridorCandidate>();
-        var pairCandidates = new List<ExtraCorridorCandidate>(s.ExtraCandidateCount);
-        int maxAttempts = Math.Max(0, rooms.Count - 1);
-
-        for (int attemptIndex = 0; attemptIndex < maxAttempts; attemptIndex++)
+        var edgeCandidates = BuildExtraEdgeCandidates(rooms, connectedPairs, s, eliteRoomIndex);
+        if (DebugCorridorCarving)
         {
+            DebugEmit("--- EXTRA edge-candidates: count=" + edgeCandidates.Count +
+                      " k=" + s.ExtraNeighborCount + " ---");
+        }
+
+        for (int i = edgeCandidates.Count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            var tmp = edgeCandidates[i];
+            edgeCandidates[i] = edgeCandidates[j];
+            edgeCandidates[j] = tmp;
+        }
+
+        var pairCandidates = new List<ExtraCorridorCandidate>(s.ExtraCandidateCount);
+
+        for (int edgeIndex = 0; edgeIndex < edgeCandidates.Count; edgeIndex++)
+        {
+            var pair = edgeCandidates[edgeIndex];
             if (rng.NextDouble() >= s.ExtraConnProb)
             {
                 if (DebugCorridorCarving)
-                    DebugEmit("--- EXTRA attempt=" + attemptIndex + " roll=skip ---");
+                    DebugEmit("--- EXTRA edge=" + edgeIndex +
+                              " src=R" + pair.A + " dst=R" + pair.B +
+                              " roll=skip ---");
                 continue;
             }
 
-            pairBestCandidates.Clear();
-            for (int i = 0; i < rooms.Count - 1; i++)
-            {
-                for (int j = i + 1; j < rooms.Count; j++)
-                {
-                    var pairKey = (i, j);
-                    if (connectedPairs.Contains(pairKey)) continue;
-                    if (i == eliteRoomIndex || j == eliteRoomIndex) continue;
-
-                    var pair = new ExtraRoomPair
-                    {
-                        A = i,
-                        B = j,
-                        CenterDistanceSq = CenterDistanceSq(rooms[i], rooms[j]),
-                    };
-
-                    pairCandidates.Clear();
-                    BuildExtraPathCandidatesForPair(grid, rooms, pair, s, attemptIndex, pathBuf, pairCandidates);
-                    if (pairCandidates.Count == 0)
-                    {
-                        if (DebugCorridorCarving)
-                            DebugEmit("  extra-pair attempt=" + attemptIndex +
-                                      " src=R" + i + " dst=R" + j +
-                                      " requested=" + s.ExtraCandidateCount +
-                                      " clean=0 best=none");
-                        continue;
-                    }
-
-                    int pairBestIndex = SelectBestExtraCorridorCandidate(pairCandidates);
-                    if (DebugCorridorCarving)
-                    {
-                        var pairBest = pairCandidates[pairBestIndex];
-                        DebugEmit("  extra-pair attempt=" + attemptIndex +
-                                  " src=R" + i + " dst=R" + j +
-                                  " requested=" + s.ExtraCandidateCount +
-                                  " clean=" + pairCandidates.Count +
-                                  " bestCandidate=" + pairBest.CandidateIndex +
-                                  " score=" + pairBest.Score);
-                    }
-                    pairBestCandidates.Add(pairCandidates[pairBestIndex]);
-                }
-            }
-
-            if (pairBestCandidates.Count == 0)
+            pairCandidates.Clear();
+            BuildExtraPathCandidatesForPair(grid, rooms, pair, s, edgeIndex, pathBuf, pairCandidates);
+            if (pairCandidates.Count == 0)
             {
                 if (DebugCorridorCarving)
-                    DebugEmit("--- EXTRA attempt=" + attemptIndex + " selected=none(pair-best-candidates=0) ---");
+                    DebugEmit("  extra-pair edge=" + edgeIndex +
+                              " src=R" + pair.A + " dst=R" + pair.B +
+                              " requested=" + s.ExtraCandidateCount +
+                              " clean=0 best=none");
                 continue;
             }
 
-            int bestIndex = SelectBestExtraCorridorCandidate(pairBestCandidates);
-            var selected = pairBestCandidates[bestIndex];
+            int bestIndex = SelectBestExtraCorridorCandidate(pairCandidates);
+            var selected = pairCandidates[bestIndex];
             if (DebugCorridorCarving)
             {
-                DebugEmit("--- EXTRA corridor selected: attempt=" + attemptIndex +
+                DebugEmit("  extra-pair edge=" + edgeIndex +
+                          " src=R" + pair.A + " dst=R" + pair.B +
+                          " requested=" + s.ExtraCandidateCount +
+                          " clean=" + pairCandidates.Count +
+                          " bestCandidate=" + selected.CandidateIndex +
+                          " score=" + selected.Score +
+                          " cells=" + selected.PathLength +
+                          " overlap=" + selected.CorridorOverlapCount);
+                DebugEmit("--- EXTRA corridor selected: edge=" + edgeIndex +
                           " src=R" + selected.RoomAIndex +
                           " dst=R" + selected.RoomBIndex +
                           " candidate=" + selected.CandidateIndex +
                           " path=" + (selected.PrimaryPath ? "primary" : "alternate") +
                           " score=" + selected.Score +
-                          " pairBestCount=" + pairBestCandidates.Count +
                           " cells=" + selected.PathLength +
                           " overlap=" + selected.CorridorOverlapCount + " ---");
             }
@@ -525,8 +514,92 @@ public static class DungeonGenerator
             _debugSrcIdx = selected.RoomAIndex;
             _debugDstIdx = selected.RoomBIndex;
             CarvePath(grid, corridorTiles, selected.Path, s);
-            connectedPairs.Add((selected.RoomAIndex, selected.RoomBIndex));
+            connectedPairs.Add((Math.Min(selected.RoomAIndex, selected.RoomBIndex),
+                                Math.Max(selected.RoomAIndex, selected.RoomBIndex)));
         }
+    }
+
+    private static List<ExtraRoomPair> BuildExtraEdgeCandidates(
+        List<Room> rooms,
+        HashSet<(int, int)> connectedPairs,
+        DungeonSettings s,
+        int eliteRoomIndex)
+    {
+        var edges = new List<ExtraRoomPair>();
+        int neighborCount = Math.Max(0, s.ExtraNeighborCount);
+        if (neighborCount == 0 || rooms.Count < 2) return edges;
+
+        var edgeKeys = new HashSet<(int, int)>();
+        var neighborIndices = new int[Math.Max(0, rooms.Count - 1)];
+        var neighborDistances = new int[Math.Max(0, rooms.Count - 1)];
+
+        for (int i = 0; i < rooms.Count; i++)
+        {
+            if (IsExtraRoomExcluded(rooms, i, eliteRoomIndex)) continue;
+
+            int candidateCount = 0;
+            for (int j = 0; j < rooms.Count; j++)
+            {
+                if (j == i) continue;
+                if (IsExtraRoomExcluded(rooms, j, eliteRoomIndex)) continue;
+
+                neighborIndices[candidateCount] = j;
+                neighborDistances[candidateCount] = CenterDistanceSq(rooms[i], rooms[j]);
+                candidateCount++;
+            }
+
+            int limit = Math.Min(neighborCount, candidateCount);
+            for (int rank = 0; rank < limit; rank++)
+            {
+                int best = rank;
+                for (int cursor = rank + 1; cursor < candidateCount; cursor++)
+                {
+                    if (IsBetterExtraNeighbor(
+                        neighborDistances[cursor], neighborIndices[cursor],
+                        neighborDistances[best], neighborIndices[best]))
+                    {
+                        best = cursor;
+                    }
+                }
+
+                if (best != rank)
+                {
+                    int tmpIndex = neighborIndices[rank];
+                    neighborIndices[rank] = neighborIndices[best];
+                    neighborIndices[best] = tmpIndex;
+
+                    int tmpDistance = neighborDistances[rank];
+                    neighborDistances[rank] = neighborDistances[best];
+                    neighborDistances[best] = tmpDistance;
+                }
+
+                int a = Math.Min(i, neighborIndices[rank]);
+                int b = Math.Max(i, neighborIndices[rank]);
+                var key = (a, b);
+                if (connectedPairs.Contains(key) || edgeKeys.Contains(key)) continue;
+
+                edgeKeys.Add(key);
+                edges.Add(new ExtraRoomPair
+                {
+                    A = a,
+                    B = b,
+                    CenterDistanceSq = neighborDistances[rank],
+                });
+            }
+        }
+
+        return edges;
+    }
+
+    private static bool IsExtraRoomExcluded(List<Room> rooms, int roomIndex, int eliteRoomIndex)
+        => roomIndex == eliteRoomIndex || rooms[roomIndex].IsElite;
+
+    private static bool IsBetterExtraNeighbor(
+        int candidateDistance, int candidateIndex,
+        int bestDistance, int bestIndex)
+    {
+        if (candidateDistance != bestDistance) return candidateDistance < bestDistance;
+        return candidateIndex < bestIndex;
     }
 
     private static bool IsEliteFloor(int floor)
@@ -1807,6 +1880,7 @@ public static class DungeonGenerator
         s.Floor         = Math.Max(1, Math.Min(s.MaxFloor, s.Floor));
         s.ExtraConnProb = Math.Max(0f, Math.Min(1f, s.ExtraConnProb));
         s.ExtraCandidateCount = Math.Max(0, s.ExtraCandidateCount);
+        s.ExtraNeighborCount = Math.Max(0, s.ExtraNeighborCount);
         s.ExtraOverlapScoreWeight = Math.Max(0, s.ExtraOverlapScoreWeight);
         s.ExtraPathLengthPenaltyWeight = Math.Max(0, s.ExtraPathLengthPenaltyWeight);
         s.ExtraCenterDistancePenaltyDivisor = Math.Max(1, s.ExtraCenterDistancePenaltyDivisor);
