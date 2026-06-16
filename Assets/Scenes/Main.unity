@@ -64791,9 +64791,10 @@ MonoBehaviour:
   spriteRenderer: {fileID: 2005918156}
   animator: {fileID: 2005918157}
   visualTransform: {fileID: 2005918155}
+  inventory: {fileID: 1562452773}
   formDatabase: {fileID: 11400000, guid: 4c2b3c25bde176f41a7030aa2a99d82f, type: 2}
   defaultForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
-  currentForm: {fileID: 11400000, guid: 6f3f0c9ddbb542d4ac51501acfb9d4e1, type: 2}
+  currentForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0

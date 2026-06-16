@@ -24,6 +24,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    soulFormId: 0
   - itemCode: Test_Potion
     displayName: Test_Potion
     icon: {fileID: 6352683301991889936, guid: f7b37b91088c7d44b98c5e710477bd39, type: 3}
@@ -37,6 +38,7 @@ MonoBehaviour:
     - type: 1
       value: 30
     passiveEffects: []
+    soulFormId: 0
   - itemCode: Test_Relic
     displayName: Test_Relic
     icon: {fileID: -7640242614159672242, guid: f7b37b91088c7d44b98c5e710477bd39, type: 3}
@@ -50,3 +52,52 @@ MonoBehaviour:
     passiveEffects:
     - type: 2
       value: 30
+    soulFormId: 0
+  - itemCode: Soul_Sword
+    displayName: "\uAC80\uC758 \uD63C"
+    icon: {fileID: 0}
+    description: "\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 6
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 1
+  - itemCode: Soul_Dagger
+    displayName: "\uC794\uC601\uC758 \uD63C"
+    icon: {fileID: 0}
+    description: "\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 6
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 2
+  - itemCode: Soul_Freichutz
+    displayName: "\uB9C8\uD0C4\uC758 \uD63C"
+    icon: {fileID: 0}
+    description: "\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 6
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 3
+  - itemCode: Soul_Parry
+    displayName: "\uC751\uC218\uC758 \uD63C"
+    icon: {fileID: 0}
+    description: "\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 6
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 4
