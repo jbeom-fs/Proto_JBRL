@@ -5,5 +5,6 @@ public enum ItemType
     Consumable,
     Equipment,
     Relic,
-    Material
+    Material,
+    Soul
 }

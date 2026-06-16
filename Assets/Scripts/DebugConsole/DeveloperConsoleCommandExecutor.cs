@@ -16,6 +16,8 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private PlayerFormController playerFormController;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
+    private readonly List<string> _itemCodeFilterBuffer = new List<string>(32);
+
     public bool HasTeleportDestinationDatabase => teleportDestinationDatabase != null;
 
     public void GetTeleportDestinationIds(List<string> output)
@@ -150,6 +152,8 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
                 return DeveloperConsoleCommandResult.Error("Form database is not assigned on PlayerFormController.");
             case FormSwitchResult.UnknownForm:
                 return DeveloperConsoleCommandResult.Error("Form not registered in database: " + id);
+            case FormSwitchResult.NotOwned:
+                return DeveloperConsoleCommandResult.Error("Form locked: soul not owned for " + id);
             case FormSwitchResult.Busy:
                 return DeveloperConsoleCommandResult.Error("Form switch blocked: player is busy/dashing/stunned.");
             default:
@@ -167,10 +171,10 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         }
 
         if (string.IsNullOrWhiteSpace(itemCode))
-            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [count]");
+            return DeveloperConsoleCommandResult.Error("Usage: /give <category> <code> [count]");
 
         if (count <= 0)
-            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [positiveCount]");
+            return DeveloperConsoleCommandResult.Error("Usage: /give <category> <code> [positiveCount]");
 
         if (!inventory.TryGetDatabaseItem(itemCode, out ItemData item))
             return DeveloperConsoleCommandResult.Error("Unknown itemCode: " + itemCode);
@@ -196,6 +200,46 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             return;
 
         ResolvePlayerInventory()?.GetDatabaseItemCodes(output);
+    }
+
+    public void GetItemCodes(ItemType type, List<string> output)
+    {
+        if (output == null)
+            return;
+
+        PlayerInventory inventory = ResolvePlayerInventory();
+        if (inventory == null)
+            return;
+
+        _itemCodeFilterBuffer.Clear();
+        inventory.GetDatabaseItemCodes(_itemCodeFilterBuffer);
+        for (int i = 0; i < _itemCodeFilterBuffer.Count; i++)
+        {
+            string itemCode = _itemCodeFilterBuffer[i];
+            if (inventory.TryGetDatabaseItem(itemCode, out ItemData item) &&
+                item != null &&
+                item.ItemType == type)
+            {
+                output.Add(itemCode);
+            }
+        }
+
+        _itemCodeFilterBuffer.Clear();
+    }
+
+    public bool TryGetItemType(string itemCode, out ItemType type)
+    {
+        type = default;
+
+        PlayerInventory inventory = ResolvePlayerInventory();
+        if (inventory == null || string.IsNullOrWhiteSpace(itemCode))
+            return false;
+
+        if (!inventory.TryGetDatabaseItem(itemCode, out ItemData item) || item == null)
+            return false;
+
+        type = item.ItemType;
+        return true;
     }
 
     private RoomSpawner ResolveRoomSpawner()

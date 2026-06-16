@@ -146,6 +146,21 @@ public sealed class PlayerInventory : MonoBehaviour
         return total;
     }
 
+    public bool OwnsSoulForm(PlayerFormId formId)
+    {
+        for (int i = 0; i < items.Count; i++)
+        {
+            InventoryItemStack stack = items[i];
+            if (stack.Item != null &&
+                stack.Item.ItemType == ItemType.Soul &&
+                stack.Item.SoulFormId == formId &&
+                stack.Count > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     public void RemoveItemsOnFloorTransition()
     {
         bool changed = false;

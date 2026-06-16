@@ -6,6 +6,7 @@ public enum FormSwitchResult
     AlreadyActive,
     NoDatabase,
     UnknownForm,
+    NotOwned,
     Busy,
 }
 
@@ -29,6 +30,7 @@ public sealed class PlayerFormController : MonoBehaviour
     [SerializeField] private Transform visualTransform;
 
     [Header("Form")]
+    [SerializeField] private PlayerInventory inventory;
     [SerializeField] private PlayerFormDatabase formDatabase;
     [SerializeField] private PlayerFormData defaultForm;
     [SerializeField] private PlayerFormData currentForm;
@@ -56,6 +58,8 @@ public sealed class PlayerFormController : MonoBehaviour
     {
         CacheVisualDefaults();
         _combat = GetComponent<PlayerCombatController>();
+        if (inventory == null)
+            inventory = GetComponent<PlayerInventory>();
         _isInitialized = true;
 
         PlayerFormData initialForm = currentForm != null ? currentForm : defaultForm;
@@ -164,6 +168,9 @@ public sealed class PlayerFormController : MonoBehaviour
         if (!formDatabase.TryGet(id, out PlayerFormData formData) || formData == null)
             return FormSwitchResult.UnknownForm;
 
+        if (!IsFormOwned(id))
+            return FormSwitchResult.NotOwned;
+
         if (!CanSwitchNow())
             return FormSwitchResult.Busy;
 
@@ -172,6 +179,17 @@ public sealed class PlayerFormController : MonoBehaviour
 
         ApplyForm(formData);
         return FormSwitchResult.Switched;
+    }
+
+    private bool IsFormOwned(PlayerFormId id)
+    {
+        if (id == PlayerFormId.Normal)
+            return true;
+
+        if (inventory == null)
+            return true;
+
+        return inventory.OwnsSoulForm(id);
     }
 
     private bool CanSwitchNow()

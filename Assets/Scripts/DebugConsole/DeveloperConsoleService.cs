@@ -8,10 +8,12 @@ public sealed class DeveloperConsoleService
     private delegate void ArgumentSuggestionProvider(string currentArg, List<string> output, int maxCount);
     private delegate void SubArgumentSuggestionProvider(string subCommand, string currentArg, List<string> output, int maxCount);
 
+    private const string GiveUsage = "Usage: /give <category> <code> [count]";
+    private const string GivePositiveCountUsage = "Usage: /give <category> <code> [positiveCount]";
+
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
-    private static readonly string[] s_ItemArgs = { "give" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
@@ -88,16 +90,16 @@ public sealed class DeveloperConsoleService
         _commands["kill"] = ExecuteKill;
         _commands["floor"] = ExecuteFloor;
         _commands["form"] = ExecuteForm;
-        _commands["item"] = ExecuteItem;
+        _commands["give"] = ExecuteGive;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
-        _argumentProviders["item"] = ProvideItemSuggestions;
+        _argumentProviders["give"] = ProvideGiveCategorySuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
 
         _subArgumentProviders["form"] = ProvideFormSubArgumentSuggestions;
-        _subArgumentProviders["item"] = ProvideItemSubArgumentSuggestions;
+        _subArgumentProviders["give"] = ProvideGiveItemCodeSuggestions;
     }
 
     private static void ProvideFloorSuggestions(string currentArg, List<string> output, int maxCount)
@@ -119,8 +121,8 @@ public sealed class DeveloperConsoleService
     private static void ProvideFormSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_FormArgs, currentArg, output, maxCount);
 
-    private static void ProvideItemSuggestions(string currentArg, List<string> output, int maxCount)
-        => FilterSuggestions(s_ItemArgs, currentArg, output, maxCount);
+    private static void ProvideGiveCategorySuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(DeveloperConsoleItemCategoryResolver.CategoryTokens, currentArg, output, maxCount);
 
     private void ProvideFormSubArgumentSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
     {
@@ -132,13 +134,13 @@ public sealed class DeveloperConsoleService
         FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
     }
 
-    private void ProvideItemSubArgumentSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
+    private void ProvideGiveItemCodeSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
     {
-        if (!string.Equals(subCommand, "give", StringComparison.OrdinalIgnoreCase))
+        if (!DeveloperConsoleItemCategoryResolver.TryResolveCategory(subCommand, out ItemType itemType))
             return;
 
         _destinationIdBuffer.Clear();
-        _executor?.GetItemCodes(_destinationIdBuffer);
+        _executor?.GetItemCodes(itemType, _destinationIdBuffer);
         FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
     }
 
@@ -171,7 +173,7 @@ public sealed class DeveloperConsoleService
             "\nUsage: /DoorOpen [normal|elite]" +
             "\nUsage: /kill" +
             "\nUsage: /form set [id]" +
-            "\nUsage: /item give <code> [count]" +
+            "\n" + GiveUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -276,19 +278,31 @@ public sealed class DeveloperConsoleService
         return _executor.ExecuteSetForm(valueText);
     }
 
-    private DeveloperConsoleCommandResult ExecuteItem(string arguments)
+    private DeveloperConsoleCommandResult ExecuteGive(string arguments)
     {
         if (_executor == null)
             return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
 
-        if (!TryReadItemArguments(arguments, out string subCommand, out string itemCode, out string countText))
-            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [count]");
+        if (!TryReadGiveArguments(arguments, out string categoryToken, out string itemCode, out string countText))
+            return DeveloperConsoleCommandResult.Error(GiveUsage);
 
-        if (!string.Equals(subCommand, "give", StringComparison.OrdinalIgnoreCase))
-            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [count]");
+        if (!DeveloperConsoleItemCategoryResolver.TryResolveCategory(categoryToken, out ItemType requestedType))
+            return DeveloperConsoleCommandResult.Error("Unknown item category: " + categoryToken + ". " + GiveUsage);
 
         if (!TryParsePositiveOptionalCount(countText, out int count))
-            return DeveloperConsoleCommandResult.Error("Usage: /item give <code> [positiveCount]");
+            return DeveloperConsoleCommandResult.Error(GivePositiveCountUsage);
+
+        if (!_executor.TryGetItemType(itemCode, out ItemType actualType))
+            return DeveloperConsoleCommandResult.Error("Unknown itemCode: " + itemCode + ". " + GiveUsage);
+
+        if (actualType != requestedType)
+        {
+            return DeveloperConsoleCommandResult.Error(
+                "Item category mismatch: " + itemCode +
+                " is " + DeveloperConsoleItemCategoryResolver.GetCategoryToken(actualType) +
+                ", not " + DeveloperConsoleItemCategoryResolver.GetCategoryToken(requestedType) + ". " +
+                GiveUsage);
+        }
 
         return _executor.ExecuteItemGive(itemCode, count);
     }
@@ -312,13 +326,13 @@ public sealed class DeveloperConsoleService
         return !string.IsNullOrWhiteSpace(subCommand);
     }
 
-    private static bool TryReadItemArguments(
+    private static bool TryReadGiveArguments(
         string arguments,
-        out string subCommand,
+        out string categoryToken,
         out string itemCode,
         out string countText)
     {
-        subCommand = string.Empty;
+        categoryToken = string.Empty;
         itemCode = string.Empty;
         countText = string.Empty;
 
@@ -329,12 +343,12 @@ public sealed class DeveloperConsoleService
         if (parts.Length < 2 || parts.Length > 3)
             return false;
 
-        subCommand = parts[0];
+        categoryToken = parts[0];
         itemCode = parts[1];
         if (parts.Length == 3)
             countText = parts[2];
 
-        return !string.IsNullOrWhiteSpace(subCommand) && !string.IsNullOrWhiteSpace(itemCode);
+        return !string.IsNullOrWhiteSpace(categoryToken) && !string.IsNullOrWhiteSpace(itemCode);
     }
 
     private static bool TryParsePositiveOptionalCount(string valueText, out int count)
@@ -358,4 +372,60 @@ public sealed class DeveloperConsoleService
 
     private static string GetFloorUsage()
         => "Usage: /floor add [count] | /floor sub [count] | /floor set [floor]";
+}
+
+internal static class DeveloperConsoleItemCategoryResolver
+{
+    private static readonly ItemType[] s_Types =
+    {
+        ItemType.Soul,
+        ItemType.Relic,
+        ItemType.Consumable,
+        ItemType.Currency,
+        ItemType.Material,
+        ItemType.Key,
+        ItemType.Equipment
+    };
+
+    private static readonly string[] s_Tokens = BuildTokens();
+
+    public static IReadOnlyList<string> CategoryTokens => s_Tokens;
+
+    public static bool TryResolveCategory(string token, out ItemType type)
+    {
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            for (int i = 0; i < s_Tokens.Length; i++)
+            {
+                if (string.Equals(token, s_Tokens[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    type = s_Types[i];
+                    return true;
+                }
+            }
+        }
+
+        type = default;
+        return false;
+    }
+
+    public static string GetCategoryToken(ItemType type)
+    {
+        for (int i = 0; i < s_Types.Length; i++)
+        {
+            if (s_Types[i] == type)
+                return s_Tokens[i];
+        }
+
+        return type.ToString().ToLowerInvariant();
+    }
+
+    private static string[] BuildTokens()
+    {
+        string[] tokens = new string[s_Types.Length];
+        for (int i = 0; i < s_Types.Length; i++)
+            tokens[i] = s_Types[i].ToString().ToLowerInvariant();
+
+        return tokens;
+    }
 }
