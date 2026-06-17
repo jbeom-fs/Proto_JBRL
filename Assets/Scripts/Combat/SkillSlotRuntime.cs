@@ -43,9 +43,10 @@ public sealed class SkillSlotRuntime
         return resources == null || resources.Has(Data.resourceType, required);
     }
 
-    public void StartCooldown()
+    public void StartCooldown(float multiplier = 1f)
     {
-        CooldownRemaining = Data != null ? Mathf.Max(0f, Data.cooldown) : 0f;
+        float baseCd = Data != null ? Mathf.Max(0f, Data.cooldown) : 0f;
+        CooldownRemaining = baseCd * Mathf.Max(0f, multiplier);
     }
 
     public void ResetRuntimeState()

@@ -13,6 +13,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private EliteArenaEncounterController eliteArenaEncounterController;
     [SerializeField] private PlayerController player;
     [SerializeField] private PlayerInventory playerInventory;
+    [SerializeField] private PlayerSoulEnhancements playerSoulEnhancements;
     [SerializeField] private PlayerFormController playerFormController;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
@@ -185,6 +186,24 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return DeveloperConsoleCommandResult.Success("Gave " + count + " x " + item.ItemCode + ".");
     }
 
+    public DeveloperConsoleCommandResult ExecuteEnhance(PlayerFormId form, SoulStatType stat, int count)
+    {
+        PlayerSoulEnhancements enhancements = ResolvePlayerSoulEnhancements();
+        if (enhancements == null)
+        {
+            WarnMissing(nameof(PlayerSoulEnhancements));
+            return DeveloperConsoleCommandResult.Error("PlayerSoulEnhancements is not active.");
+        }
+
+        if (count <= 0)
+            return DeveloperConsoleCommandResult.Error("Usage: /enhance <form> <stat> [positiveCount]");
+
+        enhancements.AddLevel(form, stat, count);
+        int level = enhancements.GetLevel(form, stat);
+        return DeveloperConsoleCommandResult.Success(
+            "Enhanced " + form + "/" + stat + " by " + count + " (now level " + level + ").");
+    }
+
     public void GetFormIds(List<string> output)
     {
         if (output == null)
@@ -273,6 +292,22 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         playerInventory = UnityEngine.Object.FindAnyObjectByType<PlayerInventory>();
         return playerInventory;
+    }
+
+    private PlayerSoulEnhancements ResolvePlayerSoulEnhancements()
+    {
+        if (playerSoulEnhancements != null)
+            return playerSoulEnhancements;
+
+        if (player != null && player.TryGetComponent(out playerSoulEnhancements))
+            return playerSoulEnhancements;
+
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer != null && activePlayer.TryGetComponent(out playerSoulEnhancements))
+            return playerSoulEnhancements;
+
+        playerSoulEnhancements = UnityEngine.Object.FindAnyObjectByType<PlayerSoulEnhancements>();
+        return playerSoulEnhancements;
     }
 
     private static DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager manager, int targetFloor)

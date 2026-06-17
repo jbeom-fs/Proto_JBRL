@@ -34,6 +34,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public CombatEventChannel combatChannel;
     [SerializeField] private DungeonEventChannel dungeonChannel;
     [SerializeField] private PlayerInventory inventory;
+    [SerializeField] private PlayerSoulEnhancements soulEnhancements;
+    [SerializeField] private SoulEnhancementTable soulEnhancementTable;
     public PlayerController  playerMovement;
 
     [Header("기본 스탯")]
@@ -70,6 +72,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private readonly PlayerResource _resource = new();
     private readonly PlayerItemStats _itemStats = new();
+    private readonly SoulStatBonus _soulBonus = new SoulStatBonus();
     private readonly SkillCooldownController _cooldownController = new();
     private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
     private readonly DaggerMarkerRegistry _daggerMarkers = DaggerMarkerRegistry.Instance;
@@ -114,6 +117,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
     private bool _isInventorySubscribed;
+    private bool _isSoulEnhancementsSubscribed;
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -193,6 +197,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
+        if (soulEnhancements == null)
+            soulEnhancements = GetComponent<PlayerSoulEnhancements>();
+        SubscribeSoulEnhancements();
+        RecalculateSoulBonus();
         ResolveInventory();
         _hitFlash = ResolveHitFlashFeedback();
         if (invincibilityFlashFeedback == null)
@@ -218,11 +226,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void OnEnable()
     {
         SubscribeInventory();
+        SubscribeSoulEnhancements();
         RecalculateItemStats();
+        RecalculateSoulBonus();
     }
 
     private void OnDestroy()
     {
+        UnsubscribeSoulEnhancements();
         UnsubscribeInventory();
         UnsubscribeDungeonChannel();
         if (ReferenceEquals(Active, this))
@@ -231,6 +242,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void OnDisable()
     {
+        UnsubscribeSoulEnhancements();
         UnsubscribeInventory();
         ClearSkillTimingState();
         ClearParryState();
@@ -276,6 +288,40 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void HandleInventoryChanged()
     {
         RecalculateItemStats();
+    }
+
+    private void SubscribeSoulEnhancements()
+    {
+        if (soulEnhancements == null || _isSoulEnhancementsSubscribed)
+            return;
+
+        soulEnhancements.OnChanged += HandleSoulEnhancementsChanged;
+        _isSoulEnhancementsSubscribed = true;
+    }
+
+    private void UnsubscribeSoulEnhancements()
+    {
+        if (soulEnhancements != null && _isSoulEnhancementsSubscribed)
+            soulEnhancements.OnChanged -= HandleSoulEnhancementsChanged;
+
+        _isSoulEnhancementsSubscribed = false;
+    }
+
+    private void HandleSoulEnhancementsChanged()
+    {
+        RecalculateSoulBonus();
+        ApplyWeaponMagazine(currentWeapon);
+    }
+
+    private void RecalculateSoulBonus()
+    {
+        PlayerFormId form = (_formController != null && _formController.CurrentForm != null)
+            ? _formController.CurrentForm.FormId
+            : PlayerFormId.Normal;
+
+        _soulBonus.Recalculate(form, soulEnhancements, soulEnhancementTable);
+        _parryStack?.SetMax(maxParryStack + Mathf.RoundToInt(_soulBonus.Get(SoulStatType.ParryStackMax)));
+        _parryStack?.SetGraceDuration(parryStackGraceDuration + _soulBonus.Get(SoulStatType.ParryGrace));
     }
 
     private void RecalculateItemStats()
@@ -363,6 +409,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         ClearReloadState();
         currentWeapon   = weapon;
+        RecalculateSoulBonus();
         ApplyWeaponMagazine(weapon);
         _cooldownController.ResetAll();
         BindSkillSlots(weapon);
@@ -380,13 +427,37 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         if (weapon != null && weapon.usesMagazine)
         {
-            maxBullet = Mathf.Max(0, weapon.magazineSize);
+            int magBonus = Mathf.RoundToInt(_soulBonus.Get(SoulStatType.MagazineSize));
+            maxBullet = Mathf.Max(0, weapon.magazineSize + magBonus);
             _currentBullet = maxBullet;
             return;
         }
 
         maxBullet = 0;
         _currentBullet = 0;
+    }
+
+    private float EffectiveAttackCooldown()
+    {
+        if (currentWeapon == null)
+            return 0f;
+
+        float pct = _soulBonus.Get(SoulStatType.AttackSpeed);
+        return currentWeapon.attackCooldown * Mathf.Max(0f, 1f - pct / 100f);
+    }
+
+    private float EffectiveSkillCooldownMultiplier()
+    {
+        return Mathf.Max(0f, 1f - _soulBonus.Get(SoulStatType.CooldownReduction) / 100f);
+    }
+
+    private float EffectiveReloadTime()
+    {
+        if (currentWeapon == null)
+            return 0f;
+
+        float pct = _soulBonus.Get(SoulStatType.ReloadSpeed);
+        return Mathf.Max(0f, currentWeapon.reloadTime) * Mathf.Max(0f, 1f - pct / 100f);
     }
 
     private void Update()
@@ -468,7 +539,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         if (IsCurrentFormParryMode())
         {
-            _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
+            _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
             BeginParryBasicAttack();
             return;
         }
@@ -479,7 +550,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
         }
 
-        _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
+        _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
 
         SkillData basicAttack = ActiveBasicAttack;
         _attackExecutor.BeginAttackActivation();
@@ -544,7 +615,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (!_skillExecutor.ExecuteBasicProjectile(context, 1))
             return;
 
-        _cooldownController.SetAttackCooldown(currentWeapon.attackCooldown);
+        _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
         Spend(SkillResourceType.Bullet, 1);
         TryStartAutoReloadIfEmpty();
     }
@@ -706,7 +777,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         Spend(skill.resourceType, result.ResourceConsumed);
         ApplySkillReload(skill);
         TryStartAutoReloadIfEmpty();
-        slot.StartCooldown();
+        slot.StartCooldown(EffectiveSkillCooldownMultiplier());
         ConsumePendingDaggerCooldownReset(slotIndex);
         StartSkillRecovery(skill.recoveryDelay);
         combatChannel?.RaiseSkillUsed(skill);
@@ -859,7 +930,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private IEnumerator ReloadRoutine()
     {
         _isReloading = true;
-        float remaining = currentWeapon != null ? Mathf.Max(0f, currentWeapon.reloadTime) : 0f;
+        float remaining = EffectiveReloadTime();
         while (remaining > 0f)
         {
             if (IsDead || !isActiveAndEnabled || !CanUseMagazine())

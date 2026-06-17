@@ -10,6 +10,8 @@ public sealed class DeveloperConsoleService
 
     private const string GiveUsage = "Usage: /give <category> <code> [count]";
     private const string GivePositiveCountUsage = "Usage: /give <category> <code> [positiveCount]";
+    private const string EnhanceUsage = "Usage: /enhance <form> <stat> [count]";
+    private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
@@ -91,15 +93,18 @@ public sealed class DeveloperConsoleService
         _commands["floor"] = ExecuteFloor;
         _commands["form"] = ExecuteForm;
         _commands["give"] = ExecuteGive;
+        _commands["enhance"] = ExecuteEnhance;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
         _argumentProviders["give"] = ProvideGiveCategorySuggestions;
+        _argumentProviders["enhance"] = ProvideEnhanceFormSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
 
         _subArgumentProviders["form"] = ProvideFormSubArgumentSuggestions;
         _subArgumentProviders["give"] = ProvideGiveItemCodeSuggestions;
+        _subArgumentProviders["enhance"] = ProvideEnhanceStatSuggestions;
     }
 
     private static void ProvideFloorSuggestions(string currentArg, List<string> output, int maxCount)
@@ -124,6 +129,13 @@ public sealed class DeveloperConsoleService
     private static void ProvideGiveCategorySuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(DeveloperConsoleItemCategoryResolver.CategoryTokens, currentArg, output, maxCount);
 
+    private void ProvideEnhanceFormSuggestions(string currentArg, List<string> output, int maxCount)
+    {
+        _destinationIdBuffer.Clear();
+        _executor?.GetFormIds(_destinationIdBuffer);
+        FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
+    }
+
     private void ProvideFormSubArgumentSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
     {
         if (!string.Equals(subCommand, "set", StringComparison.OrdinalIgnoreCase))
@@ -142,6 +154,14 @@ public sealed class DeveloperConsoleService
         _destinationIdBuffer.Clear();
         _executor?.GetItemCodes(itemType, _destinationIdBuffer);
         FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
+    }
+
+    private static void ProvideEnhanceStatSuggestions(string subCommand, string currentArg, List<string> output, int maxCount)
+    {
+        if (!Enum.TryParse(subCommand, true, out PlayerFormId _))
+            return;
+
+        FilterSuggestions(DeveloperConsoleSoulStatResolver.StatTokens, currentArg, output, maxCount);
     }
 
     private static void FilterSuggestions(IReadOnlyList<string> candidates, string prefix, List<string> output, int maxCount)
@@ -174,6 +194,7 @@ public sealed class DeveloperConsoleService
             "\nUsage: /kill" +
             "\nUsage: /form set [id]" +
             "\n" + GiveUsage +
+            "\n" + EnhanceUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -307,6 +328,26 @@ public sealed class DeveloperConsoleService
         return _executor.ExecuteItemGive(itemCode, count);
     }
 
+    private DeveloperConsoleCommandResult ExecuteEnhance(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (!TryReadEnhanceArguments(arguments, out string formToken, out string statToken, out string countText))
+            return DeveloperConsoleCommandResult.Error(EnhanceUsage);
+
+        if (!Enum.TryParse(formToken, true, out PlayerFormId form))
+            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken + ". " + EnhanceUsage);
+
+        if (!DeveloperConsoleSoulStatResolver.TryResolve(statToken, out SoulStatType stat))
+            return DeveloperConsoleCommandResult.Error("Unknown soul stat: " + statToken + ". " + GetEnhanceStatUsage());
+
+        if (!TryParsePositiveOptionalCount(countText, out int count))
+            return DeveloperConsoleCommandResult.Error(EnhancePositiveCountUsage);
+
+        return _executor.ExecuteEnhance(form, stat, count);
+    }
+
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
     {
         subCommand = string.Empty;
@@ -351,6 +392,31 @@ public sealed class DeveloperConsoleService
         return !string.IsNullOrWhiteSpace(categoryToken) && !string.IsNullOrWhiteSpace(itemCode);
     }
 
+    private static bool TryReadEnhanceArguments(
+        string arguments,
+        out string formToken,
+        out string statToken,
+        out string countText)
+    {
+        formToken = string.Empty;
+        statToken = string.Empty;
+        countText = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return false;
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2 || parts.Length > 3)
+            return false;
+
+        formToken = parts[0];
+        statToken = parts[1];
+        if (parts.Length == 3)
+            countText = parts[2];
+
+        return !string.IsNullOrWhiteSpace(formToken) && !string.IsNullOrWhiteSpace(statToken);
+    }
+
     private static bool TryParsePositiveOptionalCount(string valueText, out int count)
     {
         if (string.IsNullOrWhiteSpace(valueText))
@@ -372,6 +438,9 @@ public sealed class DeveloperConsoleService
 
     private static string GetFloorUsage()
         => "Usage: /floor add [count] | /floor sub [count] | /floor set [floor]";
+
+    private static string GetEnhanceStatUsage()
+        => EnhanceUsage + ". Valid stats: " + string.Join(", ", DeveloperConsoleSoulStatResolver.StatTokens);
 }
 
 internal static class DeveloperConsoleItemCategoryResolver
@@ -425,6 +494,65 @@ internal static class DeveloperConsoleItemCategoryResolver
         string[] tokens = new string[s_Types.Length];
         for (int i = 0; i < s_Types.Length; i++)
             tokens[i] = s_Types[i].ToString().ToLowerInvariant();
+
+        return tokens;
+    }
+}
+
+internal static class DeveloperConsoleSoulStatResolver
+{
+    private static readonly SoulStatType[] s_Stats =
+    {
+        SoulStatType.AttackSpeed,
+        SoulStatType.CooldownReduction,
+        SoulStatType.Crit,
+        SoulStatType.Lifesteal,
+        SoulStatType.MagazineSize,
+        SoulStatType.ReloadSpeed,
+        SoulStatType.ParryStackMax,
+        SoulStatType.ParryGrace,
+        SoulStatType.ComboDamage,
+        SoulStatType.AilmentDamage
+    };
+
+    private static readonly string[] s_Tokens = BuildTokens();
+
+    public static IReadOnlyList<string> StatTokens => s_Tokens;
+
+    public static bool TryResolve(string token, out SoulStatType stat)
+    {
+        if (!string.IsNullOrWhiteSpace(token))
+        {
+            for (int i = 0; i < s_Tokens.Length; i++)
+            {
+                if (string.Equals(token, s_Tokens[i], StringComparison.OrdinalIgnoreCase))
+                {
+                    stat = s_Stats[i];
+                    return true;
+                }
+            }
+        }
+
+        stat = default;
+        return false;
+    }
+
+    public static string GetToken(SoulStatType stat)
+    {
+        for (int i = 0; i < s_Stats.Length; i++)
+        {
+            if (s_Stats[i] == stat)
+                return s_Tokens[i];
+        }
+
+        return stat.ToString().ToLowerInvariant();
+    }
+
+    private static string[] BuildTokens()
+    {
+        string[] tokens = new string[s_Stats.Length];
+        for (int i = 0; i < s_Stats.Length; i++)
+            tokens[i] = s_Stats[i].ToString().ToLowerInvariant();
 
         return tokens;
     }

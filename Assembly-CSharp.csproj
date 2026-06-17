@@ -56,12 +56,15 @@
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaReturnPortal.cs" />
     <Compile Include="Assets\Scripts\Inventory\PlayerInventory.cs" />
     <Compile Include="Assets\Scripts\Combat\WorldEnvironmentQuery.cs" />
+    <Compile Include="Assets\Scripts\Soul\PlayerSoulEnhancements.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Items\ItemType.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
+    <Compile Include="Assets\Scripts\Soul\SoulEnhancementTable.cs" />
     <Compile Include="Assets\Scripts\Inventory\InventoryItemStack.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationDatabase.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
+    <Compile Include="Assets\Scripts\Soul\SoulStatBonus.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
@@ -166,6 +169,7 @@
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />
     <Compile Include="Assets\Scripts\Combat\ParryStackResource.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
+    <Compile Include="Assets\Scripts\Soul\SoulStatType.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />

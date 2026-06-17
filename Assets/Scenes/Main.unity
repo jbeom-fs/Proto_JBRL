@@ -64419,6 +64419,7 @@ GameObject:
   - component: {fileID: 1562452772}
   - component: {fileID: 1562452773}
   - component: {fileID: 1562452774}
+  - component: {fileID: 1562452775}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -64472,7 +64473,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerCombatController
   combatChannel: {fileID: 11400000, guid: 4c3a1bb8383d07b40a109c40577c0f17, type: 2}
   dungeonChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
-  inventory: {fileID: 0}
+  inventory: {fileID: 1562452773}
+  soulEnhancements: {fileID: 1562452775}
+  soulEnhancementTable: {fileID: 11400000, guid: 813f9f5f59f59fa4c83ee1ef000f5421, type: 2}
   playerMovement: {fileID: 1562452755}
   maxHp: 10000
   baseAttack: 0
@@ -64795,6 +64798,37 @@ MonoBehaviour:
   formDatabase: {fileID: 11400000, guid: 4c2b3c25bde176f41a7030aa2a99d82f, type: 2}
   defaultForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
   currentForm: {fileID: 11400000, guid: 08564eae51ce4a0eaf24d86529e9481d, type: 2}
+--- !u!114 &1562452775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562452752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e05a600ffa3cab499dae5bf54904f75, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerSoulEnhancements
+  levels:
+  - form: 3
+    stat: 4
+    level: 3
+  - form: 4
+    stat: 6
+    level: 2
+  - form: 1
+    stat: 0
+    level: 5
+  - form: 1
+    stat: 1
+    level: 5
+  - form: 3
+    stat: 5
+    level: 5
+  - form: 3
+    stat: 7
+    level: 4
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0

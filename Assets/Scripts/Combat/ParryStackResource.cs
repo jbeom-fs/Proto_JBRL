@@ -2,8 +2,8 @@ using UnityEngine;
 
 public sealed class ParryStackResource
 {
-    private readonly int _maxStack;
-    private readonly float _graceDuration;
+    private int _maxStack;
+    private float _graceDuration;
     private readonly float _decayInterval;
     private readonly int _decayAmount;
     private int _current;
@@ -20,6 +20,17 @@ public sealed class ParryStackResource
 
     public int Current => _current;
     public int Max => _maxStack;
+
+    public void SetMax(int newMax)
+    {
+        _maxStack = Mathf.Max(0, newMax);
+        _current = Mathf.Min(_current, _maxStack);
+    }
+
+    public void SetGraceDuration(float seconds)
+    {
+        _graceDuration = Mathf.Max(0f, seconds);
+    }
 
     public bool Has(int amount)
     {
