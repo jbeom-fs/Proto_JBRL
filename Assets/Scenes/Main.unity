@@ -64826,7 +64826,7 @@ MonoBehaviour:
   - form: 3
     stat: 5
     level: 5
-  - form: 3
+  - form: 4
     stat: 7
     level: 4
 --- !u!1 &1600274169
@@ -70573,6 +70573,7 @@ MonoBehaviour:
   eliteArenaEncounterController: {fileID: 2201000002}
   player: {fileID: 1562452755}
   playerInventory: {fileID: 0}
+  playerSoulEnhancements: {fileID: 0}
   playerFormController: {fileID: 1562452774}
   teleportDestinationDatabase: {fileID: 11400000, guid: 6b019d483f774c33b2de338a6ca0e9d5, type: 2}
 --- !u!4 &1860777228

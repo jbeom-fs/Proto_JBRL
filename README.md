@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-16
-> 기준 커밋: `c6384b0b` (master, HEAD)
+> 작성 기준일: 2026-06-17
+> 기준 커밋: `2ad95348` (master, HEAD)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1905,6 +1905,32 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 
 필터링은 `_filteredBuffer` 재사용 List 로 처리하며 LINQ / `List.Sort` 를 쓰지 않습니다. 전체 탭은 그룹 순서대로 `playerInventory.Items` 를 반복 스캔해 append 하므로 안정 정렬이 보장됩니다. `InventorySlotUI` 는 `IPointerClickHandler` 로 클릭을 컨트롤러에 위임하며, 필터링은 표시만 바꾸고 실제 `ItemData` 참조와 `PlayerInventory` 저장 구조는 변경하지 않습니다.
 
+### 11b-8. Soul 강화 (영구 폼 메커니즘 강화)
+
+`ItemType.Soul` 이 Form 해금 토큰이라면, **Soul 강화는 보유한 Form 의 메커니즘 스탯을 영구적으로 키우는 축**입니다. 공통 raw 스탯(공격/방어/HP/이동)은 Relic·런 영역이 담당하고 Soul 강화는 폼 고유 메커니즘 전용입니다(도메인 분리 — "영구 vs 런"이 아니라 "무엇을 강화하나"로 구분).
+
+| 구성 | 역할 |
+|------|------|
+| `SoulStatType` (enum, 10종) | AttackSpeed / CooldownReduction / Crit / Lifesteal / MagazineSize / ReloadSpeed / ParryStackMax / ParryGrace / ComboDamage / AilmentDamage |
+| `PlayerSoulEnhancements` (MonoBehaviour) | `(PlayerFormId, SoulStatType)` 별 레벨 side-store. GetLevel/AddLevel/SetLevel/OnChanged. **스탯별 개별 투자**(폼 단일 레벨 아님), 직렬화 대비 List + Dictionary 캐시 |
+| `SoulEnhancementTable` (SO) | 폼별 `SoulStatGrowth{stat, perLevel, maxLevel}` 정의 (레벨당 증가치·최대 레벨) |
+| `SoulStatBonus` | 활성 폼 기준 보너스 집계 = Σ(레벨 × perLevel). float[] 인덱스, alloc 없음 |
+
+`PlayerCombatController` 가 폼 전환(`EquipWeapon`)·강화 변경(`OnChanged`) 시 `RecalculateSoulBonus()` 로 **활성 폼 보너스만** 재계산합니다(폼 전환 시 출렁임 의도, Normal 폴백). 적용 훅:
+
+| 스탯 | 적용 지점 |
+|------|-----------|
+| MagazineSize | `ApplyWeaponMagazine` — `maxBullet = magazineSize + bonus` |
+| AttackSpeed | `EffectiveAttackCooldown` — `attackCooldown × (1 − %/100)` (SetAttackCooldown 3곳) |
+| ParryStackMax | `ParryStackResource.SetMax` |
+| ParryGrace | `ParryStackResource.SetGraceDuration` (flat 초) |
+| CooldownReduction | `SkillSlotRuntime.StartCooldown(multiplier)` |
+| ReloadSpeed | `EffectiveReloadTime` — `reloadTime × (1 − %/100)` |
+
+`Crit` / `Lifesteal` / `ComboDamage` / `AilmentDamage` 는 enum·집계만 있고 적용 훅 미구현(각 신규 전투 메커니즘 필요 — Sword 콤보, Dagger 상태이상 DoT 등).
+
+콘솔 `/enhance <form> <stat> [count]` 로 레벨을 부여합니다(2층 자동완성 form→stat, `DeveloperConsoleSoulStatResolver` 로 stat 토큰 격리, count 기본 1 가산). 강화 재료(폼별 조각) 소비·Town Soul Altar 입력은 미구현 — 현재 콘솔/Inspector 로만 레벨 조정.
+
 ---
 
 ## 11c. 시스템 11 — 개발자 콘솔
@@ -2537,6 +2563,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 | **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·5개 고정 탭 필터·전체 탭 그룹 정렬·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind + 클릭 위임) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
 | **플레이어 인벤토리** | `PlayerInventory` + `InventoryItemStack` — AddItem/RemoveItem/HasItem/GetItemCount + stackable/maxStack 정책 자동 적용, `OwnsSoulForm(formId)` 로 Soul 보유 기반 Form 소유 판정, `RemoveItemsOnFloorTransition`/`RemoveItemsOnDungeonExit` 가 ItemData 플래그 기반으로 층/던전 이탈 시 자동 정리. Elite Key 가 일반 ItemData 한 항목으로 통합되어 과거 `PlayerEliteKeyInventory` 는 제거됨 |
+| **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace 6종 훅 적용. 콘솔 `/enhance <form> <stat> [count]` (§11b-8) |
+| **드롭 설정(데이터 기반)** | `EnemyDropEntry{itemCode,min/maxAmount,chance}` + `EnemyData.drops` + `EnemyDropRoller`(결정적 롤, `EnemyDropDomain`). 스폰 통합·소울 분해는 미구현(1/3 단계) |
 | **ItemData 정리 플래그** | `removeOnFloorTransition` / `removeOnDungeonExit` — 층 이동·던전 이탈 파이프라인에서 자동 청소 (elite_key 가 이 플래그 사용) |
 | **DroppedItem 일반화** | `OnTriggerEnter2D` 가 ItemType 분기 없이 `PlayerInventory.AddItem` 호출로 일원화 — Currency/Consumable/Soul 등 모든 아이템이 인벤토리에 픽업 가능 |
 | **ItemEffect 1차** | `ItemEffectType` + `ItemEffect` — `useEffects`(Consumable 1회) / `passiveEffects`(Relic 소지 중 상시) 데이터 추가. 현재 HealHp, MaxHpBonus, AttackBonus, DefenseBonus, MoveSpeedBonus 지원 |
@@ -2583,7 +2611,9 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 |------|----------|------|
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
-| 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` 메커니즘 + 콘솔 `/form set` + Soul 보유 게이팅(`ItemType.Soul`/`soulFormId`/`OwnsSoulForm`) 1차 구현 완료. 남은 범위는 인게임 해금 UX(어떤 보상/드랍/이벤트로 Soul 을 지급할지)와 Form 선택 UI 연결 |
+| 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
+| 드롭/경제 루프 | 중간 | 데이터 기반 드롭 1차(`EnemyDropEntry`/`EnemyData.drops`/`EnemyDropRoller`, 결정적 롤) 구현. 남은: 스폰 통합(SpawnRoom→엘리트/보스), 소울 분해(중복→폼별 재료), Material 영구보존, Town Soul Altar(누진비용) |
+| 신규 시스템 스탯 | 낮음 | Soul 강화의 Crit/Lifesteal/ComboDamage/AilmentDamage 는 enum·집계만, 적용 훅 미구현(각 신규 전투 메커니즘 필요) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |

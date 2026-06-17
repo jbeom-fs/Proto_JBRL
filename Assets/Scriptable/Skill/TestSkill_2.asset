@@ -19,6 +19,8 @@ MonoBehaviour:
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
   cooldown: 1
   castDelay: 0
   recoveryDelay: 0
@@ -54,3 +56,9 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
