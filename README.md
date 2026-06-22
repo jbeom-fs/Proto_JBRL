@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-17
-> 기준 커밋: `2ad95348` (master, HEAD)
+> 작성 기준일: 2026-06-22
+> 기준 커밋: `44b5c929` (master, HEAD)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1822,6 +1822,26 @@ _eliteKeyPlan = { Active=true, RoomKey=selected.roomKey, SpawnIndexInRoom=select
 
 같은 seed/floor 에서는 항상 같은 방의 같은 인덱스 적이 키를 보유합니다. 후보가 0이면 1회 경고 후 키 드랍을 생략 (elite 층에서 일반 방 적이 전혀 없는 비정상 경우).
 
+### 11b-3b. 데이터 기반 적 드롭 시스템 (EnemyDropDatabase)
+
+Elite Key 가 "스폰 로직이 홀더를 지정하는" 맥락 드랍이라면, 일반 적·엘리트·보스의 **타입 기반 루트**는 중앙 `EnemyDropDatabase`(SO)로 데이터화합니다. 적 식별 = `EnemyData` 참조, 아이템 = `itemCode` 문자열(ItemDatabase 일관). enum 미사용.
+
+| 구성 | 역할 |
+|------|------|
+| `EnemyDropEntry{itemCode, minAmount, maxAmount, chance}` | **독립 드랍** — 각자 chance 굴림(0~N개). 적중 시 수량 `[min,max]` |
+| `EnemyDropChoice{itemCode, min, max, weight}` + `EnemyDropChoiceGroup{chance, choices}` | **pick-one 그룹** — 그룹 chance 통과 시 weight 비례로 **정확히 1개** 선택(소울 등 "이 중 하나" 보상) |
+| `EnemyDropGroup{EnemyData enemy, drops, choiceGroups}` | 적별 드랍 정의(독립 + pick-one 공존) |
+| `EnemyDropDatabase` (SO) | `EnemyData → EnemyDropGroup` Dictionary 캐시. `GetDropGroup(enemy)` (ItemDatabase 패턴) |
+| `EnemyDropRoller.Roll(group, inv, rng)` | 결정적 롤 — 독립 먼저, 그다음 choiceGroup(가중치 1택). 전부 주입 `System.Random`(UnityEngine.Random 금지) |
+
+**롤 시점·결정성**: 스폰 시 적의 `EnemyInventory` 에 롤 결과를 싣고, 사망 시 `DropItemSpawner.SpawnDrops` 가 바닥에 스폰. 롤은 **스폰 구성(roomRng)과 분리된 별도 `dropRng`**(도메인 `EnemyDropDomain`)만 소비 → 드랍 설정이 적 스폰 수·종류를 절대 바꾸지 않음(MonsterDen 원칙).
+
+**결선 지점 (3곳, dropDatabase 참조 각각 필요)**:
+- 일반 적 — `RoomSpawner` (room별 dropRng = `CreateSeed(..., room.StableRoomKey, EnemyDropDomain)`).
+- 엘리트·보스 — `ArenaEncounterBase.SpawnArenaEnemyAtPosition` 공통 헬퍼(엘리트=룸 StableRoomKey / 보스=floor 시드). 보스 소울은 별도 메커니즘 없이 보스 `EnemyData` 그룹의 드랍 엔트리로 흡수(정식 보스 EnemyData 단계).
+
+`DroppedItem` 은 아이콘을 `iconWorldSize` 기준으로 정규화해(스프라이트별 native 크기 달라도 균일) 표시하며, 루트 공유 `CircleCollider2D` 픽업 반경은 역보정으로 영향 0.
+
 ### 11b-4. Soul 아이템 기반 Form 보유 판정
 
 `ItemType.Soul` 은 사용 효과/패시브가 아니라 **Form 해금 토큰**으로 동작합니다. `ItemData.soulFormId` 에 해금 대상 `PlayerFormId` 를 지정하고, `PlayerInventory.OwnsSoulForm(formId)` 가 현재 보유 스택을 순회해 `ItemType.Soul && SoulFormId == formId && Count > 0` 인 항목이 있는지 검사합니다.
@@ -2366,7 +2386,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 ### 새 아이템 / 드랍 추가
 
 1. `ItemDatabase` 에셋에 새 `ItemData` 추가 (itemCode·displayName·icon·itemType·stackable·maxStack 입력, 필요 시 useEffects/passiveEffects/soulFormId/removeOnFloorTransition/removeOnDungeonExit 설정)
-2. 적이 드랍하려면 `EnemyController.MarkAsEliteKeyHolder` 와 동일한 패턴으로 `EnemyInventory.AddDropItem("새_코드")` 호출하는 분기를 추가 (예: 보스 사망 시, 특정 RoomType 진입 시 등)
+2. 적이 드랍하려면 — **타입 기반 루트**는 `EnemyDropDatabase` 에 그 `EnemyData` 그룹 + 드랍(독립 또는 pick-one) 추가(§11b-3b, 일반/엘리트/보스 자동). **맥락 드랍**(스폰 로직이 홀더 지정 등)은 `EnemyController.MarkAsEliteKeyHolder` 처럼 `EnemyInventory.AddDropItem("새_코드")` 를 imperative 호출
 3. 픽업 자체는 자동 — `DroppedItem.OnTriggerEnter2D` 가 모든 ItemType 을 `PlayerInventory.AddItem` 으로 추가
 4. Consumable 즉시 효과는 `useEffects` + `ItemEffectApplier` 경로를 사용. 현재 `HealHp` 지원
 5. Relic 평면 패시브는 `passiveEffects` + `PlayerItemStats` 경로를 사용. 현재 MaxHp/Attack/Defense/MoveSpeed 지원
@@ -2564,7 +2584,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·5개 고정 탭 필터·전체 탭 그룹 정렬·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind + 클릭 위임) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
 | **플레이어 인벤토리** | `PlayerInventory` + `InventoryItemStack` — AddItem/RemoveItem/HasItem/GetItemCount + stackable/maxStack 정책 자동 적용, `OwnsSoulForm(formId)` 로 Soul 보유 기반 Form 소유 판정, `RemoveItemsOnFloorTransition`/`RemoveItemsOnDungeonExit` 가 ItemData 플래그 기반으로 층/던전 이탈 시 자동 정리. Elite Key 가 일반 ItemData 한 항목으로 통합되어 과거 `PlayerEliteKeyInventory` 는 제거됨 |
 | **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace 6종 훅 적용. 콘솔 `/enhance <form> <stat> [count]` (§11b-8) |
-| **드롭 설정(데이터 기반)** | `EnemyDropEntry{itemCode,min/maxAmount,chance}` + `EnemyData.drops` + `EnemyDropRoller`(결정적 롤, `EnemyDropDomain`). 스폰 통합·소울 분해는 미구현(1/3 단계) |
+| **데이터 기반 적 드롭 (EnemyDropDatabase)** | 중앙 SO(EnemyData→그룹) + 독립 드랍 + **가중치 pick-one 그룹** + `EnemyDropRoller`(결정적, 별도 dropRng/`EnemyDropDomain`). 일반(RoomSpawner)·엘리트·보스(ArenaEncounterBase) 전부 결선. itemCode 문자열·EnemyData 키. 소울 분해는 후속(§11b-3b) |
 | **ItemData 정리 플래그** | `removeOnFloorTransition` / `removeOnDungeonExit` — 층 이동·던전 이탈 파이프라인에서 자동 청소 (elite_key 가 이 플래그 사용) |
 | **DroppedItem 일반화** | `OnTriggerEnter2D` 가 ItemType 분기 없이 `PlayerInventory.AddItem` 호출로 일원화 — Currency/Consumable/Soul 등 모든 아이템이 인벤토리에 픽업 가능 |
 | **ItemEffect 1차** | `ItemEffectType` + `ItemEffect` — `useEffects`(Consumable 1회) / `passiveEffects`(Relic 소지 중 상시) 데이터 추가. 현재 HealHp, MaxHpBonus, AttackBonus, DefenseBonus, MoveSpeedBonus 지원 |
@@ -2612,7 +2632,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
-| 드롭/경제 루프 | 중간 | 데이터 기반 드롭 1차(`EnemyDropEntry`/`EnemyData.drops`/`EnemyDropRoller`, 결정적 롤) 구현. 남은: 스폰 통합(SpawnRoom→엘리트/보스), 소울 분해(중복→폼별 재료), Material 영구보존, Town Soul Altar(누진비용) |
+| 드롭/경제 루프 | 중간 | 데이터 기반 적 드롭(중앙 DB·독립/pick-one·일반/엘리트/보스 결선) 구현 완료(§11b-3b). 남은: 소울 분해(중복 소울→폼별 재료, SpawnDrops 시점), Material 영구보존·분해 산물, Town Soul Altar(누진비용), 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | 낮음 | Soul 강화의 Crit/Lifesteal/ComboDamage/AilmentDamage 는 enum·집계만, 적용 훅 미구현(각 신규 전투 메커니즘 필요) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
