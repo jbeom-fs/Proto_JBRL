@@ -9,6 +9,7 @@ public class RoomSpawner : MonoBehaviour
     [SerializeField] private DungeonEventChannel eventChannel;
     [SerializeField] private EnemyData[] enemyTable;
     [SerializeField] private EnemyData[] eliteRoomEnemyTable;
+    [SerializeField] private EnemyDropDatabase dropDatabase;
     [SerializeField] private EliteArenaEncounterController eliteArenaEncounterController;
 
     [Header("Budget")]
@@ -232,6 +233,14 @@ public class RoomSpawner : MonoBehaviour
         var roomRng = new System.Random(roomSeed);
         Shuffle(walkableTiles, roomRng);
 
+        int dropSeed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)region,
+            dungeonManager.floor,
+            room.StableRoomKey,
+            DeterministicSeedUtility.EnemyDropDomain);
+        var dropRng = new System.Random(dropSeed);
+
         BeginRoomSpawnTracking(room);
 
         float budget = CalculateBudget(room);
@@ -259,6 +268,8 @@ public class RoomSpawner : MonoBehaviour
             enemy.transform.position = dungeonManager.GridToWorld(tile);
             enemy.transform.SetParent(null);
             enemy.Initialize(selected);
+            if (dropDatabase != null)
+                enemy.RollDrops(dropDatabase.GetDrops(selected), dropRng);
             if (ShouldAssignEliteKey(room, spawnedIndex))
                 enemy.MarkAsEliteKeyHolder();
             TrackEnemy(enemy);

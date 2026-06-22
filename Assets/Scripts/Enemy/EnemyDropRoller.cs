@@ -1,18 +1,19 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class EnemyDropRoller
 {
-    public static void Roll(EnemyData data, EnemyInventory inventory, System.Random rng)
+    public static void Roll(IReadOnlyList<EnemyDropEntry> entries, EnemyInventory inventory, System.Random rng)
     {
-        if (data == null || inventory == null || rng == null)
+        if (entries == null || inventory == null || rng == null)
             return;
 
-        if (data.drops == null || data.drops.Count == 0)
+        if (entries.Count == 0)
             return;
 
-        for (int i = 0; i < data.drops.Count; i++)
+        for (int i = 0; i < entries.Count; i++)
         {
-            EnemyDropEntry entry = data.drops[i];
+            EnemyDropEntry entry = entries[i];
             if (string.IsNullOrWhiteSpace(entry.itemCode))
                 continue;
 

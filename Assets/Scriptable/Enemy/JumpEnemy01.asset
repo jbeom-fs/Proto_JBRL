@@ -29,6 +29,8 @@ MonoBehaviour:
   isStationary: 0
   immuneToKnockback: 0
   blocksMovement: 0
+  isElite: 0
+  elitePatternSet: {fileID: 0}
   attackCooldown: 1.5
   attackWindup: 0.4
   attackRecovery: 0

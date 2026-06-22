@@ -4,6 +4,7 @@ public sealed class DroppedItem : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Collider2D pickupCollider;
+    [SerializeField] private float iconWorldSize = 0.5f;
     [SerializeField] private string sortingLayerName = "Default";
     [SerializeField] private int sortingOrder = 5;
 
@@ -11,6 +12,15 @@ public sealed class DroppedItem : MonoBehaviour
     private string _itemCode;
     private int _amount;
     private bool _initialized;
+    private CircleCollider2D _circlePickupCollider;
+    private float _baseCircleRadius;
+    private Vector2 _baseCircleOffset;
+    private float _baseColliderScale = 1f;
+
+    private void Awake()
+    {
+        CachePickupColliderBaseline();
+    }
 
     public void Initialize(ItemData itemData, int amount)
     {
@@ -31,6 +41,7 @@ public sealed class DroppedItem : MonoBehaviour
             spriteRenderer.sortingLayerName = sortingLayerName;
             spriteRenderer.sortingOrder = sortingOrder;
             spriteRenderer.enabled = itemData.Icon != null;
+            NormalizeIconWorldSize();
         }
 
         if (itemData.Icon == null)
@@ -57,5 +68,55 @@ public sealed class DroppedItem : MonoBehaviour
 
         DropItemSpawner.Instance?.Unregister(this);
         Destroy(gameObject);
+    }
+
+    private void NormalizeIconWorldSize()
+    {
+        if (spriteRenderer == null || spriteRenderer.sprite == null || iconWorldSize <= 0f)
+            return;
+
+        Vector2 size = spriteRenderer.sprite.bounds.size;
+        float longest = Mathf.Max(size.x, size.y);
+        float scale = longest > 0.0001f ? iconWorldSize / longest : 1f;
+        spriteRenderer.transform.localScale = new Vector3(scale, scale, 1f);
+
+        if (spriteRenderer.transform == transform)
+            RestoreCirclePickupColliderWorldSize();
+    }
+
+    private void CachePickupColliderBaseline()
+    {
+        _circlePickupCollider = pickupCollider as CircleCollider2D;
+        if (_circlePickupCollider == null)
+            return;
+
+        _baseCircleRadius = _circlePickupCollider.radius;
+        _baseCircleOffset = _circlePickupCollider.offset;
+        _baseColliderScale = GetColliderScale(_circlePickupCollider);
+    }
+
+    private void RestoreCirclePickupColliderWorldSize()
+    {
+        if (_circlePickupCollider == null)
+            CachePickupColliderBaseline();
+        if (_circlePickupCollider == null)
+            return;
+
+        float currentScale = GetColliderScale(_circlePickupCollider);
+        if (currentScale <= 0.0001f)
+            return;
+
+        float ratio = _baseColliderScale / currentScale;
+        _circlePickupCollider.radius = _baseCircleRadius * ratio;
+        _circlePickupCollider.offset = _baseCircleOffset * ratio;
+    }
+
+    private static float GetColliderScale(Collider2D collider)
+    {
+        if (collider == null)
+            return 1f;
+
+        Vector3 scale = collider.transform.lossyScale;
+        return Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
     }
 }

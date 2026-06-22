@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public enum EnemyBehaviorType
@@ -68,15 +67,6 @@ public struct EnemyAttackImpactData
             : 1f;
 }
 
-[System.Serializable]
-public struct EnemyDropEntry
-{
-    public string itemCode;
-    [Min(1)] public int minAmount;
-    [Min(1)] public int maxAmount;
-    [Range(0f, 1f)] public float chance;
-}
-
 [CreateAssetMenu(fileName = "NewEnemy", menuName = "JBRogLike/Enemy")]
 public class EnemyData : ScriptableObject
 {
@@ -92,9 +82,6 @@ public class EnemyData : ScriptableObject
     [Tooltip("Delay before this enemy is disabled after reaching 0 HP.")]
     [Min(0f)]
     public float deathDelay = 0.5f;
-
-    [Header("Drops")]
-    public List<EnemyDropEntry> drops = new List<EnemyDropEntry>();
 
     [Header("Spawn Budget")]
     [Min(1)]

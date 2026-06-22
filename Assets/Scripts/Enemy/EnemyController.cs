@@ -154,6 +154,14 @@ public class EnemyController : MonoBehaviour, IDamageable
         _inventory?.AddDropItem(DeterministicSeedUtility.EliteKeyDomain);
     }
 
+    public void RollDrops(IReadOnlyList<EnemyDropEntry> entries, System.Random rng)
+    {
+        if (_inventory == null)
+            _inventory = GetComponent<EnemyInventory>();
+
+        EnemyDropRoller.Roll(entries, _inventory, rng);
+    }
+
     public void ClearEliteKeyHolder()
     {
         _holdsEliteKey = false;

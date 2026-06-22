@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98947c59f727d174596c5e5108bacd0a, type: 3}
+  m_Name: EnemyDropDatabase
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDropDatabase
+  groups:
+  - enemy: {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
+    drops:
+    - itemCode: Test_Potion
+      minAmount: 1
+      maxAmount: 3
+      chance: 1
+  - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
+    drops:
+    - itemCode: Test_Potion
+      minAmount: 1
+      maxAmount: 3
+      chance: 1
