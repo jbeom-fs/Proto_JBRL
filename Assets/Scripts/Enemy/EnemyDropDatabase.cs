@@ -12,10 +12,27 @@ public struct EnemyDropEntry
 }
 
 [Serializable]
+public struct EnemyDropChoice
+{
+    public string itemCode;
+    [Min(1)] public int minAmount;
+    [Min(1)] public int maxAmount;
+    [Min(0f)] public float weight;
+}
+
+[Serializable]
+public sealed class EnemyDropChoiceGroup
+{
+    [Range(0f, 1f)] public float chance;
+    public List<EnemyDropChoice> choices = new List<EnemyDropChoice>();
+}
+
+[Serializable]
 public sealed class EnemyDropGroup
 {
     public EnemyData enemy;
     public List<EnemyDropEntry> drops = new List<EnemyDropEntry>();
+    public List<EnemyDropChoiceGroup> choiceGroups = new List<EnemyDropChoiceGroup>();
 }
 
 [CreateAssetMenu(fileName = "EnemyDropDatabase", menuName = "JBRogLike/Enemy/Enemy Drop Database")]
@@ -23,20 +40,16 @@ public sealed class EnemyDropDatabase : ScriptableObject
 {
     [SerializeField] private List<EnemyDropGroup> groups = new List<EnemyDropGroup>();
 
-    private static readonly EnemyDropEntry[] s_EmptyDrops = Array.Empty<EnemyDropEntry>();
-
     private readonly Dictionary<EnemyData, EnemyDropGroup> _byEnemy = new Dictionary<EnemyData, EnemyDropGroup>();
     private bool _cacheBuilt;
 
-    public IReadOnlyList<EnemyDropEntry> GetDrops(EnemyData enemy)
+    public EnemyDropGroup GetDropGroup(EnemyData enemy)
     {
         if (enemy == null)
-            return s_EmptyDrops;
+            return null;
 
         EnsureCache();
-        return _byEnemy.TryGetValue(enemy, out EnemyDropGroup group) && group.drops != null
-            ? group.drops
-            : s_EmptyDrops;
+        return _byEnemy.TryGetValue(enemy, out EnemyDropGroup group) ? group : null;
     }
 
     private void OnEnable()

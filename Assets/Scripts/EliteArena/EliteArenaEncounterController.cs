@@ -215,12 +215,28 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             return false;
         }
 
-        EnemyController enemy = SpawnArenaEnemyAtPosition(eliteData, spawnPosition, OnEliteDied);
+        System.Random dropRng = CreateEliteDropRng();
+        EnemyController enemy = SpawnArenaEnemyAtPosition(eliteData, spawnPosition, OnEliteDied, dropRng);
         if (enemy == null)
             return false;
 
         _activeElite = enemy;
         return true;
+    }
+
+    private System.Random CreateEliteDropRng()
+    {
+        DungeonManager dungeonManager = DungeonManager.Instance;
+        if (dungeonManager == null || dungeonManager.Data == null)
+            return null;
+
+        int dropSeed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)dungeonManager.Data.currentStageRegion,
+            dungeonManager.floor,
+            _originRoom.StableRoomKey,
+            DeterministicSeedUtility.EnemyDropDomain);
+        return new System.Random(dropSeed);
     }
 
     private void OnEliteDied(EnemyController enemy)

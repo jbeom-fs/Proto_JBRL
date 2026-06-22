@@ -10,6 +10,7 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     [Header("Arena")]
     [SerializeField] protected Tilemap arenaWalkTilemap;
     [SerializeField] protected Tilemap arenaWallTilemap;
+    [SerializeField] protected EnemyDropDatabase dropDatabase;
     [SerializeField] protected Transform eliteSpawnPoint;
     [SerializeField] protected EliteArenaReturnPortal returnPortal;
     [SerializeField] protected EliteArenaReturnPortal returnPortalPrefab;
@@ -41,7 +42,8 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     protected EnemyController SpawnArenaEnemyAtPosition(
         EnemyData enemyData,
         Vector3 spawnPosition,
-        Action<EnemyController> deathHandler)
+        Action<EnemyController> deathHandler,
+        System.Random dropRng)
     {
         if (enemyData == null || EnemyPoolManager.Instance == null)
             return null;
@@ -53,6 +55,9 @@ public abstract class ArenaEncounterBase : MonoBehaviour
         enemy.transform.position = spawnPosition;
         enemy.transform.SetParent(null);
         enemy.Initialize(enemyData);
+        if (dropDatabase != null && dropRng != null)
+            enemy.RollDrops(dropDatabase.GetDropGroup(enemyData), dropRng);
+
         if (deathHandler != null)
         {
             enemy.OnDied -= deathHandler;

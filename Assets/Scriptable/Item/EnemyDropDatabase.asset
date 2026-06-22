@@ -19,9 +19,36 @@ MonoBehaviour:
       minAmount: 1
       maxAmount: 3
       chance: 1
+    choiceGroups: []
   - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
     drops:
     - itemCode: Test_Potion
       minAmount: 1
       maxAmount: 3
       chance: 1
+    choiceGroups: []
+  - enemy: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
+    drops:
+    - itemCode: Test_Potion
+      minAmount: 1
+      maxAmount: 3
+      chance: 1
+    choiceGroups:
+    - chance: 1
+      choices:
+      - itemCode: Soul_Sword
+        minAmount: 1
+        maxAmount: 1
+        weight: 0.25
+      - itemCode: Soul_Dagger
+        minAmount: 1
+        maxAmount: 1
+        weight: 0.25
+      - itemCode: Soul_Freichutz
+        minAmount: 1
+        maxAmount: 1
+        weight: 0.25
+      - itemCode: Soul_Parry
+        minAmount: 1
+        maxAmount: 1
+        weight: 0.25

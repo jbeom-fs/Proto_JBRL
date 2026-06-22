@@ -269,7 +269,7 @@ public class RoomSpawner : MonoBehaviour
             enemy.transform.SetParent(null);
             enemy.Initialize(selected);
             if (dropDatabase != null)
-                enemy.RollDrops(dropDatabase.GetDrops(selected), dropRng);
+                enemy.RollDrops(dropDatabase.GetDropGroup(selected), dropRng);
             if (ShouldAssignEliteKey(room, spawnedIndex))
                 enemy.MarkAsEliteKeyHolder();
             TrackEnemy(enemy);

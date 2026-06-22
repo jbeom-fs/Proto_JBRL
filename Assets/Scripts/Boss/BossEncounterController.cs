@@ -139,12 +139,28 @@ public sealed class BossEncounterController : ArenaEncounterBase
             return false;
         }
 
-        EnemyController boss = SpawnArenaEnemyAtPosition(bossData, spawnPosition, OnBossDied);
+        System.Random dropRng = CreateBossDropRng();
+        EnemyController boss = SpawnArenaEnemyAtPosition(bossData, spawnPosition, OnBossDied, dropRng);
         if (boss == null)
             return false;
 
         _activeBoss = boss;
         return true;
+    }
+
+    private System.Random CreateBossDropRng()
+    {
+        DungeonManager dungeonManager = DungeonManager.Instance;
+        if (dungeonManager == null || dungeonManager.Data == null)
+            return null;
+
+        int dropSeed = DeterministicSeedUtility.CreateSeed(
+            dungeonManager.seed,
+            (int)dungeonManager.Data.currentStageRegion,
+            dungeonManager.floor,
+            0,
+            DeterministicSeedUtility.EnemyDropDomain);
+        return new System.Random(dropSeed);
     }
 
     private void OnBossDied(EnemyController boss)
