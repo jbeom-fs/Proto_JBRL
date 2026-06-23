@@ -129513,7 +129513,7 @@ MonoBehaviour:
   transitionManager: {fileID: 920100002}
   arenaWalkTilemap: {fileID: 1206688124}
   arenaWallTilemap: {fileID: 1309604883}
-  dropDatabase: {fileID: 0}
+  dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
   eliteSpawnPoint: {fileID: 0}
   returnPortal: {fileID: 0}
   returnPortalPrefab: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
@@ -129973,7 +129973,7 @@ MonoBehaviour:
   transitionManager: {fileID: 920100002}
   arenaWalkTilemap: {fileID: 1206688124}
   arenaWallTilemap: {fileID: 1309604883}
-  dropDatabase: {fileID: 0}
+  dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
   eliteSpawnPoint: {fileID: 2401000011}
   returnPortal: {fileID: 0}
   returnPortalPrefab: {fileID: 0}

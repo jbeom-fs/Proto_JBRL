@@ -74,6 +74,7 @@
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteProjectilePatternRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternRuntime.cs" />
+    <Compile Include="Assets\Scripts\Items\SoulDropResolver.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverUIController.cs" />
     <Compile Include="Assets\Scripts\Visual\FogVisibilityRenderer.cs" />
     <Compile Include="Assets\Scripts\UI\InventorySlotUI.cs" />

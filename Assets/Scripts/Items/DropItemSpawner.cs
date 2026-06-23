@@ -10,6 +10,8 @@ public sealed class DropItemSpawner : MonoBehaviour
     [SerializeField] private float dropSpacing = 0.22f;
 
     private readonly List<DroppedItem> _activeDrops = new List<DroppedItem>(8);
+    private System.Random _salvageRng;
+    private long _salvageRngSeed = long.MinValue;
 
     private void Awake()
     {
@@ -45,6 +47,8 @@ public sealed class DropItemSpawner : MonoBehaviour
             return;
         }
 
+        PlayerInventory playerInventory = ResolvePlayerInventory();
+
         for (int i = 0; i < drops.Count; i++)
         {
             EnemyDropItem drop = drops[i];
@@ -56,9 +60,16 @@ public sealed class DropItemSpawner : MonoBehaviour
                 continue;
             }
 
+            var (spawnItem, spawnAmount) = SoulDropResolver.ResolveDrop(
+                item,
+                drop.Amount,
+                playerInventory,
+                itemDatabase,
+                GetSalvageRng());
+
             Vector3 position = origin + GetOffset(i, drops.Count);
             DroppedItem droppedItem = Instantiate(droppedItemPrefab, position, Quaternion.identity);
-            droppedItem.Initialize(item, drop.Amount);
+            droppedItem.Initialize(spawnItem, spawnAmount);
             _activeDrops.Add(droppedItem);
         }
     }
@@ -90,5 +101,29 @@ public sealed class DropItemSpawner : MonoBehaviour
 
         float start = -0.5f * (count - 1) * dropSpacing;
         return new Vector3(start + index * dropSpacing, 0f, 0f);
+    }
+
+    private System.Random GetSalvageRng()
+    {
+        long seed = DungeonManager.Instance != null ? DungeonManager.Instance.seed : 0;
+        if (_salvageRng == null || _salvageRngSeed != seed)
+        {
+            _salvageRngSeed = seed;
+            _salvageRng = new System.Random(DeterministicSeedUtility.CreateSeed(
+                seed,
+                0,
+                0,
+                0,
+                DeterministicSeedUtility.SoulSalvageDomain));
+        }
+
+        return _salvageRng;
+    }
+
+    private PlayerInventory ResolvePlayerInventory()
+    {
+        return PlayerController.Active != null
+            ? PlayerController.Active.GetComponent<PlayerInventory>()
+            : null;
     }
 }

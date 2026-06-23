@@ -55,7 +55,7 @@ MonoBehaviour:
     soulFormId: 0
   - itemCode: Soul_Sword
     displayName: "\uAC80\uC758 \uD63C"
-    icon: {fileID: 0}
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
     stackable: 0
@@ -65,9 +65,12 @@ MonoBehaviour:
     useEffects: []
     passiveEffects: []
     soulFormId: 1
+    salvageItemCode: Mat_Sword
+    salvageMinAmount: 2
+    salvageMaxAmount: 4
   - itemCode: Soul_Dagger
     displayName: "\uC794\uC601\uC758 \uD63C"
-    icon: {fileID: 0}
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
     stackable: 0
@@ -77,9 +80,12 @@ MonoBehaviour:
     useEffects: []
     passiveEffects: []
     soulFormId: 2
+    salvageItemCode: Mat_Dagger
+    salvageMinAmount: 2
+    salvageMaxAmount: 4
   - itemCode: Soul_Freichutz
     displayName: "\uB9C8\uD0C4\uC758 \uD63C"
-    icon: {fileID: 0}
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
     stackable: 0
@@ -89,9 +95,12 @@ MonoBehaviour:
     useEffects: []
     passiveEffects: []
     soulFormId: 3
+    salvageItemCode: Mat_Freichutz
+    salvageMinAmount: 2
+    salvageMaxAmount: 4
   - itemCode: Soul_Parry
     displayName: "\uC751\uC218\uC758 \uD63C"
-    icon: {fileID: 0}
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
     stackable: 0
@@ -101,3 +110,54 @@ MonoBehaviour:
     useEffects: []
     passiveEffects: []
     soulFormId: 4
+    salvageItemCode: Mat_Parry
+    salvageMinAmount: 2
+    salvageMaxAmount: 4
+  - itemCode: Mat_Sword
+    displayName: Sword Soul Shard
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    description:
+    itemType: 5
+    stackable: 1
+    maxStack: 99
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 0
+  - itemCode: Mat_Dagger
+    displayName: Dagger Soul Shard
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    description:
+    itemType: 5
+    stackable: 1
+    maxStack: 99
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 0
+  - itemCode: Mat_Freichutz
+    displayName: Freischutz Soul Shard
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    description:
+    itemType: 5
+    stackable: 1
+    maxStack: 99
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 0
+  - itemCode: Mat_Parry
+    displayName: Parry Soul Shard
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    description:
+    itemType: 5
+    stackable: 1
+    maxStack: 99
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 0
