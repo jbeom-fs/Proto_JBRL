@@ -36,6 +36,12 @@ public sealed class SoulEnhancementTable : ScriptableObject
         return false;
     }
 
+    public bool TryGetGrowth(PlayerFormId form, SoulStatType stat, out SoulStatGrowth growth)
+    {
+        EnsureCache();
+        return _growthsByKey.TryGetValue(MakeKey(form, stat), out growth);
+    }
+
     public void GetGrowths(PlayerFormId form, List<SoulStatGrowth> output)
     {
         if (output == null)
@@ -133,6 +139,9 @@ public sealed class SoulEnhancementTable : ScriptableObject
 
                 if (growth.maxLevel < 0)
                     Debug.LogWarning("[SoulEnhancementTable] Negative maxLevel: " + entry.form + "/" + growth.stat + ".", this);
+
+                if (growth.baseMaterialCost < 0)
+                    Debug.LogWarning("[SoulEnhancementTable] Negative baseMaterialCost: " + entry.form + "/" + growth.stat + ".", this);
             }
         }
 #endif
@@ -150,6 +159,7 @@ public struct SoulStatGrowth
     public SoulStatType stat;
     public float perLevel;
     [Min(0)] public int maxLevel;
+    [Min(0)] public int baseMaterialCost;
 }
 
 [Serializable]

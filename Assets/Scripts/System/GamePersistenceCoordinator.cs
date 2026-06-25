@@ -1,0 +1,257 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+public sealed class GamePersistenceCoordinator : MonoBehaviour
+{
+    [SerializeField] private PlayerInventory inventory;
+    [SerializeField] private PlayerSoulEnhancements soulEnhancements;
+
+    private readonly List<ItemData> _removeItemBuffer = new List<ItemData>(16);
+    private readonly List<SoulEnhancementLevelSnapshot> _enhancementBuffer = new List<SoulEnhancementLevelSnapshot>(32);
+    private readonly HashSet<string> _unknownItemWarnings = new HashSet<string>();
+
+    private SaveService _service;
+    private bool _dirty;
+    private bool _isApplying;
+    private bool _dependencyWarningLogged;
+
+    private void Awake()
+    {
+        _service = new SaveService();
+    }
+
+    private void OnEnable()
+    {
+        if (inventory != null)
+            inventory.OnInventoryChanged += HandlePersistentStateChanged;
+
+        if (soulEnhancements != null)
+            soulEnhancements.OnChanged += HandlePersistentStateChanged;
+    }
+
+    private void Start()
+    {
+        EnsureService();
+
+        if (_service.TryLoad(out SaveData data))
+            ApplyFromSave(data);
+    }
+
+    private void LateUpdate()
+    {
+        if (!_dirty)
+            return;
+
+        SaveAll();
+    }
+
+    private void OnDisable()
+    {
+        if (inventory != null)
+            inventory.OnInventoryChanged -= HandlePersistentStateChanged;
+
+        if (soulEnhancements != null)
+            soulEnhancements.OnChanged -= HandlePersistentStateChanged;
+    }
+
+    private void OnApplicationQuit()
+    {
+        SaveAll();
+    }
+
+    private void OnApplicationPause(bool pause)
+    {
+        if (pause)
+            SaveAll();
+    }
+
+    public SaveData CaptureToSave()
+    {
+        SaveData data = new SaveData();
+
+        if (inventory != null)
+        {
+            IReadOnlyList<InventoryItemStack> source = inventory.Items;
+            for (int i = 0; i < source.Count; i++)
+            {
+                InventoryItemStack stack = source[i];
+                if (stack == null || stack.Count <= 0)
+                    continue;
+
+                ItemData item = stack.Item;
+                if (item == null || !IsPersistentItemType(item.ItemType) || string.IsNullOrWhiteSpace(item.ItemCode))
+                    continue;
+
+                data.items.Add(new ItemStackSave
+                {
+                    itemCode = item.ItemCode,
+                    count = stack.Count
+                });
+            }
+        }
+
+        if (soulEnhancements != null)
+        {
+            _enhancementBuffer.Clear();
+            soulEnhancements.GetLevels(_enhancementBuffer);
+
+            for (int i = 0; i < _enhancementBuffer.Count; i++)
+            {
+                SoulEnhancementLevelSnapshot level = _enhancementBuffer[i];
+                if (level.Level <= 0)
+                    continue;
+
+                data.enhancements.Add(new EnhancementSave
+                {
+                    form = (int)level.Form,
+                    stat = (int)level.Stat,
+                    level = level.Level
+                });
+            }
+
+            _enhancementBuffer.Clear();
+        }
+
+        return data;
+    }
+
+    public void ApplyFromSave(SaveData data)
+    {
+        if (data == null)
+            return;
+
+        if (!HasDependencies())
+            return;
+
+        _isApplying = true;
+        try
+        {
+            RemovePersistentInventoryItems();
+            ApplyInventoryItems(data.items);
+
+            soulEnhancements.Clear();
+            ApplyEnhancements(data.enhancements);
+        }
+        finally
+        {
+            _isApplying = false;
+            _dirty = false;
+        }
+    }
+
+    public void SaveAll()
+    {
+        _dirty = false;
+
+        if (!HasDependencies())
+            return;
+
+        EnsureService();
+        _service.Save(CaptureToSave());
+    }
+
+    private void HandlePersistentStateChanged()
+    {
+        if (_isApplying)
+            return;
+
+        _dirty = true;
+    }
+
+    private void RemovePersistentInventoryItems()
+    {
+        _removeItemBuffer.Clear();
+
+        IReadOnlyList<InventoryItemStack> source = inventory.Items;
+        for (int i = 0; i < source.Count; i++)
+        {
+            InventoryItemStack stack = source[i];
+            if (stack == null)
+                continue;
+
+            ItemData item = stack.Item;
+            if (item == null || !IsPersistentItemType(item.ItemType))
+                continue;
+
+            if (!_removeItemBuffer.Contains(item))
+                _removeItemBuffer.Add(item);
+        }
+
+        for (int i = 0; i < _removeItemBuffer.Count; i++)
+            inventory.RemoveAll(_removeItemBuffer[i]);
+
+        _removeItemBuffer.Clear();
+    }
+
+    private void ApplyInventoryItems(List<ItemStackSave> savedItems)
+    {
+        if (savedItems == null)
+            return;
+
+        for (int i = 0; i < savedItems.Count; i++)
+        {
+            ItemStackSave saved = savedItems[i];
+            if (saved == null || saved.count <= 0 || string.IsNullOrWhiteSpace(saved.itemCode))
+                continue;
+
+            if (!inventory.TryGetDatabaseItem(saved.itemCode, out ItemData item) || item == null)
+            {
+                WarnUnknownItem(saved.itemCode);
+                continue;
+            }
+
+            if (!IsPersistentItemType(item.ItemType))
+                continue;
+
+            inventory.AddItem(item, saved.count);
+        }
+    }
+
+    private void ApplyEnhancements(List<EnhancementSave> savedEnhancements)
+    {
+        if (savedEnhancements == null)
+            return;
+
+        for (int i = 0; i < savedEnhancements.Count; i++)
+        {
+            EnhancementSave saved = savedEnhancements[i];
+            if (saved == null || saved.level <= 0)
+                continue;
+
+            soulEnhancements.SetLevel((PlayerFormId)saved.form, (SoulStatType)saved.stat, saved.level);
+        }
+    }
+
+    private bool HasDependencies()
+    {
+        if (inventory != null && soulEnhancements != null)
+            return true;
+
+        if (!_dependencyWarningLogged)
+        {
+            _dependencyWarningLogged = true;
+            Debug.LogWarning("[GamePersistenceCoordinator] Missing serialized dependencies.", this);
+        }
+
+        return false;
+    }
+
+    private void EnsureService()
+    {
+        if (_service == null)
+            _service = new SaveService();
+    }
+
+    private void WarnUnknownItem(string itemCode)
+    {
+        if (!_unknownItemWarnings.Add(itemCode))
+            return;
+
+        Debug.LogWarning("[GamePersistenceCoordinator] Unknown saved itemCode skipped: " + itemCode, this);
+    }
+
+    private static bool IsPersistentItemType(ItemType itemType)
+    {
+        return itemType == ItemType.Soul || itemType == ItemType.Material;
+    }
+}

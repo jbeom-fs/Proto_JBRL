@@ -21,6 +21,16 @@ public sealed class PlayerInventory : MonoBehaviour
         return itemDatabase.TryGetItem(itemCode, out item);
     }
 
+    public bool TryGetSoulByForm(PlayerFormId formId, out ItemData soul)
+    {
+        soul = null;
+
+        if (itemDatabase == null)
+            return false;
+
+        return itemDatabase.TryGetSoulByForm(formId, out soul);
+    }
+
     public void GetDatabaseItemCodes(List<string> output)
     {
         if (itemDatabase == null)

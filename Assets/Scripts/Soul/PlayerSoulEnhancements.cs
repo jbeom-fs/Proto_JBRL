@@ -20,6 +20,30 @@ public sealed class PlayerSoulEnhancements : MonoBehaviour
             : 0;
     }
 
+    public void GetLevels(List<SoulEnhancementLevelSnapshot> output)
+    {
+        if (output == null)
+            return;
+
+        EnsureCache();
+
+        if (levels == null)
+            return;
+
+        for (int i = 0; i < levels.Count; i++)
+        {
+            SoulEnhancementLevel entry = levels[i];
+            if (entry == null)
+                continue;
+
+            int level = Mathf.Max(0, entry.level);
+            if (level <= 0)
+                continue;
+
+            output.Add(new SoulEnhancementLevelSnapshot(entry.form, entry.stat, level));
+        }
+    }
+
     public void AddLevel(PlayerFormId form, SoulStatType stat, int delta)
     {
         if (delta == 0)
@@ -151,4 +175,18 @@ public sealed class PlayerSoulEnhancements : MonoBehaviour
         public SoulStatType stat;
         [Min(0)] public int level;
     }
+}
+
+public readonly struct SoulEnhancementLevelSnapshot
+{
+    public SoulEnhancementLevelSnapshot(PlayerFormId form, SoulStatType stat, int level)
+    {
+        Form = form;
+        Stat = stat;
+        Level = level;
+    }
+
+    public PlayerFormId Form { get; }
+    public SoulStatType Stat { get; }
+    public int Level { get; }
 }

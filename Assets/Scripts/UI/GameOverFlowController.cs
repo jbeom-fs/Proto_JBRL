@@ -7,6 +7,7 @@ public class GameOverFlowController : MonoBehaviour
     [SerializeField] private CombatEventChannel combatChannel;
     [SerializeField] private GameOverUIController gameOverUI;
     [SerializeField] private MonoBehaviour restartHandler;
+    [SerializeField] private GamePersistenceCoordinator persistenceCoordinator;
 
     [Header("Timing")]
     [SerializeField, Min(0f)] private float deathUiDelay = 1f;
@@ -71,6 +72,7 @@ public class GameOverFlowController : MonoBehaviour
     private void ConfirmGameOver()
     {
         gameOverUI?.HideImmediate();
+        persistenceCoordinator?.SaveAll();
         _restartHandler?.RestartAfterGameOver();
     }
 }
