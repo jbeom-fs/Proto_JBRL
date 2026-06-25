@@ -12,6 +12,7 @@ public class AttackExecutor
     private readonly List<EnemyController> _hitEnemiesThisAttack = new();
     private readonly List<HitCandidate> _hitCandidates = new();
     private bool _isAttackAlreadyProcessed;
+    private int _damageDealtThisAttack;
 
     private struct HitCandidate
     {
@@ -32,9 +33,11 @@ public class AttackExecutor
         _hitTargetsThisAttack.Clear();
         _hitEnemiesThisAttack.Clear();
         _hitCandidates.Clear();
+        _damageDealtThisAttack = 0;
     }
 
     public int HitEnemyCount => _hitEnemiesThisAttack.Count;
+    public int DamageDealtThisAttack => _damageDealtThisAttack;
 
     public EnemyController GetHitEnemy(int index)
     {
@@ -123,13 +126,14 @@ public class AttackExecutor
 
         if (target is EnemyController enemy)
         {
-            enemy.ApplyCombatImpact(
+            int actualDamage = enemy.ApplyCombatImpact(
                 damage,
                 _attackerTransform.position,
                 knockbackForce,
                 knockbackDuration,
                 slowPercentage,
                 slowDuration);
+            _damageDealtThisAttack += actualDamage;
             _hitEnemiesThisAttack.Add(enemy);
             return;
         }

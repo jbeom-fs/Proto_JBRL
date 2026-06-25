@@ -118,7 +118,12 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     public void TakeDamage(int damage)
     {
-        if (IsDead || !IsAlive) return;
+        ApplyDamageReturningActual(damage);
+    }
+
+    private int ApplyDamageReturningActual(int damage)
+    {
+        if (IsDead || !IsAlive) return 0;
 
         int actual = Mathf.Max(1, damage - (data?.defense ?? 0));
         int hpBefore = _currentHp;
@@ -133,6 +138,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 #endif
 
         if (_currentHp == 0) Die();
+        return actual;
     }
 
     // Developer console only: routes through the normal death pipeline.
@@ -174,7 +180,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _inventory?.Clear();
     }
 
-    public void ApplyCombatImpact(
+    public int ApplyCombatImpact(
         int damage,
         Vector2 attackerPosition,
         float knockbackForce,
@@ -182,13 +188,14 @@ public class EnemyController : MonoBehaviour, IDamageable
         float slowPercentage,
         float slowDuration)
     {
-        if (IsDead) return;
+        if (IsDead) return 0;
 
-        TakeDamage(damage);
-        if (!IsAlive) return;
+        int actualDamage = ApplyDamageReturningActual(damage);
+        if (!IsAlive) return actualDamage;
 
         ApplyKnockback(attackerPosition, knockbackForce, knockbackDuration);
         ApplySlow(slowPercentage, slowDuration);
+        return actualDamage;
     }
 
     private void Update()

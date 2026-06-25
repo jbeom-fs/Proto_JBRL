@@ -153,7 +153,8 @@ public sealed class ProjectileFireService
             request.SlowDuration,
             request.StunDuration,
             request.OnEnemyHit,
-            request.DaggerMarkerDuration);
+            request.DaggerMarkerDuration,
+            request.IsCrit);
         return true;
     }
 

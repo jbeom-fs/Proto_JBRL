@@ -56,6 +56,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [Header("Damage Invincibility")]
     [SerializeField, Min(0f)] private float damageInvincibleDuration = 0.5f;
 
+    [Header("Critical")]
+    [SerializeField, Min(1f)] private float critDamageMultiplier = 2f;
+
     [Header("Skill Resources")]
     [SerializeField, Min(0)] private int maxParryStack = 4;
     [SerializeField, Min(0f)] private float parryStackGraceDuration = 3f;
@@ -114,6 +117,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private int _pendingDaggerCooldownResetSlot = -1;
     private float _daggerBasicAttackMarkerBuffTimer;
     private float _daggerBasicAttackMarkerDuration;
+    private float _lifestealPool;
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
     private bool _isInventorySubscribed;
@@ -167,6 +171,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     /// <summary>무기 보정치가 합산된 최종 방어력.</summary>
     public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0) + _itemStats.DefenseBonus;
+
+    public float EffectiveCritDamageMultiplier => Mathf.Max(1f, critDamageMultiplier);
 
     public event Action<PlayerCombatController> OnDied;
     public event Action<PlayerStatusEffectType> OnStatusEffectApplied;
@@ -460,6 +466,49 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return Mathf.Max(0f, currentWeapon.reloadTime) * Mathf.Max(0f, 1f - pct / 100f);
     }
 
+    public int RollCritDamage(int baseDamage, out bool didCrit)
+    {
+        didCrit = false;
+        if (baseDamage <= 0)
+            return baseDamage;
+
+        float chance = Mathf.Clamp01(_soulBonus.Get(SoulStatType.Crit));
+        if (chance <= 0f || UnityEngine.Random.value >= chance)
+            return baseDamage;
+
+        didCrit = true;
+        return Mathf.Max(1, Mathf.RoundToInt(baseDamage * EffectiveCritDamageMultiplier));
+    }
+
+    [System.Diagnostics.Conditional("UNITY_EDITOR")]
+    public void LogDamageDealt(int amount, bool isCrit)
+    {
+        if (amount <= 0)
+            return;
+
+        Debug.Log(isCrit
+            ? $"[Combat] 데미지 {amount} (CRITICAL)"
+            : $"[Combat] 데미지 {amount}");
+    }
+
+    public void ReportLifestealDamage(int actualDamage)
+    {
+        if (actualDamage <= 0 || !IsAlive)
+            return;
+
+        float pct = Mathf.Clamp01(_soulBonus.Get(SoulStatType.Lifesteal));
+        if (pct <= 0f)
+            return;
+
+        _lifestealPool += actualDamage * pct;
+        int heal = Mathf.FloorToInt(_lifestealPool);
+        if (heal <= 0)
+            return;
+
+        _lifestealPool -= heal;
+        RestoreHp(heal);
+    }
+
     private void Update()
     {
         if (IsDead)
@@ -566,9 +615,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             45f,
             _basicAttackWorldTargets);
 
+        int basicDamage = RollCritDamage(TotalAttack + currentWeapon.damage, out bool didCrit);
         _attackExecutor.ExecuteAttackWorld(
             _basicAttackWorldTargets,
-            TotalAttack + currentWeapon.damage,
+            basicDamage,
             currentWeapon.canPenetrateWalls,
             currentWeapon.basicAttackMultiTarget,
             currentWeapon.knockbackForce,
@@ -577,6 +627,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             currentWeapon.slowDuration,
             hitRadius);
 
+        ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
+        if (_attackExecutor.HitEnemyCount > 0)
+            LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
         ApplyDaggerMarkersFromBasicAttack();
     }
 
@@ -781,9 +834,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ConsumePendingDaggerCooldownReset(slotIndex);
         StartSkillRecovery(skill.recoveryDelay);
         combatChannel?.RaiseSkillUsed(skill);
-#if UNITY_EDITOR
-        Debug.Log($"[Combat] Skill [{slotIndex + 1}] {skill.skillName} used");
-#endif
 
         return true;
     }
@@ -836,13 +886,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             : skill.damage;
         if (detonationDamage > 0 && enemy.IsAlive)
         {
-            enemy.ApplyCombatImpact(
-                detonationDamage,
+            int actualDamage = enemy.ApplyCombatImpact(
+                RollCritDamage(detonationDamage, out bool didCrit),
                 transform.position,
                 0f,
                 0f,
                 0f,
                 0f);
+            ReportLifestealDamage(actualDamage);
+            LogDamageDealt(actualDamage, didCrit);
         }
 
         if (skill.resetCooldownOnMarkerDetonate && !_daggerDashCooldownResetThisDash)

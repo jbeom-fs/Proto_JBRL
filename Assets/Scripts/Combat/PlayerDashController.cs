@@ -301,13 +301,15 @@ public sealed class PlayerDashController : MonoBehaviour
     private void ApplyDamageToEnemy(EnemyController enemy, Vector3 hitOrigin)
     {
         _damageRequest.OnEnemyHit?.Invoke(enemy);
-        enemy.ApplyCombatImpact(
+        int actualDamage = enemy.ApplyCombatImpact(
             _damageRequest.Damage,
             hitOrigin,
             _damageRequest.KnockbackForce,
             _damageRequest.KnockbackDuration,
             _damageRequest.SlowPercentage,
             _damageRequest.SlowDuration);
+        _damageRequest.CasterCombat?.ReportLifestealDamage(actualDamage);
+        _damageRequest.CasterCombat?.LogDamageDealt(actualDamage, _damageRequest.IsCrit);
     }
 
     private static EnemyController ResolveEnemy(Collider2D hit)
@@ -321,7 +323,9 @@ public struct DashDamageRequest
 {
     public bool DamageOnPath;
     public bool DamageOnContact;
+    public PlayerCombatController CasterCombat;
     public int Damage;
+    public bool IsCrit;
     public float HitRadius;
     public float KnockbackForce;
     public float KnockbackDuration;

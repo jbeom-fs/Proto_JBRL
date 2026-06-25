@@ -10,6 +10,7 @@ public sealed class ProjectileFireRequest
     public UnityEngine.Object Owner;
     public Vector2 Direction;
     public int Damage;
+    public bool IsCrit;
     public float Speed;
     public float Lifetime;
     public int ProjectileCount = 1;

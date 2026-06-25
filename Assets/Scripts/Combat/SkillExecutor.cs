@@ -79,10 +79,14 @@ public sealed class SkillExecutor
     private SkillExecutionResult ExecuteInstantArea(SkillExecutionContext context)
     {
         List<Vector3> targets = _targetResolver.ResolveWorldTargets(context);
+        bool didCrit = false;
+        int damage = context.CasterCombat != null
+            ? context.CasterCombat.RollCritDamage(context.TotalAttack + context.Skill.damage, out didCrit)
+            : context.TotalAttack + context.Skill.damage;
         _attackExecutor.BeginAttackActivation();
         _attackExecutor.ExecuteAttackWorld(
             targets,
-            context.TotalAttack + context.Skill.damage,
+            damage,
             context.Skill.canPenetrateWalls,
             context.Skill.isMultiTarget,
             context.Skill.knockbackForce,
@@ -90,6 +94,9 @@ public sealed class SkillExecutor
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
             context.HitRadius);
+        context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
+        if (_attackExecutor.DamageDealtThisAttack > 0)
+            context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
         return SkillExecutionResult.SuccessWithCost(context.Skill.consumeAmount);
@@ -218,11 +225,17 @@ public sealed class SkillExecutor
     private static DashDamageRequest CreateDashDamageRequest(SkillExecutionContext context)
     {
         SkillData skill = context.Skill;
+        bool didCrit = false;
+        int damage = context.CasterCombat != null
+            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skill.damage, out didCrit)
+            : context.TotalAttack + skill.damage;
         return new DashDamageRequest
         {
             DamageOnPath = skill.dashDamageOnPath,
             DamageOnContact = skill.dashDamageOnContact,
-            Damage = context.TotalAttack + skill.damage,
+            CasterCombat = context.CasterCombat,
+            Damage = damage,
+            IsCrit = didCrit,
             HitRadius = context.HitRadius,
             KnockbackForce = skill.knockbackForce,
             KnockbackDuration = skill.knockbackDuration,
@@ -237,6 +250,10 @@ public sealed class SkillExecutor
     private static ProjectileFireRequest CreateProjectileFireRequest(SkillExecutionContext context, Vector2 direction, int projectileCount)
     {
         SkillData skill = context.Skill;
+        bool didCrit = false;
+        int damage = context.CasterCombat != null
+            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skill.damage, out didCrit)
+            : context.TotalAttack + skill.damage;
         return new ProjectileFireRequest
         {
             ProjectilePrefab = skill.projectilePrefab,
@@ -245,7 +262,8 @@ public sealed class SkillExecutor
             Caster = context.CasterCombat,
             Owner = context.CasterCombat,
             Direction = direction,
-            Damage = context.TotalAttack + skill.damage,
+            Damage = damage,
+            IsCrit = didCrit,
             Speed = skill.projectileSpeed,
             Lifetime = skill.projectileLifetime,
             ProjectileCount = Mathf.Max(1, projectileCount),

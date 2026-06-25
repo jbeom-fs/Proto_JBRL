@@ -33,6 +33,7 @@ public class ProjectileController : MonoBehaviour
     private Vector2 _direction = Vector2.right;
     private float _speed = 6f;
     private int _damage = 1;
+    private bool _isCrit;
     private float _knockbackForce;
     private float _knockbackDuration;
     private float _slowPercentage;
@@ -152,12 +153,14 @@ public class ProjectileController : MonoBehaviour
         float slowDuration,
         float stunDuration,
         Action<EnemyController, ProjectileController> onEnemyHit = null,
-        float daggerMarkerDuration = 0f)
+        float daggerMarkerDuration = 0f,
+        bool isCrit = false)
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
         RefreshVisualRotation();
         _damage = Mathf.Max(0, damage);
+        _isCrit = isCrit;
         _knockbackForce = Mathf.Max(0f, knockbackForce);
         _knockbackDuration = Mathf.Max(0f, knockbackDuration);
         _slowPercentage = Mathf.Clamp01(slowPercentage);
@@ -419,13 +422,18 @@ public class ProjectileController : MonoBehaviour
             if (ReferenceEquals(enemy, _owner)) continue;
             if (_targetHitMode != ProjectileTargetHitMode.DestroyOnHit && _hitEnemies.Contains(enemy)) continue;
 
-            enemy.ApplyCombatImpact(
+            int actualDamage = enemy.ApplyCombatImpact(
                 _damage,
                 transform.position,
                 _knockbackForce,
                 _knockbackDuration,
                 _slowPercentage,
                 _slowDuration);
+            if (_owner is PlayerCombatController playerCombat)
+            {
+                playerCombat.ReportLifestealDamage(actualDamage);
+                playerCombat.LogDamageDealt(actualDamage, _isCrit);
+            }
             _onEnemyHit?.Invoke(enemy, this);
             if (_targetHitMode == ProjectileTargetHitMode.DestroyOnHit)
             {
