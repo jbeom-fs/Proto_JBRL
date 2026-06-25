@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-23
-> 기준 커밋: `a52e2912` (master, HEAD)
+> 작성 기준일: 2026-06-25
+> 기준 커밋: `c2a5454c` (master, HEAD)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1948,10 +1948,39 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | ParryGrace | `ParryStackResource.SetGraceDuration` (flat 초) |
 | CooldownReduction | `SkillSlotRuntime.StartCooldown(multiplier)` |
 | ReloadSpeed | `EffectiveReloadTime` — `reloadTime × (1 − %/100)` |
+| Crit | `PlayerCombatController.RollCritDamage(base, out didCrit)` — `chance = Get(Crit)` 굴림 성공 시 `round(base × EffectiveCritDamageMultiplier)`. 데미지 int 빌드 6곳(멜리평타/멜리스킬/대시/투사체/마커폭발/탄)에서 굴림. 배율은 `critDamageMultiplier`[SerializeField, 기본 2.0]를 `EffectiveCritDamageMultiplier` accessor 1곳으로 노출(향후 Relic/소울 가산 seam) |
+| Lifesteal | `EnemyController.ApplyCombatImpact` 가 actual(방어 감산 후 실제 입힌 양) 반환 → 멜리(`AttackExecutor.DamageDealtThisAttack` 합산)/투사체/대시/마커 전 소스가 `PlayerCombatController.ReportLifestealDamage(actual)` 호출 → `pool += actual × Get(Lifesteal)`, float 잔여풀로 floor 회복(min-1 과회복·반올림 손실 방지) |
 
-`Crit` / `Lifesteal` / `ComboDamage` / `AilmentDamage` 는 enum·집계만 있고 적용 훅 미구현(각 신규 전투 메커니즘 필요 — Sword 콤보, Dagger 상태이상 DoT 등).
+`ComboDamage` / `AilmentDamage` 는 enum·집계만 있고 적용 훅 미구현(각 신규 전투 메커니즘 필요 — Sword 콤보, Dagger 상태이상 DoT 등). `Crit`/`Lifesteal` 의 폼 게이팅은 `_soulBonus.Get`(활성 폼 스코프)이 0이면 무효과로 자동 처리되어 코드에 `PlayerFormId` 분기가 없습니다.
 
-콘솔 `/enhance <form> <stat> [count]` 로 레벨을 부여합니다(2층 자동완성 form→stat, `DeveloperConsoleSoulStatResolver` 로 stat 토큰 격리, count 기본 1 가산). 강화 재료(폼별 조각) 소비·Town Soul Altar 입력은 미구현 — 현재 콘솔/Inspector 로만 레벨 조정.
+레벨 부여 입력은 둘:
+- **Town Soul Altar** (§11b-9): 마을 거점에서 폼별 조각(`Mat_*`) 소비 → `PlayerSoulEnhancements.AddLevel`. 닫힌 경제 루프(보스→소울/분해→조각→Altar 강화).
+- 콘솔 `/enhance <form> <stat> [count]`: 2층 자동완성 form→stat, `DeveloperConsoleSoulStatResolver` 로 stat 토큰 격리, count 기본 1 가산.
+
+### 11b-9. Town Soul Altar (조각 소비 강화 입력)
+
+마을 거점의 상호작용 오브젝트로 Soul 강화 입력 루프를 닫습니다(보스→소울/분해→조각→**Altar 강화**→폼 메커니즘 강화).
+
+| 구성 | 역할 |
+|------|------|
+| `TownSoulAltar` (MonoBehaviour) | Collider2D 트리거 근접 + `PlayerInputReader.InteractConfirmPressedThisFrame`(현재 Z) 로 AltarUI 오픈. 입력리더는 트리거 충돌에서 취득(신규 Find 없음). 마을에만 물리 배치 |
+| `SoulAltarUIController` | 보유 소울 폼(`PlayerInventory.OwnsSoulForm` && 테이블 성장 존재) 선택 + 스탯행 표시. `OnInventoryChanged`/`OnChanged` 구독으로 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘 |
+| `SoulAltarStatRowUI` | 스탯별 행 — 레벨/최대/비용/보유 조각 + 강화 버튼(만렙·조각부족 시 비활성) |
+| `SoulEnhancementCost` (static) | `GetMaterialCost(growth, currentLevel) = baseMaterialCost × (currentLevel + 1)` — **비용 공식 단일 격리점**(향후 곡선 교체는 이 함수만 수정). 수치는 `SoulStatGrowth.baseMaterialCost` 데이터 |
+
+강화: `TryGetGrowth` → 만렙·비용·`HasItem` 확인 → `RemoveItem(조각, 비용)` + `AddLevel`. 폼→조각은 그 폼 Soul 의 `SalvageItemCode` 역참조(`ItemDatabase.TryGetSoulByForm`, 데이터 추가 0). `AddLevel`/`RemoveItem` 이 기존 전투 재계산·세이브 훅을 자동 발화.
+
+### 11b-10. 영구 성장 JSON 세이브 (GamePersistenceCoordinator)
+
+사망은 씬 리로드(`SceneManager.LoadScene`)라 씬 MonoBehaviour 인 인벤토리·강화가 초기화됩니다. 영구 축(**Soul + Material + 소울강화레벨**)을 JSON 파일로 영속해 사망·앱 재시작을 버팁니다(나머지 Currency/Consumable/Relic 은 런 소멸).
+
+| 구성 | 역할 |
+|------|------|
+| `SaveData` (DTO) | `version` + `items{itemCode,count}` + `enhancements{form,stat,level}`. Soul·Material 둘 다 인벤토리 아이템이라 items 한 리스트로 흡수 |
+| `SaveService` | `Application.persistentDataPath/save.json`. `Save`/`TryLoad`(try-catch·version 가드·경고 1회)/`HasSave`/`Delete`. `Protect(string)→byte[]`/`Unprotect` 는 현재 passthrough — **AES/HMAC 삽입 seam** |
+| `GamePersistenceCoordinator` (씬 MonoBehaviour, DontDestroyOnLoad 미사용) | `Start` 에서 TryLoad→ApplyFromSave(영구 아이템 교체+`SetLevel`). 저장: `OnInventoryChanged`/`OnChanged`→dirty→LateUpdate flush + 사망 전 `GameOverFlowController.ConfirmGameOver` 의 SaveAll + OnApplicationQuit/Pause |
+
+`PlayerSoulEnhancements.GetLevels` 읽기 전용 스냅샷으로 직렬화 경로 무변경. 복원 중에는 `_isApplying` 가드로 저장 폭주를 막습니다.
 
 ---
 
@@ -2585,7 +2614,10 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 | **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·5개 고정 탭 필터·전체 탭 그룹 정렬·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind + 클릭 위임) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
 | **플레이어 인벤토리** | `PlayerInventory` + `InventoryItemStack` — AddItem/RemoveItem/HasItem/GetItemCount + stackable/maxStack 정책 자동 적용, `OwnsSoulForm(formId)` 로 Soul 보유 기반 Form 소유 판정, `RemoveItemsOnFloorTransition`/`RemoveItemsOnDungeonExit` 가 ItemData 플래그 기반으로 층/던전 이탈 시 자동 정리. Elite Key 가 일반 ItemData 한 항목으로 통합되어 과거 `PlayerEliteKeyInventory` 는 제거됨 |
-| **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace 6종 훅 적용. 콘솔 `/enhance <form> <stat> [count]` (§11b-8) |
+| **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel/baseMaterialCost) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace + **Crit/Lifesteal** 8종 훅 적용. 입력=Town Soul Altar / 콘솔 `/enhance` (§11b-8) |
+| **Crit / Lifesteal** | Crit=`RollCritDamage`(굴림→`EffectiveCritDamageMultiplier` 배율, 전 데미지 소스) / Lifesteal=`ApplyCombatImpact` actual 반환→`ReportLifestealDamage`(전 소스, float 잔여풀 회복). 폼 게이팅은 `_soulBonus` 데이터 자동(§11b-8) |
+| **Town Soul Altar** | `TownSoulAltar`(근접+Z) + `SoulAltarUIController`/`SoulAltarStatRowUI` + `SoulEnhancementCost`(누진 비용 단일 격리). 조각(`Mat_*`) 소비→`AddLevel`, 닫힌 경제 루프 완성(§11b-9) |
+| **영구 성장 세이브** | `SaveData`/`SaveService`(persistentDataPath JSON, Protect/Unprotect seam)/`GamePersistenceCoordinator`. 영구축(Soul+Material+강화레벨) 사망·앱 재시작 영속, 런 자원은 소멸(§11b-10) |
 | **데이터 기반 적 드롭 (EnemyDropDatabase)** | 중앙 SO(EnemyData→그룹) + 독립 드랍 + **가중치 pick-one 그룹** + `EnemyDropRoller`(결정적, 별도 dropRng/`EnemyDropDomain`). 일반(RoomSpawner)·엘리트·보스(ArenaEncounterBase) 전부 결선. itemCode 문자열·EnemyData 키 |
 | **소울 분해 (drop-time)** | `SoulDropResolver` — 보유 Form 소울 드롭 시 폼별 재료(조각)로 치환(`ItemData.salvageItemCode`/min·max, salvage rng). ItemDatabase 에 조각 4종 + 소울 salvage 연결. ownership=사망 시점(§11b-3b) |
 | **ItemData 정리 플래그** | `removeOnFloorTransition` / `removeOnDungeonExit` — 층 이동·던전 이탈 파이프라인에서 자동 청소 (elite_key 가 이 플래그 사용) |
@@ -2635,15 +2667,15 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
-| 드롭/경제 루프 | 중간 | 데이터 기반 적 드롭 + **소울 분해**(중복 소울→폼별 재료 조각, drop-time) 구현 완료(§11b-3b). 남은: Town Soul Altar(조각 소비→`PlayerSoulEnhancements.AddLevel`, 누진비용·maxLevel 캡)로 강화 입력 루프 완성, 보스 소울/Relic 정식 데이터 결선 |
-| 신규 시스템 스탯 | 낮음 | Soul 강화의 Crit/Lifesteal/ComboDamage/AilmentDamage 는 enum·집계만, 적용 훅 미구현(각 신규 전투 메커니즘 필요) |
+| 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
+| 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal 구현 완료**(§11b-8). 남은 `ComboDamage`(Sword 콤보)/`AilmentDamage`(Dagger DoT) 는 enum·집계만, 각 신규 전투 메커니즘 필요 |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
 | 상태이상 시스템 확장 | 낮음 | 독, 빙결 등 StatusEffectData 추가 |
-| 세이브 / 로드 | 낮음 | Seed 기반 재현으로 부분 대체 가능 |
+| 세이브 / 로드 | 낮음 | **영구축(Soul+Material+강화레벨) JSON 영속 완료**(사망·앱 재시작, §11b-10). 남은: 세이브 보안(AES/HMAC — Protect/Unprotect seam만 비움), 런 중간 진행도 저장(현재 사망=런 종료) |
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장. Boss Arena는 WalkabilityArea 컴포넌트 부착만으로 지원 가능 |
 | AreaOverTime / Buff Elite 패턴 | 낮음 | ElitePatternData 추가 변형 자리 — 예: 광역 장판, 자기 강화 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
