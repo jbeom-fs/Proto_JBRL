@@ -432,6 +432,8 @@ public class ProjectileController : MonoBehaviour
             if (_owner is PlayerCombatController playerCombat)
             {
                 playerCombat.ReportLifestealDamage(actualDamage);
+                if (actualDamage > 0)
+                    playerCombat.RegisterComboHit();
                 playerCombat.LogDamageDealt(actualDamage, _isCrit);
             }
             _onEnemyHit?.Invoke(enemy, this);

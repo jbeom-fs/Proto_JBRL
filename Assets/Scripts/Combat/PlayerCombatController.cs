@@ -65,6 +65,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [SerializeField, Min(0.01f)] private float parryStackDecayInterval = 1f;
     [SerializeField, Min(1)] private int parryStackDecayAmount = 1;
 
+    [Header("Combo")]
+    [SerializeField, Min(0.01f)] private float comboWindow = 2f;
+    [SerializeField, Min(0)] private int comboMaxStack = 20;
+
     [Header("Parry Basic Attack")]
     [SerializeField, Min(0f)] private float parryStartupDelay = 0.08f;
     [SerializeField, Min(0f)] private float parryInvincibleDuration = 0.2f;
@@ -92,6 +96,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private int _externalInvincibilityCount;
     private int _currentBullet;
     private ParryStackResource _parryStack;
+    private ComboMeter _combo;
     private Transform _cachedTransform;
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
@@ -199,6 +204,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             parryStackGraceDuration,
             parryStackDecayInterval,
             parryStackDecayAmount);
+        _combo = new ComboMeter(comboWindow, comboMaxStack);
         BindSkillSlots(currentWeapon);
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
@@ -472,6 +478,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (baseDamage <= 0)
             return baseDamage;
 
+        baseDamage = ApplyComboMultiplier(baseDamage);
+
         float chance = Mathf.Clamp01(_soulBonus.Get(SoulStatType.Crit));
         if (chance <= 0f || UnityEngine.Random.value >= chance)
             return baseDamage;
@@ -480,15 +488,42 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return Mathf.Max(1, Mathf.RoundToInt(baseDamage * EffectiveCritDamageMultiplier));
     }
 
+    /// <summary>
+    /// Scales outgoing damage by the current combo stack: <c>base × (1 + count × ComboDamage% / 100)</c>.
+    /// Returns <paramref name="baseDamage"/> unchanged when no combo stack or no ComboDamage bonus
+    /// (zero effect for non-Sword forms via data gating).
+    /// </summary>
+    private int ApplyComboMultiplier(int baseDamage)
+    {
+        int count = _combo != null ? _combo.Count : 0;
+        if (count <= 0)
+            return baseDamage;
+
+        float pct = _soulBonus.Get(SoulStatType.ComboDamage);
+        if (pct <= 0f)
+            return baseDamage;
+
+        return Mathf.Max(1, Mathf.RoundToInt(baseDamage * (1f + count * pct / 100f)));
+    }
+
+    /// <summary>Registers one landed attack action (one swing/projectile) toward the combo stack.</summary>
+    public void RegisterComboHit()
+    {
+        _combo?.RegisterHit();
+    }
+
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     public void LogDamageDealt(int amount, bool isCrit)
     {
         if (amount <= 0)
             return;
 
-        Debug.Log(isCrit
+        string combo = _combo != null && _combo.Count > 0
+            ? $" [combo x{_combo.Count}]"
+            : string.Empty;
+        Debug.Log((isCrit
             ? $"[Combat] 데미지 {amount} (CRITICAL)"
-            : $"[Combat] 데미지 {amount}");
+            : $"[Combat] 데미지 {amount}") + combo);
     }
 
     public void ReportLifestealDamage(int actualDamage)
@@ -519,6 +554,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _status?.Tick(Time.deltaTime);
         _parryStack?.Tick(Time.deltaTime);
+        _combo?.Tick(Time.deltaTime);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
@@ -629,7 +665,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.HitEnemyCount > 0)
+        {
+            RegisterComboHit();
             LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
+        }
         ApplyDaggerMarkersFromBasicAttack();
     }
 
@@ -894,6 +933,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 0f,
                 0f);
             ReportLifestealDamage(actualDamage);
+            if (actualDamage > 0)
+                RegisterComboHit();
             LogDamageDealt(actualDamage, didCrit);
         }
 
@@ -1180,6 +1221,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         IsDead = true;
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
+        _combo?.Reset();
         ClearSkillTimingState();
         ClearParryState();
         ClearReloadState();
@@ -1374,16 +1416,19 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void HandleRoomEntered(RoomEnteredEventArgs args)
     {
         _parryStack?.Reset();
+        _combo?.Reset();
     }
 
     private void HandleRoomDoorsOpened(RoomInfo room)
     {
         _parryStack?.Reset();
+        _combo?.Reset();
     }
 
     private void HandleFloorChanged(int previousFloor, int newFloor)
     {
         _parryStack?.Reset();
+        _combo?.Reset();
     }
 
     private static bool IsCombatBlockedByLocation()

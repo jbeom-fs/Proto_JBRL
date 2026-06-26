@@ -309,6 +309,8 @@ public sealed class PlayerDashController : MonoBehaviour
             _damageRequest.SlowPercentage,
             _damageRequest.SlowDuration);
         _damageRequest.CasterCombat?.ReportLifestealDamage(actualDamage);
+        if (actualDamage > 0)
+            _damageRequest.CasterCombat?.RegisterComboHit();
         _damageRequest.CasterCombat?.LogDamageDealt(actualDamage, _damageRequest.IsCrit);
     }
 

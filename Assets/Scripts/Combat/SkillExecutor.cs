@@ -96,7 +96,10 @@ public sealed class SkillExecutor
             context.HitRadius);
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.DamageDealtThisAttack > 0)
+        {
+            context.CasterCombat?.RegisterComboHit();
             context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
+        }
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
         return SkillExecutionResult.SuccessWithCost(context.Skill.consumeAmount);

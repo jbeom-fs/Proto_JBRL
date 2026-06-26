@@ -51,3 +51,7 @@ MonoBehaviour:
       perLevel: 0.05
       maxLevel: 10
       baseMaterialCost: 3
+    - stat: 8
+      perLevel: 0.5
+      maxLevel: 10
+      baseMaterialCost: 3

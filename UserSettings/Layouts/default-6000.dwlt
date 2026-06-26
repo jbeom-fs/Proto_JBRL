@@ -179,7 +179,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 112}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 16
+  controlID: 24
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -848,7 +848,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Scriptable/Item
+    - Assets/Scripts/Combat
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -858,7 +858,7 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Scriptable/Item
+  - Assets/Scripts/Combat
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
@@ -867,28 +867,28 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 180}
     m_SelectedIDs:
-    - m_Data: 57812
+    - m_Data: 57846
     m_LastClickedID:
-      m_Data: 57812
+      m_Data: 57846
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 57672
-    - m_Data: 57674
-    - m_Data: 57676
-    - m_Data: 57678
-    - m_Data: 57680
-    - m_Data: 57682
-    - m_Data: 57684
-    - m_Data: 57686
-    - m_Data: 57688
-    - m_Data: 57690
-    - m_Data: 57692
-    - m_Data: 57694
-    - m_Data: 57696
-    - m_Data: 57698
-    - m_Data: 57700
-    - m_Data: 57702
-    - m_Data: 57704
+    - m_Data: 57828
+    - m_Data: 57830
+    - m_Data: 57832
+    - m_Data: 57834
+    - m_Data: 57836
+    - m_Data: 57838
+    - m_Data: 57840
+    - m_Data: 57842
+    - m_Data: 57844
+    - m_Data: 57846
+    - m_Data: 57848
+    - m_Data: 57850
+    - m_Data: 57852
+    - m_Data: 57854
+    - m_Data: 57856
+    - m_Data: 57858
+    - m_Data: 57860
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -922,23 +922,23 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 57672
-    - m_Data: 57674
-    - m_Data: 57676
-    - m_Data: 57678
-    - m_Data: 57680
-    - m_Data: 57682
-    - m_Data: 57684
-    - m_Data: 57686
-    - m_Data: 57688
-    - m_Data: 57690
-    - m_Data: 57692
-    - m_Data: 57694
-    - m_Data: 57696
-    - m_Data: 57698
-    - m_Data: 57700
-    - m_Data: 57702
-    - m_Data: 57704
+    - m_Data: 57828
+    - m_Data: 57830
+    - m_Data: 57832
+    - m_Data: 57834
+    - m_Data: 57836
+    - m_Data: 57838
+    - m_Data: 57840
+    - m_Data: 57842
+    - m_Data: 57844
+    - m_Data: 57846
+    - m_Data: 57848
+    - m_Data: 57850
+    - m_Data: 57852
+    - m_Data: 57854
+    - m_Data: 57856
+    - m_Data: 57858
+    - m_Data: 57860
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -966,9 +966,10 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
   m_ListAreaState:
-    m_SelectedInstanceIDs: []
+    m_SelectedInstanceIDs:
+    - m_Data: 62786
     m_LastClickedEntityId:
-      m_Data: 0
+      m_Data: 62786
     m_HadKeyboardFocusLastEvent: 1
     m_ExpandedInstanceIDs:
     - m_Data: 52286
@@ -1059,7 +1060,7 @@ MonoBehaviour:
     m_PrefName: Preview_InspectorPreview
   m_LastInspectedObjectEntityId:
     m_Data: 0
-  m_LastVerticalScrollValue: 0
+  m_LastVerticalScrollValue: 432
   m_GlobalObjectId: 
   m_InspectorMode: 0
   m_LockTracker:
@@ -1110,8 +1111,18 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -32524
+      - m_Data: -24798
+      - m_Data: -21022
+      - m_Data: -21002
+      - m_Data: -3448
+      - m_Data: -3076
       - m_Data: -1382
+      - m_Data: 59330
+      - m_Data: 60016
+      - m_Data: 60334
+      - m_Data: 60382
+      - m_Data: 62090
+      - m_Data: 62636
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1635,9 +1646,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 470.6812, y: 208.1487, z: 3.6451418}
+    m_Target: {x: 512.18097, y: 504.18307, z: -1.6509714}
     speed: 2
-    m_Value: {x: 470.6812, y: 208.1487, z: 3.6451418}
+    m_Value: {x: 512.18097, y: 504.18307, z: -1.6509714}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1688,9 +1699,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 354.24152
+    m_Target: 335.54352
     speed: 2
-    m_Value: 354.24152
+    m_Value: 335.54352
   m_Ortho:
     m_Target: 1
     speed: 2
