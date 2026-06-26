@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-25
-> 기준 커밋: `c2a5454c` (master, HEAD)
+> 작성 기준일: 2026-06-26
+> 기준 커밋: `c2a5454c` (master, HEAD) + ComboDamage 콤보 메커니즘(미커밋)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1950,8 +1950,9 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | ReloadSpeed | `EffectiveReloadTime` — `reloadTime × (1 − %/100)` |
 | Crit | `PlayerCombatController.RollCritDamage(base, out didCrit)` — `chance = Get(Crit)` 굴림 성공 시 `round(base × EffectiveCritDamageMultiplier)`. 데미지 int 빌드 6곳(멜리평타/멜리스킬/대시/투사체/마커폭발/탄)에서 굴림. 배율은 `critDamageMultiplier`[SerializeField, 기본 2.0]를 `EffectiveCritDamageMultiplier` accessor 1곳으로 노출(향후 Relic/소울 가산 seam) |
 | Lifesteal | `EnemyController.ApplyCombatImpact` 가 actual(방어 감산 후 실제 입힌 양) 반환 → 멜리(`AttackExecutor.DamageDealtThisAttack` 합산)/투사체/대시/마커 전 소스가 `PlayerCombatController.ReportLifestealDamage(actual)` 호출 → `pool += actual × Get(Lifesteal)`, float 잔여풀로 floor 회복(min-1 과회복·반올림 손실 방지) |
+| ComboDamage | `ComboMeter`(순수 C#, window 2s/cap 20 — ParryStack decay 패턴) 가 스택 보유. **적립**=평타·멜리스킬·투사체·대시·마커폭발 적중 시 `RegisterComboHit()`(전부 Lifesteal 적중 seam 동승, 멜리 다중타격 스윙=+1/투사체·대시=적당+1). **적용**=`RollCritDamage` choke 1곳에 fold(`ApplyComboMultiplier`: `round(base × (1 + count × Get(ComboDamage)/100))`, 크리 굴림 직전) → 평타·스킬 전 데미지 증폭. **리셋**=사망·방진입·문열림·층이동 + 2s 무타격 윈도우 만료. 데이터=`SoulEnhancementTable` Sword/ComboDamage(perLevel 0.5, maxL10 → 스택당 5%, 20스택 풀콤보 +100%) |
 
-`ComboDamage` / `AilmentDamage` 는 enum·집계만 있고 적용 훅 미구현(각 신규 전투 메커니즘 필요 — Sword 콤보, Dagger 상태이상 DoT 등). `Crit`/`Lifesteal` 의 폼 게이팅은 `_soulBonus.Get`(활성 폼 스코프)이 0이면 무효과로 자동 처리되어 코드에 `PlayerFormId` 분기가 없습니다.
+`AilmentDamage` 만 enum·집계 상태로 적용 훅 미구현(Dagger 상태이상 DoT 시스템 + 영혼각인 독/출혈 소스 필요). `Crit`/`Lifesteal`/`ComboDamage` 의 폼 게이팅은 `_soulBonus.Get`(활성 폼 스코프)이 0이면 무효과로 자동 처리되어 코드에 `PlayerFormId` 분기가 없습니다(비-Sword 폼은 ComboDamage 테이블 엔트리 없어 배율 1.0). 검증 가시성을 위해 `LogDamageDealt` 데미지 로그에 `[combo xN]` 접미사를 표기합니다.
 
 레벨 부여 입력은 둘:
 - **Town Soul Altar** (§11b-9): 마을 거점에서 폼별 조각(`Mat_*`) 소비 → `PlayerSoulEnhancements.AddLevel`. 닫힌 경제 루프(보스→소울/분해→조각→Altar 강화).
@@ -2614,8 +2615,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **성능 최적화** | NonAlloc 물리, A* 버퍼 재사용, 오브젝트 풀, 청크 로딩, 문 배치 N→1 |
 | **인벤토리 UI** | `InventoryUIController`(PlayerInventory 구독·슬롯 동적 풀·5개 고정 탭 필터·전체 탭 그룹 정렬·인벤토리 키·ESC 토글) + `InventorySlotUI`(아이콘·수량 Bind + 클릭 위임) + `UIDraggableWindow`(드래그 패널) — 개발자 콘솔 열림 시 자동 닫힘 |
 | **플레이어 인벤토리** | `PlayerInventory` + `InventoryItemStack` — AddItem/RemoveItem/HasItem/GetItemCount + stackable/maxStack 정책 자동 적용, `OwnsSoulForm(formId)` 로 Soul 보유 기반 Form 소유 판정, `RemoveItemsOnFloorTransition`/`RemoveItemsOnDungeonExit` 가 ItemData 플래그 기반으로 층/던전 이탈 시 자동 정리. Elite Key 가 일반 ItemData 한 항목으로 통합되어 과거 `PlayerEliteKeyInventory` 는 제거됨 |
-| **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel/baseMaterialCost) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace + **Crit/Lifesteal** 8종 훅 적용. 입력=Town Soul Altar / 콘솔 `/enhance` (§11b-8) |
-| **Crit / Lifesteal** | Crit=`RollCritDamage`(굴림→`EffectiveCritDamageMultiplier` 배율, 전 데미지 소스) / Lifesteal=`ApplyCombatImpact` actual 반환→`ReportLifestealDamage`(전 소스, float 잔여풀 회복). 폼 게이팅은 `_soulBonus` 데이터 자동(§11b-8) |
+| **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel/baseMaterialCost) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace + **Crit/Lifesteal/ComboDamage** 9종 훅 적용. 입력=Town Soul Altar / 콘솔 `/enhance` (§11b-8) |
+| **Crit / Lifesteal / ComboDamage** | Crit=`RollCritDamage`(굴림→`EffectiveCritDamageMultiplier` 배율, 전 데미지 소스) / Lifesteal=`ApplyCombatImpact` actual 반환→`ReportLifestealDamage`(전 소스, float 잔여풀 회복) / ComboDamage=`ComboMeter`(window 2s/cap 20) 적중 적립→`RollCritDamage` choke에 `1+count×%/100` fold(평타·스킬 전 데미지 증폭, 2s 윈도우/사망/방·층이동 리셋). 폼 게이팅은 `_soulBonus` 데이터 자동(§11b-8) |
 | **Town Soul Altar** | `TownSoulAltar`(근접+Z) + `SoulAltarUIController`/`SoulAltarStatRowUI` + `SoulEnhancementCost`(누진 비용 단일 격리). 조각(`Mat_*`) 소비→`AddLevel`, 닫힌 경제 루프 완성(§11b-9) |
 | **영구 성장 세이브** | `SaveData`/`SaveService`(persistentDataPath JSON, Protect/Unprotect seam)/`GamePersistenceCoordinator`. 영구축(Soul+Material+강화레벨) 사망·앱 재시작 영속, 런 자원은 소멸(§11b-10) |
 | **데이터 기반 적 드롭 (EnemyDropDatabase)** | 중앙 SO(EnemyData→그룹) + 독립 드랍 + **가중치 pick-one 그룹** + `EnemyDropRoller`(결정적, 별도 dropRng/`EnemyDropDomain`). 일반(RoomSpawner)·엘리트·보스(ArenaEncounterBase) 전부 결선. itemCode 문자열·EnemyData 키 |
@@ -2668,7 +2669,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
-| 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal 구현 완료**(§11b-8). 남은 `ComboDamage`(Sword 콤보)/`AilmentDamage`(Dagger DoT) 는 enum·집계만, 각 신규 전투 메커니즘 필요 |
+| 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal/ComboDamage 구현 완료**(§11b-8, ComboDamage=`ComboMeter` 적중 스택→전 데미지 증폭). 남은 `AilmentDamage`(Dagger DoT) 만 enum·집계 상태 — 상태이상 DoT 시스템 + 영혼각인 소스 필요 |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
