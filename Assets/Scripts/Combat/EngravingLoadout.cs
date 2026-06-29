@@ -94,12 +94,16 @@ public sealed class EngravingLoadout : MonoBehaviour
         return true;
     }
 
-    public void AddToPool(PlayerFormId form, SkillData skill)
+    public bool AddToPool(PlayerFormId form, SkillData skill)
     {
         if (skill == null)
-            return;
+            return false;
+
+        if (skill is EngravingData engraving && engraving.owningForm != form)
+            return false;
 
         GetOrCreate(form).Pool.Add(skill);
+        return true;
     }
 
     public int PoolCount(PlayerFormId form)

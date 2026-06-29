@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-26
-> 기준 커밋: `c2a5454c` (master, HEAD) + ComboDamage 콤보 메커니즘(미커밋)
+> 작성 기준일: 2026-06-29
+> 기준 커밋: `3d4586c9` (master, HEAD — 영혼각인 Slice A·B: 토큰 로드아웃 + 폼별 보유풀 + 런리셋) + 영혼각인 Slice C(EngravingData/등급/폼-락, 미커밋·Play검증 대기)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -183,6 +183,7 @@ Assets/Scripts/
 │   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드 + 자원: resourceType(None/Bullet/ParryStack)/requiredAmount/consumeAmount/bulletShortageMode/reloadAmount). MP(mpCost) 폐지
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
 │   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의
+│   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. 기본 인스펙터 사용(SkillDataEditor는 children 미적용)
 │   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
@@ -248,6 +249,8 @@ Assets/Scripts/
 │   ├── SkillTargetResolver.cs      # 스킬 셀·미리보기 반경·투사체 거리 공통 계산
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
+│   ├── ComboMeter.cs               # ComboDamage 콤보 스택 추적 (순수 C#, window 2s/cap 20) — 적중 적립, 윈도우 만료 시 리셋. RegisterHit/Tick/Reset
+│   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. debugEngravingPool=콘솔 지급 카탈로그(임시)
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
@@ -314,6 +317,7 @@ Assets/Scripts/
 │   ├── PlayerStatusBarUI.cs        # 플레이어 HP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerInventory.OnInventoryChanged 로 elite_key 보유 수에 따라 아이콘 토글. MP 바 제거
 │   ├── ParryStackBarUI.cs          # 패리 폼 자원 UI — 현재 ParryStack 을 Slider 로 표시 (임시). 현재 폼이 Parry 일 때만 노출
 │   ├── FreischutzMagazineUI.cs     # 마탄 폼 탄창 UI — Bullet/Bullet_empty 이미지 칸 + x/max·Reloading 텍스트. 현재 폼이 Bullet 일 때만 노출
+│   ├── ComboCounterUI.cs           # 콤보 카운터 UI (TMP 폴링) — PlayerCombatController.IsComboBonusActive && CurrentComboStack>0 일 때 `x{count}` 표시. 배율 비노출, ComboDamage 효과 활성(Sword) 폼에서만. 윈도우 만료 시 자동 숨김
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
@@ -783,7 +787,9 @@ PlayerResource (Domain)
 
 PlayerCombatController
   ├── PlayerResource (HP 상태) · ISkillResourceLedger 구현 (Bullet 탄창 / ParryStack 자원 원장)
-  ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태)
+  ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태) — BindSkillSlots 가 EngravingLoadout 토큰으로 시드/바인딩
+  ├── EngravingLoadout (영혼각인 폼별 토큰 로드아웃, OnChanged→리바인드) — 있으면 슬롯 소스, 없으면 weapon.skills 폴백
+  ├── ComboMeter (_combo) — ComboDamage 콤보 스택 (CurrentComboStack/IsComboBonusActive 노출)
   ├── AttackExecutor / SkillExecutor (스킬 실행 라우팅)
   ├── PlayerDashController (대시 코루틴, RequireComponent)
   ├── PlayerInputReader (RequireComponent)
@@ -1019,6 +1025,34 @@ DashDamageRequest 플래그:
 PlayerController는 IsDashing 동안 Move/입력 처리를 스킵하고
 CheckRoomEntry만 호출해 대시 중 방 전환을 감지합니다.
 ```
+
+### 7-8. 영혼각인 — 스킬 슬롯 override (런 한정 빌드, 구현 진행중)
+
+**개념**: Q/W/E/R 4슬롯에 들어가는 스킬을 폼 기본(weapon.skills) 위에 **런 한정으로 교체**하는 축입니다. 영구 성장은 Soul 하나(§11b-8)이고, 영혼각인은 던전 런 중 줍고 끼우는 일시 빌드 — 런 종료(클리어/사망)·마을 복귀 시 기본으로 리셋(Hades식).
+
+**토큰 모델 (`EngravingLoadout`)**: 폼별 상태 `FormState{ Slots[4], Pool(List), Seeded }`.
+
+```
+런 시작/폼 첫 진입 → EnsureSeeded(form, weapon.skills)   // 미시드 폼 슬롯을 기본 스킬로 채움(1회)
+BindSkillSlots(weapon):
+  EnsureSeeded → 슬롯 토큰을 SkillSlotRuntime.Bind 로 직접 바인딩 (빈 슬롯 = Bind(null) = 버튼 비활성 허용)
+  loadout 없으면 weapon.skills[i] 폴백
+
+equip(slot, poolIndex):  슬롯 점유물 있으면 풀로 반환, 풀아이템을 슬롯으로(소모형 1입1출)
+unequip(slot):           슬롯 토큰 → 풀, 슬롯 null
+AddToPool(form, skill):  EngravingData 면 owningForm==form 강제(폼-락), plain SkillData 는 공용으로 통과
+ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonRuntime(leavingDungeon)에서 호출
+```
+
+- **소모형**: 기본 스킬도 토큰 → "기본 Q를 W 슬롯에" 같은 자유 커스텀 허용. 빈 슬롯도 허용(향후 제약런/유물 슬롯제거 효과 대비).
+- **비용 seam**: 슬롯이 바뀌는 연산(equip/unequip/reset)만 `OnChanged` 발행 → `BindSkillSlots` 리바인드. **`AddToPool`(풀 픽업)은 미발행** — `SkillSlotRuntime.Bind` 가 쿨다운을 리셋하므로 픽업 때마다 전 스킬 쿨이 초기화되는 낭비를 차단.
+- **폼-락**: `EngravingData.owningForm` 로 강제(Sword 각인은 Sword 풀에만). 폼 고유 자원(Bullet/ParryStack)이 공용을 막기 때문 — 예: Sword 폼에 마탄(Bullet) 각인을 끼우면 바인딩은 되나 탄창 0 → `CanUse` 차단 → 발동 안 됨. plain SkillData 는 "공용 스킬"로 폼 무관 통과.
+
+**데이터**: `EngravingData : SkillData` (owningForm + grade). 등급 `EngravingGrade`(희미한 Faint < 온전한 Whole < 태초의 Primordial)은 **드랍 희귀도·UI 라벨**일 뿐 코드 자동스케일 없음 — 등급 패밀리(강화판)·고유 태초 스킬 모두 개별 에셋으로 작성, 고유 메커니즘 태초는 별도 execution 로직 개별 구현.
+
+**콘솔**: `/engraving give <form> <idx> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, give는 debug 풀 카탈로그에서 지급·폼-락 검증, show는 `[Grade]` 태그 표시).
+
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋) 커밋·Play검증 완료, C(EngravingData/등급/폼-락) 적용·Play검증 대기. **남은 슬라이스 — D(드랍 통합: 일반/엘리트/보스 등급별 가중치) · E(교체 UI + 정비실/마을 상호작용)**. 실제 영혼각인 콘텐츠 에셋 작성은 별도.
 
 ---
 
@@ -2660,6 +2694,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **런타임 폼 전환 + Soul 보유 게이팅** | `PlayerFormDatabase`(formId→PlayerFormData SO 매핑) + `PlayerFormController.TrySwitchForm(PlayerFormId)` — DB 조회 → `IsFormOwned`(Normal 화이트리스트, inventory 미결선 시 안전 폴백, 그 외 `PlayerInventory.OwnsSoulForm`) → `CanSwitchNow()` 가드(dash/skill/dead/stun 중 거부) → `ApplyForm` 재사용. 반환 `FormSwitchResult`(Switched/AlreadyActive/NoDatabase/UnknownForm/NotOwned/Busy). `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선 fallback)로 폼별 평타 교체. `CombatEventChannel.OnLoadoutChanged`(EquipWeapon 발행)→`SkillUIManager.RefreshAllSlots` 구독으로 전환 시 스킬 UI 자동 갱신. 콘솔 `/form set <id>` 진입점(자동완성 2층, UI 3토큰 확장) |
 | **Parry 폼 애니메이션** | `Parryform.png`(auto-slice 5행×6프레임: Idle/Walk/Parry정면/Parry측면/Death)을 5클립 + 전용 controller + `ParryForm.asset` 결선(defaultSprite=Parryform_0, useHorizontalFlipForFacing). **정면/측면 분기** = `PlayerFormController.ApplyParryFacing` — 조준 정지=정면(Int param `ParryFacing`=0, flipX=false) / 조준 방향 있음=측면(=1)+`ResolveFlipX`(순수 상하는 직전 flip 유지). 컨트롤러는 `AttackTrigger` 후 `ParryFacing` 으로 Parry_Front/Side 분기. SkillData 진입점(`PlaySkillAnimation`) 유지 |
 | **Boss Area (1차)** | `BossEncounterTable`(SO, floor→boss/destination/isFinal) + `ArenaEncounterBase`(Elite·Boss 공통 lifecycle 추출) + `BossEncounterController`(:Base, Active 싱글톤, Begin→spawn→OnBossDied→`BossExitPortal`→`ProceedRequested`) + `DungeonManager.TryTransitionToFloor` 보스층 분기·`ProceedRequested`→floor+1→`CompleteProceedToNextFloor`(미니맵 복원). N층=Boss Area(일반 던전 N층 없음), 미니맵 진입전환=destination `minimapLocationId` 자동(코드훅 없음), **destination `locationType=Dungeon` 필수**(퇴장 `IsInDungeon` 가드). 사망=기존 GameOver. placeholder boss=Elite_Magma_01·shared tilemap. **통합 흐름 Play 검증 전부 통과(20/40/60·60층 엔딩 정지·보스전 사망·Elite 회귀, 2026-06-09) — 코드·흐름 완성, 남은 건 컨텐츠.** 상세 §11e |
+| **ComboDamage 콤보 UI** | `ComboCounterUI`(TMP 폴링, ParryStackBarUI 미러) + `PlayerCombatController.CurrentComboStack`/`IsComboBonusActive`(=`_soulBonus.Get(ComboDamage)>0` 데이터주도 Sword 게이트) accessor. 효과 활성 && count>0 일 때만 `x{count}` 표시(배율 비노출), 윈도우 만료 시 자동 숨김. Play 검증 완료(commit f81dd028). ⚠️UI 디자인 추후 개선(단계색/구체 검토 — ComboDamage 단계제 도입 시) |
+| **영혼각인 — 스킬 슬롯 override (런 한정, 진행중)** | `EngravingLoadout`(폼별 `FormState{Slots[4]+Pool+Seeded}` 토큰 모델, equip=풀↔슬롯 소모형 교환·빈슬롯 허용·폼-락 `AddToPool`·`OnChanged`→리바인드·픽업 시 쿨리셋 방지) + `BindSkillSlots` 시드/토큰 바인딩 + 런리셋(`CleanupDungeonRuntime.ClearAll`) + `EngravingData : SkillData`(owningForm + grade=드랍/UI 라벨) + 콘솔 `/engraving give/equip/unequip/show`. **Slice A·B 커밋·Play검증 완료(commit 3d4586c9), C(데이터/등급/폼-락) 적용·검증 대기.** 남은 D(드랍 통합)·E(교체 UI/정비실). 상세 §7-8 |
 
 ### 미구현 (다음 단계)
 
@@ -2669,7 +2705,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
-| 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal/ComboDamage 구현 완료**(§11b-8, ComboDamage=`ComboMeter` 적중 스택→전 데미지 증폭). 남은 `AilmentDamage`(Dagger DoT) 만 enum·집계 상태 — 상태이상 DoT 시스템 + 영혼각인 소스 필요 |
+| 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal/ComboDamage 구현 완료**(§11b-8, ComboDamage=`ComboMeter` 적중 스택→전 데미지 증폭). 남은 `AilmentDamage`(Dagger DoT) 만 enum·집계 상태 — 상태이상 DoT 시스템 + 영혼각인 소스 필요(영혼각인 시스템 진행 후) |
+| 영혼각인 잔여 슬라이스 | 중간 | **Slice A·B·C 구현(§7-8) — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락 완료**. 남은 **D(드랍 통합: 일반 저확률/엘리트 확정/보스 태초, EnemyDropDatabase 경제에 런한정 아이템으로) · E(교체 UI + 정비실/마을 상호작용)** + 실제 영혼각인 콘텐츠 에셋 작성. 고유 메커니즘 태초 각인은 per-각인 execution 로직 개별 구현 |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |

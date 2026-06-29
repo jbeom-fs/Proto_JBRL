@@ -222,7 +222,10 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         if (skill == null)
             return DeveloperConsoleCommandResult.Error("Debug engraving entry is empty: " + debugIndex + ".");
 
-        loadout.AddToPool(form, skill);
+        if (!loadout.AddToPool(form, skill))
+            return DeveloperConsoleCommandResult.Error(
+                "Engraving is locked to another form (cannot add to " + form + " pool).");
+
         return DeveloperConsoleCommandResult.Success(
             "Gave " + GetSkillName(skill) + " to " + form + " pool (size " + loadout.PoolCount(form) + ").");
     }
@@ -462,7 +465,8 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         if (skill == null)
             return "(empty)";
 
-        return string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName;
+        string skillName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName;
+        return skill is EngravingData engraving ? skillName + " [" + engraving.grade + "]" : skillName;
     }
 
     private static DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager manager, int targetFloor)
