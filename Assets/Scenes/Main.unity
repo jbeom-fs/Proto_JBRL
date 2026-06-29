@@ -5783,7 +5783,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &877297034
 RectTransform:
   m_ObjectHideFlags: 0
@@ -7540,7 +7540,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1146823998
 RectTransform:
   m_ObjectHideFlags: 0
@@ -64460,6 +64460,7 @@ GameObject:
   - component: {fileID: 1562452773}
   - component: {fileID: 1562452774}
   - component: {fileID: 1562452775}
+  - component: {fileID: 1562452776}
   m_Layer: 7
   m_Name: Player
   m_TagString: Player
@@ -64515,6 +64516,7 @@ MonoBehaviour:
   dungeonChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
   inventory: {fileID: 1562452773}
   soulEnhancements: {fileID: 1562452775}
+  engravingLoadout: {fileID: 0}
   soulEnhancementTable: {fileID: 11400000, guid: 813f9f5f59f59fa4c83ee1ef000f5421, type: 2}
   playerMovement: {fileID: 1562452755}
   maxHp: 1000
@@ -64872,6 +64874,21 @@ MonoBehaviour:
   - form: 4
     stat: 7
     level: 4
+--- !u!114 &1562452776
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1562452752}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a8210cd978845819e4560a4fcb87590, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingLoadout
+  debugEngravingPool:
+  - {fileID: 11400000, guid: 60551841cb2a494eb0950122e708fddc, type: 2}
+  - {fileID: 11400000, guid: 33dbd45dc8db4661b8a388b2ff7a5b15, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -70618,6 +70635,8 @@ MonoBehaviour:
   player: {fileID: 1562452755}
   playerInventory: {fileID: 0}
   playerSoulEnhancements: {fileID: 0}
+  engravingLoadout: {fileID: 0}
+  playerCombatController: {fileID: 0}
   playerFormController: {fileID: 1562452774}
   teleportDestinationDatabase: {fileID: 11400000, guid: 6b019d483f774c33b2de338a6ca0e9d5, type: 2}
 --- !u!4 &1860777228

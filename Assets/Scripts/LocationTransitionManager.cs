@@ -232,6 +232,10 @@ public class LocationTransitionManager : MonoBehaviour
             PlayerInventory inv = player.Inventory;
             if (inv != null)
                 inv.RemoveItemsOnDungeonExit();
+
+            EngravingLoadout engravings = player.GetComponent<EngravingLoadout>();
+            if (engravings != null)
+                engravings.ClearAll();
         }
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();

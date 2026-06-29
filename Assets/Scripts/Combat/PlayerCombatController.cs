@@ -35,6 +35,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [SerializeField] private DungeonEventChannel dungeonChannel;
     [SerializeField] private PlayerInventory inventory;
     [SerializeField] private PlayerSoulEnhancements soulEnhancements;
+    [SerializeField] private EngravingLoadout engravingLoadout;
     [SerializeField] private SoulEnhancementTable soulEnhancementTable;
     public PlayerController  playerMovement;
 
@@ -140,6 +141,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int MaxParryStack => maxParryStack;
     public int CurrentComboStack => _combo != null ? _combo.Count : 0;
     public bool IsComboBonusActive => _soulBonus.Get(SoulStatType.ComboDamage) > 0f;
+    public PlayerFormId CurrentFormId =>
+        _formController != null && _formController.CurrentForm != null
+            ? _formController.CurrentForm.FormId
+            : PlayerFormId.Normal;
     public bool IsReloading => _isReloading;
     public PlayerBasicAttackMode CurrentBasicAttackMode => GetCurrentBasicAttackMode();
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
@@ -207,10 +212,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             parryStackDecayInterval,
             parryStackDecayAmount);
         _combo = new ComboMeter(comboWindow, comboMaxStack);
-        BindSkillSlots(currentWeapon);
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
+        if (engravingLoadout == null)
+            engravingLoadout = GetComponent<EngravingLoadout>();
+        if (engravingLoadout != null)
+            engravingLoadout.OnChanged += HandleEngravingLoadoutChanged;
+        BindSkillSlots(currentWeapon);
         if (soulEnhancements == null)
             soulEnhancements = GetComponent<PlayerSoulEnhancements>();
         SubscribeSoulEnhancements();
@@ -247,6 +256,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void OnDestroy()
     {
+        if (engravingLoadout != null)
+            engravingLoadout.OnChanged -= HandleEngravingLoadoutChanged;
         UnsubscribeSoulEnhancements();
         UnsubscribeInventory();
         UnsubscribeDungeonChannel();
@@ -1458,15 +1469,26 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             BindSkillSlots(currentWeapon);
     }
 
+    private void HandleEngravingLoadoutChanged()
+    {
+        BindSkillSlots(currentWeapon);
+    }
+
     private void BindSkillSlots(WeaponData weapon)
     {
         _boundSkillWeapon = weapon;
         SkillData[] skills = weapon != null ? weapon.skills : null;
+        PlayerFormId form = CurrentFormId;
+
+        if (engravingLoadout != null)
+            engravingLoadout.EnsureSeeded(form, skills);
 
         for (int i = 0; i < _skillSlots.Length; i++)
         {
-            SkillData skill = skills != null && i < skills.Length ? skills[i] : null;
-            _skillSlots[i].Bind(skill);
+            SkillData token = engravingLoadout != null
+                ? engravingLoadout.GetSlot(form, i)
+                : (skills != null && i < skills.Length ? skills[i] : null);
+            _skillSlots[i].Bind(token);
         }
     }
 

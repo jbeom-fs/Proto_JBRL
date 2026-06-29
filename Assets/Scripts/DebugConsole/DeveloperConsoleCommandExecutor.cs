@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 // Developer Console 명령의 실제 실행을 담당하는 facade.
@@ -14,6 +15,8 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private PlayerController player;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements playerSoulEnhancements;
+    [SerializeField] private EngravingLoadout engravingLoadout;
+    [SerializeField] private PlayerCombatController playerCombatController;
     [SerializeField] private PlayerFormController playerFormController;
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
@@ -204,6 +207,104 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Enhanced " + form + "/" + stat + " by " + count + " (now level " + level + ").");
     }
 
+    public DeveloperConsoleCommandResult ExecuteEngravingGive(string formToken, int debugIndex)
+    {
+        if (!System.Enum.TryParse(formToken, true, out PlayerFormId form))
+            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
+
+        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out _))
+            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
+
+        if (debugIndex < 0 || debugIndex >= loadout.DebugPoolCount)
+            return DeveloperConsoleCommandResult.Error("Invalid debug engraving index: " + debugIndex + ".");
+
+        SkillData skill = loadout.GetDebugEngraving(debugIndex);
+        if (skill == null)
+            return DeveloperConsoleCommandResult.Error("Debug engraving entry is empty: " + debugIndex + ".");
+
+        loadout.AddToPool(form, skill);
+        return DeveloperConsoleCommandResult.Success(
+            "Gave " + GetSkillName(skill) + " to " + form + " pool (size " + loadout.PoolCount(form) + ").");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteEngravingEquip(int slot, int poolIndex)
+    {
+        if (!IsValidEngravingSlot(slot))
+            return DeveloperConsoleCommandResult.Error("Invalid slot: must be 0-" + (EngravingLoadout.SlotCount - 1) + ".");
+
+        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
+            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
+
+        PlayerFormId form = combat.CurrentFormId;
+        SkillData skill = loadout.GetPoolAt(form, poolIndex);
+        if (skill == null || !loadout.Equip(form, slot, poolIndex))
+            return DeveloperConsoleCommandResult.Error("Invalid slot/pool index.");
+
+        return DeveloperConsoleCommandResult.Success(
+            "Equipped " + GetSkillName(skill) + " to " + form + " slot " + slot + ".");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteEngravingUnequip(int slot)
+    {
+        if (!IsValidEngravingSlot(slot))
+            return DeveloperConsoleCommandResult.Error("Invalid slot: must be 0-" + (EngravingLoadout.SlotCount - 1) + ".");
+
+        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
+            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
+
+        PlayerFormId form = combat.CurrentFormId;
+        SkillData skill = loadout.GetSlot(form, slot);
+        if (!loadout.Unequip(form, slot))
+            return DeveloperConsoleCommandResult.Error("Slot empty or invalid.");
+
+        return DeveloperConsoleCommandResult.Success(
+            "Unequipped " + GetSkillName(skill) + " from " + form + " slot " + slot + ".");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteEngravingShow()
+    {
+        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
+            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
+
+        PlayerFormId form = combat.CurrentFormId;
+
+        StringBuilder builder = new StringBuilder();
+        builder.Append("Engraving ");
+        builder.Append(form);
+        builder.Append(" slots: ");
+        for (int i = 0; i < EngravingLoadout.SlotCount; i++)
+        {
+            if (i > 0)
+                builder.Append(", ");
+
+            builder.Append('[');
+            builder.Append(i);
+            builder.Append("] ");
+            builder.Append(GetSkillName(loadout.GetSlot(form, i)));
+        }
+
+        builder.Append(" | pool: ");
+        int poolCount = loadout.PoolCount(form);
+        if (poolCount == 0)
+        {
+            builder.Append("(empty)");
+        }
+        else
+        {
+            for (int i = 0; i < poolCount; i++)
+            {
+                if (i > 0)
+                    builder.Append(", ");
+
+                builder.Append(i);
+                builder.Append(':');
+                builder.Append(GetSkillName(loadout.GetPoolAt(form, i)));
+            }
+        }
+
+        return DeveloperConsoleCommandResult.Success(builder.ToString());
+    }
+
     public void GetFormIds(List<string> output)
     {
         if (output == null)
@@ -308,6 +409,60 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         playerSoulEnhancements = UnityEngine.Object.FindAnyObjectByType<PlayerSoulEnhancements>();
         return playerSoulEnhancements;
+    }
+
+    private PlayerCombatController ResolvePlayerCombatController()
+    {
+        if (playerCombatController != null)
+            return playerCombatController;
+
+        if (player != null && player.TryGetComponent(out playerCombatController))
+            return playerCombatController;
+
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer != null && activePlayer.TryGetComponent(out playerCombatController))
+            return playerCombatController;
+
+        if (PlayerCombatController.Active != null)
+        {
+            playerCombatController = PlayerCombatController.Active;
+            return playerCombatController;
+        }
+
+        playerCombatController = UnityEngine.Object.FindAnyObjectByType<PlayerCombatController>();
+        return playerCombatController;
+    }
+
+    private bool TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat)
+    {
+        combat = ResolvePlayerCombatController();
+        loadout = engravingLoadout;
+
+        if (loadout == null && combat != null)
+            loadout = combat.GetComponent<EngravingLoadout>();
+
+        if (loadout == null && player != null)
+            loadout = player.GetComponent<EngravingLoadout>();
+
+        if (combat == null && loadout != null)
+            combat = loadout.GetComponent<PlayerCombatController>();
+
+        engravingLoadout = loadout;
+        playerCombatController = combat;
+        return loadout != null && combat != null;
+    }
+
+    private static bool IsValidEngravingSlot(int slot)
+    {
+        return (uint)slot < (uint)EngravingLoadout.SlotCount;
+    }
+
+    private static string GetSkillName(SkillData skill)
+    {
+        if (skill == null)
+            return "(empty)";
+
+        return string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName;
     }
 
     private static DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager manager, int targetFloor)

@@ -12,10 +12,12 @@ public sealed class DeveloperConsoleService
     private const string GivePositiveCountUsage = "Usage: /give <category> <code> [positiveCount]";
     private const string EnhanceUsage = "Usage: /enhance <form> <stat> [count]";
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
+    private const string EngravingUsage = "Usage: /engraving <give <form> <index> | equip <slot> <poolIndex> | unequip <slot> | show>";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
+    private static readonly string[] s_EngravingArgs = { "give", "equip", "unequip", "show" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
@@ -94,11 +96,13 @@ public sealed class DeveloperConsoleService
         _commands["form"] = ExecuteForm;
         _commands["give"] = ExecuteGive;
         _commands["enhance"] = ExecuteEnhance;
+        _commands["engraving"] = ExecuteEngraving;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
         _argumentProviders["give"] = ProvideGiveCategorySuggestions;
         _argumentProviders["enhance"] = ProvideEnhanceFormSuggestions;
+        _argumentProviders["engraving"] = ProvideEngravingSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
 
@@ -125,6 +129,9 @@ public sealed class DeveloperConsoleService
 
     private static void ProvideFormSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_FormArgs, currentArg, output, maxCount);
+
+    private static void ProvideEngravingSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_EngravingArgs, currentArg, output, maxCount);
 
     private static void ProvideGiveCategorySuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(DeveloperConsoleItemCategoryResolver.CategoryTokens, currentArg, output, maxCount);
@@ -195,6 +202,7 @@ public sealed class DeveloperConsoleService
             "\nUsage: /form set [id]" +
             "\n" + GiveUsage +
             "\n" + EnhanceUsage +
+            "\n" + EngravingUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -348,6 +356,48 @@ public sealed class DeveloperConsoleService
         return _executor.ExecuteEnhance(form, stat, count);
     }
 
+    private DeveloperConsoleCommandResult ExecuteEngraving(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error(EngravingUsage);
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1 && string.Equals(parts[0], "show", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecuteEngravingShow();
+
+        if (parts.Length == 3 && string.Equals(parts[0], "give", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParseZeroBasedInt(parts[2], out int debugIndex))
+                return DeveloperConsoleCommandResult.Error(EngravingUsage);
+
+            return _executor.ExecuteEngravingGive(parts[1], debugIndex);
+        }
+
+        if (parts.Length == 3 && string.Equals(parts[0], "equip", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParseZeroBasedInt(parts[1], out int slot) ||
+                !TryParseZeroBasedInt(parts[2], out int poolIndex))
+            {
+                return DeveloperConsoleCommandResult.Error(EngravingUsage);
+            }
+
+            return _executor.ExecuteEngravingEquip(slot, poolIndex);
+        }
+
+        if (parts.Length == 2 && string.Equals(parts[0], "unequip", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParseZeroBasedInt(parts[1], out int slot))
+                return DeveloperConsoleCommandResult.Error(EngravingUsage);
+
+            return _executor.ExecuteEngravingUnequip(slot);
+        }
+
+        return DeveloperConsoleCommandResult.Error(EngravingUsage);
+    }
+
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
     {
         subCommand = string.Empty;
@@ -434,6 +484,14 @@ public sealed class DeveloperConsoleService
             return false;
 
         return value > 0;
+    }
+
+    private static bool TryParseZeroBasedInt(string valueText, out int value)
+    {
+        if (!int.TryParse(valueText, out value))
+            return false;
+
+        return value >= 0;
     }
 
     private static string GetFloorUsage()

@@ -117,6 +117,7 @@
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
+    <Compile Include="Assets\Scripts\Combat\EngravingLoadout.cs" />
     <Compile Include="Assets\Scripts\PlayerInputKeySettings.cs" />
     <Compile Include="Assets\Scripts\TeleportService.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyInventory.cs" />
