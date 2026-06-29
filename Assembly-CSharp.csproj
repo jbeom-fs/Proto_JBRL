@@ -136,6 +136,7 @@
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityArea.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
+    <Compile Include="Assets\Scripts\UI\ComboCounterUI.cs" />
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleCommandExecutor.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverSceneReloadRestartHandler.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseSource.cs" />

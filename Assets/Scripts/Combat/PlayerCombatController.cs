@@ -138,6 +138,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
     public int MaxParryStack => maxParryStack;
+    public int CurrentComboStack => _combo != null ? _combo.Count : 0;
+    public bool IsComboBonusActive => _soulBonus.Get(SoulStatType.ComboDamage) > 0f;
     public bool IsReloading => _isReloading;
     public PlayerBasicAttackMode CurrentBasicAttackMode => GetCurrentBasicAttackMode();
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
