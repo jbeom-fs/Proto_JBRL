@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-29
-> 기준 커밋: `3d4586c9` (master, HEAD — 영혼각인 Slice A·B: 토큰 로드아웃 + 폼별 보유풀 + 런리셋) + 영혼각인 Slice C(EngravingData/등급/폼-락, 미커밋·Play검증 대기)
+> 작성 기준일: 2026-06-30
+> 기준 커밋: master HEAD — 영혼각인 Slice A·B·C·D 완료(D=드랍 통합, Play검증 통과) + Slice E1(모달 교체 UI) 코드·씬결선 완료(Play검증 대기·커밋 전). E2(상호작용점)·E3(콘텐츠 에셋) 미착수
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -141,7 +141,7 @@
 - **Elite Floor 자동화**: `floor % 10 == 5` 인 층에서 `DungeonGenerator.AssignEliteRoom` 이 시작 방에서 MST 깊이 최대 leaf(동률 시 거리 최대)를 Elite Room 으로 선정, `DungeonTilemapRenderer.PlaceEliteDoors` 가 perimeter 의 corridor-인접 셀에 `eliteDoorTile` 배치 — `RoomSpawner.PrepareEliteKeyPlan` 이 결정론적 RNG (`EliteKeyDomain`) 로 같은 층의 일반 방 적 1마리에 `elite_key` 드랍 부여, 플레이어가 키 보유 상태로 Elite Door 접촉 시 `TryOpenEliteDoorWithKey(PlayerInventory, ItemData)` 가 한 셀 카빙 + 인벤토리에서 키 1개 제거
 - **Elite 적 패턴 시스템**: `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner` (MonoBehaviour) 가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·`MinRange`/`MaxRange`·weight 조건을 만족하는 첫 패턴을 실행. 패턴 종류는 `EliteProjectilePatternData` / `EliteDashPatternData` / `EliteJumpPatternData` ScriptableObject 변형이며 각각 windup·animation key·EnemyAttackImpactData 를 보유. 기존 Contact Special(Rush/Jump)와는 독립된 사이클 — Special 은 모든 Contact 적의 1개 고정 공격, Elite Pattern 은 Elite 전용 다중 패턴 풀
 - **인벤토리 데이터 드리븐**: `PlayerInventory`(MonoBehaviour) 가 `InventoryItemStack` 리스트를 보유, stackable/maxStack 정책을 자동 적용. `ItemData.removeOnFloorTransition`/`removeOnDungeonExit` 플래그로 층/던전 이탈 시 자동 정리. `OnInventoryChanged` 는 UI 갱신과 Relic 패시브 재계산의 단일 트리거이며, Elite Key 도 일반 ItemData 한 항목으로 통합 (과거의 `PlayerEliteKeyInventory` 는 제거됨). `OwnsSoulForm(formId)` 는 ItemType.Soul + soulFormId + count>0 조합으로 Form 소유 여부를 판정
-- **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
+- **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene / EngravingLoadout) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
 - **공간 독립 walkability**: `WalkabilityQuery`(static) + `WalkabilityArea`(OnEnable/OnDisable 자동 등록) 로 Dungeon·Elite Arena·Boss Arena 등 모든 공간에서 단일 query API 사용. 전투 코드는 `WorldEnvironmentQuery` 파사드만 호출하며 공간 종류를 알지 못해도 됨 — 새 공간은 `WalkabilityArea` 컴포넌트 부착만으로 자동 등록
 - **Elite Arena 포탈 lifecycle 관리**: `EliteArenaEncounterController.Active` 정적 참조 + `RoomSpawner.PrepareEliteRoomPortal` → `EliteArenaEncounterController.PrepareEntrancePortal` 에서 생성주기 시작, `MarkCompletedAndDisable` + `ClearRuntimeState` 로 층 이동·던전 이탈 시 일괄 정리
@@ -209,12 +209,12 @@ Assets/Scripts/
 │   └── RoomSpawner.cs              # 방 진입 시 적 스폰, 방 클리어 감지, PrepareEliteKeyPlan(결정론적 elite_key 드랍 슬롯 선정)
 │
 ├── Items/
-│   ├── ItemType.cs                 # 아이템 분류 enum (Key/Currency/Consumable/Equipment/Relic/Material/Soul)
+│   ├── ItemType.cs                 # 아이템 분류 enum (Key/Currency/Consumable/Equipment/Relic/Material/Soul/Engraving) — Engraving=7(append, 직렬화 보존). 영혼각인 드랍 래퍼 타입
 │   ├── ItemEffect.cs               # ItemEffectType + ItemEffect(value) — 사용 효과 / 패시브 평면 스탯 데이터
 │   ├── ItemEffectApplier.cs        # Consumable useEffects 적용 정적 서비스 (HealHp → PlayerCombatController.RestoreHp)
-│   ├── ItemData.cs                 # 직렬화 가능한 단일 아이템 정의 (itemCode·displayName·icon·description·itemType·stackable·maxStack·useEffects·passiveEffects·soulFormId·정리 플래그)
+│   ├── ItemData.cs                 # 직렬화 가능한 단일 아이템 정의 (itemCode·displayName·icon·description·itemType·stackable·maxStack·useEffects·passiveEffects·soulFormId·engraving(EngravingData 참조, 영혼각인 드랍 브릿지)·정리 플래그)
 │   ├── ItemDatabase.cs             # ScriptableObject — itemCode→ItemData Dictionary 캐시 + OnValidate 중복/공백 검사 + itemCode 자동완성 목록 제공
-│   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister)
+│   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister). ItemType.Engraving면 인벤 우회 → EngravingLoadout.Active.AddToPool(engraving.owningForm)으로 폼 풀 적재(각인은 수량 1 고정, _amount 무시)
 │   └── DropItemSpawner.cs          # 사망 위치 기준 EnemyInventory 의 드랍 목록을 Instantiate (Singleton, dropSpacing 으로 다중 아이템 정렬, ClearAllActiveDrops)
 │
 ├── Inventory/
@@ -226,9 +226,9 @@ Assets/Scripts/
 │   └── InventoryItemStack.cs       # [Serializable] (ItemData, count) 스택 1개 — Add/Remove
 │
 ├── System/
-│   ├── GamePauseController.cs      # 일시정지 컨트롤러 (Singleton-ish s_Active) — GamePauseSource 별 요청 카운터 4개,
+│   ├── GamePauseController.cs      # 일시정지 컨트롤러 (Singleton-ish s_Active) — GamePauseSource 별 요청 카운터 5개(PauseSourceCount),
 │   │                                #   Pause/Resume API, ApplyPauseState 가 Time.timeScale 토글, OnDisable 시 timeScale 복원
-│   └── GamePauseSource.cs          # 일시정지 출처 enum (DeveloperConsole/Inventory/PauseMenu/Cutscene)
+│   └── GamePauseSource.cs          # 일시정지 출처 enum (DeveloperConsole/Inventory/PauseMenu/Cutscene/EngravingLoadout)
 │
 ├── Combat/
 │   ├── IDamageable.cs              # 피해 수신 인터페이스
@@ -250,7 +250,7 @@ Assets/Scripts/
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
 │   ├── ComboMeter.cs               # ComboDamage 콤보 스택 추적 (순수 C#, window 2s/cap 20) — 적중 적립, 윈도우 만료 시 리셋. RegisterHit/Tick/Reset
-│   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. debugEngravingPool=콘솔 지급 카탈로그(임시)
+│   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. static Active(픽업·UI 결선용, OnEnable/OnDisable). debugEngravingPool은 Slice D에서 제거(실드랍이 대체)
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
@@ -1050,9 +1050,14 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **데이터**: `EngravingData : SkillData` (owningForm + grade). 등급 `EngravingGrade`(희미한 Faint < 온전한 Whole < 태초의 Primordial)은 **드랍 희귀도·UI 라벨**일 뿐 코드 자동스케일 없음 — 등급 패밀리(강화판)·고유 태초 스킬 모두 개별 에셋으로 작성, 고유 메커니즘 태초는 별도 execution 로직 개별 구현.
 
-**콘솔**: `/engraving give <form> <idx> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, give는 debug 풀 카탈로그에서 지급·폼-락 검증, show는 `[Grade]` 태그 표시).
+**드랍 통합 (Slice D)**: 각인을 기존 itemCode 드랍 파이프라인에 **브릿지**로 편입 — `ItemType.Engraving`(=7) + `ItemData.engraving`(EngravingData 참조). 적 드랍 테이블(`EnemyDropDatabase`)은 itemCode만 다루고, 픽업 시 `DroppedItem`이 Engraving 타입이면 인벤을 우회해 `EngravingLoadout.Active.AddToPool(engraving.owningForm, …)`으로 폼 풀에 적재. **각인 수량 1 고정**(픽업이 `_amount` 의도적 무시) — 드랍 엔트리 `Max(min,max)>1`이면 `EnemyDropDatabase.OnValidate`가 경고(에디터 전용, `itemDatabaseForValidation` 참조). 티어는 데이터만으로 표현: 일반=저확률 independent / 엘리트=choiceGroup chance 1 확정 / 보스=확정 Primordial(전부 min=max=1). 던전 이탈 시 풀은 `ClearAll`로 비워지므로 인벤 누적 없음.
 
-**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋) 커밋·Play검증 완료, C(EngravingData/등급/폼-락) 적용·Play검증 대기. **남은 슬라이스 — D(드랍 통합: 일반/엘리트/보스 등급별 가중치) · E(교체 UI + 정비실/마을 상호작용)**. 실제 영혼각인 콘텐츠 에셋 작성은 별도.
+**콘솔**: `/engraving give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, give는 ItemDatabase itemCode 조회→EngravingData→AddToPool·폼-락 검증, show는 `[Grade]` 태그 표시). Slice D에서 give를 debug 카탈로그→itemCode 조회로 재배선.
+
+**교체 UI (Slice E1 — 모달)**: `EngravingLoadoutUIController`(SoulAltarUIController 미러). Open 시 `GamePauseController.Active.Pause(GamePauseSource.EngravingLoadout=4)` → timeScale 0 + `IsGameplayInputBlocked` → **모달**. Open 시 현재 폼(`combat.CurrentFormId`)을 `_form`으로 **캡처**(닫을 때까지 고정). 슬롯 4클릭=교체 대상 선택(하이라이트), 풀 클릭=`Equip(_form,slot,poolIdx)`, Unequip 버튼=슬롯 비움. `OnChanged` 구독으로 자동 갱신, ESC·닫기·콘솔열림 시 Close+Resume.
+- **모달 채택 근거**: ①`AddToPool`이 `OnChanged` 미발행(=리바인드 트리거라 픽업마다 쿨 0 리셋됨)이라 UI가 풀 추가를 못 봄(stale), ②폼 live 조회와 갱신 시점 불일치. 모달이면 열린 동안 이동(픽업)·폼전환이 막혀 **두 버그가 발생 자체를 못 함** — 코어 이벤트/`AddToPool` 의미를 안 건드리는 최소 수정. (비-모달로 가려면 `OnPoolChanged` 이벤트 분리 필요 — 미채택.)
+
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합) **커밋·Play검증 완료**. E1(모달 교체 UI) **코드·씬결선 완료, Play검증 대기**. **남은 — E2(간이 던전 상호작용점: `EngravingStation` 트리거 + 방진입 placer, 대상 방 미결정) · E3(정식 콘텐츠 에셋: 현 Sword 3티어는 SkillData 부모필드 미작성 테스트에셋)**. 이후 `EngravingData` 전용 CustomEditor.
 
 ---
 
@@ -2000,6 +2005,7 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 |------|------|
 | `TownSoulAltar` (MonoBehaviour) | Collider2D 트리거 근접 + `PlayerInputReader.InteractConfirmPressedThisFrame`(현재 Z) 로 AltarUI 오픈. 입력리더는 트리거 충돌에서 취득(신규 Find 없음). 마을에만 물리 배치 |
 | `SoulAltarUIController` | 보유 소울 폼(`PlayerInventory.OwnsSoulForm` && 테이블 성장 존재) 선택 + 스탯행 표시. `OnInventoryChanged`/`OnChanged` 구독으로 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘 |
+| `EngravingLoadoutUIController` | 영혼각인 교체 UI(§7-8 Slice E1, **모달**). Open 시 폼 캡처 + `GamePauseController.Pause(EngravingLoadout)` → timeScale 0/입력차단. 현재 폼 슬롯4+풀 리스트, 슬롯선택→풀클릭 equip/Unequip. `EngravingLoadout.OnChanged` 구독, Esc·닫기·콘솔열림 시 Close+Resume. (상호작용 트리거 E2 미구현 — 현재 Open() 외부 호출 수단 없음) |
 | `SoulAltarStatRowUI` | 스탯별 행 — 레벨/최대/비용/보유 조각 + 강화 버튼(만렙·조각부족 시 비활성) |
 | `SoulEnhancementCost` (static) | `GetMaterialCost(growth, currentLevel) = baseMaterialCost × (currentLevel + 1)` — **비용 공식 단일 격리점**(향후 곡선 교체는 이 함수만 수정). 수치는 `SoulStatGrowth.baseMaterialCost` 데이터 |
 
@@ -2662,7 +2668,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Relic 평면 패시브** | `PlayerItemStats.Recalculate` 가 ItemType.Relic 의 passiveEffects 를 스택 수 비례 합산, `PlayerCombatController` 가 OnInventoryChanged 에서 재계산 후 TotalAttack/TotalDefense/MaxHp/MoveSpeedMultiplier 에 반영 |
 | **Elite Pattern Set** | `EnemyData.isElite + elitePatternSet` + `ElitePatternRunner` — Projectile/Dash/Jump ScriptableObject 패턴이 cooldown/minRange/maxRange/weight 조건을 만족하면 순서대로 실행. Contact Special 과 독립된 사이클 |
 | **Elite Pattern 런타임** | `ElitePatternData`(abstract SO) + `ElitePatternRuntime`(abstract) + `ElitePatternContext`(Brain/Enemy/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 일괄 노출) — 새 패턴 추가는 두 클래스(Data+Runtime) 작성 + CreateAssetMenu 만으로 가능 |
-| **게임 일시정지 컨트롤러** | `GamePauseController` + `GamePauseSource`(DeveloperConsole/Inventory/PauseMenu/Cutscene) — 출처별 카운터 + Time.timeScale 토글, OnDisable 시 이전 timeScale 복원 |
+| **게임 일시정지 컨트롤러** | `GamePauseController` + `GamePauseSource`(DeveloperConsole/Inventory/PauseMenu/Cutscene/EngravingLoadout) — 출처별 카운터 + Time.timeScale 토글, OnDisable 시 이전 timeScale 복원 |
 | ~~**DungeonPortal 진입 트리거**~~ | (제거됨) `DungeonPortal.cs` 는 미사용 코드로 정리되어 삭제. 마을→던전 진입은 `TeleportService` + `TeleportDestinationDatabase` 의 trigger 콜라이더로 일원화됨 |
 | **개발자 콘솔** | `DeveloperConsoleUI`(`` ` `` 키 토글·TMP_InputField·Tab 자동완성·GamePause 연동) + `DeveloperConsoleService`(명령·인수 제안 Dictionary 기반) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경 담당) + 9개 내장 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give) |
 | **개발자 콘솔 실행 분리** | `DeveloperConsoleCommandExecutor` (MonoBehaviour) — 구 `DeveloperConsoleCommandContext` (readonly struct) 대체. 파싱·등록은 Service, 게임 상태 변경은 Executor 로 책임 분리 |
@@ -2706,7 +2712,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal/ComboDamage 구현 완료**(§11b-8, ComboDamage=`ComboMeter` 적중 스택→전 데미지 증폭). 남은 `AilmentDamage`(Dagger DoT) 만 enum·집계 상태 — 상태이상 DoT 시스템 + 영혼각인 소스 필요(영혼각인 시스템 진행 후) |
-| 영혼각인 잔여 슬라이스 | 중간 | **Slice A·B·C 구현(§7-8) — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락 완료**. 남은 **D(드랍 통합: 일반 저확률/엘리트 확정/보스 태초, EnemyDropDatabase 경제에 런한정 아이템으로) · E(교체 UI + 정비실/마을 상호작용)** + 실제 영혼각인 콘텐츠 에셋 작성. 고유 메커니즘 태초 각인은 per-각인 execution 로직 개별 구현 |
+| 영혼각인 잔여 슬라이스 | 중간 | **Slice A·B·C·D 구현·Play검증 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1+OnValidate 경고). **E1(모달 교체 UI) 코드·씬결선 완료, Play검증 대기**. 남은 **E2(간이 던전 상호작용점: EngravingStation 트리거+방진입 placer, 대상 방 미결정) · E3(정식 콘텐츠 에셋 — 현 Sword 3티어는 테스트에셋)** + `EngravingData` CustomEditor. 고유 메커니즘 태초 각인은 per-각인 execution 로직 개별 구현 |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
