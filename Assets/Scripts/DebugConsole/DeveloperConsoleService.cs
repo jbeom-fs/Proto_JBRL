@@ -12,7 +12,7 @@ public sealed class DeveloperConsoleService
     private const string GivePositiveCountUsage = "Usage: /give <category> <code> [positiveCount]";
     private const string EnhanceUsage = "Usage: /enhance <form> <stat> [count]";
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
-    private const string EngravingUsage = "Usage: /engraving <give <form> <index> | equip <slot> <poolIndex> | unequip <slot> | show>";
+    private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
@@ -369,12 +369,7 @@ public sealed class DeveloperConsoleService
             return _executor.ExecuteEngravingShow();
 
         if (parts.Length == 3 && string.Equals(parts[0], "give", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!TryParseZeroBasedInt(parts[2], out int debugIndex))
-                return DeveloperConsoleCommandResult.Error(EngravingUsage);
-
-            return _executor.ExecuteEngravingGive(parts[1], debugIndex);
-        }
+            return _executor.ExecuteEngravingGive(parts[1], parts[2]);
 
         if (parts.Length == 3 && string.Equals(parts[0], "equip", StringComparison.OrdinalIgnoreCase))
         {

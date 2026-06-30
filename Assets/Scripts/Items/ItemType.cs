@@ -6,5 +6,6 @@ public enum ItemType
     Equipment,
     Relic,
     Material,
-    Soul
+    Soul,
+    Engraving = 7
 }

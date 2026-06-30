@@ -39,6 +39,8 @@ public sealed class EnemyDropGroup
 public sealed class EnemyDropDatabase : ScriptableObject
 {
     [SerializeField] private List<EnemyDropGroup> groups = new List<EnemyDropGroup>();
+    [Tooltip("Editor-only validation: resolves itemCode -> ItemType to flag engraving entries with max>1.")]
+    [SerializeField] private ItemDatabase itemDatabaseForValidation;
 
     private readonly Dictionary<EnemyData, EnemyDropGroup> _byEnemy = new Dictionary<EnemyData, EnemyDropGroup>();
     private bool _cacheBuilt;
@@ -114,6 +116,52 @@ public sealed class EnemyDropDatabase : ScriptableObject
 
             if (!seen.Add(group.enemy))
                 Debug.LogWarning("[EnemyDropDatabase] Duplicate enemy: " + group.enemy.name + ".", this);
+
+            if (group.drops != null)
+            {
+                for (int dropIndex = 0; dropIndex < group.drops.Count; dropIndex++)
+                {
+                    EnemyDropEntry drop = group.drops[dropIndex];
+                    WarnIfEngravingAmountExceedsOne(drop.itemCode, drop.minAmount, drop.maxAmount);
+                }
+            }
+
+            if (group.choiceGroups != null)
+            {
+                for (int choiceGroupIndex = 0; choiceGroupIndex < group.choiceGroups.Count; choiceGroupIndex++)
+                {
+                    EnemyDropChoiceGroup choiceGroup = group.choiceGroups[choiceGroupIndex];
+                    if (choiceGroup == null || choiceGroup.choices == null)
+                        continue;
+
+                    for (int choiceIndex = 0; choiceIndex < choiceGroup.choices.Count; choiceIndex++)
+                    {
+                        EnemyDropChoice choice = choiceGroup.choices[choiceIndex];
+                        WarnIfEngravingAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
+                    }
+                }
+            }
+        }
+#endif
+    }
+
+    private void WarnIfEngravingAmountExceedsOne(string itemCode, int minAmount, int maxAmount)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (itemDatabaseForValidation == null || string.IsNullOrWhiteSpace(itemCode))
+            return;
+
+        if (!itemDatabaseForValidation.TryGetItem(itemCode, out ItemData item) || item == null)
+            return;
+
+        // 런타임 roller와 동일하게 실효 최대치 = Max(min, max). min>max 오작성도 잡는다.
+        int effectiveMax = Mathf.Max(Mathf.Max(1, minAmount), maxAmount);
+        if (item.ItemType == ItemType.Engraving && effectiveMax > 1)
+        {
+            Debug.LogWarning(
+                "[EnemyDropDatabase] Engraving drop '" + itemCode +
+                "' rolls up to " + effectiveMax + " (>1). Engravings are always quantity 1; " +
+                "extra copies are silently dropped on pickup. Set min=max=1.", this);
         }
 #endif
     }

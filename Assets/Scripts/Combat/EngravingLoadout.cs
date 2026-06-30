@@ -7,9 +7,7 @@ public sealed class EngravingLoadout : MonoBehaviour
 {
     public const int SlotCount = 4;
 
-    [Header("DEBUG ONLY (Slice B verification catalog, remove in later slice)")]
-    [Tooltip("Temporary engraving list added to pool by /engraving give <form> <index>.")]
-    [SerializeField] private SkillData[] debugEngravingPool;
+    public static EngravingLoadout Active { get; private set; }
 
     private sealed class FormState
     {
@@ -22,7 +20,16 @@ public sealed class EngravingLoadout : MonoBehaviour
 
     public event Action OnChanged;
 
-    public int DebugPoolCount => debugEngravingPool != null ? debugEngravingPool.Length : 0;
+    private void OnEnable()
+    {
+        Active = this;
+    }
+
+    private void OnDisable()
+    {
+        if (Active == this)
+            Active = null;
+    }
 
     private FormState GetOrCreate(PlayerFormId form)
     {
@@ -125,12 +132,5 @@ public sealed class EngravingLoadout : MonoBehaviour
 
         _states.Clear();
         OnChanged?.Invoke();
-    }
-
-    public SkillData GetDebugEngraving(int index)
-    {
-        return debugEngravingPool != null && (uint)index < (uint)debugEngravingPool.Length
-            ? debugEngravingPool[index]
-            : null;
     }
 }

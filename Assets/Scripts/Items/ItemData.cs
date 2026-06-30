@@ -19,6 +19,7 @@ public sealed class ItemData
     [SerializeField] private ItemEffect[] useEffects = Array.Empty<ItemEffect>();
     [SerializeField] private ItemEffect[] passiveEffects = Array.Empty<ItemEffect>();
     [SerializeField] private PlayerFormId soulFormId;
+    [SerializeField] private EngravingData engraving;
     [SerializeField] private string salvageItemCode;
     [SerializeField] private int salvageMinAmount = 1;
     [SerializeField] private int salvageMaxAmount = 1;
@@ -35,6 +36,7 @@ public sealed class ItemData
     public IReadOnlyList<ItemEffect> UseEffects => useEffects ?? Array.Empty<ItemEffect>();
     public IReadOnlyList<ItemEffect> PassiveEffects => passiveEffects ?? Array.Empty<ItemEffect>();
     public PlayerFormId SoulFormId => soulFormId;
+    public EngravingData Engraving => engraving;
     public string SalvageItemCode => salvageItemCode;
     public int SalvageMinAmount => salvageMinAmount;
     public int SalvageMaxAmount => salvageMaxAmount;

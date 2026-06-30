@@ -63,6 +63,31 @@ public sealed class DroppedItem : MonoBehaviour
         if (!other.TryGetComponent<PlayerInventory>(out var inventory))
             return;
 
+        if (_itemData.ItemType == ItemType.Engraving)
+        {
+            EngravingData engraving = _itemData.Engraving;
+            if (engraving == null)
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogWarning("[DroppedItem] Engraving item '" + _itemCode + "' has no EngravingData ref.", this);
+#endif
+                DropItemSpawner.Instance?.Unregister(this);
+                Destroy(gameObject);
+                return;
+            }
+
+            // 각인은 설계상 항상 수량 1(슬롯 토큰, 스택 개념 없음).
+            // 드랍 엔트리 _amount는 의도적으로 무시 — 1개만 풀 적재.
+            // (엔트리 max>1 오작성은 EnemyDropDatabase.OnValidate가 경고로 잡음.)
+            EngravingLoadout loadout = EngravingLoadout.Active;
+            if (loadout == null || !loadout.AddToPool(engraving.owningForm, engraving))
+                return;
+
+            DropItemSpawner.Instance?.Unregister(this);
+            Destroy(gameObject);
+            return;
+        }
+
         if (!inventory.AddItem(_itemData, _amount))
             return;
 

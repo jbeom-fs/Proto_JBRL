@@ -207,27 +207,35 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Enhanced " + form + "/" + stat + " by " + count + " (now level " + level + ").");
     }
 
-    public DeveloperConsoleCommandResult ExecuteEngravingGive(string formToken, int debugIndex)
+    public DeveloperConsoleCommandResult ExecuteEngravingGive(string formToken, string itemCode)
     {
         if (!System.Enum.TryParse(formToken, true, out PlayerFormId form))
             return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
 
-        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out _))
-            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
+        PlayerInventory inventory = ResolvePlayerInventory();
+        if (inventory == null)
+        {
+            WarnMissing(nameof(PlayerInventory));
+            return DeveloperConsoleCommandResult.Error("PlayerInventory is not active.");
+        }
 
-        if (debugIndex < 0 || debugIndex >= loadout.DebugPoolCount)
-            return DeveloperConsoleCommandResult.Error("Invalid debug engraving index: " + debugIndex + ".");
+        if (!inventory.TryGetDatabaseItem(itemCode, out ItemData item))
+            return DeveloperConsoleCommandResult.Error("Unknown itemCode: " + itemCode);
 
-        SkillData skill = loadout.GetDebugEngraving(debugIndex);
-        if (skill == null)
-            return DeveloperConsoleCommandResult.Error("Debug engraving entry is empty: " + debugIndex + ".");
+        EngravingData engraving = item.Engraving;
+        if (engraving == null)
+            return DeveloperConsoleCommandResult.Error("Item is not an engraving: " + itemCode);
 
-        if (!loadout.AddToPool(form, skill))
+        EngravingLoadout loadout = ResolveEngravingLoadout();
+        if (loadout == null)
+            return DeveloperConsoleCommandResult.Error("EngravingLoadout is not active.");
+
+        if (!loadout.AddToPool(form, engraving))
             return DeveloperConsoleCommandResult.Error(
                 "Engraving is locked to another form (cannot add to " + form + " pool).");
 
         return DeveloperConsoleCommandResult.Success(
-            "Gave " + GetSkillName(skill) + " to " + form + " pool (size " + loadout.PoolCount(form) + ").");
+            "Gave " + GetSkillName(engraving) + " to " + form + " pool (size " + loadout.PoolCount(form) + ").");
     }
 
     public DeveloperConsoleCommandResult ExecuteEngravingEquip(int slot, int poolIndex)
@@ -436,10 +444,32 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return playerCombatController;
     }
 
+    private EngravingLoadout ResolveEngravingLoadout()
+    {
+        if (engravingLoadout != null)
+            return engravingLoadout;
+
+        if (EngravingLoadout.Active != null)
+        {
+            engravingLoadout = EngravingLoadout.Active;
+            return engravingLoadout;
+        }
+
+        if (player != null && player.TryGetComponent(out engravingLoadout))
+            return engravingLoadout;
+
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer != null && activePlayer.TryGetComponent(out engravingLoadout))
+            return engravingLoadout;
+
+        engravingLoadout = UnityEngine.Object.FindAnyObjectByType<EngravingLoadout>();
+        return engravingLoadout;
+    }
+
     private bool TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat)
     {
         combat = ResolvePlayerCombatController();
-        loadout = engravingLoadout;
+        loadout = ResolveEngravingLoadout();
 
         if (loadout == null && combat != null)
             loadout = combat.GetComponent<EngravingLoadout>();
