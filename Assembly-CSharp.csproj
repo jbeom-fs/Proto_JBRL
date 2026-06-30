@@ -67,6 +67,7 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulStatBonus.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
+    <Compile Include="Assets\Scripts\Data\EngravingData.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusBarUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyHealthBar.cs" />
     <Compile Include="Assets\Scripts\PlayerFormController.cs" />

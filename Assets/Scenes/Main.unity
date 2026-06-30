@@ -1066,10 +1066,10 @@ RectTransform:
   - {fileID: 1677351292}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 115, y: -30}
+  m_SizeDelta: {x: 55, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &175907016
 MonoBehaviour:
@@ -5879,10 +5879,10 @@ RectTransform:
   - {fileID: 1016457320}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 295, y: -30}
+  m_SizeDelta: {x: 55, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &896344612
 MonoBehaviour:
@@ -64887,8 +64887,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EngravingLoadout
   debugEngravingPool:
-  - {fileID: 11400000, guid: 60551841cb2a494eb0950122e708fddc, type: 2}
-  - {fileID: 11400000, guid: 33dbd45dc8db4661b8a388b2ff7a5b15, type: 2}
+  - {fileID: 11400000, guid: 2e1bc61e0ce4fd4479d5ee3be9e441b6, type: 2}
+  - {fileID: 11400000, guid: 4cad55d9e4a68954d9f742a270fb8758, type: 2}
 --- !u!1 &1600274169
 GameObject:
   m_ObjectHideFlags: 0
@@ -65029,10 +65029,10 @@ RectTransform:
   - {fileID: 1641664690}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 205, y: -30}
+  m_SizeDelta: {x: 55, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1612644040
 MonoBehaviour:
@@ -65275,10 +65275,10 @@ RectTransform:
   - {fileID: 611757576}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 385, y: -30}
+  m_SizeDelta: {x: 55, y: 55}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1680599533
 MonoBehaviour:
