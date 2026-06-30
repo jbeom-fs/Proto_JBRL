@@ -19,6 +19,10 @@ MonoBehaviour:
       minAmount: 1
       maxAmount: 3
       chance: 1
+    - itemCode: Eng_Sword_Faint
+      minAmount: 1
+      maxAmount: 1
+      chance: 1
     choiceGroups: []
   - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
     drops:
@@ -52,3 +56,4 @@ MonoBehaviour:
         minAmount: 1
         maxAmount: 1
         weight: 0.25
+  itemDatabaseForValidation: {fileID: 11400000, guid: 9918c152d2e144009a28b77650e3eb23, type: 2}

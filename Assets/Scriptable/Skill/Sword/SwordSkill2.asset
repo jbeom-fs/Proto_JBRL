@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: SwordSkill2
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "Sword\uD14C\uC2A4\uD2B81"
+  icon: {fileID: 1760965741497715252, guid: e9b57316b26d6974c82002df435160a2, type: 3}
+  description: "\uD14C\uC2A4\uD2B8\uC6A9 1"
+  executionType: 2
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 2
+  castDelay: 0
+  recoveryDelay: 0
+  animationType: 1
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 10
+  attackPattern: 5
+  patternRange: 4
+  coneHalfAngle: 45
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 8
+  projectileLifetime: 3
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 0
+  projectileMaxBounceCount: 1
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  owningForm: 1
+  grade: 1
