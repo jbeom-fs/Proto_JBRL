@@ -167,7 +167,7 @@ public class PlayerController : MonoBehaviour
         _lastRoom               = null;
 
         var spawnRoom = dungeonManager.GetRoomAt(gridPos.x, gridPos.y);
-        if (spawnRoom.HasValue)
+        if (spawnRoom.HasValue && spawnRoom.Value.Type != RoomType.Stair)
             dungeonManager.SetRoomType(spawnRoom.Value, RoomType.Spawn);
     }
 

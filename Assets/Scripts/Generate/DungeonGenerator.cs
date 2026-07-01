@@ -242,7 +242,6 @@ public static class DungeonGenerator
             FillRoom(grid, room);
 
         layoutInfo = ConnectAll(grid, rooms, corridorTiles, settings, rng);
-        PlaceStairs(grid, rooms, settings, rng);
 
         // Room → RoomRect 변환 후 반환
         outRooms = new RoomRect[rooms.Count];
@@ -1055,48 +1054,20 @@ public static class DungeonGenerator
         return DebugFormatSet(diff);
     }
 
-    private static void PlaceStairs(
-        int[,] grid, List<Room> rooms,
-        DungeonSettings s, Random rng)
-    {
-        if (rooms.Count == 0) return;
-
-        // 최고층에는 올라가는 계단 없음
-        if (s.Floor >= s.MaxFloor) return;
-
-        // 방 인덱스를 섞어 랜덤 순서로 탐색
-        var indices = new List<int>();
-        for (int i = 0; i < rooms.Count; i++) indices.Add(i);
-        for (int i = indices.Count - 1; i > 0; i--)
-        {
-            int j = rng.Next(i + 1);
-            int tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
-        }
-
-        // ── STAIR_UP 배치 ────────────────────────────────────────
-        foreach (int idx in indices)
-        {
-            if (TryFindStairPos(grid, rooms[idx], s, rng, out int sx, out int sy))
-            {
-                grid[sy, sx] = STAIR_UP;
-                break;
-            }
-        }
-    }
-
     /// <summary>
     /// 방 내부에서 계단을 놓을 수 있는 유효한 위치를 랜덤으로 선택합니다.
     /// </summary>
-    private static bool TryFindStairPos(
-        int[,] grid, Room room, DungeonSettings s, Random rng,
+    public static bool TryFindStairPosition(
+        int[,] grid, int roomX, int roomY, int roomW, int roomH,
+        DungeonSettings s, Random rng,
         out int sx, out int sy)
     {
         // 방 테두리(1줄)를 제외한 내부 타일만 후보로 수집
         var candidates = new List<(int x, int y)>();
 
-        for (int row = room.Y + 1; row < room.Y + room.H - 1; row++)
+        for (int row = roomY + 1; row < roomY + roomH - 1; row++)
         {
-            for (int col = room.X + 1; col < room.X + room.W - 1; col++)
+            for (int col = roomX + 1; col < roomX + roomW - 1; col++)
             {
                 if (IsValidStairPos(grid, col, row, s))
                     candidates.Add((col, row));

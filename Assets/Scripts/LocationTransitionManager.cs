@@ -19,6 +19,7 @@ public class LocationTransitionManager : MonoBehaviour
     [SerializeField] private DungeonManager dungeonManager;
     [SerializeField] private FogOfWarController fogOfWar;
     [SerializeField] private RoomSpawner roomSpawner;
+    [SerializeField] private EngravingStationPlacer engravingStationPlacer;
     [SerializeField] private MinimapController minimap;
 
     [Header("Flow")]
@@ -214,6 +215,8 @@ public class LocationTransitionManager : MonoBehaviour
 
     private void StartNewDungeonRun(PlayerController targetPlayer)
     {
+        engravingStationPlacer?.ClearRuntimeState();
+
         if (generateNewDungeonOnEnter && resetFloorOnNewDungeonRun)
             dungeonManager.floor = 1;
 
@@ -241,6 +244,7 @@ public class LocationTransitionManager : MonoBehaviour
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
         DropItemSpawner.Instance?.ClearAllActiveDrops();
         roomSpawner?.ClearRuntimeEncounterState();
+        engravingStationPlacer?.ClearRuntimeState();
     }
 
     private void ApplyLocationRoots(GameLocationType locationType)

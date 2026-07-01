@@ -83,6 +83,7 @@
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
     <Compile Include="Assets\Scripts\UI\EngravingLoadoutUIController.cs" />
+    <Compile Include="Assets\Scripts\Combat\EngravingStation.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseController.cs" />
     <Compile Include="Assets\Scripts\Combat\MovementBlockerQuery.cs" />
     <Compile Include="Assets\Scripts\Generate\FloorTransitionService.cs" />
@@ -165,6 +166,7 @@
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
+    <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillTargetResolver.cs" />
@@ -177,6 +179,7 @@
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
     <Compile Include="Assets\Scripts\LocationRootRegistry.cs" />
+    <Compile Include="Assets\Scripts\Generate\DungeonPlacementUtility.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternRunner.cs" />
     <Compile Include="Assets\Scripts\UI\SkillRangePreviewer.cs" />
     <Compile Include="Assets\Scripts\Tool\PerfStage.cs" />

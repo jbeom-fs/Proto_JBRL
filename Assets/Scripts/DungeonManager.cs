@@ -96,6 +96,10 @@ public class DungeonManager : MonoBehaviour
     [Min(0)]
     public int maxMonsterDenCount = 1;
 
+    [Header("Stair")]
+    [SerializeField, Tooltip("계단이 들어가면 안 되는 방 타입입니다. Spawn/Elite는 항상 제외됩니다.")]
+    private RoomType[] stairAvoidTypes;
+
     [Header("Spawn Region")]
     [Tooltip("현재 층/스테이지 지역입니다. EnemyData.allowedRegions는 여러 지역을 허용할 수 있지만, 이 값은 단일 지역만 사용합니다.")]
     public SpawnRegion currentStageRegion = SpawnRegion.Dungeon;
@@ -682,7 +686,7 @@ public class DungeonManager : MonoBehaviour
                 "elapsedMs=" + ElapsedMs(stageStart) +
                 " walkable=" + CountWalkableTiles(grid));
 
-        // 5. Registry 초기화 (Stair 방 자동 감지)
+        // 5. Registry 초기화
         using (PerfStage.Begin("generate_stage_registry_init"))
         {
             _registry.Initialize(_data);
@@ -702,10 +706,99 @@ public class DungeonManager : MonoBehaviour
             seed, (int)currentStageRegion, floor, 0, DeterministicSeedUtility.MonsterDenDomain));
         _registry.AssignMonsterDens(_data, denRng, monsterDenChance, maxMonsterDenCount, excludeSpawnKey);
         PrepareEliteKeyPlan();
+        PlaceStairForFloor(settings, roomInfos, grid, excludeSpawnKey);
         if (RuntimePerfLogger.IsActive)
             RuntimePerfLogger.MarkEvent("generate_stage_spawn_cache",
                 "elapsedMs=" + ElapsedMs(stageStart) +
                 " spawn=" + _cachedSpawnPos.x + ":" + _cachedSpawnPos.y);
+    }
+
+    private void PlaceStairForFloor(
+        DungeonSettings settings,
+        RoomInfo[] roomInfos,
+        int[,] grid,
+        (int x, int y) excludeSpawnKey)
+    {
+        if (settings.Floor >= settings.MaxFloor)
+            return;
+
+        var stairRng = new System.Random(DeterministicSeedUtility.CreateSeed(
+            seed, (int)currentStageRegion, floor, 0, DeterministicSeedUtility.StairSelectDomain));
+        int[] order = BuildShuffledIndices(roomInfos.Length, stairRng);
+
+        if (TrySelectAndCarveStair(order, roomInfos, grid, settings, stairRng, excludeSpawnKey, true))
+            return;
+        if (TrySelectAndCarveStair(order, roomInfos, grid, settings, stairRng, excludeSpawnKey, false))
+            return;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning("[DungeonManager] Stair placement failed: no valid room.", this);
+#endif
+    }
+
+    private bool TrySelectAndCarveStair(
+        int[] order,
+        RoomInfo[] roomInfos,
+        int[,] grid,
+        DungeonSettings settings,
+        System.Random rng,
+        (int x, int y) excludeSpawnKey,
+        bool applyExclusions)
+    {
+        for (int i = 0; i < order.Length; i++)
+        {
+            RoomInfo room = roomInfos[order[i]];
+            if (applyExclusions && IsStairExcluded(room, excludeSpawnKey))
+                continue;
+
+            if (!DungeonGenerator.TryFindStairPosition(
+                grid, room.X, room.Y, room.W, room.H, settings, rng, out int sx, out int sy))
+            {
+                continue;
+            }
+
+            _data.SetTileValue(sx, sy, DungeonGenerator.STAIR_UP);
+            _registry.SetRoomType(room, RoomType.Stair);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsStairExcluded(RoomInfo room, (int x, int y) excludeSpawnKey)
+    {
+        if ((room.X, room.Y) == excludeSpawnKey)
+            return true;
+        if (room.IsElite)
+            return true;
+        if (stairAvoidTypes != null)
+        {
+            RoomType type = _registry.GetRoomType(room);
+            for (int i = 0; i < stairAvoidTypes.Length; i++)
+            {
+                if (stairAvoidTypes[i] == type)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static int[] BuildShuffledIndices(int count, System.Random rng)
+    {
+        var indices = new int[count];
+        for (int i = 0; i < count; i++)
+            indices[i] = i;
+
+        for (int i = count - 1; i > 0; i--)
+        {
+            int j = rng.Next(i + 1);
+            int temp = indices[i];
+            indices[i] = indices[j];
+            indices[j] = temp;
+        }
+
+        return indices;
     }
 
     private DungeonSettings BuildSettings()

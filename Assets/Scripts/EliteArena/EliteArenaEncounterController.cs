@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class EliteArenaEncounterController : ArenaEncounterBase
@@ -50,7 +49,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             _activeEntrancePortal.gameObject.SetActive(false);
 
         Vector3 portalPosition;
-        if (!TryGetRoomCenterWalkablePosition(room, dungeonManager, out portalPosition))
+        if (!DungeonPlacementUtility.TryGetRoomCenterWalkablePosition(room, dungeonManager, out portalPosition))
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning("[EliteArenaEncounterController] Elite Room has no valid portal position.", this);
@@ -281,38 +280,11 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             return true;
         }
 
-        if (TryGetRoomCenterWalkablePosition(room, dungeonManager, out position))
+        if (DungeonPlacementUtility.TryGetRoomCenterWalkablePosition(room, dungeonManager, out position))
             return true;
 
         position = player != null ? player.transform.position : default;
         return player != null;
-    }
-
-    private static bool TryGetRoomCenterWalkablePosition(
-        RoomInfo room,
-        DungeonManager dungeonManager,
-        out Vector3 position)
-    {
-        position = default;
-        List<Vector2Int> tiles = dungeonManager.Data.GetWalkableTiles(room);
-        if (tiles == null || tiles.Count == 0)
-            return false;
-
-        Vector2 center = new Vector2(room.CenterX, room.CenterY);
-        Vector2Int best = tiles[0];
-        float bestDistance = float.PositiveInfinity;
-        for (int i = 0; i < tiles.Count; i++)
-        {
-            float distance = ((Vector2)tiles[i] - center).sqrMagnitude;
-            if (distance >= bestDistance)
-                continue;
-
-            bestDistance = distance;
-            best = tiles[i];
-        }
-
-        position = dungeonManager.GridToWorld(best);
-        return true;
     }
 
     protected override void BindReturnPortal(EliteArenaReturnPortal portal)
