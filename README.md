@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-06-30
-> 기준 커밋: master HEAD — 영혼각인 Slice A·B·C·D 완료(D=드랍 통합, Play검증 통과) + Slice E1(모달 교체 UI) 코드·씬결선 완료(Play검증 대기·커밋 전). E2(상호작용점)·E3(콘텐츠 에셋) 미착수
+> 작성 기준일: 2026-07-01
+> 기준 커밋: master HEAD `bef263b1`(E1 커밋) 위 working tree 미커밋 — 영혼각인 Slice A~E2 완료(E2=Stair방 각인대, Play검증 통과) + 계단배치 파이프라인 리팩터(§4-1, spawn·stair 겹침 버그수정). E3(콘텐츠 에셋)·CustomEditor 미착수
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -200,6 +200,8 @@ Assets/Scripts/
 │   ├── DungeonEventChannel.cs      # 던전 이벤트 버스 (ScriptableObject)
 │   ├── DungeonQueryService.cs      # 그리드 유틸리티 (IsWalkable, 좌표 변환)
 │   ├── SpawnPositionService.cs     # 플레이어 스폰 좌표 계산 서비스
+│   ├── DungeonPlacementUtility.cs  # 방중앙 걷기지점 산출 (TryGetRoomCenterWalkablePosition) — EliteArena·EngravingStationPlacer 공용
+│   ├── EngravingStationPlacer.cs   # 각인대 런타임 스폰 (Slice E2) — OnStairRoomEntered 구독 → stair방 중앙에 EngravingStation 스폰/재배치, OnFloorChanged·마을복귀 시 비활성
 │   ├── FloorTransitionService.cs   # 층 이동 코루틴·로딩 화면·GC 관리
 │   ├── RoomRegistry.cs             # 방 상태 관리 (타입·문 닫힘) — Elite Room 은 항상 IsExempt 처리
 │   ├── DungeonTilemapRenderer.cs   # Tilemap 3레이어 배치 (바닥·벽·문) + eliteDoorTile + PlaceEliteDoors / TryOpenEliteDoorWithKey
@@ -251,6 +253,7 @@ Assets/Scripts/
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
 │   ├── ComboMeter.cs               # ComboDamage 콤보 스택 추적 (순수 C#, window 2s/cap 20) — 적중 적립, 윈도우 만료 시 리셋. RegisterHit/Tick/Reset
 │   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. static Active(픽업·UI 결선용, OnEnable/OnDisable). debugEngravingPool은 Slice D에서 제거(실드랍이 대체)
+│   ├── EngravingStation.cs         # 영혼각인 교체대 (Slice E2, TownSoulAltar 미러) — Collider2D 트리거 + InteractConfirmPressedThisFrame → ui.Open(). UI는 프리팹이 씬 참조 불가라 placer가 Bind(ui) 주입. 던전 stair방에 런타임 스폰
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
@@ -382,26 +385,34 @@ Tools/DungeonGenDebug/              # Unity 외부 standalone .NET 콘솔 (Dunge
 
 ## 4. 시스템 1 — 던전 생성
 
-### 4-1. 전체 파이프라인 (7단계)
+### 4-1. 전체 파이프라인 (9단계)
 
 `DungeonManager.Generate()` 호출 시 다음 순서로 실행됩니다.
 
 ```
 ① BuildSettings       설정 구성 (맵 크기, BSP 깊이, 시드 파생)
         ↓
-② GenerateDungeon     그리드 + 방 목록 생성 (DungeonGenerator — 순수 C#)
+② GenerateDungeon     그리드 + 방 목록 생성 (DungeonGenerator — 순수 C#, BSP·방·복도·엘리트)
+                      ※계단(STAIR_UP) 여기서 미배치 — ⑧로 이동
         ↓
 ③ BuildRoomInfos      RoomRect → RoomInfo 배열 변환
         ↓
 ④ DungeonData 생성    그리드 + 방 목록을 Domain 객체로 포장
         ↓
-⑤ RoomRegistry.Init   방 타입 감지 (STAIR_UP 포함 여부로 Stair 자동 분류)
+⑤ RoomRegistry.Init   방 타입 초기 라벨 (계단 미배치라 전부 Normal)
         ↓
-⑥ ComputeSpawnPos     맵 중앙에 가장 가까운 방 내부 타일 → 캐싱 (O(1) 조회)
-                      (SpawnPositionService에 위임)
+⑥ ComputeSpawnPos     맵 중앙 최근접 방 타일 → 스폰방 키 캐싱 (SpawnPositionService)
         ↓
-⑦ PlaceTiles          DungeonData → Tilemap 타일 배치 (청크 분할 선택 가능)
+⑦ AssignMonsterDens   스폰방 제외 일부 Normal→MonsterDen (+ PrepareEliteKeyPlan)
+        ↓
+⑧ PlaceStairForFloor  ★계단 배치(최후단): spawn·elite·stairAvoidTypes 회피 + 폴백(소프트락 방지).
+                      STAIR_UP 기입 + Stair 라벨. 카빙=DungeonGenerator.TryFindStairPosition.
+                      독립 stairRng(StairSelectDomain)로 결정성 유지·맵 레이아웃 불변. 최고층 계단 없음.
+        ↓
+⑨ PlaceTiles          DungeonData → Tilemap 타일 배치 (계단 포함, 청크 분할 선택 가능)
 ```
+
+> **계단 배치 위치 변경(2026-07-01)**: 원래 ②(생성 단계)에서 놓던 계단을 **⑧(모든 라벨 확정 후)**로 이동. 이유 = spawn방과 stair방이 겹치는 시드에서 `PlayerController`의 Spawn 라벨링이 Stair를 덮어써 `OnStairRoomEntered`가 안 뜨던 버그. 이제 계단이 spawn/elite방을 **알고 피함**. `PlaceStairs`가 생성기 rng 최후 소비자였어 이동해도 레이아웃 rng 스트림 불변(계단 칸만 이동).
 
 ### 4-2. BSP 공간 분할 알고리즘
 
@@ -559,7 +570,7 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 | `OnRoomEntered` | PlayerController | RoomSpawner, FogOfWarController |
 | `OnNormalRoomEntered` | PlayerController | — (미사용, 예약) |
 | `OnSpawnRoomEntered` | PlayerController | — |
-| `OnStairRoomEntered` | PlayerController | — |
+| `OnStairRoomEntered` | PlayerController | EngravingStationPlacer (stair방 각인대 스폰) |
 | `OnFloorChanged` | DungeonManager | PlayerController, RoomSpawner, SkillUIManager, FogOfWarController |
 | `OnRoomDoorsClosed(RoomInfo)` | DungeonManager | FogOfWarController |
 | `OnRoomDoorsOpened(RoomInfo)` | DungeonManager | FogOfWarController |
@@ -1057,7 +1068,9 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 **교체 UI (Slice E1 — 모달)**: `EngravingLoadoutUIController`(SoulAltarUIController 미러). Open 시 `GamePauseController.Active.Pause(GamePauseSource.EngravingLoadout=4)` → timeScale 0 + `IsGameplayInputBlocked` → **모달**. Open 시 현재 폼(`combat.CurrentFormId`)을 `_form`으로 **캡처**(닫을 때까지 고정). 슬롯 4클릭=교체 대상 선택(하이라이트), 풀 클릭=`Equip(_form,slot,poolIdx)`, Unequip 버튼=슬롯 비움. `OnChanged` 구독으로 자동 갱신, ESC·닫기·콘솔열림 시 Close+Resume.
 - **모달 채택 근거**: ①`AddToPool`이 `OnChanged` 미발행(=리바인드 트리거라 픽업마다 쿨 0 리셋됨)이라 UI가 풀 추가를 못 봄(stale), ②폼 live 조회와 갱신 시점 불일치. 모달이면 열린 동안 이동(픽업)·폼전환이 막혀 **두 버그가 발생 자체를 못 함** — 코어 이벤트/`AddToPool` 의미를 안 건드리는 최소 수정. (비-모달로 가려면 `OnPoolChanged` 이벤트 분리 필요 — 미채택.)
 
-**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합) **커밋·Play검증 완료**. E1(모달 교체 UI) **코드·씬결선 완료, Play검증 대기**. **남은 — E2(간이 던전 상호작용점: `EngravingStation` 트리거 + 방진입 placer, 대상 방 미결정) · E3(정식 콘텐츠 에셋: 현 Sword 3티어는 SkillData 부모필드 미작성 테스트에셋)**. 이후 `EngravingData` 전용 CustomEditor.
+**던전 상호작용점 (Slice E2 — Stair방 각인대)**: 절차생성이라 수동배치 불가 → 방진입 이벤트 구독 placer가 런타임 스폰. `EngravingStation`(TownSoulAltar 미러 — Collider2D 트리거 + `InteractConfirmPressedThisFrame`→`ui.Open()`, UI는 placer가 `Bind` 주입) + `EngravingStationPlacer`(`OnStairRoomEntered` 구독 → `DungeonPlacementUtility.TryGetRoomCenterWalkablePosition`으로 방중앙 걷기지점 스폰, 단일 인스턴스 재사용, `OnFloorChanged`·마을복귀 시 비활성). **대상 방 = Stair방**(진행방향 일치·확정적 통과지점, spawn방은 backtracking 유발이라 배제). 계단이 spawn방과 겹치던 시드에서 각인대가 안 뜨던 버그는 계단배치 파이프라인 이동(§4-1)으로 해소. 현재 스프라이트는 elite portal 유용(교체 예정).
+
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합) **커밋·Play검증 완료**. E1(모달 교체 UI, `bef263b1` 커밋)·**E2(Stair방 각인대) Play검증 완료**(미커밋). **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 SkillData 부모필드 미작성 테스트에셋)**. 이후 `EngravingData` 전용 CustomEditor.
 
 ---
 
