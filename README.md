@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-01
-> 기준 커밋: master HEAD `bef263b1`(E1 커밋) 위 working tree 미커밋 — 영혼각인 Slice A~E2 완료(E2=Stair방 각인대, Play검증 통과) + 계단배치 파이프라인 리팩터(§4-1, spawn·stair 겹침 버그수정). E3(콘텐츠 에셋)·CustomEditor 미착수
+> 작성 기준일: 2026-07-02
+> 기준 커밋: master HEAD `8b4ce9dc` — 영혼각인 에디터/검증툴, Town Soul Altar UI 부채 정리, Custom 스킬 형태 S1(저작 셀·연속 월드 포인트·역회전 정확 판정) 완료. 남은 큰 축은 E3 정식 콘텐츠 에셋
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -50,7 +50,7 @@
 | 방 타입 | Normal · MonsterDen · Spawn · Stair · Elite (5의 배수+5 층 자동) |
 | 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기, Contact Special Attack(Rush/Jump), Elite Pattern Set(Projectile/Dash/Jump), `isStationary`/`immuneToKnockback` 플래그 |
 | 적 전투 | 근접 접촉 피해 + Contact Special(Rush 돌진 / Jump 도약 + 착지 임팩트) + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 + Elite 패턴 사이클 — Rush/Jump/Projectile/Elite 임팩트는 `EnemyAttackImpactData`(knockback·slow·stun) 적용 |
-| 아이템 / 인벤토리 | `ItemDatabase` ScriptableObject + `ItemData` (Key·Currency·Consumable·Equipment·Relic·Material·Soul) + `useEffects`/`passiveEffects` + `soulFormId` + `removeOnFloorTransition`/`removeOnDungeonExit` 플래그. `PlayerInventory`(InventoryItemStack 리스트, 스택/논-스택, 층/던전 이탈 시 자동 정리) — 적이 `EnemyInventory.AddDropItem` 으로 사망 시 `DropItemSpawner.SpawnDrops` → `DroppedItem.OnTriggerEnter2D` 에서 `PlayerInventory.AddItem` 으로 픽업. Consumable 은 슬롯 클릭으로 `HealHp` 사용, Relic 은 소지 중 평면 스탯 패시브를 `PlayerItemStats` 로 합산, Soul 은 `PlayerInventory.OwnsSoulForm` 을 통해 Form 보유권으로 판정 |
+| 아이템 / 인벤토리 | `ItemDatabase` ScriptableObject + `ItemData` (Key·Currency·Consumable·Equipment·Relic·Material·Soul·Engraving) + `useEffects`/`passiveEffects` + `soulFormId` + `engraving` + `removeOnFloorTransition`/`removeOnDungeonExit` 플래그. `PlayerInventory`(InventoryItemStack 리스트, 스택/논-스택, 층/던전 이탈 시 자동 정리) — 적이 `EnemyInventory.AddDropItem` 으로 사망 시 `DropItemSpawner.SpawnDrops` → `DroppedItem.OnTriggerEnter2D` 에서 `PlayerInventory.AddItem` 또는 영혼각인 풀 적재로 픽업. Consumable 은 슬롯 클릭으로 `HealHp` 사용, Relic 은 소지 중 평면 스탯 패시브를 `PlayerItemStats` 로 합산, Soul 은 `PlayerInventory.OwnsSoulForm` 을 통해 Form 보유권으로 판정 |
 | Elite Floor / Elite Key | 층이 `% 10 == 5` 이면 MST leaf 가장 깊은 방을 Elite Room 으로 자동 지정, Elite Door 로 봉인. 같은 층의 일반 방 적 중 결정론적으로 1마리가 `elite_key` 를 드랍하며 플레이어가 습득하면 PlayerInventory 에 들어가고 Elite Door 접촉 시 자동 개방·열쇠 1개 소모 |
 | Elite 적 | `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner`(MonoBehaviour)가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·사거리 조건 만족 패턴 1개를 실행. 패턴 종류: Projectile / Dash / Jump (ScriptableObject 변형) |
 | 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
@@ -96,7 +96,8 @@
 │  InventoryItemStack                                          │
 │  ElitePatternSet · ElitePatternData · ElitePatternRuntime    │
 │  ElitePatternContext (+ EliteProjectile/Dash/Jump 변형)      │
-│  PlayerResource · AttackPattern · AStarPathfinder            │
+│  PlayerResource · AttackPattern · CustomShapeMatcher          │
+│  AStarPathfinder                                             │
 │  SkillExecutor · SkillTargetResolver · SkillExecutionContext │
 │  SkillSlotRuntime · SkillCooldownController                  │
 │  ProjectileFireService · ProjectileFireRequest               │
@@ -129,9 +130,9 @@
 - **FSM 분리**: EnemyBrain의 상태·이동·타겟·액션을 Handler로 분리해 결합도 최소화
 - **책임 분리 (SRP)**: DungeonManager의 기능을 서비스 클래스로 추출 (FloorTransitionService, SpawnPositionService, DungeonQueryService)
 - **스킬 실행 라우팅**: SkillData.executionType → SkillExecutor 가 InstantArea / Projectile / Dash 분기로 라우팅, MonoBehaviour와 분리된 순수 서비스 계층
-- **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀 계산 제공
+- **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀/월드 포인트 계산 제공. `AttackPatternType.Custom` 은 저작 셀을 조준 방향으로 회전한 월드 포인트로 풀고, 실행 판정은 `CustomShapeMatcher` 역회전 셀 포함 검사로 미리보기 외곽선과 일치시킴
 - **공유 투사체 발사**: ProjectileFireService가 적 원거리·플레이어 스킬 모두에 동일한 패턴(Single/Burst/Spread/Circle) 처리
-- **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용). ActionMouseAim 프리셋에서는 커서 방향을 양자화 없이 연속 벡터로 사용해 **360° 자유조준** — grid 패턴은 `AttackPattern.FillTargets` 의 `Vector2 facing` 연속 오버로드(Cone=연속 각도 / Line·Single=셀 반올림)로 처리
+- **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용). ActionMouseAim 프리셋에서는 커서 방향을 양자화 없이 연속 벡터로 사용해 **360° 자유조준** — grid 패턴은 `AttackPattern.FillTargets` 의 `Vector2 facing` 연속 오버로드(Cone=연속 각도 / Line·Single=셀 반올림)로 처리하고, Custom 패턴은 월드 공간에서 강체 회전
 - **적 공격 임팩트 통합**: `EnemyAttackImpactData`(knockback·slow·stun) 구조로 Rush·Jump·Projectile 의 부가 효과를 동일하게 관리, `PlayerCombatController.ApplyEnemyCombatImpact()` 단일 진입점으로 데미지·넉백·슬로우·스턴 적용
 - **런타임 탐색 캐싱**: `DungeonManager` 가 `RoomSpawner` 참조를 SerializeField + 1회 경고로 캐싱, 매 `FindAnyObjectByType` 호출 회피 (다른 컨트롤러도 동일 패턴 사용)
 - **위치 기반 미니맵 전환**: `LocationMinimapRegistry`(static Dict) + `TilemapMinimapSource.OnEnable/OnDisable` 자동 등록으로, `MinimapController`가 씬 계층을 직접 탐색하지 않고 locationId 조회만으로 소스 전환
@@ -180,10 +181,10 @@ Assets/Scripts/
 ├── Data/
 │   ├── DungeonData.cs              # 타일 그리드 + 방 목록 (Domain)
 │   ├── WeaponData.cs               # 무기 ScriptableObject
-│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드 + 자원: resourceType(None/Bullet/ParryStack)/requiredAmount/consumeAmount/bulletShortageMode/reloadAmount). MP(mpCost) 폐지
+│   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드 + Custom customCells + 자원: resourceType(None/Bullet/ParryStack)/requiredAmount/consumeAmount/bulletShortageMode/reloadAmount). MP(mpCost) 폐지
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
 │   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의
-│   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. 기본 인스펙터 사용(SkillDataEditor는 children 미적용)
+│   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. SkillDataEditor child 적용으로 조건부 인스펙터 사용
 │   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
@@ -234,8 +235,8 @@ Assets/Scripts/
 │
 ├── Combat/
 │   ├── IDamageable.cs              # 피해 수신 인터페이스
-│   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기 (FillTargets API)
-│   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용
+│   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기 (FillTargets API). Custom은 저작 셀(Vector2Int) 기반 grid 소비자용 셀 계산 제공
+│   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용. CustomShapeMatcher 전달 시 역회전 셀 포함 검사로 정확 판정
 │   ├── AimDirectionUtility.cs      # 8방향 입력 양자화 + raw/정규화/카디널 변환 (Domain)
 │   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
 │   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시, 기존 CircleCollider 보존)
@@ -247,8 +248,8 @@ Assets/Scripts/
 │   ├── PlayerStatusEffectType.cs   # 플레이어 상태이상 enum (Slow, Stun)
 │   ├── PlayerResource.cs           # HP 상태 컨테이너 (Domain) — MP 폐지. 스킬 자원은 PlayerCombatController 의 ISkillResourceLedger(Bullet/ParryStack)
 │   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
-│   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기)
-│   ├── SkillTargetResolver.cs      # 스킬 셀·미리보기 반경·투사체 거리 공통 계산
+│   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기). Custom InstantArea는 CustomShapeMatcher를 AttackExecutor로 전달
+│   ├── SkillTargetResolver.cs      # 스킬 셀·월드 타겟·미리보기 반경·투사체 거리 공통 계산. Custom은 연속 월드 포인트와 matcher 생성 담당
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
 │   ├── ComboMeter.cs               # ComboDamage 콤보 스택 추적 (순수 C#, window 2s/cap 20) — 적중 적립, 윈도우 만료 시 리셋. RegisterHit/Tick/Reset
@@ -257,6 +258,7 @@ Assets/Scripts/
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
+│   ├── CustomShapeMatcher.cs       # Custom 스킬 형태 정확 판정 — 적 월드 중심을 저작 공간으로 역회전해 customCells 포함 여부 검사
 │   ├── ProjectileFireService.cs    # 투사체 발사 패턴 처리 (Single/Burst/Spread/Circle)
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
 │   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성, 회전 모드 (KeepPrefab/FaceMoveDirection)
@@ -368,8 +370,9 @@ Assets/Scripts/
 
 ```
 Assets/Editor/                     # Editor-only (런타임 미포함)
-├── SkillDataEditor.cs              # SkillData CustomEditor — Basic/Resource(자원·Bullet 설정)/InstantArea/Projectile/Dash 섹션 + Reserved foldout + 음수·non-positive·partial 설정 경고
+├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
+├── EngravingValidatorWindow.cs     # JBRogLike/Engraving Validator — EngravingData·ItemDatabase·EnemyDropDatabase 정합성 스캔 + 고아 각인 Add to ItemDatabase Fix
 └── TeleportDestinationIdDrawer.cs  # `[TeleportDestinationId]` 문자열 필드를 TeleportDestinationDatabase 의 id 드롭다운으로 렌더링
 ```
 
@@ -779,7 +782,7 @@ SkillData (ScriptableObject)
   ├── 자원: resourceType(None/Bullet/ParryStack), requiredAmount, consumeAmount,
   │        bulletShortageMode(RequireFullCost/AllowPartialUse), reloadAmount  ← MP 폐지, 자원 기반
   ├── 공통: isMultiTarget, canPenetrateWalls
-  ├── 공통: attackPattern, patternRange, coneHalfAngle
+  ├── 공통: attackPattern, patternRange, coneHalfAngle, customCells(Custom 전용)
   ├── 공통: knockback/slow 파라미터
   ├── Animation: animationType(None/Attack/Spin/Dash/CustomTrigger),
   │              customAnimationTrigger, rotateAnimationByDirection,
@@ -791,7 +794,8 @@ SkillData (ScriptableObject)
            damageOnPath, damageOnContact, invincibleDuringDash
 
 (Inspector는 SkillDataEditor가 executionType 별로 InstantArea/Projectile/Dash 섹션만 노출,
- AreaOverTime/Buff는 Reserved 안내, 미사용 필드는 Reserved foldout으로 접어둠)
+ AreaOverTime/Buff는 Reserved 안내, Custom이면 customCells 리스트와 빈 셀 경고를 표시,
+ 미사용 필드는 Reserved foldout으로 접어둠)
 
 PlayerResource (Domain)
   └── currentHp, maxHp   (MP 폐지 — 스킬 자원은 PlayerCombatController 의 ISkillResourceLedger 가 관리)
@@ -888,9 +892,19 @@ ExecuteSkillIfReady(slotIndex, expectedSkill):
 
 InstantArea:
   SkillTargetResolver.ResolveTargets(context)
-    → AttackPattern.FillTargets(skill.attackPattern, origin, gridAim, range, coneHalfAngle)
+    → AttackPattern.FillTargets(skill.attackPattern, origin, gridAim, range, coneHalfAngle, skill.customCells)
   AttackExecutor.ExecuteAttack(targets, totalAttack + skill.damage,
     canPenetrateWalls, isMultiTarget, knockback/slow, hitRadius)
+
+Custom InstantArea:
+  SkillData.customCells = 시전자 기준 상대 셀(+Y=전방, 원점 허용)
+  SkillTargetResolver.FillWorldTargets
+    → customCells 를 조준 방향으로 float 회전한 월드 포인트로 변환(반올림 없음)
+  SkillTargetResolver.TryCreateCustomShapeMatcher
+    → 같은 facing/cellSize/angle 로 CustomShapeMatcher 생성
+  AttackExecutor.ExecuteAttackWorld(..., customShape)
+    → 적 중심을 역회전해 저작 셀 좌표로 환원 후 customCells 포함 검사
+    → LoS 는 매칭 셀의 월드 중심으로 기존 HasLineOfSight 경로 재사용
 
 Projectile:
   ResolveExecutionDirection(context) →
@@ -1063,6 +1077,10 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **드랍 통합 (Slice D)**: 각인을 기존 itemCode 드랍 파이프라인에 **브릿지**로 편입 — `ItemType.Engraving`(=7) + `ItemData.engraving`(EngravingData 참조). 적 드랍 테이블(`EnemyDropDatabase`)은 itemCode만 다루고, 픽업 시 `DroppedItem`이 Engraving 타입이면 인벤을 우회해 `EngravingLoadout.Active.AddToPool(engraving.owningForm, …)`으로 폼 풀에 적재. **각인 수량 1 고정**(픽업이 `_amount` 의도적 무시) — 드랍 엔트리 `Max(min,max)>1`이면 `EnemyDropDatabase.OnValidate`가 경고(에디터 전용, `itemDatabaseForValidation` 참조). 티어는 데이터만으로 표현: 일반=저확률 independent / 엘리트=choiceGroup chance 1 확정 / 보스=확정 Primordial(전부 min=max=1). 던전 이탈 시 풀은 `ClearAll`로 비워지므로 인벤 누적 없음.
 
+**에디터/검증툴**: `SkillDataEditor` 를 child class 적용(`CustomEditor(typeof(SkillData), true)`)으로 확장해 `EngravingData` 도 Basic/Resource/InstantArea/Projectile/Dash 조건부 인스펙터를 그대로 사용합니다. 최상단 Engraving 섹션에서 `owningForm`/`grade` 와 등급색 라벨(Faint 회색, Whole 흰색, Primordial 금색)을 표시하고, 연결된 ItemDatabase 인라인 엔트리(`ItemData.engraving`)가 있으면 DB/itemCode/Ping 을 보여줍니다. 연결이 없으면 `EngravingValidatorWindow` 바로가기를 제공하며, 실제 생성은 Validator 의 `Add to ItemDatabase` Fix 가 담당합니다.
+
+**콘텐츠 검증 (`JBRogLike/Engraving Validator`)**: 버튼 클릭 시에만 `EngravingData` / `ItemDatabase` / `EnemyDropDatabase` 를 스캔합니다. 고아 각인, Engraving 엔트리 null 참조, itemType 불일치, 각인 중복 참조, itemCode 중복, 드랍DB 미등록 각인(Info 토글), 드랍DB 죽은 itemCode, 각인 수량 > 1 을 Error/Warning/Info 로 캐시 표시. 1번 고아 각인은 대상 ItemDatabase 에 인라인 `ItemData` 를 추가하는 Fix 를 제공하며, 나머지는 Ping 중심으로 수동 수정합니다.
+
 **콘솔**: `/engraving give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, give는 ItemDatabase itemCode 조회→EngravingData→AddToPool·폼-락 검증, show는 `[Grade]` 태그 표시). Slice D에서 give를 debug 카탈로그→itemCode 조회로 재배선.
 
 **교체 UI (Slice E1 — 모달)**: `EngravingLoadoutUIController`(SoulAltarUIController 미러). Open 시 `GamePauseController.Active.Pause(GamePauseSource.EngravingLoadout=4)` → timeScale 0 + `IsGameplayInputBlocked` → **모달**. Open 시 현재 폼(`combat.CurrentFormId`)을 `_form`으로 **캡처**(닫을 때까지 고정). 슬롯 4클릭=교체 대상 선택(하이라이트), 풀 클릭=`Equip(_form,slot,poolIdx)`, Unequip 버튼=슬롯 비움. `OnChanged` 구독으로 자동 갱신, ESC·닫기·콘솔열림 시 Close+Resume.
@@ -1070,7 +1088,7 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **던전 상호작용점 (Slice E2 — Stair방 각인대)**: 절차생성이라 수동배치 불가 → 방진입 이벤트 구독 placer가 런타임 스폰. `EngravingStation`(TownSoulAltar 미러 — Collider2D 트리거 + `InteractConfirmPressedThisFrame`→`ui.Open()`, UI는 placer가 `Bind` 주입) + `EngravingStationPlacer`(`OnStairRoomEntered` 구독 → `DungeonPlacementUtility.TryGetRoomCenterWalkablePosition`으로 방중앙 걷기지점 스폰, 단일 인스턴스 재사용, `OnFloorChanged`·마을복귀 시 비활성). **대상 방 = Stair방**(진행방향 일치·확정적 통과지점, spawn방은 backtracking 유발이라 배제). 계단이 spawn방과 겹치던 시드에서 각인대가 안 뜨던 버그는 계단배치 파이프라인 이동(§4-1)으로 해소. 현재 스프라이트는 elite portal 유용(교체 예정).
 
-**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합) **커밋·Play검증 완료**. E1(모달 교체 UI, `bef263b1` 커밋)·**E2(Stair방 각인대) Play검증 완료**(미커밋). **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 SkillData 부모필드 미작성 테스트에셋)**. 이후 `EngravingData` 전용 CustomEditor.
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI)·E2(Stair방 각인대) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋) + 고유 메커니즘 태초 각인별 실행 로직**.
 
 ---
 
@@ -2017,12 +2035,12 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | 구성 | 역할 |
 |------|------|
 | `TownSoulAltar` (MonoBehaviour) | Collider2D 트리거 근접 + `PlayerInputReader.InteractConfirmPressedThisFrame`(현재 Z) 로 AltarUI 오픈. 입력리더는 트리거 충돌에서 취득(신규 Find 없음). 마을에만 물리 배치 |
-| `SoulAltarUIController` | 보유 소울 폼(`PlayerInventory.OwnsSoulForm` && 테이블 성장 존재) 선택 + 스탯행 표시. `OnInventoryChanged`/`OnChanged` 구독으로 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘 |
-| `EngravingLoadoutUIController` | 영혼각인 교체 UI(§7-8 Slice E1, **모달**). Open 시 폼 캡처 + `GamePauseController.Pause(EngravingLoadout)` → timeScale 0/입력차단. 현재 폼 슬롯4+풀 리스트, 슬롯선택→풀클릭 equip/Unequip. `EngravingLoadout.OnChanged` 구독, Esc·닫기·콘솔열림 시 Close+Resume. (상호작용 트리거 E2 미구현 — 현재 Open() 외부 호출 수단 없음) |
-| `SoulAltarStatRowUI` | 스탯별 행 — 레벨/최대/비용/보유 조각 + 강화 버튼(만렙·조각부족 시 비활성) |
+| `SoulAltarUIController` | 보유 소울 폼(`PlayerInventory.OwnsSoulForm` && 테이블 성장 존재) 선택 + 스탯행 표시. `OnInventoryChanged`/`OnChanged` 구독으로 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘. 강화 성공 후 명시 `RefreshAll()` 없이 `RemoveItem`/`AddLevel` 이벤트 경로로 갱신 |
+| `EngravingLoadoutUIController` | 영혼각인 교체 UI(§7-8 Slice E1, **모달**). Open 시 폼 캡처 + `GamePauseController.Pause(EngravingLoadout)` → timeScale 0/입력차단. 현재 폼 슬롯4+풀 리스트, 슬롯선택→풀클릭 equip/Unequip. `EngravingLoadout.OnChanged` 구독, Esc·닫기·콘솔열림 시 Close+Resume. 던전 Stair방에서는 `EngravingStation`/`EngravingStationPlacer` 가 Open 진입점을 제공 |
+| `SoulAltarStatRowUI` | 스탯별 행 — summary 한 줄(레벨/최대/비용/보유 조각) + 강화 버튼(만렙·조각부족 시 비활성). 미사용 개별 TMP 필드는 제거 |
 | `SoulEnhancementCost` (static) | `GetMaterialCost(growth, currentLevel) = baseMaterialCost × (currentLevel + 1)` — **비용 공식 단일 격리점**(향후 곡선 교체는 이 함수만 수정). 수치는 `SoulStatGrowth.baseMaterialCost` 데이터 |
 
-강화: `TryGetGrowth` → 만렙·비용·`HasItem` 확인 → `RemoveItem(조각, 비용)` + `AddLevel`. 폼→조각은 그 폼 Soul 의 `SalvageItemCode` 역참조(`ItemDatabase.TryGetSoulByForm`, 데이터 추가 0). `AddLevel`/`RemoveItem` 이 기존 전투 재계산·세이브 훅을 자동 발화.
+강화: `TryGetGrowth` → 만렙·비용·`HasItem` 확인 → `RemoveItem(조각, 비용)` + `AddLevel`. 폼→조각은 그 폼 Soul 의 `SalvageItemCode` 역참조(`ItemDatabase.TryGetSoulByForm`, 데이터 추가 0). `AddLevel`/`RemoveItem` 이 기존 전투 재계산·세이브 훅과 UI 갱신 이벤트를 자동 발화하므로 성공 피드백 뒤 별도 전체 Refresh는 하지 않습니다.
 
 ### 11b-10. 영구 성장 JSON 세이브 (GamePersistenceCoordinator)
 
@@ -2403,7 +2421,7 @@ EnemyController.Die()
 
 ```csharp
 // AttackPattern.cs
-public enum AttackPatternType { ..., Ring }
+public enum AttackPatternType { ..., Ring, Custom }
 
 case AttackPatternType.Ring:
     for (int r = 2; r <= range; r++)
@@ -2411,7 +2429,7 @@ case AttackPatternType.Ring:
     break;
 ```
 
-WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다.
+WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다. 이미 구현된 `Custom` 은 `SkillData.customCells` 로 저작한 셀 묶음을 조준 방향으로 회전해 쓰는 패턴입니다. 기본 6패턴처럼 grid 셀에 반올림하지 않고, 실행은 연속 월드 포인트 + `CustomShapeMatcher` 역회전 포함 검사로 처리합니다.
 
 ### 새 무기 / 스킬 추가
 
@@ -2536,12 +2554,13 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **문 시스템** | 방 진입 시 닫힘, 클리어 시 열림 |
 | **계단 상호작용** | Z키, 쿨다운 포함 |
 | **전투 데이터 구조** | WeaponData, SkillData, EnemyData (ScriptableObject) |
-| **공격 패턴 시스템** | 6종 패턴, 데이터 드리븐 |
+| **공격 패턴 시스템** | 기본 6종 패턴 + `AttackPatternType.Custom`, 데이터 드리븐 |
 | **플레이어 전투** | 기본 공격, 스킬 4슬롯, HP 관리 (PlayerResource) + 폼 고유 자원(Bullet/ParryStack) 원장 (MP 폐지) |
 | **공격 판정 분리** | AttackExecutor — 히트 감지·데미지 적용 독립 처리 |
 | **스킬 실행 라우팅** | SkillExecutor — InstantArea/Projectile/Dash/Blink/Buff 분기 (AreaOverTime 미구현) |
 | **스킬 슬롯 런타임 분리** | SkillSlotRuntime — MonoBehaviour 미의존 슬롯 상태(데이터·쿨다운) |
-| **스킬 타겟 공통화** | SkillTargetResolver — 미리보기·기본공격·스킬이 동일한 셀 계산 사용 |
+| **스킬 타겟 공통화** | SkillTargetResolver — 미리보기·기본공격·스킬이 동일한 셀/월드 포인트 계산 사용 |
+| **Custom 스킬 형태** | `SkillData.customCells`(시전자 기준 상대 셀, +Y=전방) + `AttackPatternType.Custom`. 실행은 반올림 없는 연속 월드 포인트로 브로드페이즈를 만들고, `CustomShapeMatcher` 가 적 중심을 역회전해 저작 셀 포함 여부를 검사해 회전 사각형 미리보기와 판정을 일치 |
 | **스킬 실행 컨텍스트** | SkillExecutionContext — caster/aim/grid/totalAttack/hitRadius 일체 전달 |
 | **쿨다운 관리** | 기본 공격은 SkillCooldownController, 스킬은 SkillSlotRuntime이 보유 |
 | **발사체 시스템** | 직선 이동, 벽/유닛 충돌, 관통 옵션 |
@@ -2610,7 +2629,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Generator 디버그 hook** | `DungeonGenerator.DebugCorridorCarving` + `DebugSink` — MST/EXTRA 통로마다 src/dst Rect 와 path 결정 로그 |
 | **DungeonGenDebug 도구** | `Tools/DungeonGenDebug` — Unity 외부 .NET 콘솔로 던전 생성 결과를 standalone 검증 |
 | **PerfStage using-scope 측정** | `Tool/PerfStage.cs` — RuntimePerfLogger 비활성 시 zero-alloc passthrough, 활성 시 elapsedMs metadata 자동 기록 |
-| **Skill / Enemy CustomEditor** | `Editor/SkillDataEditor` (executionType 별 섹션), `Editor/EnemyDataEditor` (Basic / Contact + Contact-Special(Rush/Jump) 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
+| **Skill / Enemy / Engraving CustomEditor** | `Editor/SkillDataEditor` (SkillData child 적용, Engraving 섹션·등급색 라벨·Linked ItemData/Ping·Custom customCells 표시), `Editor/EnemyDataEditor` (Basic / Contact + Contact-Special(Rush/Jump) 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
 | **Kiting 다중 후퇴 방향** | `s_KitingRotations` 5단계 폴백 (away → away±45° → side±90°) — 후퇴가 막혀도 첫 통과 후보로 이동 |
 | **Random 목적지 minR 보호** | `MovementHandler.TickRandomMovement` — `minR=max(radius*0.25, footprintRadius+0.1)` 로 자기 위 목적지 차단 |
 | **정지 시 separation step** | `MovementHandler.TryApplyIdleSeparationStep` — Kiting/Random 대기 상태에서도 이웃이 가까우면 산개 |
@@ -2670,7 +2689,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **플레이어 인벤토리** | `PlayerInventory` + `InventoryItemStack` — AddItem/RemoveItem/HasItem/GetItemCount + stackable/maxStack 정책 자동 적용, `OwnsSoulForm(formId)` 로 Soul 보유 기반 Form 소유 판정, `RemoveItemsOnFloorTransition`/`RemoveItemsOnDungeonExit` 가 ItemData 플래그 기반으로 층/던전 이탈 시 자동 정리. Elite Key 가 일반 ItemData 한 항목으로 통합되어 과거 `PlayerEliteKeyInventory` 는 제거됨 |
 | **Soul 강화** | `SoulStatType`(10종) + `PlayerSoulEnhancements`((form,stat)별 레벨, 스탯별 개별 투자) + `SoulEnhancementTable`(SO, perLevel/maxLevel/baseMaterialCost) + `SoulStatBonus`(활성 폼 집계). PlayerCombatController 가 폼 전환·강화 변경 시 재계산 — 탄창/공속/패리스택max/쿨감/재장전속/ParryGrace + **Crit/Lifesteal/ComboDamage** 9종 훅 적용. 입력=Town Soul Altar / 콘솔 `/enhance` (§11b-8) |
 | **Crit / Lifesteal / ComboDamage** | Crit=`RollCritDamage`(굴림→`EffectiveCritDamageMultiplier` 배율, 전 데미지 소스) / Lifesteal=`ApplyCombatImpact` actual 반환→`ReportLifestealDamage`(전 소스, float 잔여풀 회복) / ComboDamage=`ComboMeter`(window 2s/cap 20) 적중 적립→`RollCritDamage` choke에 `1+count×%/100` fold(평타·스킬 전 데미지 증폭, 2s 윈도우/사망/방·층이동 리셋). 폼 게이팅은 `_soulBonus` 데이터 자동(§11b-8) |
-| **Town Soul Altar** | `TownSoulAltar`(근접+Z) + `SoulAltarUIController`/`SoulAltarStatRowUI` + `SoulEnhancementCost`(누진 비용 단일 격리). 조각(`Mat_*`) 소비→`AddLevel`, 닫힌 경제 루프 완성(§11b-9) |
+| **Town Soul Altar** | `TownSoulAltar`(근접+Z) + `SoulAltarUIController`/`SoulAltarStatRowUI` + `SoulEnhancementCost`(누진 비용 단일 격리). 조각(`Mat_*`) 소비→`AddLevel`, 이벤트 경로 갱신으로 중복 Refresh 제거, summary 한 줄 행으로 UI 정리, 닫힌 경제 루프 완성(§11b-9) |
 | **영구 성장 세이브** | `SaveData`/`SaveService`(persistentDataPath JSON, Protect/Unprotect seam)/`GamePersistenceCoordinator`. 영구축(Soul+Material+강화레벨) 사망·앱 재시작 영속, 런 자원은 소멸(§11b-10) |
 | **데이터 기반 적 드롭 (EnemyDropDatabase)** | 중앙 SO(EnemyData→그룹) + 독립 드랍 + **가중치 pick-one 그룹** + `EnemyDropRoller`(결정적, 별도 dropRng/`EnemyDropDomain`). 일반(RoomSpawner)·엘리트·보스(ArenaEncounterBase) 전부 결선. itemCode 문자열·EnemyData 키 |
 | **소울 분해 (drop-time)** | `SoulDropResolver` — 보유 Form 소울 드롭 시 폼별 재료(조각)로 치환(`ItemData.salvageItemCode`/min·max, salvage rng). ItemDatabase 에 조각 4종 + 소울 salvage 연결. ownership=사망 시점(§11b-3b) |
@@ -2714,7 +2733,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Parry 폼 애니메이션** | `Parryform.png`(auto-slice 5행×6프레임: Idle/Walk/Parry정면/Parry측면/Death)을 5클립 + 전용 controller + `ParryForm.asset` 결선(defaultSprite=Parryform_0, useHorizontalFlipForFacing). **정면/측면 분기** = `PlayerFormController.ApplyParryFacing` — 조준 정지=정면(Int param `ParryFacing`=0, flipX=false) / 조준 방향 있음=측면(=1)+`ResolveFlipX`(순수 상하는 직전 flip 유지). 컨트롤러는 `AttackTrigger` 후 `ParryFacing` 으로 Parry_Front/Side 분기. SkillData 진입점(`PlaySkillAnimation`) 유지 |
 | **Boss Area (1차)** | `BossEncounterTable`(SO, floor→boss/destination/isFinal) + `ArenaEncounterBase`(Elite·Boss 공통 lifecycle 추출) + `BossEncounterController`(:Base, Active 싱글톤, Begin→spawn→OnBossDied→`BossExitPortal`→`ProceedRequested`) + `DungeonManager.TryTransitionToFloor` 보스층 분기·`ProceedRequested`→floor+1→`CompleteProceedToNextFloor`(미니맵 복원). N층=Boss Area(일반 던전 N층 없음), 미니맵 진입전환=destination `minimapLocationId` 자동(코드훅 없음), **destination `locationType=Dungeon` 필수**(퇴장 `IsInDungeon` 가드). 사망=기존 GameOver. placeholder boss=Elite_Magma_01·shared tilemap. **통합 흐름 Play 검증 전부 통과(20/40/60·60층 엔딩 정지·보스전 사망·Elite 회귀, 2026-06-09) — 코드·흐름 완성, 남은 건 컨텐츠.** 상세 §11e |
 | **ComboDamage 콤보 UI** | `ComboCounterUI`(TMP 폴링, ParryStackBarUI 미러) + `PlayerCombatController.CurrentComboStack`/`IsComboBonusActive`(=`_soulBonus.Get(ComboDamage)>0` 데이터주도 Sword 게이트) accessor. 효과 활성 && count>0 일 때만 `x{count}` 표시(배율 비노출), 윈도우 만료 시 자동 숨김. Play 검증 완료(commit f81dd028). ⚠️UI 디자인 추후 개선(단계색/구체 검토 — ComboDamage 단계제 도입 시) |
-| **영혼각인 — 스킬 슬롯 override (런 한정, 진행중)** | `EngravingLoadout`(폼별 `FormState{Slots[4]+Pool+Seeded}` 토큰 모델, equip=풀↔슬롯 소모형 교환·빈슬롯 허용·폼-락 `AddToPool`·`OnChanged`→리바인드·픽업 시 쿨리셋 방지) + `BindSkillSlots` 시드/토큰 바인딩 + 런리셋(`CleanupDungeonRuntime.ClearAll`) + `EngravingData : SkillData`(owningForm + grade=드랍/UI 라벨) + 콘솔 `/engraving give/equip/unequip/show`. **Slice A·B 커밋·Play검증 완료(commit 3d4586c9), C(데이터/등급/폼-락) 적용·검증 대기.** 남은 D(드랍 통합)·E(교체 UI/정비실). 상세 §7-8 |
+| **영혼각인 — 스킬 슬롯 override (런 한정)** | `EngravingLoadout`(폼별 `FormState{Slots[4]+Pool+Seeded}` 토큰 모델, equip=풀↔슬롯 소모형 교환·빈슬롯 허용·폼-락 `AddToPool`·`OnChanged`→리바인드·픽업 시 쿨리셋 방지) + `BindSkillSlots` 시드/토큰 바인딩 + 런리셋(`CleanupDungeonRuntime.ClearAll`) + `EngravingData : SkillData`(owningForm + grade=드랍/UI 라벨) + ItemType.Engraving 드랍 브릿지 + 콘솔 `/engraving give/equip/unequip/show` + Engraving Validator. Slice A~E2 및 에디터 지원 완료, 남은 축은 E3 정식 콘텐츠 에셋과 고유 태초 각인 실행 로직. 상세 §7-8 |
 
 ### 미구현 (다음 단계)
 
@@ -2725,7 +2744,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | 낮음 | **Crit/Lifesteal/ComboDamage 구현 완료**(§11b-8, ComboDamage=`ComboMeter` 적중 스택→전 데미지 증폭). 남은 `AilmentDamage`(Dagger DoT) 만 enum·집계 상태 — 상태이상 DoT 시스템 + 영혼각인 소스 필요(영혼각인 시스템 진행 후) |
-| 영혼각인 잔여 슬라이스 | 중간 | **Slice A·B·C·D 구현·Play검증 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1+OnValidate 경고). **E1(모달 교체 UI) 코드·씬결선 완료, Play검증 대기**. 남은 **E2(간이 던전 상호작용점: EngravingStation 트리거+방진입 placer, 대상 방 미결정) · E3(정식 콘텐츠 에셋 — 현 Sword 3티어는 테스트에셋)** + `EngravingData` CustomEditor. 고유 메커니즘 태초 각인은 per-각인 execution 로직 개별 구현 |
+| 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
