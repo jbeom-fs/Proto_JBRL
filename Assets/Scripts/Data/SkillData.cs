@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum SkillAnimationType
@@ -97,6 +98,9 @@ public class SkillData : ScriptableObject
     [Tooltip("Half angle in degrees for Cone targeting. Used by InstantArea and SkillRangePreviewer.")]
     [Range(1f, 179f)]
     public float coneHalfAngle = 45f;
+
+    [Tooltip("Custom 패턴 전용. 시전자 기준 상대 셀(위=전방). 실행 시 조준 방향으로 회전.")]
+    public List<Vector2Int> customCells = new List<Vector2Int>();
 
     [Tooltip("Allows InstantArea targeting to affect multiple resolved targets.")]
     public bool isMultiTarget = false;

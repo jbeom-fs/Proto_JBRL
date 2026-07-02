@@ -62,6 +62,7 @@ public class SkillRangePreviewer : MonoBehaviour
     // ── 정적 꼭짓점 버퍼 (GC 방지, 최대 256점) ─────────────────────
     private static readonly Vector3[] s_Buf = new Vector3[256];
     private readonly List<Vector2Int> _previewShapeCells = new();
+    private readonly List<OutlineEdge> _customOutlineEdges = new();
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
     private LineRenderer _lr;
@@ -307,6 +308,33 @@ public class SkillRangePreviewer : MonoBehaviour
                 _previewShapeCells);
         }
 
+        if (skill.attackPattern == AttackPatternType.Custom)
+        {
+            _previewShapeCells.Clear();
+            if (useMouseAim)
+            {
+                AttackPattern.FillTargets(
+                    skill.attackPattern,
+                    Vector2Int.zero,
+                    previewDirection,
+                    skill.patternRange,
+                    skill.coneHalfAngle,
+                    _previewShapeCells,
+                    skill.customCells);
+            }
+            else
+            {
+                AttackPattern.FillTargets(
+                    skill.attackPattern,
+                    Vector2Int.zero,
+                    facing,
+                    skill.patternRange,
+                    skill.coneHalfAngle,
+                    _previewShapeCells,
+                    skill.customCells);
+            }
+        }
+
         switch (skill.attackPattern)
         {
             case AttackPatternType.Circle:
@@ -346,6 +374,10 @@ public class SkillRangePreviewer : MonoBehaviour
             case AttackPatternType.Diagonal:
                 // 대각 4방향 각 range칸 (16점, range>1은 직사각형 근사)
                 BuildDiagonal(skill.patternRange);
+                break;
+
+            case AttackPatternType.Custom:
+                BuildCustomCells();
                 break;
         }
     }
@@ -558,6 +590,9 @@ public class SkillRangePreviewer : MonoBehaviour
             case AttackPatternType.Diagonal:
                 BuildDiagonal(weapon.patternRange);
                 break;
+            case AttackPatternType.Custom:
+                BuildCustomCells();
+                break;
         }
     }
 
@@ -699,6 +734,94 @@ public class SkillRangePreviewer : MonoBehaviour
     /// 로컬 좌표 fromLocal → toLocal 방향으로 벽이 있으면
     /// 벽 직전 위치를 로컬 좌표로 반환합니다.
     /// </summary>
+    private void BuildCustomCells()
+    {
+        _customOutlineEdges.Clear();
+
+        if (_previewShapeCells.Count == 0)
+        {
+            Apply(0, false);
+            return;
+        }
+
+        for (int i = 0; i < _previewShapeCells.Count; i++)
+        {
+            Vector2Int cell = _previewShapeCells[i];
+            Vector2Int bottomLeft = new Vector2Int(cell.x * 2 - 1, cell.y * 2 - 1);
+            Vector2Int bottomRight = new Vector2Int(cell.x * 2 + 1, cell.y * 2 - 1);
+            Vector2Int topRight = new Vector2Int(cell.x * 2 + 1, cell.y * 2 + 1);
+            Vector2Int topLeft = new Vector2Int(cell.x * 2 - 1, cell.y * 2 + 1);
+
+            if (!ContainsPreviewCell(cell + Vector2Int.down))
+                _customOutlineEdges.Add(new OutlineEdge(bottomLeft, bottomRight));
+            if (!ContainsPreviewCell(cell + Vector2Int.right))
+                _customOutlineEdges.Add(new OutlineEdge(bottomRight, topRight));
+            if (!ContainsPreviewCell(cell + Vector2Int.up))
+                _customOutlineEdges.Add(new OutlineEdge(topRight, topLeft));
+            if (!ContainsPreviewCell(cell + Vector2Int.left))
+                _customOutlineEdges.Add(new OutlineEdge(topLeft, bottomLeft));
+        }
+
+        if (_customOutlineEdges.Count == 0)
+        {
+            Apply(0, false);
+            return;
+        }
+
+        Vector2Int start = _customOutlineEdges[0].From;
+        Vector2Int current = start;
+        int pointCount = 0;
+        AddCustomOutlinePoint(start, ref pointCount);
+
+        while (_customOutlineEdges.Count > 0 && pointCount < s_Buf.Length)
+        {
+            int edgeIndex = FindOutlineEdgeStartingAt(current);
+            if (edgeIndex < 0)
+                break;
+
+            OutlineEdge edge = _customOutlineEdges[edgeIndex];
+            _customOutlineEdges.RemoveAt(edgeIndex);
+            current = edge.To;
+            AddCustomOutlinePoint(current, ref pointCount);
+
+            if (current == start)
+                break;
+        }
+
+        Apply(pointCount, false);
+    }
+
+    private bool ContainsPreviewCell(Vector2Int cell)
+    {
+        for (int i = 0; i < _previewShapeCells.Count; i++)
+        {
+            if (_previewShapeCells[i] == cell)
+                return true;
+        }
+
+        return false;
+    }
+
+    private int FindOutlineEdgeStartingAt(Vector2Int point)
+    {
+        for (int i = 0; i < _customOutlineEdges.Count; i++)
+        {
+            if (_customOutlineEdges[i].From == point)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private void AddCustomOutlinePoint(Vector2Int doubledPoint, ref int pointCount)
+    {
+        if (pointCount >= s_Buf.Length)
+            return;
+
+        float scale = tileSize * 0.5f;
+        s_Buf[pointCount++] = new Vector3(doubledPoint.x * scale, doubledPoint.y * scale, 0f);
+    }
+
     private Vector3 ClipToWall(Vector3 fromLocal, Vector3 toLocal)
     {
         if (!enableWallAwareness) return toLocal;
@@ -818,5 +941,18 @@ public class SkillRangePreviewer : MonoBehaviour
     private static bool IsDirectional(AttackPatternType p) =>
         p == AttackPatternType.Line   ||
         p == AttackPatternType.Cone   ||
-        p == AttackPatternType.Single;
+        p == AttackPatternType.Single ||
+        p == AttackPatternType.Custom;
+
+    private readonly struct OutlineEdge
+    {
+        public readonly Vector2Int From;
+        public readonly Vector2Int To;
+
+        public OutlineEdge(Vector2Int from, Vector2Int to)
+        {
+            From = from;
+            To = to;
+        }
+    }
 }

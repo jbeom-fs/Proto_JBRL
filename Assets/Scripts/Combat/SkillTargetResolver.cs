@@ -23,6 +23,7 @@ public sealed class SkillTargetResolver
             context.GridAimDirection,
             context.Skill.patternRange,
             context.Skill.coneHalfAngle,
+            context.Skill.customCells,
             _worldTargetBuffer);
         return _worldTargetBuffer;
     }
@@ -43,7 +44,8 @@ public sealed class SkillTargetResolver
             gridAimDirection,
             skill.patternRange,
             skill.coneHalfAngle,
-            results);
+            results,
+            skill.customCells);
     }
 
     public static void ResolveShapeCells(
@@ -62,7 +64,8 @@ public sealed class SkillTargetResolver
             gridAimDirection,
             skill.patternRange,
             skill.coneHalfAngle,
-            results);
+            results,
+            skill.customCells);
     }
 
     public static Vector2Int ToGridAimDirection(Vector2Int screenFacing)
@@ -89,7 +92,8 @@ public sealed class SkillTargetResolver
     {
         return pattern == AttackPatternType.Line ||
                pattern == AttackPatternType.Cone ||
-               pattern == AttackPatternType.Single;
+               pattern == AttackPatternType.Single ||
+               pattern == AttackPatternType.Custom;
     }
 
     public static void FillWorldTargets(
@@ -99,6 +103,7 @@ public sealed class SkillTargetResolver
         Vector2Int dungeonGridAimDirection,
         int range,
         float coneHalfAngle,
+        IReadOnlyList<Vector2Int> customCells,
         List<Vector3> results)
     {
         if (results == null) return;
@@ -106,7 +111,7 @@ public sealed class SkillTargetResolver
 
         if (WorldEnvironmentQuery.IsInRegisteredArea(originWorld))
         {
-            FillAreaWorldTargets(pattern, originWorld, aimDirection, range, coneHalfAngle, results);
+            FillAreaWorldTargets(pattern, originWorld, aimDirection, range, coneHalfAngle, customCells, results);
             return;
         }
 
@@ -115,6 +120,7 @@ public sealed class SkillTargetResolver
 
         Vector2Int origin = dungeonManager.WorldToGrid(originWorld);
         Vector2 gridFacing = ResolveDungeonGridFacing(aimDirection, dungeonGridAimDirection);
+        IReadOnlyList<Vector2Int> dungeonCustomCells = GetDungeonCustomCells(pattern, customCells);
         s_TempGridTargets.Clear();
         if (ShouldUseDiscreteGridFacing(aimDirection, dungeonGridAimDirection))
         {
@@ -124,7 +130,8 @@ public sealed class SkillTargetResolver
                 dungeonGridAimDirection,
                 Mathf.Max(0, range),
                 coneHalfAngle,
-                s_TempGridTargets);
+                s_TempGridTargets,
+                dungeonCustomCells);
         }
         else
         {
@@ -134,7 +141,8 @@ public sealed class SkillTargetResolver
                 gridFacing,
                 Mathf.Max(0, range),
                 coneHalfAngle,
-                s_TempGridTargets);
+                s_TempGridTargets,
+                dungeonCustomCells);
         }
 
         for (int i = 0; i < s_TempGridTargets.Count; i++)
@@ -142,6 +150,24 @@ public sealed class SkillTargetResolver
     }
 
     private static readonly List<Vector2Int> s_TempGridTargets = new(64);
+    private static readonly List<Vector2Int> s_TempDungeonCustomCells = new(64);
+
+    private static IReadOnlyList<Vector2Int> GetDungeonCustomCells(
+        AttackPatternType pattern,
+        IReadOnlyList<Vector2Int> customCells)
+    {
+        if (pattern != AttackPatternType.Custom || customCells == null || customCells.Count == 0)
+            return customCells;
+
+        s_TempDungeonCustomCells.Clear();
+        for (int i = 0; i < customCells.Count; i++)
+        {
+            Vector2Int cell = customCells[i];
+            s_TempDungeonCustomCells.Add(new Vector2Int(-cell.x, cell.y));
+        }
+
+        return s_TempDungeonCustomCells;
+    }
 
     private static void FillAreaWorldTargets(
         AttackPatternType pattern,
@@ -149,6 +175,7 @@ public sealed class SkillTargetResolver
         Vector2 aimDirection,
         int range,
         float coneHalfAngle,
+        IReadOnlyList<Vector2Int> customCells,
         List<Vector3> results)
     {
         Vector2 facing = ResolveWorldFacing(aimDirection);
@@ -161,7 +188,8 @@ public sealed class SkillTargetResolver
                 rawFacing,
                 Mathf.Max(0, range),
                 coneHalfAngle,
-                s_TempGridTargets);
+                s_TempGridTargets,
+                customCells);
         }
         else
         {
@@ -171,7 +199,8 @@ public sealed class SkillTargetResolver
                 facing,
                 Mathf.Max(0, range),
                 coneHalfAngle,
-                s_TempGridTargets);
+                s_TempGridTargets,
+                customCells);
         }
 
         float cellSize = WorldEnvironmentQuery.GetCellSize(originWorld);

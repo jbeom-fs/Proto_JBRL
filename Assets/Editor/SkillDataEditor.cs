@@ -1,10 +1,13 @@
 using UnityEditor;
 using UnityEngine;
 
-[CustomEditor(typeof(SkillData))]
+[CustomEditor(typeof(SkillData), true)]
 [CanEditMultipleObjects]
 public sealed class SkillDataEditor : Editor
 {
+    private SerializedProperty _owningForm;
+    private SerializedProperty _grade;
+
     private SerializedProperty _skillName;
     private SerializedProperty _icon;
     private SerializedProperty _description;
@@ -27,6 +30,7 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _attackPattern;
     private SerializedProperty _patternRange;
     private SerializedProperty _coneHalfAngle;
+    private SerializedProperty _customCells;
     private SerializedProperty _isMultiTarget;
     private SerializedProperty _canPenetrateWalls;
 
@@ -62,9 +66,18 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _blinkBehindOffset;
 
     private bool _reservedFoldout;
+    private GUIStyle _faintGradeLabelStyle;
+    private GUIStyle _wholeGradeLabelStyle;
+    private GUIStyle _primordialGradeLabelStyle;
+    private ItemDatabase _linkedItemDatabase;
+    private string _linkedItemCode;
+    private string _linkedItemDisplayName;
 
     private void OnEnable()
     {
+        _owningForm = serializedObject.FindProperty("owningForm");
+        _grade = serializedObject.FindProperty("grade");
+
         _skillName = serializedObject.FindProperty("skillName");
         _icon = serializedObject.FindProperty("icon");
         _description = serializedObject.FindProperty("description");
@@ -87,6 +100,7 @@ public sealed class SkillDataEditor : Editor
         _attackPattern = serializedObject.FindProperty("attackPattern");
         _patternRange = serializedObject.FindProperty("patternRange");
         _coneHalfAngle = serializedObject.FindProperty("coneHalfAngle");
+        _customCells = serializedObject.FindProperty("customCells");
         _isMultiTarget = serializedObject.FindProperty("isMultiTarget");
         _canPenetrateWalls = serializedObject.FindProperty("canPenetrateWalls");
 
@@ -120,12 +134,15 @@ public sealed class SkillDataEditor : Editor
         _resetCooldownOnMarkerDetonate = serializedObject.FindProperty("resetCooldownOnMarkerDetonate");
         _markerDuration = serializedObject.FindProperty("markerDuration");
         _blinkBehindOffset = serializedObject.FindProperty("blinkBehindOffset");
+
+        RefreshLinkedItemCache();
     }
 
     public override void OnInspectorGUI()
     {
         serializedObject.Update();
 
+        DrawEngravingSection();
         DrawBasicSection();
         DrawResourceSection();
         DrawAnimationSection();
@@ -178,6 +195,18 @@ public sealed class SkillDataEditor : Editor
         DrawValidationWarnings(executionType);
 
         serializedObject.ApplyModifiedProperties();
+    }
+
+    private void DrawEngravingSection()
+    {
+        if (!CanDrawEngravingSection())
+            return;
+
+        DrawSectionHeader("Engraving");
+        DrawProperty(_owningForm);
+        DrawProperty(_grade);
+        DrawGradeLabel();
+        DrawLinkedItemControls();
     }
 
     private void DrawBasicSection()
@@ -242,6 +271,15 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_patternRange);
         if (IsAttackPattern(AttackPatternType.Cone))
             DrawProperty(_coneHalfAngle);
+        if (IsAttackPattern(AttackPatternType.Custom))
+        {
+            DrawProperty(_customCells);
+            EditorGUILayout.HelpBox(
+                "Cells are authored relative to the caster with +Y as forward. patternRange is not used by Custom.",
+                MessageType.Info);
+            if (_customCells != null && !_customCells.hasMultipleDifferentValues && _customCells.arraySize == 0)
+                EditorGUILayout.HelpBox("Custom pattern has no cells.", MessageType.Warning);
+        }
         DrawProperty(_isMultiTarget);
         DrawProperty(_canPenetrateWalls);
     }
@@ -401,6 +439,133 @@ public sealed class SkillDataEditor : Editor
         }
     }
 
+    private void DrawGradeLabel()
+    {
+        if (_grade == null || _grade.hasMultipleDifferentValues)
+            return;
+
+        EngravingGrade grade = (EngravingGrade)_grade.enumValueIndex;
+        EditorGUILayout.LabelField("Grade: " + grade, GetGradeLabelStyle(grade));
+    }
+
+    private void DrawLinkedItemControls()
+    {
+        if (!IsSingleEngravingTarget(out _))
+            return;
+
+        EditorGUILayout.Space(4f);
+        if (_linkedItemDatabase != null)
+        {
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.ObjectField("Linked ItemDatabase", _linkedItemDatabase, typeof(ItemDatabase), false);
+                EditorGUILayout.TextField("Item Code", _linkedItemCode ?? string.Empty);
+                EditorGUILayout.TextField("Display Name", _linkedItemDisplayName ?? string.Empty);
+            }
+
+            if (GUILayout.Button("Ping"))
+                EditorGUIUtility.PingObject(_linkedItemDatabase);
+
+            return;
+        }
+
+        EditorGUILayout.HelpBox(
+            "No linked ItemData - this engraving cannot drop. Use the Engraving Validator (Scan -> Add to ItemDatabase) to create the entry.",
+            MessageType.Info);
+
+        if (GUILayout.Button("Open Engraving Validator"))
+            EngravingValidatorWindow.Open();
+    }
+
+    private void RefreshLinkedItemCache()
+    {
+        _linkedItemDatabase = null;
+        _linkedItemCode = null;
+        _linkedItemDisplayName = null;
+
+        if (!IsSingleEngravingTarget(out EngravingData engraving))
+            return;
+
+        string[] guids = AssetDatabase.FindAssets("t:ItemDatabase");
+        for (int i = 0; i < guids.Length; i++)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+            ItemDatabase database = AssetDatabase.LoadAssetAtPath<ItemDatabase>(path);
+            if (database == null)
+                continue;
+
+            SerializedObject databaseObject = new SerializedObject(database);
+            SerializedProperty items = databaseObject.FindProperty("items");
+            if (items == null || !items.isArray)
+                continue;
+
+            for (int itemIndex = 0; itemIndex < items.arraySize; itemIndex++)
+            {
+                SerializedProperty item = items.GetArrayElementAtIndex(itemIndex);
+                SerializedProperty engravingProperty = item.FindPropertyRelative("engraving");
+                if (engravingProperty == null || engravingProperty.objectReferenceValue != engraving)
+                    continue;
+
+                _linkedItemDatabase = database;
+                _linkedItemCode = GetStringValue(item.FindPropertyRelative("itemCode"));
+                _linkedItemDisplayName = GetStringValue(item.FindPropertyRelative("displayName"));
+                return;
+            }
+        }
+    }
+
+    private bool CanDrawEngravingSection()
+    {
+        if (_owningForm == null || _grade == null)
+            return false;
+
+        for (int i = 0; i < targets.Length; i++)
+        {
+            if (!(targets[i] is EngravingData))
+                return false;
+        }
+
+        return true;
+    }
+
+    private bool IsSingleEngravingTarget(out EngravingData engraving)
+    {
+        engraving = null;
+
+        if (targets == null || targets.Length != 1)
+            return false;
+
+        engraving = target as EngravingData;
+        return engraving != null;
+    }
+
+    private GUIStyle GetGradeLabelStyle(EngravingGrade grade)
+    {
+        EnsureGradeLabelStyles();
+
+        switch (grade)
+        {
+            case EngravingGrade.Whole:
+                return _wholeGradeLabelStyle;
+
+            case EngravingGrade.Primordial:
+                return _primordialGradeLabelStyle;
+
+            default:
+                return _faintGradeLabelStyle;
+        }
+    }
+
+    private void EnsureGradeLabelStyles()
+    {
+        if (_faintGradeLabelStyle != null)
+            return;
+
+        _faintGradeLabelStyle = CreateGradeLabelStyle(new Color(0.6f, 0.6f, 0.6f));
+        _wholeGradeLabelStyle = CreateGradeLabelStyle(Color.white);
+        _primordialGradeLabelStyle = CreateGradeLabelStyle(new Color(1f, 0.85f, 0.3f));
+    }
+
     private SkillExecutionType GetExecutionType()
     {
         if (_executionType == null || _executionType.hasMultipleDifferentValues)
@@ -460,6 +625,11 @@ public sealed class SkillDataEditor : Editor
         return property != null && !property.hasMultipleDifferentValues ? property.intValue : 0;
     }
 
+    private static string GetStringValue(SerializedProperty property)
+    {
+        return property != null ? property.stringValue : string.Empty;
+    }
+
     private bool IsAttackPattern(AttackPatternType pattern)
     {
         return _attackPattern != null &&
@@ -496,6 +666,13 @@ public sealed class SkillDataEditor : Editor
             return;
 
         EditorGUILayout.PropertyField(property, true);
+    }
+
+    private static GUIStyle CreateGradeLabelStyle(Color textColor)
+    {
+        GUIStyle style = new GUIStyle(EditorStyles.boldLabel);
+        style.normal.textColor = textColor;
+        return style;
     }
 
     private static void DrawNegativeWarning(SerializedProperty property, string label)

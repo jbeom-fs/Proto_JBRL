@@ -9,6 +9,7 @@ public enum AttackPatternType
     Circle,
     Line,
     Cone,
+    Custom,
 }
 
 public static class AttackPattern
@@ -34,10 +35,11 @@ public static class AttackPattern
         Vector2Int origin,
         Vector2Int facing,
         int range = 1,
-        float coneHalfAngle = 45f)
+        float coneHalfAngle = 45f,
+        IReadOnlyList<Vector2Int> customCells = null)
     {
         var targets = new List<Vector2Int>();
-        FillTargets(pattern, origin, facing, range, coneHalfAngle, targets);
+        FillTargets(pattern, origin, facing, range, coneHalfAngle, targets, customCells);
         return targets;
     }
 
@@ -47,7 +49,8 @@ public static class AttackPattern
         Vector2Int facing,
         int range,
         float coneHalfAngle,
-        List<Vector2Int> targets)
+        List<Vector2Int> targets,
+        IReadOnlyList<Vector2Int> customCells = null)
     {
         if (targets == null) return;
 
@@ -86,6 +89,10 @@ public static class AttackPattern
             case AttackPatternType.Cone:
                 AddConeTargets(targets, origin, new Vector2(facing.x, facing.y), range, coneHalfAngle);
                 break;
+
+            case AttackPatternType.Custom:
+                AddCustomTargets(targets, origin, new Vector2(facing.x, facing.y), customCells);
+                break;
         }
     }
 
@@ -95,7 +102,8 @@ public static class AttackPattern
         Vector2 facing,
         int range,
         float coneHalfAngle,
-        List<Vector2Int> targets)
+        List<Vector2Int> targets,
+        IReadOnlyList<Vector2Int> customCells = null)
     {
         if (targets == null) return;
 
@@ -134,6 +142,10 @@ public static class AttackPattern
 
             case AttackPatternType.Cone:
                 AddConeTargets(targets, origin, facing, range, coneHalfAngle);
+                break;
+
+            case AttackPatternType.Custom:
+                AddCustomTargets(targets, origin, facing, customCells);
                 break;
         }
     }
@@ -184,6 +196,27 @@ public static class AttackPattern
 
                 targets.Add(origin + new Vector2Int(dx, dy));
             }
+        }
+    }
+
+    private static void AddCustomTargets(
+        List<Vector2Int> targets,
+        Vector2Int origin,
+        Vector2 facing,
+        IReadOnlyList<Vector2Int> customCells)
+    {
+        if (customCells == null || customCells.Count == 0)
+            return;
+
+        Vector2 facingDir = ResolveFacing(facing);
+        float angle = Vector2.SignedAngle(Vector2.up, facingDir);
+        Quaternion rotation = Quaternion.Euler(0f, 0f, angle);
+
+        for (int i = 0; i < customCells.Count; i++)
+        {
+            Vector2Int offset = customCells[i];
+            Vector3 rotated = rotation * new Vector3(offset.x, offset.y, 0f);
+            AddUnique(targets, origin + RoundToCell(new Vector2(rotated.x, rotated.y)));
         }
     }
 }

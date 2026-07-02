@@ -662,6 +662,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             GetGridAimDirection(),
             currentWeapon.patternRange,
             45f,
+            null,
             _basicAttackWorldTargets);
 
         int basicDamage = RollCritDamage(TotalAttack + currentWeapon.damage, out bool didCrit);
