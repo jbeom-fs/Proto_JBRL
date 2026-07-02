@@ -53,7 +53,8 @@ public class AttackExecutor
         float knockbackDuration,
         float slowPercentage,
         float slowDuration,
-        float hitRadius)
+        float hitRadius,
+        CustomShapeMatcher? customShape = null)
     {
         if (_isAttackAlreadyProcessed) return;
         if (_attackerTransform == null) return;
@@ -76,8 +77,20 @@ public class AttackExecutor
             if (!target.IsAlive) continue;
 
             Vector3 targetPoint;
-            if (!TryResolveMatchedTargetPoint(col.bounds.center, targetWorldPositions, targetMatchRadiusSqr, out targetPoint))
-                continue;
+            if (customShape.HasValue)
+            {
+                CustomShapeMatcher matcher = customShape.Value;
+                if (!matcher.TryGetCell(col.bounds.center, out Vector2Int matchedCell))
+                    continue;
+
+                Vector2 cellCenter = matcher.GetCellWorldCenter(matchedCell);
+                targetPoint = new Vector3(cellCenter.x, cellCenter.y, col.bounds.center.z);
+            }
+            else
+            {
+                if (!TryResolveMatchedTargetPoint(col.bounds.center, targetWorldPositions, targetMatchRadiusSqr, out targetPoint))
+                    continue;
+            }
 
             if (!canPenetrateWalls)
             {

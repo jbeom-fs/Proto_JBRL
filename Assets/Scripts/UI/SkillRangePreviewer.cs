@@ -291,6 +291,24 @@ public class SkillRangePreviewer : MonoBehaviour
         Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
         bool useMouseAim = IsMouseAimPreview();
         Vector2 previewDirection = useMouseAim ? GetPreviewDirection() : Vector2.down;
+
+        if (skill.attackPattern == AttackPatternType.Custom)
+        {
+            _previewShapeCells.Clear();
+            if (skill.customCells != null)
+            {
+                for (int i = 0; i < skill.customCells.Count; i++)
+                    _previewShapeCells.Add(skill.customCells[i]);
+            }
+
+            Vector2 customFacing = useMouseAim
+                ? previewDirection
+                : AimDirectionUtility.ToNormalizedDirection(facing);
+            float customAngle = Vector2.SignedAngle(Vector2.up, customFacing);
+            BuildCustomCells(customAngle);
+            return;
+        }
+
         if (useMouseAim)
         {
             SkillTargetResolver.ResolveShapeCells(
@@ -306,33 +324,6 @@ public class SkillRangePreviewer : MonoBehaviour
                 Vector2Int.zero,
                 SkillTargetResolver.ToGridAimDirection(facing),
                 _previewShapeCells);
-        }
-
-        if (skill.attackPattern == AttackPatternType.Custom)
-        {
-            _previewShapeCells.Clear();
-            if (useMouseAim)
-            {
-                AttackPattern.FillTargets(
-                    skill.attackPattern,
-                    Vector2Int.zero,
-                    previewDirection,
-                    skill.patternRange,
-                    skill.coneHalfAngle,
-                    _previewShapeCells,
-                    skill.customCells);
-            }
-            else
-            {
-                AttackPattern.FillTargets(
-                    skill.attackPattern,
-                    Vector2Int.zero,
-                    facing,
-                    skill.patternRange,
-                    skill.coneHalfAngle,
-                    _previewShapeCells,
-                    skill.customCells);
-            }
         }
 
         switch (skill.attackPattern)
@@ -376,9 +367,6 @@ public class SkillRangePreviewer : MonoBehaviour
                 BuildDiagonal(skill.patternRange);
                 break;
 
-            case AttackPatternType.Custom:
-                BuildCustomCells();
-                break;
         }
     }
 
@@ -591,7 +579,7 @@ public class SkillRangePreviewer : MonoBehaviour
                 BuildDiagonal(weapon.patternRange);
                 break;
             case AttackPatternType.Custom:
-                BuildCustomCells();
+                BuildCustomCells(0f);
                 break;
         }
     }
@@ -734,7 +722,7 @@ public class SkillRangePreviewer : MonoBehaviour
     /// 로컬 좌표 fromLocal → toLocal 방향으로 벽이 있으면
     /// 벽 직전 위치를 로컬 좌표로 반환합니다.
     /// </summary>
-    private void BuildCustomCells()
+    private void BuildCustomCells(float angleDeg)
     {
         _customOutlineEdges.Clear();
 
@@ -788,7 +776,18 @@ public class SkillRangePreviewer : MonoBehaviour
                 break;
         }
 
+        RotateCustomOutlinePoints(pointCount, angleDeg);
         Apply(pointCount, false);
+    }
+
+    private static void RotateCustomOutlinePoints(int pointCount, float angleDeg)
+    {
+        if (pointCount <= 0)
+            return;
+
+        Quaternion rotation = Quaternion.Euler(0f, 0f, angleDeg);
+        for (int i = 0; i < pointCount; i++)
+            s_Buf[i] = rotation * s_Buf[i];
     }
 
     private bool ContainsPreviewCell(Vector2Int cell)

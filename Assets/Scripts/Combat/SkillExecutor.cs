@@ -79,6 +79,17 @@ public sealed class SkillExecutor
     private SkillExecutionResult ExecuteInstantArea(SkillExecutionContext context)
     {
         List<Vector3> targets = _targetResolver.ResolveWorldTargets(context);
+        CustomShapeMatcher? customShape = null;
+        if (SkillTargetResolver.TryCreateCustomShapeMatcher(
+                context.Skill,
+                context.CasterPosition,
+                context.AimDirection,
+                context.GridAimDirection,
+                out CustomShapeMatcher matcher))
+        {
+            customShape = matcher;
+        }
+
         bool didCrit = false;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(context.TotalAttack + context.Skill.damage, out didCrit)
@@ -93,7 +104,8 @@ public sealed class SkillExecutor
             context.Skill.knockbackDuration,
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
-            context.HitRadius);
+            context.HitRadius,
+            customShape);
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.DamageDealtThisAttack > 0)
         {

@@ -109,6 +109,12 @@ public sealed class SkillTargetResolver
         if (results == null) return;
         results.Clear();
 
+        if (pattern == AttackPatternType.Custom)
+        {
+            FillCustomWorldTargets(originWorld, aimDirection, dungeonGridAimDirection, customCells, results);
+            return;
+        }
+
         if (WorldEnvironmentQuery.IsInRegisteredArea(originWorld))
         {
             FillAreaWorldTargets(pattern, originWorld, aimDirection, range, coneHalfAngle, customCells, results);
@@ -120,7 +126,6 @@ public sealed class SkillTargetResolver
 
         Vector2Int origin = dungeonManager.WorldToGrid(originWorld);
         Vector2 gridFacing = ResolveDungeonGridFacing(aimDirection, dungeonGridAimDirection);
-        IReadOnlyList<Vector2Int> dungeonCustomCells = GetDungeonCustomCells(pattern, customCells);
         s_TempGridTargets.Clear();
         if (ShouldUseDiscreteGridFacing(aimDirection, dungeonGridAimDirection))
         {
@@ -131,7 +136,7 @@ public sealed class SkillTargetResolver
                 Mathf.Max(0, range),
                 coneHalfAngle,
                 s_TempGridTargets,
-                dungeonCustomCells);
+                customCells);
         }
         else
         {
@@ -142,7 +147,7 @@ public sealed class SkillTargetResolver
                 Mathf.Max(0, range),
                 coneHalfAngle,
                 s_TempGridTargets,
-                dungeonCustomCells);
+                customCells);
         }
 
         for (int i = 0; i < s_TempGridTargets.Count; i++)
@@ -150,23 +155,89 @@ public sealed class SkillTargetResolver
     }
 
     private static readonly List<Vector2Int> s_TempGridTargets = new(64);
-    private static readonly List<Vector2Int> s_TempDungeonCustomCells = new(64);
 
-    private static IReadOnlyList<Vector2Int> GetDungeonCustomCells(
-        AttackPatternType pattern,
-        IReadOnlyList<Vector2Int> customCells)
+    private static void FillCustomWorldTargets(
+        Vector3 originWorld,
+        Vector2 aimDirection,
+        Vector2Int dungeonGridAimDirection,
+        IReadOnlyList<Vector2Int> customCells,
+        List<Vector3> results)
     {
-        if (pattern != AttackPatternType.Custom || customCells == null || customCells.Count == 0)
-            return customCells;
+        if (customCells == null || customCells.Count == 0)
+            return;
 
-        s_TempDungeonCustomCells.Clear();
-        for (int i = 0; i < customCells.Count; i++)
+        if (!TryCreateCustomShapeMatcher(
+                AttackPatternType.Custom,
+                customCells,
+                originWorld,
+                aimDirection,
+                dungeonGridAimDirection,
+                out CustomShapeMatcher matcher))
         {
-            Vector2Int cell = customCells[i];
-            s_TempDungeonCustomCells.Add(new Vector2Int(-cell.x, cell.y));
+            return;
         }
 
-        return s_TempDungeonCustomCells;
+        for (int i = 0; i < customCells.Count; i++)
+        {
+            Vector2Int offset = customCells[i];
+            Vector2 worldCenter = matcher.GetCellWorldCenter(offset);
+            results.Add(new Vector3(worldCenter.x, worldCenter.y, originWorld.z));
+        }
+    }
+
+    public static bool TryCreateCustomShapeMatcher(
+        SkillData skill,
+        Vector3 originWorld,
+        Vector2 aimDirection,
+        Vector2Int dungeonGridAimDirection,
+        out CustomShapeMatcher matcher)
+    {
+        if (skill == null)
+        {
+            matcher = default;
+            return false;
+        }
+
+        return TryCreateCustomShapeMatcher(
+            skill.attackPattern,
+            skill.customCells,
+            originWorld,
+            aimDirection,
+            dungeonGridAimDirection,
+            out matcher);
+    }
+
+    private static bool TryCreateCustomShapeMatcher(
+        AttackPatternType pattern,
+        IReadOnlyList<Vector2Int> customCells,
+        Vector3 originWorld,
+        Vector2 aimDirection,
+        Vector2Int dungeonGridAimDirection,
+        out CustomShapeMatcher matcher)
+    {
+        matcher = default;
+
+        if (pattern != AttackPatternType.Custom || customCells == null || customCells.Count == 0)
+            return false;
+
+        Vector2 facing = ResolveCustomWorldFacing(aimDirection, dungeonGridAimDirection);
+        float cellSize = WorldEnvironmentQuery.GetCellSize(originWorld);
+        float angle = Vector2.SignedAngle(Vector2.up, facing);
+        matcher = new CustomShapeMatcher(originWorld, angle, cellSize, customCells);
+        return true;
+    }
+
+    private static Vector2 ResolveCustomWorldFacing(
+        Vector2 aimDirection,
+        Vector2Int dungeonGridAimDirection)
+    {
+        if (aimDirection.sqrMagnitude > AimDirectionEpsilonSqr)
+            return aimDirection.normalized;
+
+        if (dungeonGridAimDirection != Vector2Int.zero)
+            return new Vector2(dungeonGridAimDirection.x, -dungeonGridAimDirection.y).normalized;
+
+        return Vector2.down;
     }
 
     private static void FillAreaWorldTargets(
