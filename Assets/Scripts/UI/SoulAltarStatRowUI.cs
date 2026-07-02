@@ -5,10 +5,6 @@ using UnityEngine.UI;
 public sealed class SoulAltarStatRowUI : MonoBehaviour
 {
     [SerializeField] private TMP_Text summaryText;
-    [SerializeField] private TMP_Text statText;
-    [SerializeField] private TMP_Text levelText;
-    [SerializeField] private TMP_Text costText;
-    [SerializeField] private TMP_Text shardText;
     [SerializeField] private Button enhanceButton;
 
     private SoulAltarUIController _owner;
@@ -44,20 +40,6 @@ public sealed class SoulAltarStatRowUI : MonoBehaviour
                                currentLevel.ToString() + " / " + maxLevel.ToString() +
                                "  Cost " + costLabel +
                                "  " + shardName + " x" + shardCount.ToString();
-        }
-
-        if (statText != null)
-            statText.text = growth.stat.ToString();
-
-        if (levelText != null)
-            levelText.text = currentLevel.ToString() + " / " + maxLevel.ToString();
-
-        if (costText != null)
-            costText.text = materialCost > 0 ? materialCost.ToString() : "Free";
-
-        if (shardText != null)
-        {
-            shardText.text = shardName + " x" + shardCount.ToString();
         }
 
         if (enhanceButton != null)

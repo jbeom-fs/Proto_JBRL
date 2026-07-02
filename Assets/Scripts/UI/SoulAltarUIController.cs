@@ -145,7 +145,6 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         soulEnhancements.AddLevel(form, stat, 1);
         SetFeedback("Enhanced");
-        RefreshAll();
     }
 
     private void RefreshAll()
