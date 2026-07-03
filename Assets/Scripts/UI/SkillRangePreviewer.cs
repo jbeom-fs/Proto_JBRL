@@ -42,6 +42,8 @@ public class SkillRangePreviewer : MonoBehaviour
     [Header("LineRenderer 시각")]
     [SerializeField] private float lineWidth    = 0.06f;
     [SerializeField] private Color previewColor = new Color(1f, 0.9f, 0.1f, 0.75f);
+    [Tooltip("Custom 셀 채움의 sorting order 오프셋. 바닥 위, 유닛 아래가 목표.")]
+    [SerializeField] private int customFillSortingOffset = 10;
 
     [Header("타일 크기 (월드 단위)")]
     [Tooltip("Unity Tilemap 기본값 1. Tilemap의 Cell Size 와 일치시키세요.")]
@@ -62,10 +64,16 @@ public class SkillRangePreviewer : MonoBehaviour
     // ── 정적 꼭짓점 버퍼 (GC 방지, 최대 256점) ─────────────────────
     private static readonly Vector3[] s_Buf = new Vector3[256];
     private readonly List<Vector2Int> _previewShapeCells = new();
-    private readonly List<OutlineEdge> _customOutlineEdges = new();
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
     private LineRenderer _lr;
+    private GameObject _customFillObject;
+    private MeshFilter _customFillFilter;
+    private MeshRenderer _customFillRenderer;
+    private Mesh _customFillMesh;
+    private Material _customFillMaterial;
+    private SkillData _lastCustomFillSkill;
+    private int _lastCustomFillCellCount = -1;
     private int          _activeSlot           = -1;   // -1 = 스킬 미표시
     private SkillData    _currentSkill;
     private bool         _isBasicAttackPreview  = false;
@@ -122,6 +130,14 @@ public class SkillRangePreviewer : MonoBehaviour
     // ══════════════════════════════════════════════════════════════
     //  매 프레임 처리
     // ══════════════════════════════════════════════════════════════
+
+    private void OnDestroy()
+    {
+        if (_customFillMesh != null)
+            Destroy(_customFillMesh);
+        if (_customFillMaterial != null)
+            Destroy(_customFillMaterial);
+    }
 
     private void Update()
     {
@@ -234,6 +250,7 @@ public class SkillRangePreviewer : MonoBehaviour
         _activeSlot   = -1;
         _currentSkill = null;
         _lr.enabled   = false;
+        SetCustomFillVisible(false);
     }
 
     private void TryShowBasicAttackPreview()
@@ -254,6 +271,7 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         _isBasicAttackPreview = false;
         _lr.enabled = false;
+        SetCustomFillVisible(false);
     }
 
     private void HideAllPreviews()
@@ -263,6 +281,7 @@ public class SkillRangePreviewer : MonoBehaviour
         _isBasicAttackPreview = false;
         if (_lr != null)
             _lr.enabled = false;
+        SetCustomFillVisible(false);
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -305,7 +324,8 @@ public class SkillRangePreviewer : MonoBehaviour
                 ? previewDirection
                 : AimDirectionUtility.ToNormalizedDirection(facing);
             float customAngle = Vector2.SignedAngle(Vector2.up, customFacing);
-            BuildCustomCells(customAngle);
+            Apply(0, false);
+            UpdateCustomCellFill(skill, _previewShapeCells, customAngle);
             return;
         }
 
@@ -579,7 +599,8 @@ public class SkillRangePreviewer : MonoBehaviour
                 BuildDiagonal(weapon.patternRange);
                 break;
             case AttackPatternType.Custom:
-                BuildCustomCells(0f);
+                Apply(0, false);
+                SetCustomFillVisible(false);
                 break;
         }
     }
@@ -718,107 +739,104 @@ public class SkillRangePreviewer : MonoBehaviour
     //  벽 클리핑 — 꼭짓점이 벽을 뚫지 않도록 경계에서 자름
     // ══════════════════════════════════════════════════════════════
     
-    /// <summary>
-    /// 로컬 좌표 fromLocal → toLocal 방향으로 벽이 있으면
-    /// 벽 직전 위치를 로컬 좌표로 반환합니다.
-    /// </summary>
-    private void BuildCustomCells(float angleDeg)
+    private void UpdateCustomCellFill(SkillData skill, IReadOnlyList<Vector2Int> cells, float angleDeg)
     {
-        _customOutlineEdges.Clear();
-
-        if (_previewShapeCells.Count == 0)
+        if (cells == null || cells.Count == 0)
         {
-            Apply(0, false);
+            SetCustomFillVisible(false);
             return;
         }
 
-        for (int i = 0; i < _previewShapeCells.Count; i++)
+        EnsureCustomFill();
+        if (_lastCustomFillSkill != skill || _lastCustomFillCellCount != cells.Count)
         {
-            Vector2Int cell = _previewShapeCells[i];
-            Vector2Int bottomLeft = new Vector2Int(cell.x * 2 - 1, cell.y * 2 - 1);
-            Vector2Int bottomRight = new Vector2Int(cell.x * 2 + 1, cell.y * 2 - 1);
-            Vector2Int topRight = new Vector2Int(cell.x * 2 + 1, cell.y * 2 + 1);
-            Vector2Int topLeft = new Vector2Int(cell.x * 2 - 1, cell.y * 2 + 1);
-
-            if (!ContainsPreviewCell(cell + Vector2Int.down))
-                _customOutlineEdges.Add(new OutlineEdge(bottomLeft, bottomRight));
-            if (!ContainsPreviewCell(cell + Vector2Int.right))
-                _customOutlineEdges.Add(new OutlineEdge(bottomRight, topRight));
-            if (!ContainsPreviewCell(cell + Vector2Int.up))
-                _customOutlineEdges.Add(new OutlineEdge(topRight, topLeft));
-            if (!ContainsPreviewCell(cell + Vector2Int.left))
-                _customOutlineEdges.Add(new OutlineEdge(topLeft, bottomLeft));
+            BuildCustomCellFillMesh(cells);
+            _lastCustomFillSkill = skill;
+            _lastCustomFillCellCount = cells.Count;
         }
 
-        if (_customOutlineEdges.Count == 0)
-        {
-            Apply(0, false);
-            return;
-        }
-
-        Vector2Int start = _customOutlineEdges[0].From;
-        Vector2Int current = start;
-        int pointCount = 0;
-        AddCustomOutlinePoint(start, ref pointCount);
-
-        while (_customOutlineEdges.Count > 0 && pointCount < s_Buf.Length)
-        {
-            int edgeIndex = FindOutlineEdgeStartingAt(current);
-            if (edgeIndex < 0)
-                break;
-
-            OutlineEdge edge = _customOutlineEdges[edgeIndex];
-            _customOutlineEdges.RemoveAt(edgeIndex);
-            current = edge.To;
-            AddCustomOutlinePoint(current, ref pointCount);
-
-            if (current == start)
-                break;
-        }
-
-        RotateCustomOutlinePoints(pointCount, angleDeg);
-        Apply(pointCount, false);
+        _customFillObject.transform.localPosition = Vector3.zero;
+        _customFillObject.transform.localRotation = Quaternion.Euler(0f, 0f, angleDeg);
+        SetCustomFillVisible(true);
     }
 
-    private static void RotateCustomOutlinePoints(int pointCount, float angleDeg)
+    private void EnsureCustomFill()
     {
-        if (pointCount <= 0)
+        if (_customFillObject != null)
             return;
 
-        Quaternion rotation = Quaternion.Euler(0f, 0f, angleDeg);
-        for (int i = 0; i < pointCount; i++)
-            s_Buf[i] = rotation * s_Buf[i];
-    }
+        _customFillObject = new GameObject("CustomCellFill");
+        _customFillObject.transform.SetParent(transform, false);
+        _customFillObject.transform.localPosition = Vector3.zero;
 
-    private bool ContainsPreviewCell(Vector2Int cell)
-    {
-        for (int i = 0; i < _previewShapeCells.Count; i++)
+        _customFillFilter = _customFillObject.AddComponent<MeshFilter>();
+        _customFillRenderer = _customFillObject.AddComponent<MeshRenderer>();
+        _customFillMesh = new Mesh { name = "CustomCellFillMesh" };
+        _customFillFilter.sharedMesh = _customFillMesh;
+
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader != null)
         {
-            if (_previewShapeCells[i] == cell)
-                return true;
+            _customFillMaterial = new Material(shader);
+            Color fillColor = previewColor;
+            fillColor.a = Mathf.Clamp(previewColor.a * 0.35f, 0.2f, 0.3f);
+            _customFillMaterial.color = fillColor;
+            _customFillRenderer.sharedMaterial = _customFillMaterial;
         }
 
-        return false;
+        _customFillRenderer.sortingLayerID = _lr != null ? _lr.sortingLayerID : 0;
+        _customFillRenderer.sortingOrder =
+            (_lr != null ? _lr.sortingOrder : 0) + customFillSortingOffset;
+
+        SetCustomFillVisible(false);
     }
 
-    private int FindOutlineEdgeStartingAt(Vector2Int point)
+    private void BuildCustomCellFillMesh(IReadOnlyList<Vector2Int> cells)
     {
-        for (int i = 0; i < _customOutlineEdges.Count; i++)
+        int cellCount = cells.Count;
+        Vector3[] vertices = new Vector3[cellCount * 4];
+        Vector2[] uv = new Vector2[cellCount * 4];
+        int[] triangles = new int[cellCount * 6];
+        float half = tileSize * 0.95f * 0.5f;
+
+        for (int i = 0; i < cellCount; i++)
         {
-            if (_customOutlineEdges[i].From == point)
-                return i;
+            Vector2Int cell = cells[i];
+            Vector3 center = new Vector3(cell.x * tileSize, cell.y * tileSize, 0f);
+            int vertexIndex = i * 4;
+            int triangleIndex = i * 6;
+
+            vertices[vertexIndex] = center + new Vector3(-half, -half, 0f);
+            vertices[vertexIndex + 1] = center + new Vector3(half, -half, 0f);
+            vertices[vertexIndex + 2] = center + new Vector3(half, half, 0f);
+            vertices[vertexIndex + 3] = center + new Vector3(-half, half, 0f);
+
+            uv[vertexIndex] = new Vector2(0f, 0f);
+            uv[vertexIndex + 1] = new Vector2(1f, 0f);
+            uv[vertexIndex + 2] = new Vector2(1f, 1f);
+            uv[vertexIndex + 3] = new Vector2(0f, 1f);
+
+            triangles[triangleIndex] = vertexIndex;
+            triangles[triangleIndex + 1] = vertexIndex + 2;
+            triangles[triangleIndex + 2] = vertexIndex + 1;
+            triangles[triangleIndex + 3] = vertexIndex;
+            triangles[triangleIndex + 4] = vertexIndex + 3;
+            triangles[triangleIndex + 5] = vertexIndex + 2;
         }
 
-        return -1;
+        _customFillMesh.Clear();
+        _customFillMesh.vertices = vertices;
+        _customFillMesh.uv = uv;
+        _customFillMesh.triangles = triangles;
+        _customFillMesh.RecalculateBounds();
     }
 
-    private void AddCustomOutlinePoint(Vector2Int doubledPoint, ref int pointCount)
+    private void SetCustomFillVisible(bool visible)
     {
-        if (pointCount >= s_Buf.Length)
-            return;
-
-        float scale = tileSize * 0.5f;
-        s_Buf[pointCount++] = new Vector3(doubledPoint.x * scale, doubledPoint.y * scale, 0f);
+        if (_customFillObject != null)
+            _customFillObject.SetActive(visible);
+        if (_customFillRenderer != null)
+            _customFillRenderer.enabled = visible;
     }
 
     private Vector3 ClipToWall(Vector3 fromLocal, Vector3 toLocal)
@@ -865,6 +883,7 @@ public class SkillRangePreviewer : MonoBehaviour
     // positionCount 설정 후 s_Buf 를 LineRenderer 에 일괄 적용
     private void Apply(int count, bool loop = true)
     {
+        SetCustomFillVisible(false);
         _lr.loop = loop;
         _lr.positionCount = count;
         for (int i = 0; i < count; i++)
@@ -943,15 +962,4 @@ public class SkillRangePreviewer : MonoBehaviour
         p == AttackPatternType.Single ||
         p == AttackPatternType.Custom;
 
-    private readonly struct OutlineEdge
-    {
-        public readonly Vector2Int From;
-        public readonly Vector2Int To;
-
-        public OutlineEdge(Vector2Int from, Vector2Int to)
-        {
-            From = from;
-            To = to;
-        }
-    }
 }

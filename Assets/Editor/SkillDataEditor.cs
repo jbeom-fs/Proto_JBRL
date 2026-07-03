@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -72,6 +73,8 @@ public sealed class SkillDataEditor : Editor
     private ItemDatabase _linkedItemDatabase;
     private string _linkedItemCode;
     private string _linkedItemDisplayName;
+    private int _customCellGridRadius = 4;
+    private bool _rawCustomCellsFoldout;
 
     private void OnEnable()
     {
@@ -273,7 +276,7 @@ public sealed class SkillDataEditor : Editor
             DrawProperty(_coneHalfAngle);
         if (IsAttackPattern(AttackPatternType.Custom))
         {
-            DrawProperty(_customCells);
+            DrawCustomCellsEditor();
             EditorGUILayout.HelpBox(
                 "Cells are authored relative to the caster with +Y as forward. patternRange is not used by Custom.",
                 MessageType.Info);
@@ -282,6 +285,140 @@ public sealed class SkillDataEditor : Editor
         }
         DrawProperty(_isMultiTarget);
         DrawProperty(_canPenetrateWalls);
+    }
+
+    private void DrawCustomCellsEditor()
+    {
+        if (_customCells == null)
+            return;
+
+        if (targets.Length > 1 || _customCells.hasMultipleDifferentValues)
+        {
+            EditorGUILayout.HelpBox("Select a single asset to edit cells.", MessageType.Info);
+            DrawProperty(_customCells);
+            return;
+        }
+
+        HashSet<Vector2Int> cells = ReadCustomCellSet();
+        ExpandCustomCellGridRadius(cells);
+        DrawCustomCellGridControls(cells.Count);
+        DrawCustomCellGrid(cells);
+
+        _rawCustomCellsFoldout = EditorGUILayout.Foldout(_rawCustomCellsFoldout, "Raw Cell List", true);
+        if (_rawCustomCellsFoldout)
+        {
+            EditorGUI.indentLevel++;
+            DrawProperty(_customCells);
+            EditorGUI.indentLevel--;
+        }
+    }
+
+    private HashSet<Vector2Int> ReadCustomCellSet()
+    {
+        HashSet<Vector2Int> cells = new HashSet<Vector2Int>();
+        for (int i = 0; i < _customCells.arraySize; i++)
+            cells.Add(_customCells.GetArrayElementAtIndex(i).vector2IntValue);
+
+        return cells;
+    }
+
+    private void ExpandCustomCellGridRadius(HashSet<Vector2Int> cells)
+    {
+        int requiredRadius = _customCellGridRadius;
+        foreach (Vector2Int cell in cells)
+            requiredRadius = Mathf.Max(requiredRadius, Mathf.Abs(cell.x), Mathf.Abs(cell.y));
+
+        _customCellGridRadius = Mathf.Clamp(requiredRadius, 1, 12);
+    }
+
+    private void DrawCustomCellGridControls(int cellCount)
+    {
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.LabelField("Radius: " + _customCellGridRadius, GUILayout.Width(72f));
+
+        using (new EditorGUI.DisabledScope(_customCellGridRadius >= 12))
+        {
+            if (GUILayout.Button("+", GUILayout.Width(24f)))
+                _customCellGridRadius = Mathf.Min(12, _customCellGridRadius + 1);
+        }
+
+        using (new EditorGUI.DisabledScope(_customCellGridRadius <= 1))
+        {
+            if (GUILayout.Button("-", GUILayout.Width(24f)))
+                _customCellGridRadius = Mathf.Max(1, _customCellGridRadius - 1);
+        }
+
+        GUILayout.Space(8f);
+        EditorGUILayout.LabelField("Cells: " + cellCount, GUILayout.Width(64f));
+        if (GUILayout.Button("Clear", GUILayout.Width(52f)))
+        {
+            _customCells.arraySize = 0;
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawCustomCellGrid(HashSet<Vector2Int> cells)
+    {
+        Color originalColor = GUI.backgroundColor;
+        for (int y = _customCellGridRadius; y >= -_customCellGridRadius; y--)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(EditorGUI.indentLevel * 15f);
+
+            for (int x = -_customCellGridRadius; x <= _customCellGridRadius; x++)
+            {
+                Vector2Int cell = new Vector2Int(x, y);
+                bool active = cells.Contains(cell);
+                bool isCenter = x == 0 && y == 0;
+
+                GUI.backgroundColor = GetCustomCellButtonColor(active, isCenter, originalColor);
+                string label = isCenter ? "P" : active ? "X" : string.Empty;
+                if (GUILayout.Button(label, GUILayout.Width(18f), GUILayout.Height(18f)))
+                    ToggleCustomCell(cells, cell);
+            }
+
+            GUI.backgroundColor = originalColor;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        GUI.backgroundColor = originalColor;
+    }
+
+    private static Color GetCustomCellButtonColor(bool active, bool isCenter, Color fallback)
+    {
+        if (active && isCenter)
+            return new Color(0.25f, 0.9f, 1f);
+        if (active)
+            return new Color(0.35f, 0.9f, 0.35f);
+        if (isCenter)
+            return new Color(1f, 0.8f, 0.25f);
+
+        return fallback;
+    }
+
+    private void ToggleCustomCell(HashSet<Vector2Int> cells, Vector2Int cell)
+    {
+        if (!cells.Add(cell))
+            cells.Remove(cell);
+
+        WriteCustomCellSet(cells);
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private void WriteCustomCellSet(HashSet<Vector2Int> cells)
+    {
+        List<Vector2Int> orderedCells = new List<Vector2Int>(cells);
+        orderedCells.Sort((left, right) =>
+        {
+            int yCompare = left.y.CompareTo(right.y);
+            return yCompare != 0 ? yCompare : left.x.CompareTo(right.x);
+        });
+
+        _customCells.arraySize = orderedCells.Count;
+        for (int i = 0; i < orderedCells.Count; i++)
+            _customCells.GetArrayElementAtIndex(i).vector2IntValue = orderedCells[i];
     }
 
     private void DrawProjectileSection()

@@ -98,10 +98,6 @@ public class AttackExecutor
             return;
 
         Vector2 boxSize = new Vector2(shape.CellSize, shape.CellSize);
-#if UNITY_EDITOR
-        int candidateCount = 0;
-        int blockedCells = 0;
-#endif
 
         for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
         {
@@ -111,9 +107,6 @@ public class AttackExecutor
             if (!canPenetrateWalls &&
                 IsBlockedByWall(_attackerTransform.position, cellCenter))
             {
-#if UNITY_EDITOR
-                blockedCells++;
-#endif
                 continue;
             }
 
@@ -134,15 +127,8 @@ public class AttackExecutor
                     Target = target,
                     SqrDistance = ((Vector2)col.bounds.center - (Vector2)_attackerTransform.position).sqrMagnitude
                 });
-#if UNITY_EDITOR
-                candidateCount++;
-#endif
             }
         }
-
-#if UNITY_EDITOR
-        Debug.Log($"[CustomBox] angle={shape.AngleDeg:F3} cellSize={shape.CellSize:F3} candidates={candidateCount} blockedCells={blockedCells}");
-#endif
     }
 
     private bool IsBlockedByWall(Vector2 from, Vector2 to)
