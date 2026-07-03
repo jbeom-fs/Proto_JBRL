@@ -241,3 +241,19 @@ MonoBehaviour:
     salvageItemCode: Eng_Sword_Primordial
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Primordial_2
+    displayName: "\uC2A4\uC6CC\uB4DC\uD3FC\uD14C\uC2A4\uD2B8"
+    icon: {fileID: 0}
+    description: 
+    itemType: 7
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 1
+    engraving: {fileID: 11400000, guid: aef1c3b8daa8ff64a824c9bc805cfb47, type: 2}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1

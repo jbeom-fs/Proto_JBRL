@@ -62,49 +62,13 @@ public class AttackExecutor
 
         _hitCandidates.Clear();
 
-        float queryRadius = BuildWorldQueryRadius(targetWorldPositions);
-        float targetMatchRadius = Mathf.Max(
-            Mathf.Max(0.01f, hitRadius),
-            WorldEnvironmentQuery.GetCellSize(_attackerTransform.position) * 0.5f);
-        float targetMatchRadiusSqr = targetMatchRadius * targetMatchRadius;
-
-        int count = Physics2D.OverlapCircle(_attackerTransform.position, queryRadius + hitRadius, _targetFilter, s_HitBuffer);
-        for (int i = 0; i < count; i++)
+        if (customShape.HasValue)
         {
-            Collider2D col = s_HitBuffer[i];
-            if (!col.TryGetComponent<IDamageable>(out var target)) continue;
-            if (ReferenceEquals(target, _owner)) continue;
-            if (!target.IsAlive) continue;
-
-            Vector3 targetPoint;
-            if (customShape.HasValue)
-            {
-                CustomShapeMatcher matcher = customShape.Value;
-                if (!matcher.TryGetCell(col.bounds.center, out Vector2Int matchedCell))
-                    continue;
-
-                Vector2 cellCenter = matcher.GetCellWorldCenter(matchedCell);
-                targetPoint = new Vector3(cellCenter.x, cellCenter.y, col.bounds.center.z);
-            }
-            else
-            {
-                if (!TryResolveMatchedTargetPoint(col.bounds.center, targetWorldPositions, targetMatchRadiusSqr, out targetPoint))
-                    continue;
-            }
-
-            if (!canPenetrateWalls)
-            {
-                if (!WorldEnvironmentQuery.HasLineOfSight(_attackerTransform.position, col.bounds.center)) continue;
-                if (!WorldEnvironmentQuery.HasLineOfSight(_attackerTransform.position, targetPoint)) continue;
-            }
-
-            if (!_hitTargetsThisAttack.Add(target)) continue;
-
-            _hitCandidates.Add(new HitCandidate
-            {
-                Target = target,
-                SqrDistance = ((Vector2)col.bounds.center - (Vector2)_attackerTransform.position).sqrMagnitude
-            });
+            CollectCustomShapeCandidates(customShape.Value, canPenetrateWalls);
+        }
+        else
+        {
+            CollectLegacyCandidates(targetWorldPositions, canPenetrateWalls, hitRadius);
         }
 
         if (_hitCandidates.Count == 0) return;
@@ -125,6 +89,101 @@ public class AttackExecutor
         }
 
         _isAttackAlreadyProcessed = true;
+    }
+
+    private void CollectCustomShapeCandidates(CustomShapeMatcher shape, bool canPenetrateWalls)
+    {
+        IReadOnlyList<Vector2Int> cells = shape.Cells;
+        if (cells == null || cells.Count == 0)
+            return;
+
+        Vector2 boxSize = new Vector2(shape.CellSize, shape.CellSize);
+#if UNITY_EDITOR
+        int candidateCount = 0;
+        int blockedCells = 0;
+#endif
+
+        for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
+        {
+            Vector2Int cell = cells[cellIndex];
+            Vector2 cellCenter = shape.GetCellWorldCenter(cell);
+
+            if (!canPenetrateWalls &&
+                IsBlockedByWall(_attackerTransform.position, cellCenter))
+            {
+#if UNITY_EDITOR
+                blockedCells++;
+#endif
+                continue;
+            }
+
+            int count = Physics2D.OverlapBox(cellCenter, boxSize, shape.AngleDeg, _targetFilter, s_HitBuffer);
+            for (int i = 0; i < count; i++)
+            {
+                Collider2D col = s_HitBuffer[i];
+                if (!col.TryGetComponent<IDamageable>(out var target)) continue;
+                if (ReferenceEquals(target, _owner)) continue;
+                if (!target.IsAlive) continue;
+                if (!canPenetrateWalls &&
+                    IsBlockedByWall(_attackerTransform.position, col.bounds.center))
+                    continue;
+                if (!_hitTargetsThisAttack.Add(target)) continue;
+
+                _hitCandidates.Add(new HitCandidate
+                {
+                    Target = target,
+                    SqrDistance = ((Vector2)col.bounds.center - (Vector2)_attackerTransform.position).sqrMagnitude
+                });
+#if UNITY_EDITOR
+                candidateCount++;
+#endif
+            }
+        }
+
+#if UNITY_EDITOR
+        Debug.Log($"[CustomBox] angle={shape.AngleDeg:F3} cellSize={shape.CellSize:F3} candidates={candidateCount} blockedCells={blockedCells}");
+#endif
+    }
+
+    private bool IsBlockedByWall(Vector2 from, Vector2 to)
+    {
+        return Physics2D.Linecast(from, to, CombatLayers.WallMask).collider != null;
+    }
+
+    private void CollectLegacyCandidates(List<Vector3> targetWorldPositions, bool canPenetrateWalls, float hitRadius)
+    {
+        float queryRadius = BuildWorldQueryRadius(targetWorldPositions);
+        float targetMatchRadius = Mathf.Max(
+            Mathf.Max(0.01f, hitRadius),
+            WorldEnvironmentQuery.GetCellSize(_attackerTransform.position) * 0.5f);
+        float targetMatchRadiusSqr = targetMatchRadius * targetMatchRadius;
+
+        int count = Physics2D.OverlapCircle(_attackerTransform.position, queryRadius + hitRadius, _targetFilter, s_HitBuffer);
+        for (int i = 0; i < count; i++)
+        {
+            Collider2D col = s_HitBuffer[i];
+            if (!col.TryGetComponent<IDamageable>(out var target)) continue;
+            if (ReferenceEquals(target, _owner)) continue;
+            if (!target.IsAlive) continue;
+
+            Vector3 targetPoint;
+            if (!TryResolveMatchedTargetPoint(col.bounds.center, targetWorldPositions, targetMatchRadiusSqr, out targetPoint))
+                continue;
+
+            if (!canPenetrateWalls)
+            {
+                if (!WorldEnvironmentQuery.HasLineOfSight(_attackerTransform.position, col.bounds.center)) continue;
+                if (!WorldEnvironmentQuery.HasLineOfSight(_attackerTransform.position, targetPoint)) continue;
+            }
+
+            if (!_hitTargetsThisAttack.Add(target)) continue;
+
+            _hitCandidates.Add(new HitCandidate
+            {
+                Target = target,
+                SqrDistance = ((Vector2)col.bounds.center - (Vector2)_attackerTransform.position).sqrMagnitude
+            });
+        }
     }
 
     private void ApplyDamageAndStatus(
