@@ -410,13 +410,26 @@ public class PlayerController : MonoBehaviour
         if (dungeonManager == null || dungeonManager.Data == null)
             return false;
 
-        Vector3 origin = transform.position;
-        Vector3 next = origin + new Vector3(delta.x, delta.y, 0f);
-        if (!CanMoveTo(next))
-            return false;
+        float maxStep = Mathf.Max(0.01f, _tileSize * 0.25f);
+        int steps = Mathf.Max(1, Mathf.CeilToInt(delta.magnitude / maxStep));
+        Vector3 stepVec = new Vector3(delta.x, delta.y, 0f) / steps;
 
-        transform.position = next;
-        return true;
+        Vector3 current = transform.position;
+        bool moved = false;
+        for (int i = 0; i < steps; i++)
+        {
+            Vector3 candidate = current + stepVec;
+            if (!CanMoveTo(candidate))
+                break;
+
+            current = candidate;
+            moved = true;
+        }
+
+        if (moved)
+            transform.position = current;
+
+        return moved;
     }
 
     private float GetWorldColliderRadius()

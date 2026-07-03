@@ -108,8 +108,9 @@ public sealed class PlayerStatusEffects
         if (_knockbackRemaining <= 0f)
             return;
 
+        float moveTime = Mathf.Min(deltaTime, _knockbackRemaining);
         _knockbackRemaining -= deltaTime;
-        _applyDisplacement?.Invoke(_knockbackDir * (_knockbackSpeed * deltaTime));
+        _applyDisplacement?.Invoke(_knockbackDir * (_knockbackSpeed * moveTime));
     }
 
     private void TickStun(float deltaTime)
