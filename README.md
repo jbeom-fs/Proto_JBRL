@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-02
-> 기준 커밋: master HEAD `8b4ce9dc` — 영혼각인 에디터/검증툴, Town Soul Altar UI 부채 정리, Custom 스킬 형태 S1(저작 셀·연속 월드 포인트·역회전 정확 판정) 완료. 남은 큰 축은 E3 정식 콘텐츠 에셋
+> 작성 기준일: 2026-07-03
+> 기준 커밋: master HEAD `b490fe73` — 스킬 형태 저작 파이프라인 완성: Custom 판정 물리 전환(셀별 회전 OverlapBox + Linecast 벽차단), customCells 그리드 페인팅 인스펙터(S2), 미리보기 셀 채움 메시 전환, 넉백 문 터널링 픽스(외부 변위 스윕 분할). 남은 큰 축은 E3 정식 콘텐츠 에셋
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -130,7 +130,7 @@
 - **FSM 분리**: EnemyBrain의 상태·이동·타겟·액션을 Handler로 분리해 결합도 최소화
 - **책임 분리 (SRP)**: DungeonManager의 기능을 서비스 클래스로 추출 (FloorTransitionService, SpawnPositionService, DungeonQueryService)
 - **스킬 실행 라우팅**: SkillData.executionType → SkillExecutor 가 InstantArea / Projectile / Dash 분기로 라우팅, MonoBehaviour와 분리된 순수 서비스 계층
-- **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀/월드 포인트 계산 제공. `AttackPatternType.Custom` 은 저작 셀을 조준 방향으로 회전한 월드 포인트로 풀고, 실행 판정은 `CustomShapeMatcher` 역회전 셀 포함 검사로 미리보기 외곽선과 일치시킴
+- **공유 타겟 해석**: SkillTargetResolver가 미리보기·기본 공격·스킬 모두에 동일한 셀/월드 포인트 계산 제공. `AttackPatternType.Custom` 은 저작 셀을 조준 방향으로 회전한 월드 포인트로 풀고, 실행 판정은 셀별 `Physics2D.OverlapBox`(회전 box, 실제 콜라이더 겹침) + `Physics2D.Linecast`(WallMask) 벽차단으로 처리 — "형태 정의=데이터, 겹침 검사=물리" 하이브리드로 미리보기(셀 채움 메시)와 판정이 일치
 - **공유 투사체 발사**: ProjectileFireService가 적 원거리·플레이어 스킬 모두에 동일한 패턴(Single/Burst/Spread/Circle) 처리
 - **공유 8방향 조준**: AimDirectionUtility가 입력 → 8방향 raw / 정규화 / 그리드 카디널 변환을 단일 책임으로 처리 (스킬·투사체·대시·미리보기 공용). ActionMouseAim 프리셋에서는 커서 방향을 양자화 없이 연속 벡터로 사용해 **360° 자유조준** — grid 패턴은 `AttackPattern.FillTargets` 의 `Vector2 facing` 연속 오버로드(Cone=연속 각도 / Line·Single=셀 반올림)로 처리하고, Custom 패턴은 월드 공간에서 강체 회전
 - **적 공격 임팩트 통합**: `EnemyAttackImpactData`(knockback·slow·stun) 구조로 Rush·Jump·Projectile 의 부가 효과를 동일하게 관리, `PlayerCombatController.ApplyEnemyCombatImpact()` 단일 진입점으로 데미지·넉백·슬로우·스턴 적용
@@ -236,14 +236,14 @@ Assets/Scripts/
 ├── Combat/
 │   ├── IDamageable.cs              # 피해 수신 인터페이스
 │   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기 (FillTargets API). Custom은 저작 셀(Vector2Int) 기반 grid 소비자용 셀 계산 제공
-│   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용. CustomShapeMatcher 전달 시 역회전 셀 포함 검사로 정확 판정
+│   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용. CustomShapeMatcher 전달 시 셀별 회전 OverlapBox 물리 겹침 판정 + Linecast(WallMask) 벽차단 (비Custom은 기존 OverlapCircle+grid LoS)
 │   ├── AimDirectionUtility.cs      # 8방향 입력 양자화 + raw/정규화/카디널 변환 (Domain)
 │   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
 │   ├── CharacterPhysicsSetup.cs    # Rigidbody2D + CircleCollider2D 공통 셋업 (Player·Enemy 공유, NoFriction 머터리얼 캐시, 기존 CircleCollider 보존)
 │   ├── MovementBlockerQuery.cs     # Player 이동/대시가 `EnemyData.blocksMovement=true` 적과 겹치는지 판정 (Collider2D→EnemyController 캐시)
 │   ├── PlayerCombatController.cs   # 플레이어 전투 진입점 (HP·공격·스킬·무적시간·8방향 조준·castDelay/recoveryDelay 잠금) + ISkillResourceLedger(Bullet 탄창·재장전 / ParryStack 패리) (MP 폐지)
 │   │                               #   + ApplyEnemyCombatImpact(damage, hitDir, knockback, slow, stun) 단일 진입점
-│   │                               #   + 슬로우(_enemySlows 강도 최대값) / 스턴(_stunTimer) / 넉백(EnemyKnockbackRoutine → playerMovement.TryApplyExternalDisplacement)
+│   │                               #   + 슬로우(_enemySlows 강도 최대값) / 스턴(_stunTimer) / 넉백(PlayerStatusEffects.TickKnockback → playerMovement.TryApplyExternalDisplacement — tileSize/4 스윕 분할 검사로 문/벽 터널링 차단)
 │   │                               #   + IsSlowed/IsStunned/MoveSpeedMultiplier · OnStatusEffectApplied/Ended(PlayerStatusEffectType)
 │   ├── PlayerStatusEffectType.cs   # 플레이어 상태이상 enum (Slow, Stun)
 │   ├── PlayerResource.cs           # HP 상태 컨테이너 (Domain) — MP 폐지. 스킬 자원은 PlayerCombatController 의 ISkillResourceLedger(Bullet/ParryStack)
@@ -258,7 +258,7 @@ Assets/Scripts/
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
-│   ├── CustomShapeMatcher.cs       # Custom 스킬 형태 정확 판정 — 적 월드 중심을 저작 공간으로 역회전해 customCells 포함 여부 검사
+│   ├── CustomShapeMatcher.cs       # Custom 형태 쿼리 데이터 캐리어 — origin/angle/cellSize/cells 보유, GetCellWorldCenter(회전 셀 중심)를 실행 포인트·OverlapBox 중심 산출에 공유(각도 불일치 원천 차단)
 │   ├── ProjectileFireService.cs    # 투사체 발사 패턴 처리 (Single/Burst/Spread/Circle)
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
 │   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성, 회전 모드 (KeepPrefab/FaceMoveDirection)
@@ -327,7 +327,7 @@ Assets/Scripts/
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
-│   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드
+│   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드. Custom은 CustomCellFill(셀별 반투명 쿼드 메시, 런타임 생성·localRotation 회전·sortingOrder 오프셋)로 표시
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
 │   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, 5개 카테고리 탭 필터/전체 그룹 정렬, 슬롯 클릭 Consumable 사용, 인벤토리 키·ESC 토글, 콘솔 열림 시 자동 닫힘
 │   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind) + IPointerClickHandler 로 컨트롤러에 클릭 위임
@@ -898,13 +898,18 @@ InstantArea:
 
 Custom InstantArea:
   SkillData.customCells = 시전자 기준 상대 셀(+Y=전방, 원점 허용)
+    — 저작은 SkillDataEditor 그리드 페인팅(가변 반경 1~12, 중앙=P) 인스펙터
   SkillTargetResolver.FillWorldTargets
     → customCells 를 조준 방향으로 float 회전한 월드 포인트로 변환(반올림 없음)
   SkillTargetResolver.TryCreateCustomShapeMatcher
     → 같은 facing/cellSize/angle 로 CustomShapeMatcher 생성
   AttackExecutor.ExecuteAttackWorld(..., customShape)
-    → 적 중심을 역회전해 저작 셀 좌표로 환원 후 customCells 포함 검사
-    → LoS 는 매칭 셀의 월드 중심으로 기존 HasLineOfSight 경로 재사용
+    → 셀마다 Physics2D.OverlapBox(회전 셀 중심, cellSize², angle) — 실제 콜라이더
+      겹침 판정(적 몸이 걸치면 히트, 셀 2칸 걸친 적은 히트셋으로 1회만)
+    → 벽차단 = Physics2D.Linecast(WallMask) — 셀 중심(셀 통째 스킵) + 적 중심 2중
+      (그리드 샘플링 LoS의 코너컷팅 누수 회피, 비Custom 경로는 기존 유지)
+  미리보기 = CustomCellFill(셀별 반투명 쿼드 메시, 런타임 생성) — 회전은
+    localRotation만 갱신, 비연결(섬)·대각 배치도 전부 표시
 
 Projectile:
   ResolveExecutionDirection(context) →
@@ -2338,7 +2343,7 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 | 적 공격 임팩트 데이터 구조화 | `EnemyAttackImpactData` (knockback·slow·stun) | EnemyData 의 rush/jump/projectile 각 임팩트 그룹이 같은 struct 를 공유, `EffectiveSlowMultiplier` 로 보호 검사 |
 | 슬로우 다중 적용 → 최대 강도 1개만 | `PlayerCombatController._enemySlows` + `RecalculateEnemySlowMultiplier` | 여러 적이 동시에 슬로우를 가해도 가장 강한 multiplier 하나만 반영, 만료 시점에만 재계산 |
 | 스턴 중 입력·조준 캐시 동결 | `PlayerCombatController.RefreshAimDirection` + `PlayerController.Update` 분기 | 스턴 동안 `_lastAimDirection` 을 유지하고 이동/공격/방향 전환을 차단 |
-| 플레이어 넉백 코루틴 1개 | `EnemyKnockbackRoutine` + `PlayerController.TryApplyExternalDisplacement` | 중복 적용 시 이전 코루틴 stop 후 재시작, Lerp 변위는 `MoveWithCollision` 과 동일한 footprint 검사 통과 |
+| 플레이어 넉백 Tick 타이머 | `PlayerStatusEffects.TickKnockback` + `PlayerController.TryApplyExternalDisplacement` | 코루틴 없는 Tick(dt) 타이머, 중복 적용 시 방향·속도 덮어쓰기. 변위는 tileSize/4 스텝 스윕 분할로 `MoveWithCollision` 과 동일한 footprint 검사를 경로 전체에 적용(문/벽 터널링 차단), 마지막 틱은 잔여시간 클램프 |
 | `isStationary` 적 이동 정지 | `EnemyData.isStationary` + `EnemyBrain.CurrentMoveSpeed=0` + `Rigidbody.FreezeAll` | AI 추적·공격은 정상 동작하나 위치 변화 / Separation / Kiting / Random 모두 zero-cost path |
 | `immuneToKnockback` 임펄스 skip | `EnemyController.ApplyKnockback` 게이트 | 데미지·슬로우·스턴은 그대로 적용하고 velocity=0 후 return — clamp/CircleCast 비용 0 |
 | RoomSpawner 참조 SerializeField 캐싱 | `DungeonManager.roomSpawner` + `TryGetRoomSpawner` 1회 경고 | `ResetRoomEncounterState` / `ClearPendingRoomStart` 가 매번 `FindAnyObjectByType` 호출하던 비용 제거 |
@@ -2429,7 +2434,7 @@ case AttackPatternType.Ring:
     break;
 ```
 
-WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다. 이미 구현된 `Custom` 은 `SkillData.customCells` 로 저작한 셀 묶음을 조준 방향으로 회전해 쓰는 패턴입니다. 기본 6패턴처럼 grid 셀에 반올림하지 않고, 실행은 연속 월드 포인트 + `CustomShapeMatcher` 역회전 포함 검사로 처리합니다.
+WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다. 이미 구현된 `Custom` 은 `SkillData.customCells` 로 저작한 셀 묶음을 조준 방향으로 회전해 쓰는 패턴입니다. 기본 6패턴처럼 grid 셀에 반올림하지 않고, 실행은 연속 월드 포인트 + 셀별 회전 `Physics2D.OverlapBox` 콜라이더 겹침 판정으로 처리합니다. 저작은 SkillDataEditor 의 그리드 페인팅 인스펙터(격자 클릭 토글)로 합니다.
 
 ### 새 무기 / 스킬 추가
 
@@ -2560,7 +2565,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **스킬 실행 라우팅** | SkillExecutor — InstantArea/Projectile/Dash/Blink/Buff 분기 (AreaOverTime 미구현) |
 | **스킬 슬롯 런타임 분리** | SkillSlotRuntime — MonoBehaviour 미의존 슬롯 상태(데이터·쿨다운) |
 | **스킬 타겟 공통화** | SkillTargetResolver — 미리보기·기본공격·스킬이 동일한 셀/월드 포인트 계산 사용 |
-| **Custom 스킬 형태** | `SkillData.customCells`(시전자 기준 상대 셀, +Y=전방) + `AttackPatternType.Custom`. 실행은 반올림 없는 연속 월드 포인트로 브로드페이즈를 만들고, `CustomShapeMatcher` 가 적 중심을 역회전해 저작 셀 포함 여부를 검사해 회전 사각형 미리보기와 판정을 일치 |
+| **Custom 스킬 형태 (저작 파이프라인 완성)** | `SkillData.customCells`(시전자 기준 상대 셀, +Y=전방) + `AttackPatternType.Custom`. 판정=셀별 회전 `Physics2D.OverlapBox`(실콜라이더 겹침, 중심점 규칙 폐기) + `Linecast(WallMask)` 벽차단 / 미리보기=`CustomCellFill` 셀 채움 메시(섬·대각 배치 전부 표시, 회전=localRotation, sortingOrder 오프셋) / 저작=SkillDataEditor 그리드 페인팅(가변 반경 1~12, 중앙=P, 셀 정렬 저장으로 에셋 diff 결정화, Raw foldout). "칠하면 → 보이는 대로 맞는" 파이프라인 |
+| **넉백 문 터널링 픽스** | `PlayerController.TryApplyExternalDisplacement` 를 tileSize/4 스텝 스윕 분할 검사 + 부분 적용으로 전환 — 프레임 히치 시 delta 가 닫힌 문(DOOR_CLOSED) 셀을 건너뛰던 터널링 원천 차단, 벽까지 자연스럽게 밀리는 부분 적용. `PlayerStatusEffects.TickKnockback` 마지막 틱 이동시간 클램프(과이동 제거) |
 | **스킬 실행 컨텍스트** | SkillExecutionContext — caster/aim/grid/totalAttack/hitRadius 일체 전달 |
 | **쿨다운 관리** | 기본 공격은 SkillCooldownController, 스킬은 SkillSlotRuntime이 보유 |
 | **발사체 시스템** | 직선 이동, 벽/유닛 충돌, 관통 옵션 |
@@ -2583,7 +2589,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **HP 상태바 UI** | PlayerStatusBarUI — HP 슬라이더 + 텍스트, 이벤트 구독 갱신 (MP 바 폐지) |
 | **폼 고유 자원 UI** | ParryStackBarUI(패리 스택 슬라이더) / FreischutzMagazineUI(탄창 칸 Bullet/Bullet_empty) — 현재 폼 BasicAttackMode 로 표시 분기, 구 MP 영역 재사용 |
 | **스킬 UI** | 4슬롯 아이콘·쿨타임 표시 |
-| **스킬 범위 미리보기** | 키 홀드 시 LineRenderer로 공격 범위 시각화 |
+| **스킬 범위 미리보기** | 키 홀드 시 LineRenderer로 공격 범위 시각화 + Custom 패턴은 셀 채움 메시(CustomCellFill) 표시 |
 | **이벤트 버스** | DungeonEventChannel, CombatEventChannel |
 | **던전 서비스 분리** | DungeonQueryService, SpawnPositionService, FloorTransitionService |
 | **던전 타일맵 레이어 분리** | 바닥/벽/문 3개 Tilemap 분리, SetTilesBlock 배치 배치 |
@@ -2629,7 +2635,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | **Generator 디버그 hook** | `DungeonGenerator.DebugCorridorCarving` + `DebugSink` — MST/EXTRA 통로마다 src/dst Rect 와 path 결정 로그 |
 | **DungeonGenDebug 도구** | `Tools/DungeonGenDebug` — Unity 외부 .NET 콘솔로 던전 생성 결과를 standalone 검증 |
 | **PerfStage using-scope 측정** | `Tool/PerfStage.cs` — RuntimePerfLogger 비활성 시 zero-alloc passthrough, 활성 시 elapsedMs metadata 자동 기록 |
-| **Skill / Enemy / Engraving CustomEditor** | `Editor/SkillDataEditor` (SkillData child 적용, Engraving 섹션·등급색 라벨·Linked ItemData/Ping·Custom customCells 표시), `Editor/EnemyDataEditor` (Basic / Contact + Contact-Special(Rush/Jump) 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
+| **Skill / Enemy / Engraving CustomEditor** | `Editor/SkillDataEditor` (SkillData child 적용, Engraving 섹션·등급색 라벨·Linked ItemData/Ping·**Custom customCells 그리드 페인팅**(격자 클릭 토글, Radius ±, Clear, Raw foldout, 다중선택 폴백)), `Editor/EnemyDataEditor` (Basic / Contact + Contact-Special(Rush/Jump) 또는 Ranged-Timing/Movement/Projectile / Separation-Collision / Reward-Misc / Unhandled 자동 분기) |
 | **Kiting 다중 후퇴 방향** | `s_KitingRotations` 5단계 폴백 (away → away±45° → side±90°) — 후퇴가 막혀도 첫 통과 후보로 이동 |
 | **Random 목적지 minR 보호** | `MovementHandler.TickRandomMovement` — `minR=max(radius*0.25, footprintRadius+0.1)` 로 자기 위 목적지 차단 |
 | **정지 시 separation step** | `MovementHandler.TryApplyIdleSeparationStep` — Kiting/Random 대기 상태에서도 이웃이 가까우면 산개 |

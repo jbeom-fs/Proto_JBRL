@@ -64560,6 +64560,7 @@ MonoBehaviour:
   circleSegments: 50
   lineWidth: 0.1
   previewColor: {r: 1, g: 0.12319462, b: 0, a: 0.75}
+  customFillSortingOffset: 10
   tileSize: 1
   enableWallAwareness: 1
   wallLayer:
@@ -132159,7 +132160,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0

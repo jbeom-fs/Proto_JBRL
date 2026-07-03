@@ -19,6 +19,8 @@ MonoBehaviour:
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0
@@ -27,9 +29,38 @@ MonoBehaviour:
   rotateAnimationByDirection: 1
   animationBaseAngle: 0
   damage: 50
-  attackPattern: 3
+  attackPattern: 6
   patternRange: 5
   coneHalfAngle: 45
+  customCells:
+  - {x: 0, y: -4}
+  - {x: -1, y: -3}
+  - {x: 0, y: -3}
+  - {x: 1, y: -3}
+  - {x: -2, y: -2}
+  - {x: 0, y: -2}
+  - {x: 2, y: -2}
+  - {x: -3, y: -1}
+  - {x: 0, y: -1}
+  - {x: 3, y: -1}
+  - {x: -4, y: 0}
+  - {x: -3, y: 0}
+  - {x: -2, y: 0}
+  - {x: -1, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: 3, y: 0}
+  - {x: 4, y: 0}
+  - {x: -3, y: 1}
+  - {x: 0, y: 1}
+  - {x: 3, y: 1}
+  - {x: -2, y: 2}
+  - {x: 0, y: 2}
+  - {x: 2, y: 2}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
+  - {x: 0, y: 4}
   isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 20
@@ -54,3 +85,9 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
