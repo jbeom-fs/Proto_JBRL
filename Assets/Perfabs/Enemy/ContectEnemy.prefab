@@ -422,7 +422,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAilmentIndicator
   iconTable: {fileID: 11400000, guid: b066e1f003ec16d4eabf6d4a1eef30df, type: 2}
   yOffset: 0.8
-  iconWorldSize: 0.25
-  spacing: 0.28
+  iconGap: 0.08
+  iconWorldSize: 0.5
+  spacing: 0.56
   sortingLayerName: Default
   sortingOrder: 12

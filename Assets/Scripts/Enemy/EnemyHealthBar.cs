@@ -57,6 +57,15 @@ public class EnemyHealthBar : MonoBehaviour
 
     private static Sprite s_Pixel;
 
+    public float TopAnchorY
+    {
+        get
+        {
+            EnsureInitialized();
+            return ResolveAnchorY() + barHeight * _invScale.y * 0.5f;
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════
     //  초기화
     // ══════════════════════════════════════════════════════════════

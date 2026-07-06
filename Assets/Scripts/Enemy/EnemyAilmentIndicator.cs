@@ -6,7 +6,9 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     [SerializeField] private StatusEffectIconTable iconTable;
 
     [Header("Layout")]
+    [Tooltip("Fallback local Y used when EnemyHealthBar is missing.")]
     [SerializeField] private float yOffset = 0.8f;
+    [SerializeField] private float iconGap = 0.08f;
     [SerializeField] private float iconWorldSize = 0.25f;
     [SerializeField] private float spacing = 0.28f;
 
@@ -15,6 +17,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     [SerializeField] private int sortingOrder = 12;
 
     private EnemyController _enemy;
+    private EnemyHealthBar _healthBar;
     private GameObject _poisonObject;
     private GameObject _bleedObject;
     private Vector3 _invScale = Vector3.one;
@@ -22,6 +25,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     private Sprite _bleedIcon;
     private bool _poisonVisible;
     private bool _bleedVisible;
+    private bool _positioned;
     private bool _warnedMissingPoison;
     private bool _warnedMissingBleed;
     private bool _warnedMissingTable;
@@ -29,6 +33,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     private void Awake()
     {
         _enemy = GetComponent<EnemyController>();
+        _healthBar = GetComponent<EnemyHealthBar>();
         ResolveInverseScale();
         ResolveIcons();
         _poisonObject = CreateIconChild("Ailment_Poison", _poisonIcon, -0.5f);
@@ -39,6 +44,8 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
 
     private void LateUpdate()
     {
+        PositionIconsIfNeeded();
+
         if (_enemy == null || _enemy.IsDead || !_enemy.IsAlive)
         {
             SetPoisonVisible(false);
@@ -61,7 +68,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         GameObject child = new GameObject(childName);
         Transform childTransform = child.transform;
         childTransform.SetParent(transform, false);
-        childTransform.localPosition = new Vector3(spacing * slotOffset * _invScale.x, yOffset * _invScale.y, 0f);
+        childTransform.localPosition = new Vector3(spacing * slotOffset * _invScale.x, 0f, 0f);
         childTransform.localScale = ResolveIconScale(icon);
 
         SpriteRenderer renderer = child.AddComponent<SpriteRenderer>();
@@ -70,6 +77,28 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         renderer.sortingOrder = sortingOrder;
         child.SetActive(false);
         return child;
+    }
+
+    private void PositionIconsIfNeeded()
+    {
+        if (_positioned)
+            return;
+
+        _positioned = true;
+        float y = _healthBar != null
+            ? _healthBar.TopAnchorY + (iconGap + iconWorldSize * 0.5f) * _invScale.y
+            : yOffset * _invScale.y;
+
+        SetIconPosition(_poisonObject, -0.5f, y);
+        SetIconPosition(_bleedObject, 0.5f, y);
+    }
+
+    private void SetIconPosition(GameObject iconObject, float slotOffset, float y)
+    {
+        if (iconObject == null)
+            return;
+
+        iconObject.transform.localPosition = new Vector3(spacing * slotOffset * _invScale.x, y, 0f);
     }
 
     private Vector3 ResolveIconScale(Sprite icon)
