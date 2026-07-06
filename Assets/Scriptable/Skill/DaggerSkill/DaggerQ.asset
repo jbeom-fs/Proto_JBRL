@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   skillName: Dagger Q
   icon: {fileID: 0}
-  description: Blink behind nearest enemy and apply marker. TODO: assign dagger icon/animation.
+  description: 
   executionType: 5
   resourceType: 0
   requiredAmount: 0
@@ -32,12 +32,14 @@ MonoBehaviour:
   attackPattern: 0
   patternRange: 8
   coneHalfAngle: 45
+  customCells: []
   isMultiTarget: 0
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3

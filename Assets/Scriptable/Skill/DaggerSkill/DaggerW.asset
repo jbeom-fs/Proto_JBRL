@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   skillName: Dagger W
   icon: {fileID: 0}
-  description: Throw dagger projectile and apply marker on hit. TODO: replace shared projectile prefab with dagger visual prefab.
+  description: 
   executionType: 1
   resourceType: 0
   requiredAmount: 0
@@ -32,12 +32,17 @@ MonoBehaviour:
   attackPattern: 0
   patternRange: 8
   coneHalfAngle: 45
+  customCells: []
   isMultiTarget: 0
   canPenetrateWalls: 1
   knockbackForce: 0.5
   knockbackDuration: 0.06
   slowPercentage: 0
   slowDuration: 0
+  ailments:
+  - type: 1
+    tickDamage: 5
+    duration: 5
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
   projectileSpeed: 18
   projectileLifetime: 2.5

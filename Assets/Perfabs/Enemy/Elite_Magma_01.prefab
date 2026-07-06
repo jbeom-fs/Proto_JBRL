@@ -118,7 +118,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyController
   data: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
   combatChannel: {fileID: 11400000, guid: 4c3a1bb8383d07b40a109c40577c0f17, type: 2}
-  logDamageInEditor: 0
+  logDamageInEditor: 1
   knockbackBlockLayers:
     serializedVersion: 2
     m_Bits: 0

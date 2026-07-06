@@ -213,6 +213,7 @@ public sealed class SkillExecutor
         context.CasterTransform.position = blinkPosition;
         if (skill.appliesDaggerMarker)
             DaggerMarkerRegistry.Instance.Apply(target, skill.markerDuration);
+        target.ApplyAilments(skill.ailments, ResolveAilmentMultiplier(context));
 
         PlayConfiguredAnimation(context, skill, (targetPosition - start).normalized);
         return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
@@ -243,9 +244,15 @@ public sealed class SkillExecutor
     {
         SkillData skill = context.Skill;
         bool didCrit = false;
-        int damage = context.CasterCombat != null
-            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skill.damage, out didCrit)
-            : context.TotalAttack + skill.damage;
+        bool hasDashDamage = skill.dashDamageOnPath || skill.dashDamageOnContact;
+        int damage = 0;
+        if (hasDashDamage)
+        {
+            damage = context.CasterCombat != null
+                ? context.CasterCombat.RollCritDamage(context.TotalAttack + skill.damage, out didCrit)
+                : context.TotalAttack + skill.damage;
+        }
+
         return new DashDamageRequest
         {
             DamageOnPath = skill.dashDamageOnPath,

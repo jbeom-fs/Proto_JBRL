@@ -944,8 +944,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             : skill.damage;
         if (detonationDamage > 0 && enemy.IsAlive)
         {
+            int amplifiedDamage = Mathf.Max(1, Mathf.RoundToInt(detonationDamage * AilmentDamageMultiplier));
             int actualDamage = enemy.ApplyCombatImpact(
-                RollCritDamage(detonationDamage, out bool didCrit),
+                RollCritDamage(amplifiedDamage, out bool didCrit),
                 transform.position,
                 0f,
                 0f,

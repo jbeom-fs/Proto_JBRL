@@ -248,7 +248,12 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private void TryApplyDashPathDamage(Vector3 previousPosition, Vector3 currentPosition)
     {
-        if (!_hasDashDamage || !_damageRequest.DamageOnPath)
+        if (!_hasDashDamage)
+            return;
+
+        bool shouldSweepPath = _damageRequest.DamageOnPath ||
+            (!_damageRequest.DamageOnContact && _damageRequest.HasAilments);
+        if (!shouldSweepPath)
             return;
 
         Vector3 delta = currentPosition - previousPosition;
@@ -300,6 +305,12 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private void ApplyDamageToEnemy(EnemyController enemy, Vector3 hitOrigin)
     {
+        if (!_damageRequest.DamageOnPath && !_damageRequest.DamageOnContact)
+        {
+            enemy.ApplyAilments(_damageRequest.Ailments, _damageRequest.AilmentDamageMultiplier);
+            return;
+        }
+
         _damageRequest.OnEnemyHit?.Invoke(enemy);
         int actualDamage = enemy.ApplyCombatImpact(
             _damageRequest.Damage,
@@ -339,5 +350,6 @@ public struct DashDamageRequest
     public float AilmentDamageMultiplier;
     public Action<EnemyController> OnEnemyHit;
 
-    public bool Enabled => DamageOnPath || DamageOnContact;
+    public bool HasAilments => Ailments != null && Ailments.Length > 0;
+    public bool Enabled => DamageOnPath || DamageOnContact || HasAilments;
 }

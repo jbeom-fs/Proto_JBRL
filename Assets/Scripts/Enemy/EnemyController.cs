@@ -131,6 +131,18 @@ public class EnemyController : MonoBehaviour, IDamageable
         _ailments?.Apply(type, tickDamage, duration);
     }
 
+    public void ApplyAilments(AilmentApplication[] ailments, float damageMultiplier)
+    {
+        if (IsDead || !IsAlive || ailments == null || ailments.Length == 0)
+            return;
+
+        for (int i = 0; i < ailments.Length; i++)
+        {
+            AilmentApplication entry = ailments[i];
+            _ailments?.Apply(entry.type, entry.tickDamage * damageMultiplier, entry.duration);
+        }
+    }
+
     public int GetAilmentStacks(AilmentType type)
     {
         return _ailments != null ? _ailments.GetStacks(type) : 0;
@@ -230,14 +242,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         ApplyKnockback(attackerPosition, knockbackForce, knockbackDuration);
         ApplySlow(slowPercentage, slowDuration);
-        if (ailments != null && ailments.Length > 0)
-        {
-            for (int i = 0; i < ailments.Length; i++)
-            {
-                AilmentApplication entry = ailments[i];
-                _ailments?.Apply(entry.type, entry.tickDamage * ailmentDamageMultiplier, entry.duration);
-            }
-        }
+        ApplyAilments(ailments, ailmentDamageMultiplier);
         return actualDamage;
     }
 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
   skillName: Dagger E
   icon: {fileID: 0}
-  description: Dash through enemies. Marker hit detonates for extra damage and resets E cooldown once per dash. TODO: assign dagger dash animation.
+  description: 
   executionType: 2
   resourceType: 0
   requiredAmount: 0
@@ -32,12 +32,14 @@ MonoBehaviour:
   attackPattern: 0
   patternRange: 1
   coneHalfAngle: 45
+  customCells: []
   isMultiTarget: 0
   canPenetrateWalls: 0
   knockbackForce: 1
   knockbackDuration: 0.08
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3

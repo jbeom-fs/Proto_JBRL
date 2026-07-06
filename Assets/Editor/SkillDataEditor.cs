@@ -177,11 +177,14 @@ public sealed class SkillDataEditor : Editor
                     DrawDashSection();
                     if (HasDashDamageEnabled())
                         DrawCombatImpactSection("Dash Damage Impact");
+                    else
+                        DrawAilmentsOnlySection("Dash Ailments (no damage)");
                     DrawDaggerMarkerSection();
                     break;
 
                 case SkillExecutionType.Blink:
                     DrawBlinkSection();
+                    DrawAilmentsOnlySection("Blink Target Ailments");
                     DrawDaggerMarkerSection();
                     break;
 
@@ -472,7 +475,7 @@ public sealed class SkillDataEditor : Editor
         if (!HasDashDamageEnabled())
         {
             EditorGUILayout.HelpBox(
-                "Dash movement is enabled, but dash damage is off. Damage and combat impact fields are not used unless Path or Contact damage is enabled.",
+                "Dash movement is enabled, but dash damage is off. Ailments still sweep along the dash path when configured.",
                 MessageType.Info);
         }
     }
@@ -510,6 +513,12 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_knockbackDuration);
         DrawProperty(_slowPercentage);
         DrawProperty(_slowDuration);
+        DrawProperty(_ailments);
+    }
+
+    private void DrawAilmentsOnlySection(string title)
+    {
+        DrawSectionHeader(title);
         DrawProperty(_ailments);
     }
 

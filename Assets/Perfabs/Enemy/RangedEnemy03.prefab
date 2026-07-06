@@ -113,11 +113,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5d0fe76379126194286d784362279128, type: 3}
-  m_Name: ""
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyController
   data: {fileID: 11400000, guid: aa319f7a68854d08ab9a4b1c035e4403, type: 2}
   combatChannel: {fileID: 11400000, guid: 4c3a1bb8383d07b40a109c40577c0f17, type: 2}
-  logDamageInEditor: 0
+  logDamageInEditor: 1
   knockbackBlockLayers:
     serializedVersion: 2
     m_Bits: 0
@@ -132,11 +132,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: afeff8032578c7e47b864ff9075b48c2, type: 3}
-  m_Name: ""
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyHealthBar
   barWidth: 0.8
   barHeight: 0.08
   yOffset: 0.55
+  barMargin: 0.15
   colorGradient: 1
   fillColorFull: {r: 0.2, g: 0.85, b: 0.2, a: 1}
   fillColorEmpty: {r: 1, g: 0, b: 0, a: 1}
@@ -155,7 +156,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89f62e40ea4318f45a36eae7cf9aa4cb, type: 3}
-  m_Name: ""
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NormalEnemyBrain
   player: {fileID: 0}
   pathUpdateInterval: 0.3
@@ -176,7 +177,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3c8cb79ed79945ea84217d68f75977c0, type: 3}
-  m_Name: ""
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAnimationController
   animator: {fileID: 5944476601763459082}
   spriteRenderer: {fileID: 2529847795632861024}
@@ -196,12 +197,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a8cc7014d9334bac80d88ac05f378d0b, type: 3}
-  m_Name: ""
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FogVisibilityRenderer
   managedRenderers: []
   includeChildrenOnAutoCache: 1
   hideWhenFogControllerMissing: 0
   updateInterval: 0.05
+--- !u!114 &730000000000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2550004066681987757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3b4db03c698341c488c28e897574e275, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &5313294262261449395
 GameObject:
   m_ObjectHideFlags: 0
@@ -316,15 +329,3 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &730000000000000003
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2550004066681987757}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3b4db03c698341c488c28e897574e275, type: 3}
-  m_Name: ""
-  m_EditorClassIdentifier: ""
