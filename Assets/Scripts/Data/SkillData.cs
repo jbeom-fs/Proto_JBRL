@@ -124,6 +124,9 @@ public class SkillData : ScriptableObject
     [Min(0f)]
     public float slowDuration = 0f;
 
+    [Tooltip("DoT applications applied on hit. Empty means no ailment.")]
+    public AilmentApplication[] ailments;
+
     [Space(8)]
     [Header("Projectile")]
     [Tooltip("Projectile prefab spawned when executionType is Projectile.")]

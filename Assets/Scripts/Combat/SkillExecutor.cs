@@ -104,6 +104,8 @@ public sealed class SkillExecutor
             context.Skill.knockbackDuration,
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
+            context.Skill.ailments,
+            ResolveAilmentMultiplier(context),
             context.HitRadius,
             customShape);
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
@@ -256,6 +258,8 @@ public sealed class SkillExecutor
             KnockbackDuration = skill.knockbackDuration,
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
+            Ailments = skill.ailments,
+            AilmentDamageMultiplier = ResolveAilmentMultiplier(context),
             OnEnemyHit = skill.detonatesDaggerMarker && context.CasterCombat != null
                 ? context.CasterCombat.PrepareDaggerDashHitCallback(skill, context.SlotIndex)
                 : null
@@ -294,11 +298,18 @@ public sealed class SkillExecutor
             KnockbackDuration = skill.knockbackDuration,
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
+            Ailments = skill.ailments,
+            AilmentDamageMultiplier = ResolveAilmentMultiplier(context),
             OnEnemyHit = skill.appliesDaggerMarker && context.CasterCombat != null
                 ? context.CasterCombat.DaggerProjectileEnemyHitCallback
                 : null,
             DaggerMarkerDuration = skill.markerDuration
         };
+    }
+
+    private static float ResolveAilmentMultiplier(SkillExecutionContext context)
+    {
+        return context.CasterCombat != null ? context.CasterCombat.AilmentDamageMultiplier : 1f;
     }
 
     private bool TryFindNearestEnemy(SkillExecutionContext context, out EnemyController nearest)

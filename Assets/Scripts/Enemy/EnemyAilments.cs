@@ -7,6 +7,14 @@ public enum AilmentType
     Bleed = 1
 }
 
+[Serializable]
+public struct AilmentApplication
+{
+    public AilmentType type;
+    public float tickDamage;
+    public float duration;
+}
+
 public sealed class EnemyAilments
 {
     private const int AilmentTypeCount = 2;

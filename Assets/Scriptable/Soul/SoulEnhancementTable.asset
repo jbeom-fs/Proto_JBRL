@@ -55,3 +55,9 @@ MonoBehaviour:
       perLevel: 0.5
       maxLevel: 10
       baseMaterialCost: 3
+  - form: 2
+    growths:
+    - stat: 9
+      perLevel: 10
+      maxLevel: 10
+      baseMaterialCost: 3

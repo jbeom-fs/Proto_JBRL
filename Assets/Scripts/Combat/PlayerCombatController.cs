@@ -476,6 +476,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return Mathf.Max(0f, 1f - _soulBonus.Get(SoulStatType.CooldownReduction) / 100f);
     }
 
+    public float AilmentDamageMultiplier =>
+        1f + Mathf.Max(0f, _soulBonus.Get(SoulStatType.AilmentDamage)) / 100f;
+
     private float EffectiveReloadTime()
     {
         if (currentWeapon == null)
@@ -675,6 +678,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             currentWeapon.knockbackDuration,
             currentWeapon.slowPercentage,
             currentWeapon.slowDuration,
+            null,
+            1f,
             hitRadius);
 
         ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
@@ -945,7 +950,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 0f,
                 0f,
                 0f,
-                0f);
+                0f,
+                null,
+                1f);
             ReportLifestealDamage(actualDamage);
             if (actualDamage > 0)
                 RegisterComboHit();

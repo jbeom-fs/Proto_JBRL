@@ -39,6 +39,7 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _knockbackDuration;
     private SerializedProperty _slowPercentage;
     private SerializedProperty _slowDuration;
+    private SerializedProperty _ailments;
 
     private SerializedProperty _projectilePrefab;
     private SerializedProperty _projectileSpeed;
@@ -111,6 +112,7 @@ public sealed class SkillDataEditor : Editor
         _knockbackDuration = serializedObject.FindProperty("knockbackDuration");
         _slowPercentage = serializedObject.FindProperty("slowPercentage");
         _slowDuration = serializedObject.FindProperty("slowDuration");
+        _ailments = serializedObject.FindProperty("ailments");
 
         _projectilePrefab = serializedObject.FindProperty("projectilePrefab");
         _projectileSpeed = serializedObject.FindProperty("projectileSpeed");
@@ -508,6 +510,7 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_knockbackDuration);
         DrawProperty(_slowPercentage);
         DrawProperty(_slowDuration);
+        DrawProperty(_ailments);
     }
 
     private void DrawReservedExecutionType(SkillExecutionType executionType)

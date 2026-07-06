@@ -38,6 +38,8 @@ public class ProjectileController : MonoBehaviour
     private float _knockbackDuration;
     private float _slowPercentage;
     private float _slowDuration;
+    private AilmentApplication[] _ailments;
+    private float _ailmentDamageMultiplier = 1f;
     private float _stunDuration;
     private float _lifetime = 3f;
     private ProjectileWallHitMode _wallHitMode = ProjectileWallHitMode.Destroy;
@@ -134,7 +136,9 @@ public class ProjectileController : MonoBehaviour
             0f,
             0f,
             0f,
-            0f);
+            0f,
+            null,
+            1f);
     }
 
     public void Initialize(
@@ -152,6 +156,8 @@ public class ProjectileController : MonoBehaviour
         float slowPercentage,
         float slowDuration,
         float stunDuration,
+        AilmentApplication[] ailments,
+        float ailmentDamageMultiplier,
         Action<EnemyController, ProjectileController> onEnemyHit = null,
         float daggerMarkerDuration = 0f,
         bool isCrit = false)
@@ -165,6 +171,8 @@ public class ProjectileController : MonoBehaviour
         _knockbackDuration = Mathf.Max(0f, knockbackDuration);
         _slowPercentage = Mathf.Clamp01(slowPercentage);
         _slowDuration = Mathf.Max(0f, slowDuration);
+        _ailments = ailments;
+        _ailmentDamageMultiplier = Mathf.Max(0f, ailmentDamageMultiplier);
         _stunDuration = Mathf.Max(0f, stunDuration);
         _onEnemyHit = onEnemyHit;
         _daggerMarkerDuration = Mathf.Max(0f, daggerMarkerDuration);
@@ -428,7 +436,9 @@ public class ProjectileController : MonoBehaviour
                 _knockbackForce,
                 _knockbackDuration,
                 _slowPercentage,
-                _slowDuration);
+                _slowDuration,
+                _ailments,
+                _ailmentDamageMultiplier);
             if (_owner is PlayerCombatController playerCombat)
             {
                 playerCombat.ReportLifestealDamage(actualDamage);

@@ -53,6 +53,8 @@ public class AttackExecutor
         float knockbackDuration,
         float slowPercentage,
         float slowDuration,
+        AilmentApplication[] ailments,
+        float ailmentDamageMultiplier,
         float hitRadius,
         CustomShapeMatcher? customShape = null)
     {
@@ -76,7 +78,15 @@ public class AttackExecutor
         if (isMultiTarget)
         {
             for (int i = 0; i < _hitCandidates.Count; i++)
-                ApplyDamageAndStatus(_hitCandidates[i].Target, damage, knockbackForce, knockbackDuration, slowPercentage, slowDuration);
+                ApplyDamageAndStatus(
+                    _hitCandidates[i].Target,
+                    damage,
+                    knockbackForce,
+                    knockbackDuration,
+                    slowPercentage,
+                    slowDuration,
+                    ailments,
+                    ailmentDamageMultiplier);
         }
         else
         {
@@ -85,7 +95,15 @@ public class AttackExecutor
                 if (_hitCandidates[i].SqrDistance < closest.SqrDistance)
                     closest = _hitCandidates[i];
 
-            ApplyDamageAndStatus(closest.Target, damage, knockbackForce, knockbackDuration, slowPercentage, slowDuration);
+            ApplyDamageAndStatus(
+                closest.Target,
+                damage,
+                knockbackForce,
+                knockbackDuration,
+                slowPercentage,
+                slowDuration,
+                ailments,
+                ailmentDamageMultiplier);
         }
 
         _isAttackAlreadyProcessed = true;
@@ -178,7 +196,9 @@ public class AttackExecutor
         float knockbackForce,
         float knockbackDuration,
         float slowPercentage,
-        float slowDuration)
+        float slowDuration,
+        AilmentApplication[] ailments,
+        float ailmentDamageMultiplier)
     {
         if (target == null || !target.IsAlive) return;
 
@@ -190,7 +210,9 @@ public class AttackExecutor
                 knockbackForce,
                 knockbackDuration,
                 slowPercentage,
-                slowDuration);
+                slowDuration,
+                ailments,
+                ailmentDamageMultiplier);
             _damageDealtThisAttack += actualDamage;
             _hitEnemiesThisAttack.Add(enemy);
             return;

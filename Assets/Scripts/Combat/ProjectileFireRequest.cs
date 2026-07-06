@@ -26,6 +26,8 @@ public sealed class ProjectileFireRequest
     public float KnockbackDuration;
     public float SlowPercentage;
     public float SlowDuration;
+    public AilmentApplication[] Ailments;
+    public float AilmentDamageMultiplier = 1f;
     public float StunDuration;
     public Action<EnemyController, ProjectileController> OnEnemyHit;
     public float DaggerMarkerDuration;

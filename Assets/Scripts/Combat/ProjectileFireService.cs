@@ -152,6 +152,8 @@ public sealed class ProjectileFireService
             request.SlowPercentage,
             request.SlowDuration,
             request.StunDuration,
+            request.Ailments,
+            request.AilmentDamageMultiplier,
             request.OnEnemyHit,
             request.DaggerMarkerDuration,
             request.IsCrit);

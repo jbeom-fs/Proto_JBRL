@@ -307,7 +307,9 @@ public sealed class PlayerDashController : MonoBehaviour
             _damageRequest.KnockbackForce,
             _damageRequest.KnockbackDuration,
             _damageRequest.SlowPercentage,
-            _damageRequest.SlowDuration);
+            _damageRequest.SlowDuration,
+            _damageRequest.Ailments,
+            _damageRequest.AilmentDamageMultiplier);
         _damageRequest.CasterCombat?.ReportLifestealDamage(actualDamage);
         if (actualDamage > 0)
             _damageRequest.CasterCombat?.RegisterComboHit();
@@ -333,6 +335,8 @@ public struct DashDamageRequest
     public float KnockbackDuration;
     public float SlowPercentage;
     public float SlowDuration;
+    public AilmentApplication[] Ailments;
+    public float AilmentDamageMultiplier;
     public Action<EnemyController> OnEnemyHit;
 
     public bool Enabled => DamageOnPath || DamageOnContact;

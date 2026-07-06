@@ -219,7 +219,9 @@ public class EnemyController : MonoBehaviour, IDamageable
         float knockbackForce,
         float knockbackDuration,
         float slowPercentage,
-        float slowDuration)
+        float slowDuration,
+        AilmentApplication[] ailments,
+        float ailmentDamageMultiplier)
     {
         if (IsDead) return 0;
 
@@ -228,6 +230,14 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         ApplyKnockback(attackerPosition, knockbackForce, knockbackDuration);
         ApplySlow(slowPercentage, slowDuration);
+        if (ailments != null && ailments.Length > 0)
+        {
+            for (int i = 0; i < ailments.Length; i++)
+            {
+                AilmentApplication entry = ailments[i];
+                _ailments?.Apply(entry.type, entry.tickDamage * ailmentDamageMultiplier, entry.duration);
+            }
+        }
         return actualDamage;
     }
 
