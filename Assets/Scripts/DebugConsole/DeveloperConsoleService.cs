@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 public sealed class DeveloperConsoleService
@@ -13,11 +14,13 @@ public sealed class DeveloperConsoleService
     private const string EnhanceUsage = "Usage: /enhance <form> <stat> [count]";
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
+    private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
     private static readonly string[] s_EngravingArgs = { "give", "equip", "unequip", "show" };
+    private static readonly string[] s_AilmentArgs = { "poison", "bleed" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
@@ -97,12 +100,14 @@ public sealed class DeveloperConsoleService
         _commands["give"] = ExecuteGive;
         _commands["enhance"] = ExecuteEnhance;
         _commands["engraving"] = ExecuteEngraving;
+        _commands["ailment"] = ExecuteAilment;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
         _argumentProviders["give"] = ProvideGiveCategorySuggestions;
         _argumentProviders["enhance"] = ProvideEnhanceFormSuggestions;
         _argumentProviders["engraving"] = ProvideEngravingSuggestions;
+        _argumentProviders["ailment"] = ProvideAilmentSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
 
@@ -132,6 +137,9 @@ public sealed class DeveloperConsoleService
 
     private static void ProvideEngravingSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_EngravingArgs, currentArg, output, maxCount);
+
+    private static void ProvideAilmentSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_AilmentArgs, currentArg, output, maxCount);
 
     private static void ProvideGiveCategorySuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(DeveloperConsoleItemCategoryResolver.CategoryTokens, currentArg, output, maxCount);
@@ -203,6 +211,7 @@ public sealed class DeveloperConsoleService
             "\n" + GiveUsage +
             "\n" + EnhanceUsage +
             "\n" + EngravingUsage +
+            "\n" + AilmentUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -393,6 +402,26 @@ public sealed class DeveloperConsoleService
         return DeveloperConsoleCommandResult.Error(EngravingUsage);
     }
 
+    private DeveloperConsoleCommandResult ExecuteAilment(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (!TryReadAilmentArguments(arguments, out string typeToken, out string tickDamageText, out string durationText))
+            return DeveloperConsoleCommandResult.Error(AilmentUsage);
+
+        if (!TryResolveAilmentType(typeToken, out AilmentType type))
+            return DeveloperConsoleCommandResult.Error("Unknown ailment: " + typeToken + ". " + AilmentUsage);
+
+        if (!TryParsePositiveOptionalFloat(tickDamageText, 2f, out float tickDamage))
+            return DeveloperConsoleCommandResult.Error(AilmentUsage);
+
+        if (!TryParsePositiveOptionalFloat(durationText, 5f, out float duration))
+            return DeveloperConsoleCommandResult.Error(AilmentUsage);
+
+        return _executor.ExecuteAilment(type, tickDamage, duration);
+    }
+
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
     {
         subCommand = string.Empty;
@@ -462,6 +491,32 @@ public sealed class DeveloperConsoleService
         return !string.IsNullOrWhiteSpace(formToken) && !string.IsNullOrWhiteSpace(statToken);
     }
 
+    private static bool TryReadAilmentArguments(
+        string arguments,
+        out string typeToken,
+        out string tickDamageText,
+        out string durationText)
+    {
+        typeToken = string.Empty;
+        tickDamageText = string.Empty;
+        durationText = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return false;
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || parts.Length > 3)
+            return false;
+
+        typeToken = parts[0];
+        if (parts.Length >= 2)
+            tickDamageText = parts[1];
+        if (parts.Length == 3)
+            durationText = parts[2];
+
+        return !string.IsNullOrWhiteSpace(typeToken);
+    }
+
     private static bool TryParsePositiveOptionalCount(string valueText, out int count)
     {
         if (string.IsNullOrWhiteSpace(valueText))
@@ -479,6 +534,38 @@ public sealed class DeveloperConsoleService
             return false;
 
         return value > 0;
+    }
+
+    private static bool TryParsePositiveOptionalFloat(string valueText, float defaultValue, out float value)
+    {
+        if (string.IsNullOrWhiteSpace(valueText))
+        {
+            value = defaultValue;
+            return true;
+        }
+
+        if (!float.TryParse(valueText, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+            return false;
+
+        return value > 0f;
+    }
+
+    private static bool TryResolveAilmentType(string token, out AilmentType type)
+    {
+        if (string.Equals(token, "poison", StringComparison.OrdinalIgnoreCase))
+        {
+            type = AilmentType.Poison;
+            return true;
+        }
+
+        if (string.Equals(token, "bleed", StringComparison.OrdinalIgnoreCase))
+        {
+            type = AilmentType.Bleed;
+            return true;
+        }
+
+        type = default;
+        return false;
     }
 
     private static bool TryParseZeroBasedInt(string valueText, out int value)

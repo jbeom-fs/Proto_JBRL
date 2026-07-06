@@ -44,6 +44,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private bool _holdsEliteKey;
     private Vector3 _lastSafePosition;
     private bool _warnedMissingHitFlash;
+    private EnemyAilments _ailments;
     private readonly List<SlowEffect> _activeSlows = new();
 
     private struct SlowEffect
@@ -74,6 +75,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _healthBar = GetComponent<EnemyHealthBar>();
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
+        _ailments = new EnemyAilments(ApplyAilmentTickDamage);
         _lastSafePosition = transform.position;
         ApplyStationaryPhysicsSettings();
         if (data != null)
@@ -121,6 +123,19 @@ public class EnemyController : MonoBehaviour, IDamageable
         ApplyDamageReturningActual(damage);
     }
 
+    public void ApplyAilment(AilmentType type, float tickDamage, float duration)
+    {
+        if (IsDead || !IsAlive)
+            return;
+
+        _ailments?.Apply(type, tickDamage, duration);
+    }
+
+    public int GetAilmentStacks(AilmentType type)
+    {
+        return _ailments != null ? _ailments.GetStacks(type) : 0;
+    }
+
     private int ApplyDamageReturningActual(int damage)
     {
         if (IsDead || !IsAlive) return 0;
@@ -139,6 +154,24 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         if (_currentHp == 0) Die();
         return actual;
+    }
+
+    private void ApplyAilmentTickDamage(int damage)
+    {
+        if (IsDead || !IsAlive)
+            return;
+
+        int maxHp = data != null ? data.maxHp : 0;
+        _currentHp = Mathf.Max(0, _currentHp - damage);
+        _healthBar?.SetHp(_currentHp, maxHp);
+
+#if UNITY_EDITOR
+        if (logDamageInEditor)
+            Debug.Log($"[Enemy:{data?.enemyName}] 상태이상 틱 -{damage} HP → {_currentHp}/{maxHp}");
+#endif
+
+        if (_currentHp == 0)
+            Die();
     }
 
     // Developer console only: routes through the normal death pipeline.
@@ -215,6 +248,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         }
 
         TickSlowEffects(Time.deltaTime);
+        _ailments?.Tick(Time.deltaTime);
     }
 
     private void LateUpdate()
@@ -310,6 +344,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _knockbackLockTimer = 0f;
         _activeSlowPercentage = 0f;
         _activeSlows.Clear();
+        _ailments?.Clear();
         if (_rb != null)
             _rb.linearVelocity = Vector2.zero;
     }

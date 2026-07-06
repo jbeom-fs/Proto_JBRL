@@ -316,6 +316,22 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return DeveloperConsoleCommandResult.Success(builder.ToString());
     }
 
+    public DeveloperConsoleCommandResult ExecuteAilment(AilmentType type, float tickDamage, float duration)
+    {
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer == null)
+            return DeveloperConsoleCommandResult.Error("PlayerController.Active is missing.");
+
+        EnemyController target = FindNearestAliveEnemy(activePlayer.transform.position);
+        if (target == null)
+            return DeveloperConsoleCommandResult.Error("No alive enemy found.");
+
+        target.ApplyAilment(type, tickDamage, duration);
+        int stacks = target.GetAilmentStacks(type);
+        return DeveloperConsoleCommandResult.Success(
+            "Applied " + GetAilmentToken(type) + " to " + GetEnemyDisplayName(target) + " (stacks " + stacks + ").");
+    }
+
     public void GetFormIds(List<string> output)
     {
         if (output == null)
@@ -485,6 +501,29 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return loadout != null && combat != null;
     }
 
+    private static EnemyController FindNearestAliveEnemy(Vector3 origin)
+    {
+        EnemyController[] enemies = UnityEngine.Object.FindObjectsByType<EnemyController>();
+        EnemyController nearest = null;
+        float nearestSqrDistance = float.PositiveInfinity;
+
+        for (int i = 0; i < enemies.Length; i++)
+        {
+            EnemyController enemy = enemies[i];
+            if (enemy == null || enemy.IsDead || !enemy.IsAlive || !enemy.isActiveAndEnabled)
+                continue;
+
+            float sqrDistance = (enemy.transform.position - origin).sqrMagnitude;
+            if (sqrDistance >= nearestSqrDistance)
+                continue;
+
+            nearest = enemy;
+            nearestSqrDistance = sqrDistance;
+        }
+
+        return nearest;
+    }
+
     private static bool IsValidEngravingSlot(int slot)
     {
         return (uint)slot < (uint)EngravingLoadout.SlotCount;
@@ -497,6 +536,22 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         string skillName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName;
         return skill is EngravingData engraving ? skillName + " [" + engraving.grade + "]" : skillName;
+    }
+
+    private static string GetEnemyDisplayName(EnemyController enemy)
+    {
+        if (enemy == null)
+            return "(missing)";
+
+        if (enemy.data != null && !string.IsNullOrWhiteSpace(enemy.data.enemyName))
+            return enemy.data.enemyName;
+
+        return enemy.name;
+    }
+
+    private static string GetAilmentToken(AilmentType type)
+    {
+        return type == AilmentType.Bleed ? "bleed" : "poison";
     }
 
     private static DeveloperConsoleCommandResult ExecuteFloorTransition(DungeonManager manager, int targetFloor)
