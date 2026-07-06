@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 6317729556381488071}
   - component: {fileID: 2550004066681987800}
   - component: {fileID: 730000000000000006}
+  - component: {fileID: -3464586106122921135}
   m_Layer: 8
   m_Name: RushEnemy01
   m_TagString: Untagged
@@ -215,6 +216,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3b4db03c698341c488c28e897574e275, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &-3464586106122921135
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2550004066681987757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 94c948cc80d243aaac7e905f2fc25387, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAilmentIndicator
+  iconTable: {fileID: 11400000, guid: b066e1f003ec16d4eabf6d4a1eef30df, type: 2}
+  yOffset: 0.8
+  iconWorldSize: 0.25
+  spacing: 0.28
+  sortingLayerName: Default
+  sortingOrder: 12
 --- !u!1 &5313294262261449395
 GameObject:
   m_ObjectHideFlags: 0

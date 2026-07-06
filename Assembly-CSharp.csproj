@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\System\GamePersistenceCoordinator.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireRequest.cs" />
+    <Compile Include="Assets\Scripts\Data\StatusEffectIconTable.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerResource.cs" />
     <Compile Include="Assets\Scripts\Tool\YieldCache.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireService.cs" />
@@ -94,6 +95,7 @@
     <Compile Include="Assets\Scripts\Combat\DaggerMarkerVisualPool.cs" />
     <Compile Include="Assets\Scripts\Items\ItemData.cs" />
     <Compile Include="Assets\Scripts\System\SaveService.cs" />
+    <Compile Include="Assets\Scripts\Enemy\EnemyAilmentIndicator.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\SoulAltarUIController.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />

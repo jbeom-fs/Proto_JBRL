@@ -2,14 +2,20 @@ using UnityEngine;
 
 public sealed class PlayerStatusEffectUI : MonoBehaviour
 {
+    [SerializeField] private StatusEffectIconTable iconTable;
     [SerializeField] private StatusEffectIconView slowIconView;
     [SerializeField] private StatusEffectIconView stunIconView;
 
     private PlayerCombatController _combat;
+    private bool _iconsResolved;
+    private bool _warnedMissingTable;
+    private bool _warnedMissingSlowIcon;
+    private bool _warnedMissingStunIcon;
 
     private void OnEnable()
     {
         SetIconsHidden();
+        ResolveIconsOnce();
         TryBindCombat();
     }
 
@@ -59,6 +65,36 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
             slowIconView.SetVisible(false);
         if (stunIconView != null)
             stunIconView.SetVisible(false);
+    }
+
+    private void ResolveIconsOnce()
+    {
+        if (_iconsResolved)
+            return;
+
+        _iconsResolved = true;
+        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        if (table == null)
+        {
+            WarnMissingTable();
+            return;
+        }
+
+        if (slowIconView != null)
+        {
+            if (table.TryGetIcon(StatusEffectIconType.Slow, out Sprite slowIcon))
+                slowIconView.SetIcon(slowIcon);
+            else
+                WarnMissingIcon(StatusEffectIconType.Slow);
+        }
+
+        if (stunIconView != null)
+        {
+            if (table.TryGetIcon(StatusEffectIconType.Stun, out Sprite stunIcon))
+                stunIconView.SetIcon(stunIcon);
+            else
+                WarnMissingIcon(StatusEffectIconType.Stun);
+        }
     }
 
     private void SyncInitialState()
@@ -143,5 +179,37 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
             default:
                 return null;
         }
+    }
+
+    private void WarnMissingTable()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedMissingTable)
+            return;
+
+        _warnedMissingTable = true;
+        Debug.LogWarning(
+            "[PlayerStatusEffectUI] StatusEffectIconTable is missing. Existing scene icon sprites remain in use. Expected Resources path: " +
+            StatusEffectIconTable.ResourcePath,
+            this);
+#endif
+    }
+
+    private void WarnMissingIcon(StatusEffectIconType type)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (type == StatusEffectIconType.Slow && !_warnedMissingSlowIcon)
+        {
+            _warnedMissingSlowIcon = true;
+            Debug.LogWarning("[PlayerStatusEffectUI] Slow icon missing. Existing scene icon sprite remains in use.", this);
+            return;
+        }
+
+        if (type == StatusEffectIconType.Stun && !_warnedMissingStunIcon)
+        {
+            _warnedMissingStunIcon = true;
+            Debug.LogWarning("[PlayerStatusEffectUI] Stun icon missing. Existing scene icon sprite remains in use.", this);
+        }
+#endif
     }
 }
