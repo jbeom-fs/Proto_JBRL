@@ -365,13 +365,6 @@ public class DungeonManager : MonoBehaviour
 
     private bool TryEnterBossFloor(int targetFloor, BossEncounterEntry entry, out string message)
     {
-        BossEncounterController bossController = BossEncounterController.Active;
-        if (bossController == null)
-        {
-            message = "Boss encounter controller is not active.";
-            return false;
-        }
-
         PlayerController player = PlayerController.Active;
         if (player == null)
         {
@@ -380,6 +373,29 @@ public class DungeonManager : MonoBehaviour
         }
 
         TrySubscribeBossEncounter();
+
+        RestAreaController restArea = RestAreaController.Active;
+        if (restArea != null)
+        {
+            int previousRestFloor = floor;
+            floor = targetFloor;
+            if (!restArea.Begin(entry, player))
+            {
+                floor = previousRestFloor;
+                message = "Failed to enter rest area for floor " + targetFloor + ".";
+                return false;
+            }
+
+            message = "Entering rest area before boss floor " + targetFloor + ".";
+            return true;
+        }
+
+        BossEncounterController bossController = BossEncounterController.Active;
+        if (bossController == null)
+        {
+            message = "Boss encounter controller is not active.";
+            return false;
+        }
 
         int previousFloor = floor;
         floor = targetFloor;

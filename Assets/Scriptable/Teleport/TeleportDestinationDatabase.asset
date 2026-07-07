@@ -20,6 +20,7 @@ MonoBehaviour:
     locationRootId: town
     localSpawnPosition: {x: 0, y: 0, z: 0}
     minimapLocationId: town
+    useTilemapMinimap: 0
   - id: town_return
     displayName: Town Return
     description: Return point used when leaving the dungeon.
@@ -27,20 +28,23 @@ MonoBehaviour:
     locationRootId: town
     localSpawnPosition: {x: 0, y: -1, z: 0}
     minimapLocationId: town
+    useTilemapMinimap: 0
   - id: dungeon_entrance
     displayName: Dungeon Entrance
     description: Entry destination for starting a new dungeon run.
     locationType: 1
     locationRootId: dungeon
     localSpawnPosition: {x: 0, y: 0, z: 0}
-    minimapLocationId:
+    minimapLocationId: 
+    useTilemapMinimap: 0
   - id: elite_arena
     displayName: elite_arena
     description: elite arena room
     locationType: 1
     locationRootId: elite_arena
     localSpawnPosition: {x: 0, y: 0, z: 0}
-    minimapLocationId:
+    minimapLocationId: 
+    useTilemapMinimap: 0
   - id: boss_arena
     displayName: boss_arena
     description: shared boss arena room
@@ -48,4 +52,12 @@ MonoBehaviour:
     locationRootId: boss_arena
     localSpawnPosition: {x: 0, y: 0, z: 0}
     minimapLocationId: boss_arena
+    useTilemapMinimap: 1
+  - id: rest_area
+    displayName: rest_area
+    description: Rest Area
+    locationType: 1
+    locationRootId: rest_area
+    localSpawnPosition: {x: 0, y: 0, z: 0}
+    minimapLocationId: rest_area
     useTilemapMinimap: 1

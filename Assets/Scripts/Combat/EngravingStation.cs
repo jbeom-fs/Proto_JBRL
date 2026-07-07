@@ -4,6 +4,12 @@ using UnityEngine;
 [RequireComponent(typeof(Collider2D))]
 public sealed class EngravingStation : MonoBehaviour
 {
+    [Tooltip("Commit 후 각인대 소멸 여부. 사전 stair방=true, 정비실 배치=false")]
+    [SerializeField] private bool consumeOnCommit = true;
+
+    [Tooltip("씬 배치용 UI 직접 연결. 비우면 placer의 Bind 주입 대기")]
+    [SerializeField] private EngravingLoadoutUIController sceneUI;
+
     private EngravingLoadoutUIController _ui;
     private PlayerInputReader _input;
     private bool _playerInRange;
@@ -12,6 +18,12 @@ public sealed class EngravingStation : MonoBehaviour
     public void Bind(EngravingLoadoutUIController ui)
     {
         _ui = ui;
+    }
+
+    private void Awake()
+    {
+        if (_ui == null && sceneUI != null)
+            _ui = sceneUI;
     }
 
     private void Reset()
@@ -48,7 +60,7 @@ public sealed class EngravingStation : MonoBehaviour
         }
 
         if (!_ui.IsOpen)
-            _ui.Open(this);
+            _ui.Open(consumeOnCommit ? this : null);
     }
 
     public void NotifyConsumed()
