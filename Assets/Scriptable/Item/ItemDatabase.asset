@@ -257,3 +257,19 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Faint
+    displayName: "\uD14C\uC2A4\uD2B8\uB300\uAC70\uC2A4\uD0AC1"
+    icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
+    description: 
+    itemType: 7
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    soulFormId: 2
+    engraving: {fileID: 11400000, guid: 6d6a5bc122cbd6043ac24fa423be1a08, type: 2}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1

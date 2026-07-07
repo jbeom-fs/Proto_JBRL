@@ -17,6 +17,12 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     [SerializeField] private Button unequipButton;
     [SerializeField] private TMP_Text feedbackText;
     [SerializeField] private Button closeButton;
+    [SerializeField] private Button confirmButton;
+    [SerializeField] private Button cancelButton;
+    [SerializeField] private GameObject dialogPanel;
+    [SerializeField] private TMP_Text dialogText;
+    [SerializeField] private Button dialogYesButton;
+    [SerializeField] private Button dialogNoButton;
     [SerializeField] private Color selectedColor = Color.white;
     [SerializeField] private Color normalColor = new Color(0.65f, 0.65f, 0.65f, 1f);
 
@@ -24,10 +30,13 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     private readonly List<TMP_Text> _slotTexts = new List<TMP_Text>(EngravingLoadout.SlotCount);
     private readonly List<Button> _poolButtons = new List<Button>(8);
     private readonly List<TMP_Text> _poolTexts = new List<TMP_Text>(8);
+    private readonly SkillData[] _stagedSlots = new SkillData[EngravingLoadout.SlotCount];
+    private readonly List<SkillData> _stagedPool = new List<SkillData>(8);
 
     private PlayerFormId _form;
     private int _selectedSlot = -1;
-    private bool _subscribed;
+    private EngravingStation _owner;
+    private System.Action _dialogYesAction;
     private bool _warnedMissingReferences;
 
     public bool IsOpen { get; private set; }
@@ -35,10 +44,22 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     private void Awake()
     {
         if (closeButton != null)
-            closeButton.onClick.AddListener(Close);
+            closeButton.onClick.AddListener(RequestCancel);
+
+        if (cancelButton != null)
+            cancelButton.onClick.AddListener(RequestCancel);
+
+        if (confirmButton != null)
+            confirmButton.onClick.AddListener(RequestConfirm);
 
         if (unequipButton != null)
             unequipButton.onClick.AddListener(HandleUnequipClicked);
+
+        if (dialogYesButton != null)
+            dialogYesButton.onClick.AddListener(HandleDialogYes);
+
+        if (dialogNoButton != null)
+            dialogNoButton.onClick.AddListener(HideDialog);
 
         if (slotButtonTemplate != null)
             slotButtonTemplate.gameObject.SetActive(false);
@@ -48,11 +69,14 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(false);
+
+        if (dialogPanel != null)
+            dialogPanel.SetActive(false);
     }
 
     private void OnDisable()
     {
-        Close();
+        CloseWithoutSave();
     }
 
     private void Update()
@@ -62,16 +86,26 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
 
         if (DeveloperConsoleUI.IsOpen)
         {
-            Close();
+            CloseWithoutSave();
             return;
         }
 
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-            Close();
+        {
+            if (dialogPanel != null && dialogPanel.activeSelf)
+                HideDialog();
+            else
+                RequestCancel();
+        }
     }
 
     public void Open()
+    {
+        Open(null);
+    }
+
+    public void Open(EngravingStation owner)
     {
         if (IsOpen)
             return;
@@ -79,11 +113,21 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
         if (!HasRequiredReferences())
             return;
 
-        Subscribe();
         IsOpen = true;
+        _owner = owner;
         _form = combat.CurrentFormId;
         _selectedSlot = -1;
+
+        for (int i = 0; i < EngravingLoadout.SlotCount; i++)
+            _stagedSlots[i] = loadout.GetSlot(_form, i);
+
+        _stagedPool.Clear();
+        int poolCount = loadout.PoolCount(_form);
+        for (int i = 0; i < poolCount; i++)
+            _stagedPool.Add(loadout.GetPoolAt(_form, i));
+
         SetFeedback(string.Empty);
+        HideDialog();
         panel.SetActive(true);
         GamePauseController.Active?.Pause(GamePauseSource.EngravingLoadout);
         RefreshAll();
@@ -91,14 +135,22 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
 
     public void Close()
     {
-        Unsubscribe();
+        CloseWithoutSave();
+    }
+
+    private void CloseWithoutSave()
+    {
+        bool wasOpen = IsOpen;
         IsOpen = false;
         _selectedSlot = -1;
+        _owner = null;
+        HideDialog();
 
         if (panel != null)
             panel.SetActive(false);
 
-        GamePauseController.Active?.Resume(GamePauseSource.EngravingLoadout);
+        if (wasOpen)
+            GamePauseController.Active?.Resume(GamePauseSource.EngravingLoadout);
     }
 
     private void HandleSlotClicked(int slot)
@@ -115,10 +167,19 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             return;
         }
 
-        if (loadout.Equip(_form, _selectedSlot, poolIndex))
-            SetFeedback("Equipped");
-        else
-            SetFeedback("Cannot equip");
+        if ((uint)_selectedSlot >= (uint)EngravingLoadout.SlotCount ||
+            (uint)poolIndex >= (uint)_stagedPool.Count)
+            return;
+
+        SkillData incoming = _stagedPool[poolIndex];
+        _stagedPool.RemoveAt(poolIndex);
+        SkillData displaced = _stagedSlots[_selectedSlot];
+        _stagedSlots[_selectedSlot] = incoming;
+        if (displaced != null)
+            _stagedPool.Add(displaced);
+
+        SetFeedback("Equipped (unsaved)");
+        RefreshAll();
     }
 
     private void HandleUnequipClicked()
@@ -129,10 +190,20 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             return;
         }
 
-        if (loadout.Unequip(_form, _selectedSlot))
-            SetFeedback("Unequipped");
-        else
+        if ((uint)_selectedSlot >= (uint)EngravingLoadout.SlotCount)
+            return;
+
+        SkillData token = _stagedSlots[_selectedSlot];
+        if (token == null)
+        {
             SetFeedback("Slot empty");
+            return;
+        }
+
+        _stagedSlots[_selectedSlot] = null;
+        _stagedPool.Add(token);
+        SetFeedback("Unequipped (unsaved)");
+        RefreshAll();
     }
 
     private void RefreshAll()
@@ -156,13 +227,13 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             bool active = i < EngravingLoadout.SlotCount;
             _slotButtons[i].gameObject.SetActive(active);
             if (active && _slotTexts[i] != null)
-                _slotTexts[i].text = "[" + i + "] " + DisplayName(loadout.GetSlot(_form, i));
+                _slotTexts[i].text = "[" + i + "] " + DisplayName(_stagedSlots[i]);
         }
     }
 
     private void RefreshPool()
     {
-        int count = loadout.PoolCount(_form);
+        int count = _stagedPool.Count;
         EnsurePoolButtonCount(count);
         for (int i = 0; i < _poolButtons.Count; i++)
         {
@@ -170,7 +241,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             {
                 _poolButtons[i].gameObject.SetActive(true);
                 if (_poolTexts[i] != null)
-                    _poolTexts[i].text = DisplayName(loadout.GetPoolAt(_form, i));
+                    _poolTexts[i].text = DisplayName(_stagedPool[i]);
             }
             else
             {
@@ -238,7 +309,13 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
                      slotContainer != null &&
                      slotButtonTemplate != null &&
                      poolContainer != null &&
-                     poolButtonTemplate != null;
+                     poolButtonTemplate != null &&
+                     confirmButton != null &&
+                     cancelButton != null &&
+                     dialogPanel != null &&
+                     dialogText != null &&
+                     dialogYesButton != null &&
+                     dialogNoButton != null;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (!valid && !_warnedMissingReferences)
@@ -251,24 +328,74 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
         return valid;
     }
 
-    private void Subscribe()
+    private bool IsDirty()
     {
-        if (_subscribed)
-            return;
+        for (int i = 0; i < EngravingLoadout.SlotCount; i++)
+        {
+            if (_stagedSlots[i] != loadout.GetSlot(_form, i))
+                return true;
+        }
 
-        loadout.OnChanged += RefreshAll;
-        _subscribed = true;
+        return false;
     }
 
-    private void Unsubscribe()
+    private void RequestCancel()
     {
-        if (!_subscribed)
+        if (!IsOpen)
             return;
 
-        if (loadout != null)
-            loadout.OnChanged -= RefreshAll;
+        if (IsDirty())
+            ShowDialog("변경사항을 저장하지 않고 닫으시겠습니까?", CloseWithoutSave);
+        else
+            CloseWithoutSave();
+    }
 
-        _subscribed = false;
+    private void RequestConfirm()
+    {
+        if (!IsOpen)
+            return;
+
+        if (IsDirty())
+            ShowDialog("변경사항을 저장하시겠습니까?\n이 층의 각인대는 소멸합니다.", CommitAndClose);
+        else
+            CloseWithoutSave();
+    }
+
+    private void CommitAndClose()
+    {
+        if (!loadout.ApplyArrangement(_form, _stagedSlots))
+        {
+            SetFeedback("Apply failed");
+            return;
+        }
+
+        EngravingStation owner = _owner;
+        CloseWithoutSave();
+        if (owner != null)
+            owner.NotifyConsumed();
+    }
+
+    private void ShowDialog(string message, System.Action onYes)
+    {
+        _dialogYesAction = onYes;
+        if (dialogText != null)
+            dialogText.text = message;
+        if (dialogPanel != null)
+            dialogPanel.SetActive(true);
+    }
+
+    private void HandleDialogYes()
+    {
+        System.Action action = _dialogYesAction;
+        HideDialog();
+        action?.Invoke();
+    }
+
+    private void HideDialog()
+    {
+        _dialogYesAction = null;
+        if (dialogPanel != null)
+            dialogPanel.SetActive(false);
     }
 
     private void SetFeedback(string message)

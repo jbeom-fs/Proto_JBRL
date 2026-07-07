@@ -101,6 +101,41 @@ public sealed class EngravingLoadout : MonoBehaviour
         return true;
     }
 
+    public bool ApplyArrangement(PlayerFormId form, IReadOnlyList<SkillData> desiredSlots)
+    {
+        if (desiredSlots == null || desiredSlots.Count != SlotCount)
+            return false;
+
+        if (!_states.TryGetValue(form, out FormState state))
+            return false;
+
+        List<SkillData> remaining = new List<SkillData>(state.Pool.Count + SlotCount);
+        remaining.AddRange(state.Pool);
+        for (int i = 0; i < SlotCount; i++)
+        {
+            if (state.Slots[i] != null)
+                remaining.Add(state.Slots[i]);
+        }
+
+        for (int i = 0; i < SlotCount; i++)
+        {
+            SkillData token = desiredSlots[i];
+            if (token == null)
+                continue;
+
+            if (!remaining.Remove(token))
+                return false;
+        }
+
+        for (int i = 0; i < SlotCount; i++)
+            state.Slots[i] = desiredSlots[i];
+
+        state.Pool.Clear();
+        state.Pool.AddRange(remaining);
+        OnChanged?.Invoke();
+        return true;
+    }
+
     public bool AddToPool(PlayerFormId form, SkillData skill)
     {
         if (skill == null)

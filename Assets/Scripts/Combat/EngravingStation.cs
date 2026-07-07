@@ -48,7 +48,12 @@ public sealed class EngravingStation : MonoBehaviour
         }
 
         if (!_ui.IsOpen)
-            _ui.Open();
+            _ui.Open(this);
+    }
+
+    public void NotifyConsumed()
+    {
+        gameObject.SetActive(false);
     }
 
     private void OnTriggerEnter2D(Collider2D other)
