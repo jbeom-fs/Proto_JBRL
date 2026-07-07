@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-06
-> 기준 커밋: master HEAD `0671f9c3` — **AilmentDamage DoT 축 완성(S1~S4)**: 적 독/출혈 DoT 프레임워크(`EnemyAilments`) + SkillData `ailments` 배열 송출 배선(멜리/투사체/대시/Blink/무데미지 대시) + 부여 시점 스냅샷 증폭(`AilmentDamageMultiplier`) + 마커 기폭 증폭 + 적 상태 아이콘(`EnemyAilmentIndicator`, HP바 상단 앵커) + 상태이상 아이콘 SO 단일 소스(`StatusEffectIconTable`). **Soul 강화 스탯 10종 전부 실작동.** 이전: 스킬 형태 저작 파이프라인(Custom OverlapBox 판정·그리드 페인팅·셀 채움 미리보기, `b490fe73`)
+> 작성 기준일: 2026-07-07
+> 기준 커밋: master HEAD `9feeb4a0` — **정비실(Rest Area) S1 + 각인대 세션 커밋**: 보스층 진입 시 정비실 경유(`RestAreaController`+`BossEntryPortal`, 보스 직행 폴백, §11e-6) + 각인대 1회 사용 소멸·스테이징 편집·확인/취소 다이얼로그(`ApplyArrangement` 일괄 커밋, `add76ac3`, §7-8). 이전: AilmentDamage DoT 축 완성(S1~S4, `0671f9c3`) — Soul 강화 스탯 10종 전부 실작동
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -255,7 +255,7 @@ Assets/Scripts/
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
 │   ├── ComboMeter.cs               # ComboDamage 콤보 스택 추적 (순수 C#, window 2s/cap 20) — 적중 적립, 윈도우 만료 시 리셋. RegisterHit/Tick/Reset
 │   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. static Active(픽업·UI 결선용, OnEnable/OnDisable). debugEngravingPool은 Slice D에서 제거(실드랍이 대체)
-│   ├── EngravingStation.cs         # 영혼각인 교체대 (Slice E2, TownSoulAltar 미러) — Collider2D 트리거 + InteractConfirmPressedThisFrame → ui.Open(). UI는 프리팹이 씬 참조 불가라 placer가 Bind(ui) 주입. 던전 stair방에 런타임 스폰
+│   ├── EngravingStation.cs         # 영혼각인 교체대 (Slice E2, TownSoulAltar 미러) — Collider2D 트리거 + InteractConfirmPressedThisFrame → ui.Open(consumeOnCommit ? this : null). UI는 placer의 Bind(ui) 주입 또는 씬 배치 시 sceneUI 직결. 던전 stair방=런타임 스폰·커밋 시 소멸(NotifyConsumed), 정비실=씬 배치·비소멸
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
 │   ├── SkillCooldownController.cs  # 기본 공격 쿨다운만 담당 (스킬 쿨다운은 슬롯 런타임이 보유)
@@ -346,9 +346,16 @@ Assets/Scripts/
 │   └── DeveloperConsoleCommandResult.cs  # 명령 실행 결과 (readonly struct) — Success/Error/Clear/Ignored 팩토리 메서드
 │
 ├── EliteArena/
+│   ├── ArenaEncounterBase.cs            # Elite·Boss 공통 lifecycle 헬퍼 추상 클래스 — teleport/enemy spawn/return portal/minimap restore/spawn pos resolve
 │   ├── EliteArenaEncounterController.cs  # Elite Arena 인카운터 총괄 — static Active, 입장/복귀/취소, Elite spawn, portal lifecycle, WalkabilityArea passthrough API
 │   ├── EliteArenaPortal.cs              # Elite Room 내 진입 포탈 MonoBehaviour — 플레이어 접촉 시 TryEnterArenaFromPortal 호출, Bind/MarkCompletedAndDisable/ResetRuntimeState
 │   └── EliteArenaReturnPortal.cs        # Arena 내 복귀 포탈 — Elite 사망 후 ShowReturnPortal로 활성화, 접촉 시 TryReturnFromArena 호출
+│
+├── Boss/
+│   ├── BossEncounterController.cs  # 보스전 총괄 (:ArenaEncounterBase) — static Active, Begin/OnBossDied/RequestProceed/CompleteProceedToNextFloor, ProceedRequested 이벤트 (§11e)
+│   ├── BossExitPortal.cs           # 보스 처치 후 출구 포탈 — 접촉 시 RequestProceed, 잠금·중복 진입 가드
+│   ├── RestAreaController.cs       # 정비실 컨트롤러 — 보스 진입 가로채기, pendingEntry 보관→rest_area 텔레포트→포탈에서 Begin 위임, 미결선 시 직행 폴백 (§11e-6)
+│   └── BossEntryPortal.cs          # 정비실 → 보스전 진입 포탈 (BossExitPortal 미러) — 접촉 시 RequestEnterBoss
 │
 ├── World/
 │   ├── WalkabilityArea.cs    # 전투 공간 단위 컴포넌트 (Elite Arena 등) — walk/wall Tilemap 쌍, OnEnable/OnDisable → WalkabilityQuery 자동 등록
@@ -1093,12 +1100,16 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **콘솔**: `/engraving give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, give는 ItemDatabase itemCode 조회→EngravingData→AddToPool·폼-락 검증, show는 `[Grade]` 태그 표시). Slice D에서 give를 debug 카탈로그→itemCode 조회로 재배선.
 
-**교체 UI (Slice E1 — 모달)**: `EngravingLoadoutUIController`(SoulAltarUIController 미러). Open 시 `GamePauseController.Active.Pause(GamePauseSource.EngravingLoadout=4)` → timeScale 0 + `IsGameplayInputBlocked` → **모달**. Open 시 현재 폼(`combat.CurrentFormId`)을 `_form`으로 **캡처**(닫을 때까지 고정). 슬롯 4클릭=교체 대상 선택(하이라이트), 풀 클릭=`Equip(_form,slot,poolIdx)`, Unequip 버튼=슬롯 비움. `OnChanged` 구독으로 자동 갱신, ESC·닫기·콘솔열림 시 Close+Resume.
-- **모달 채택 근거**: ①`AddToPool`이 `OnChanged` 미발행(=리바인드 트리거라 픽업마다 쿨 0 리셋됨)이라 UI가 풀 추가를 못 봄(stale), ②폼 live 조회와 갱신 시점 불일치. 모달이면 열린 동안 이동(픽업)·폼전환이 막혀 **두 버그가 발생 자체를 못 함** — 코어 이벤트/`AddToPool` 의미를 안 건드리는 최소 수정. (비-모달로 가려면 `OnPoolChanged` 이벤트 분리 필요 — 미채택.)
+**교체 UI (Slice E1 — 모달 + 스테이징 세션 커밋, 2026-07-07 개편)**: `EngravingLoadoutUIController`(SoulAltarUIController 미러). Open 시 `GamePauseController.Active.Pause(GamePauseSource.EngravingLoadout=4)` → timeScale 0 + `IsGameplayInputBlocked` → **모달**. Open 시 현재 폼(`combat.CurrentFormId`)을 `_form`으로 **캡처**(닫을 때까지 고정).
+- **스테이징 편집**: Open 시 loadout 상태를 로컬 사본(`_stagedSlots[4]`/`_stagedPool`)으로 복사, 슬롯/풀 클릭·Unequip 은 전부 **사본에서만** 조작. 확인 시 `EngravingLoadout.ApplyArrangement(form, stagedSlots)` 로 **일괄 커밋**(보유 토큰 멀티셋 재배열 검증 → 슬롯/풀 재구성 → `OnChanged` 1회 = 리바인드·쿨다운 리셋도 세션당 1회). 취소 = 사본 폐기, loadout 무손상. UI 의 `OnChanged` 구독은 제거됨(모달 중 외부 변경 불가).
+- **확인/취소 + 이중확인**: dirty(= 스테이징 슬롯 vs 실제 슬롯 원소 비교 — equip 후 원복하면 무변경 취급) 기준 4분기: 무변경+확인/취소/ESC=그냥 닫힘 / 변경+취소="저장하지 않고 닫으시겠습니까?" / 변경+확인="저장하시겠습니까? 이 층의 각인대는 소멸합니다." 콘솔 열림·OnDisable 은 무조건 폐기 닫힘(다이얼로그 없음).
+- **모달 채택 근거**: ①`AddToPool`이 `OnChanged` 미발행(=리바인드 트리거라 픽업마다 쿨 0 리셋됨)이라 UI가 풀 추가를 못 봄(stale), ②폼 live 조회와 갱신 시점 불일치. 모달이면 열린 동안 이동(픽업)·폼전환이 막혀 **두 버그가 발생 자체를 못 함**. 스테이징 전환 후에도 이 성질에 의존(모달 중 loadout 외부 변경 없음 전제).
 
-**던전 상호작용점 (Slice E2 — Stair방 각인대)**: 절차생성이라 수동배치 불가 → 방진입 이벤트 구독 placer가 런타임 스폰. `EngravingStation`(TownSoulAltar 미러 — Collider2D 트리거 + `InteractConfirmPressedThisFrame`→`ui.Open()`, UI는 placer가 `Bind` 주입) + `EngravingStationPlacer`(`OnStairRoomEntered` 구독 → `DungeonPlacementUtility.TryGetRoomCenterWalkablePosition`으로 방중앙 걷기지점 스폰, 단일 인스턴스 재사용, `OnFloorChanged`·마을복귀 시 비활성). **대상 방 = Stair방**(진행방향 일치·확정적 통과지점, spawn방은 backtracking 유발이라 배제). 계단이 spawn방과 겹치던 시드에서 각인대가 안 뜨던 버그는 계단배치 파이프라인 이동(§4-1)으로 해소. 현재 스프라이트는 elite portal 유용(교체 예정).
+**던전 상호작용점 (Slice E2 — Stair방 각인대)**: 절차생성이라 수동배치 불가 → 방진입 이벤트 구독 placer가 런타임 스폰. `EngravingStation`(TownSoulAltar 미러 — Collider2D 트리거 + `InteractConfirmPressedThisFrame`→`ui.Open(consumeOnCommit ? this : null)`, UI는 placer가 `Bind` 주입 또는 씬 배치 시 `sceneUI` 직결) + `EngravingStationPlacer`(`OnStairRoomEntered` 구독 → `DungeonPlacementUtility.TryGetRoomCenterWalkablePosition`으로 방중앙 걷기지점 스폰, 단일 인스턴스 재사용, `OnFloorChanged`·마을복귀 시 비활성). **대상 방 = Stair방**(진행방향 일치·확정적 통과지점, spawn방은 backtracking 유발이라 배제). 계단이 spawn방과 겹치던 시드에서 각인대가 안 뜨던 버그는 계단배치 파이프라인 이동(§4-1)으로 해소. 현재 스프라이트는 elite portal 유용(교체 예정).
 
-**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI)·E2(Stair방 각인대) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋) + 고유 메커니즘 태초 각인별 실행 로직**.
+**각인대 1회 사용 소멸 (2026-07-07)**: 던전 stair방 각인대는 **변경이 커밋된 채로 닫힌 세션 1회**로 소멸 — `CommitAndClose` 성공 시 UI가 `owner.NotifyConsumed()`(=`SetActive(false)`) 호출. 구경만/취소/무변경 닫기는 소멸 안 함. 희소성을 조작 단위가 아닌 **기회(세션) 단위**에 건 설계(StS 모닥불 패턴) — 세션 안에서는 자유 재배치. 다음 층 재등장은 placer 기존 경로(`OnFloorChanged`→비활성→새 stair 진입 시 재활성) 그대로, 같은 층 재등장 없음은 `IsFirstVisit` 가드가 보장. `consumeOnCommit=false`(정비실 씬 배치 인스턴스, §11e-6)면 커밋해도 비소멸(owner=null 전달). 즉시교체 UI 버튼은 **의도적 비채택** — equip=리바인드=4슬롯 쿨다운 리셋이라 전투 중 교체는 무료 쿨초기화 익스플로잇이 됨.
+
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI→스테이징 세션 커밋)·E2(Stair방 각인대+1회 사용 소멸) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋, 폼 컨셉 확정 대기로 보류) + 고유 메커니즘 태초 각인별 실행 로직**.
 
 ### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축)
 
@@ -2075,7 +2086,7 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 |------|------|
 | `TownSoulAltar` (MonoBehaviour) | Collider2D 트리거 근접 + `PlayerInputReader.InteractConfirmPressedThisFrame`(현재 Z) 로 AltarUI 오픈. 입력리더는 트리거 충돌에서 취득(신규 Find 없음). 마을에만 물리 배치 |
 | `SoulAltarUIController` | 보유 소울 폼(`PlayerInventory.OwnsSoulForm` && 테이블 성장 존재) 선택 + 스탯행 표시. `OnInventoryChanged`/`OnChanged` 구독으로 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘. 강화 성공 후 명시 `RefreshAll()` 없이 `RemoveItem`/`AddLevel` 이벤트 경로로 갱신 |
-| `EngravingLoadoutUIController` | 영혼각인 교체 UI(§7-8 Slice E1, **모달**). Open 시 폼 캡처 + `GamePauseController.Pause(EngravingLoadout)` → timeScale 0/입력차단. 현재 폼 슬롯4+풀 리스트, 슬롯선택→풀클릭 equip/Unequip. `EngravingLoadout.OnChanged` 구독, Esc·닫기·콘솔열림 시 Close+Resume. 던전 Stair방에서는 `EngravingStation`/`EngravingStationPlacer` 가 Open 진입점을 제공 |
+| `EngravingLoadoutUIController` | 영혼각인 교체 UI(§7-8 Slice E1, **모달+스테이징**). Open 시 폼 캡처 + `GamePauseController.Pause(EngravingLoadout)` → timeScale 0/입력차단, loadout 상태를 로컬 사본으로 복사. 슬롯선택→풀클릭 equip/Unequip 은 사본에서만, 확인 시 `ApplyArrangement` 일괄 커밋(dirty 시 이중확인 다이얼로그, 커밋 성공 시 각인대 소멸 통지). Esc·취소=폐기, 콘솔열림=무조건 폐기. 던전 Stair방에서는 `EngravingStation`/`EngravingStationPlacer` 가 Open 진입점을 제공 |
 | `SoulAltarStatRowUI` | 스탯별 행 — summary 한 줄(레벨/최대/비용/보유 조각) + 강화 버튼(만렙·조각부족 시 비활성). 미사용 개별 TMP 필드는 제거 |
 | `SoulEnhancementCost` (static) | `GetMaterialCost(growth, currentLevel) = baseMaterialCost × (currentLevel + 1)` — **비용 공식 단일 격리점**(향후 곡선 교체는 이 함수만 수정). 수치는 `SoulStatGrowth.baseMaterialCost` 데이터 |
 
@@ -2252,7 +2263,10 @@ EliteDashPatternRuntime / EliteJumpPatternRuntime / PlayerDashController / Enemy
   bossTable.TryGetBoss(targetFloor, out entry) 성공 →
     TryEnterBossFloor(targetFloor, entry):
       floor = targetFloor
-      BossEncounterController.Active.Begin(entry, player)
+      RestAreaController.Active 있음 → RestAreaController.Begin(entry, player)   // 정비실 경유 (§11e-6)
+        rest_area 텔레포트 + pendingEntry 보관 + BossEntryPortal 활성
+        포탈 밟으면 RequestEnterBoss(player) → 아래 Begin 으로 합류
+      없음(폴백) → BossEncounterController.Active.Begin(entry, player)           // 보스 직행
         TryTeleportPlayerToArena(player, entry.BossAreaDestinationId)
           → teleport 가 destination.minimapLocationId 로 미니맵 fixed source 자동 전환
         SpawnArenaEnemyAtPosition(entry.Boss, spawnPos, OnBossDied)
@@ -2284,7 +2298,9 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 | `ArenaEncounterBase` | Elite·Boss 공통 lifecycle 헬퍼 — teleport, enemy spawn, return/exit portal show·hide, minimap restore, spawn position resolve. `EliteArenaEncounterController` 도 이를 상속 |
 | `BossEncounterController` | `:ArenaEncounterBase`, static `Active`(Elite 와 별도 타입). `Begin`/`OnBossDied`/`RequestProceed`/`CompleteProceedToNextFloor`/`CancelEncounter`. `ProceedRequested` 이벤트 발행 |
 | `BossExitPortal` | 보스 처치 후 활성화되는 출구 포탈 — 접촉 시 `RequestProceed`, 잠금·중복 진입 가드 |
-| `DungeonManager` | `TryTransitionToFloor` 보스층 분기 + `ProceedRequested` 구독 + pending 완료 매칭 |
+| `RestAreaController` | 정비실(§11e-6) — `Begin`(rest_area 텔레포트+pendingEntry 보관), `RequestEnterBoss`(BossEncounterController.Begin 위임). ArenaEncounterBase **비상속**(적 스폰 불필요) |
+| `BossEntryPortal` | 정비실 → 보스전 진입 포탈(BossExitPortal 미러, 붉은색) — 접촉 시 `RequestEnterBoss`, 실패 시 재시도 가능 복구 |
+| `DungeonManager` | `TryTransitionToFloor` 보스층 분기(정비실 우선/직행 폴백) + `ProceedRequested` 구독 + pending 완료 매칭 |
 
 ### 11e-4. 미니맵·위치 처리 (Elite 와의 차이)
 
@@ -2298,6 +2314,26 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 - 1차 구성: 20/40/60층 모두 `boss_arena` destination·area 공유, placeholder 보스 `Elite_Magma_01`, 60층 `isFinal=true`.
 - **통합 흐름 Play 검증 전부 통과(2026-06-09)**: 20/40/60층 진입 → 보스 스폰 → 처치 → 출구 포탈 → 다음 층 정상 진입, 60층 `isFinal` 엔딩 정지(다음 층 안 넘어감), 보스전 사망 = 기존 GameOver, Elite Arena 회귀 무손상, LocationRoot 갇힘/스폰 리스크 통과. **코드·흐름 완성.**
 - 남은 건 검증이 아니라 컨텐츠: 보스별 전용 맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프.
+
+### 11e-6. 정비실 (Rest Area) — 보스 진입 앞방 (S1, 2026-07-07)
+
+보스층 진입 시 보스 아레나 직행 대신 **정비실을 경유**하는 antechamber. 역할 분리: 각인대(매층 stair방)=전술 조정 / 정비실(보스 직전)=전략 준비 의식 — 각인 최종 점검 + (후속 S3) Currency 일시강화 + 보스 돌입.
+
+```
+N-1층 출구 → TryTransitionToFloor(N) → bossTable 히트
+→ RestAreaController.Begin(entry, player)
+    rest_area destination 텔레포트 (즉시, 로딩 페이드 없음 — 보스 직행과 동일)
+    _pendingEntry = entry 보관 + BossEntryPortal 활성/바인드/잠금해제
+→ 정비실: 각인대(consumeOnCommit=false, 커밋해도 비소멸·무한 사용) + 보스 진입 포탈
+→ 포탈 밟음 → RequestEnterBoss → BossEncounterController.Begin(_pendingEntry)  [기존 흐름 무수정]
+    성공 시 pendingEntry 클리어 + 포탈 잠금/비활성 → 다음 보스층에서 자연 재사용
+```
+
+- **층 하드코딩 없음**: 가로채기 지점이 `TryEnterBossFloor`(보스 진입 시도)라 `BossEncounterTable` 데이터만 따라감 — 보스층을 옮기면 정비실도 자동 추종. `entry`가 정비실을 통과해 그대로 전달되므로 포탈 1개로 전 보스층 커버.
+- **폴백**: `RestAreaController.Active` 없으면(씬 미결선) 기존 보스 직행 경로 그대로 — 안전 롤아웃 + 회귀 테스트 경로.
+- **씬 구성**: `RestAreaRoot`(LocationRoot `rest_area`, Map 그룹 하위 상시 활성) + 전용 tilemap + `TeleportDestinationDatabase` `rest_area` destination(locationType 1=Dungeon 필수, minimapLocationId/useTilemapMinimap) + `BossEntryPortal`(비활성 시작, 위치 고정 — 컨트롤러는 활성화만 하고 위치 안 건드림) + `EngravingStation` 씬 인스턴스(`sceneUI` 직결, placer 불필요).
+- ⚠️ **`WalkabilityArea` 필수**: fixed area 는 던전 grid 밖이라 이 컴포넌트로 walk/wall tilemap 을 `WalkabilityQuery`에 등록해야 이동 가능(§11d-3). 누락 시 텔레포트는 되는데 **이동 전면 불가**(실제 발생했던 함정).
+- Play 검증 통과(2026-07-07): 정비실 진입/각인대 비소멸/포탈→보스→처치→다음층/재방문 재사용. **후속 — S2: Currency 아이템+드랍, S3: 정비실 일시강화 상점(배타·누진 선택지).**
 
 ---
 
@@ -2680,7 +2716,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 아이템 효과 | `ItemEffect`(useEffects/passiveEffects) — Consumable 사용(HealHp) + Relic 평면 패시브(`PlayerItemStats` 스택 비례 합산) |
 | Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. 상세 §11b-8 |
 | 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속). 상세 §11b-9~10 |
-| 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + 모달 교체 UI + Stair방 각인대 + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
+| 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
 
 **지역 전환·아레나**
 
@@ -2690,6 +2726,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 공간 추상화 | `WorldEnvironmentQuery` 파사드 + `WalkabilityQuery`(Area 우선/Dungeon 폴백) + `WalkabilityArea` — **전 전투 판정 일원화**(Dungeon/Arena 무관 단일 API) |
 | Elite Arena | `EliteArenaEncounterController` + 진입/복귀 포탈 + 미니맵 즉시 복원 + Elite Dash/Jump WalkabilityQuery 통합. 상세 §11d |
 | Boss Area | `BossEncounterTable`(floor→boss/isFinal) + `ArenaEncounterBase` 공통 추출 + `BossEncounterController` + `DungeonManager` 보스층 분기 — **흐름 완성·통합 검증 통과, 남은 건 콘텐츠**. 상세 §11e |
+| 정비실 (Rest Area) | **S1 완료(2026-07-07)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + rest_area fixed area(WalkabilityArea 필수). 남은 S2(Currency)·S3(일시강화 상점). 상세 §11e-6 |
 | 일시정지 | `GamePauseController` + `GamePauseSource` 출처별 카운터(콘솔/인벤/메뉴/컷씬/각인 모달) |
 
 **툴링·인프라·품질**
@@ -2712,7 +2749,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행)와 표시 고도화(틴트/스택 강도/적 슬로우·스턴 아이콘) |
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
-| 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처, 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
+| 정비실 S2·S3 (Currency) | **높음(다음 작업)** | S1 흐름 완료(§11e-6). S2=Currency 아이템+적 드랍+HUD(`ItemType.Currency` enum만 존재, 완전 미개척, removeOnDungeonExit 런소멸) → S3=정비실 일시강화 상점(배타·누진 선택지 A안, **런 한정 버프 적용 축 신규 설계 필요**) |
+| 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처(→정비실 S2·S3로 흡수), 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
