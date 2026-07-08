@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-07
-> 기준 커밋: master HEAD `9feeb4a0` — **정비실(Rest Area) S1 + 각인대 세션 커밋**: 보스층 진입 시 정비실 경유(`RestAreaController`+`BossEntryPortal`, 보스 직행 폴백, §11e-6) + 각인대 1회 사용 소멸·스테이징 편집·확인/취소 다이얼로그(`ApplyArrangement` 일괄 커밋, `add76ac3`, §7-8). 이전: AilmentDamage DoT 축 완성(S1~S4, `0671f9c3`) — Soul 강화 스탯 10종 전부 실작동
+> 작성 기준일: 2026-07-08
+> 기준 커밋: master HEAD `a7604838` — **정비실 S2(Currency) + Enemy Dashboard S1~S4**: Currency 아이템+적 드랍+`CurrencyCounterUI` HUD(`0856c3f9`) + Enemy Dashboard 에디터 창(읽기 테이블 `465fcf12` → 인라인 편집 `fad08fe0` → 신규 적 생성 `73c0431a` → 적 삭제 `a7604838`). 이전: 정비실 S1+각인대 세션 커밋(`9feeb4a0`, §11e-6·§7-8)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -326,6 +326,7 @@ Assets/Scripts/
 │   ├── ParryStackBarUI.cs          # 패리 폼 자원 UI — 현재 ParryStack 을 Slider 로 표시 (임시). 현재 폼이 Parry 일 때만 노출
 │   ├── FreischutzMagazineUI.cs     # 마탄 폼 탄창 UI — Bullet/Bullet_empty 이미지 칸 + x/max·Reloading 텍스트. 현재 폼이 Bullet 일 때만 노출
 │   ├── ComboCounterUI.cs           # 콤보 카운터 UI (TMP 폴링) — PlayerCombatController.IsComboBonusActive && CurrentComboStack>0 일 때 `x{count}` 표시. 배율 비노출, ComboDamage 효과 활성(Sword) 폼에서만. 윈도우 만료 시 자동 숨김
+│   ├── CurrencyCounterUI.cs        # Currency HUD 카운터 — OnInventoryChanged 이벤트 구동(resolve 전만 lazy Update), 아이콘=ItemDB 단일 소스 런타임 주입, count 0 숨김. 우상단 미니맵 아래
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임. 아이콘은 StatusEffectIconTable 수급(실패 시 씬 결선 폴백)
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트, SetIcon 주입)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
@@ -383,6 +384,7 @@ Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 ├── EngravingValidatorWindow.cs     # JBRogLike/Engraving Validator — EngravingData·ItemDatabase·EnemyDropDatabase 정합성 스캔 + 고아 각인 Add to ItemDatabase Fix
+├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
 └── TeleportDestinationIdDrawer.cs  # `[TeleportDestinationId]` 문자열 필드를 TeleportDestinationDatabase 의 id 드롭다운으로 렌더링
 ```
 
@@ -2333,7 +2335,8 @@ N-1층 출구 → TryTransitionToFloor(N) → bossTable 히트
 - **폴백**: `RestAreaController.Active` 없으면(씬 미결선) 기존 보스 직행 경로 그대로 — 안전 롤아웃 + 회귀 테스트 경로.
 - **씬 구성**: `RestAreaRoot`(LocationRoot `rest_area`, Map 그룹 하위 상시 활성) + 전용 tilemap + `TeleportDestinationDatabase` `rest_area` destination(locationType 1=Dungeon 필수, minimapLocationId/useTilemapMinimap) + `BossEntryPortal`(비활성 시작, 위치 고정 — 컨트롤러는 활성화만 하고 위치 안 건드림) + `EngravingStation` 씬 인스턴스(`sceneUI` 직결, placer 불필요).
 - ⚠️ **`WalkabilityArea` 필수**: fixed area 는 던전 grid 밖이라 이 컴포넌트로 walk/wall tilemap 을 `WalkabilityQuery`에 등록해야 이동 가능(§11d-3). 누락 시 텔레포트는 되는데 **이동 전면 불가**(실제 발생했던 함정).
-- Play 검증 통과(2026-07-07): 정비실 진입/각인대 비소멸/포탈→보스→처치→다음층/재방문 재사용. **후속 — S2: Currency 아이템+드랍, S3: 정비실 일시강화 상점(배타·누진 선택지).**
+- Play 검증 통과(2026-07-07): 정비실 진입/각인대 비소멸/포탈→보스→처치→다음층/재방문 재사용.
+- **S2 완료(2026-07-08, `0856c3f9`)**: Currency ItemDB 등록(stackable/9999, removeOnDungeonExit) + 적 드랍 + `CurrencyCounterUI` HUD(아이콘=ItemDB 단일 소스, `OnInventoryChanged` 이벤트 구동, 0개 숨김). 런소멸은 기존 영속 필터(Soul|Material만 저장)+씬 리로드가 자동 보장 — 신규 코드는 HUD 1파일뿐. **후속 — S3: 정비실 일시강화 상점(배타·누진 선택지, 런 한정 버프 축 신규 설계 필요).**
 
 ---
 
@@ -2726,7 +2729,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 공간 추상화 | `WorldEnvironmentQuery` 파사드 + `WalkabilityQuery`(Area 우선/Dungeon 폴백) + `WalkabilityArea` — **전 전투 판정 일원화**(Dungeon/Arena 무관 단일 API) |
 | Elite Arena | `EliteArenaEncounterController` + 진입/복귀 포탈 + 미니맵 즉시 복원 + Elite Dash/Jump WalkabilityQuery 통합. 상세 §11d |
 | Boss Area | `BossEncounterTable`(floor→boss/isFinal) + `ArenaEncounterBase` 공통 추출 + `BossEncounterController` + `DungeonManager` 보스층 분기 — **흐름 완성·통합 검증 통과, 남은 건 콘텐츠**. 상세 §11e |
-| 정비실 (Rest Area) | **S1 완료(2026-07-07)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + rest_area fixed area(WalkabilityArea 필수). 남은 S2(Currency)·S3(일시강화 상점). 상세 §11e-6 |
+| 정비실 (Rest Area) | **S1+S2 완료(2026-07-08)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + rest_area fixed area(WalkabilityArea 필수) + **Currency 아이템·적 드랍·`CurrencyCounterUI` HUD**. 남은 S3(일시강화 상점). 상세 §11e-6 |
 | 일시정지 | `GamePauseController` + `GamePauseSource` 출처별 카운터(콘솔/인벤/메뉴/컷씬/각인 모달) |
 
 **툴링·인프라·품질**
@@ -2734,7 +2737,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 12개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment). 상세 §11c |
-| CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) |
+| CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종, §15 참고) |
 | 이벤트·공통 인프라 | `DungeonEventChannel`/`CombatEventChannel` 이벤트 버스 + `CombatLayers` 정적 캐시(WallMask 폴백 포함) + 던전 서비스 분리(Query/Spawn/FloorTransition) |
 | 성능 | NonAlloc 물리·A* 버퍼 재사용·오브젝트 풀·청크 로딩·미시 최적화(분리 벡터 throttle, LateUpdate 좌표 skip, 슬로우 재계산 만료 시점만, 픽셀 스프라이트 공유) + `PerfStage`/`RuntimePerfTraceLogger` 계측. 상세 §12 |
 | 리팩터·정리 | behavior-preserving 추출(`PlayerStatusEffects`/`ParryStackResource` 순수 C#) + 미사용 코드 삭제(Projectile/DoorController/DungeonPortal/NormalEnemyAI 등) + ExtendPack 데모 정리 + GameOver 자동 빌드 제거 + `PlayerEliteKeyInventory` 통합 제거 |
@@ -2749,7 +2752,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행)와 표시 고도화(틴트/스택 강도/적 슬로우·스턴 아이콘) |
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
-| 정비실 S2·S3 (Currency) | **높음(다음 작업)** | S1 흐름 완료(§11e-6). S2=Currency 아이템+적 드랍+HUD(`ItemType.Currency` enum만 존재, 완전 미개척, removeOnDungeonExit 런소멸) → S3=정비실 일시강화 상점(배타·누진 선택지 A안, **런 한정 버프 적용 축 신규 설계 필요**) |
+| 정비실 S3 (일시강화 상점) | **높음(다음 작업)** | S1 흐름+S2 Currency(아이템·드랍·HUD, `0856c3f9`) 완료(§11e-6). 남은 S3=정비실 일시강화 상점(배타·누진 선택지 A안, "얼마 모았냐=뭘 고르냐" 결정 생성. **런 한정 버프 적용 축 신규 설계 필요 — 착수 전 설계 논의 선행**) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처(→정비실 S2·S3로 흡수), 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
