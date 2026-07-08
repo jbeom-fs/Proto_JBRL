@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e4e6ccacd8dc407d80d5e7646a890c07, type: 3}
   m_Name: BossEncounterTable
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   entries:
   - floor: 20
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}

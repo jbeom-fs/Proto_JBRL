@@ -63,7 +63,4 @@ MonoBehaviour:
       maxAmount: 1
       chance: 1
     choiceGroups: []
-  - enemy: {fileID: 11400000, guid: 3a9bab62d4100e44c9b6b710a1aa564e, type: 2}
-    drops: []
-    choiceGroups: []
   itemDatabaseForValidation: {fileID: 11400000, guid: 9918c152d2e144009a28b77650e3eb23, type: 2}
