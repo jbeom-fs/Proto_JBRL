@@ -177,6 +177,7 @@
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillTargetResolver.cs" />
     <Compile Include="Assets\Scripts\UI\LocationMinimapRegistry.cs" />
+    <Compile Include="Assets\Scripts\UI\CurrencyCounterUI.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverFlowController.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyDropRoller.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillCooldownController.cs" />
