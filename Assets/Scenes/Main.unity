@@ -166,7 +166,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -222,7 +222,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bcfb87a4c1a24310be22670c0a3b3790, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocationRoot
   locationRootId: elite_arena
 --- !u!4 &50012721
@@ -251,7 +251,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bab441a45097ecc45aa4bf6f9f030ae7, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TilemapMinimapSource
   locationId: elite_arena
   groundTilemap: {fileID: 1206688124}
@@ -77028,6 +77028,9 @@ MonoBehaviour:
   - data: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     prefab: {fileID: 3448492780483144301, guid: d8a2a9fc60d442fa9ea13b89890d648b, type: 3}
     preloadCount: 4
+  - data: {fileID: 11400000, guid: 3a9bab62d4100e44c9b6b710a1aa564e, type: 2}
+    prefab: {fileID: 2665095285417421368, guid: 6ecdbf089cdf568419dec61606b33c28, type: 3}
+    preloadCount: 0
 --- !u!4 &1736969808
 Transform:
   m_ObjectHideFlags: 0
@@ -77065,6 +77068,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
   - {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
   - {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
+  - {fileID: 11400000, guid: 3a9bab62d4100e44c9b6b710a1aa564e, type: 2}
   eliteRoomEnemyTable:
   - {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
   dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
@@ -142593,7 +142597,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6cdbc4cd7d89441ebbd616fca27ba218, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CurrencyCounterUI
   inventory: {fileID: 1562452773}
   countText: {fileID: 3201000023}
@@ -142654,7 +142658,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -142729,7 +142733,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

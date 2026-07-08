@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 668bddbc810a4ce4f8252f922bee8a14, type: 3}
+  m_Name: TestBoss
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  enemyName: Elite_Magma_01
+  maxHp: 35
+  attack: 5
+  defense: 0
+  expReward: 20
+  deathDelay: 0.5
+  spawnCost: 5
+  allowedRegions: 1
+  minFloor: 1
+  maxFloor: 100
+  behaviorType: 1
+  detectRange: 50
+  attackRange: 10.5
+  moveSpeed: 2
+  isStationary: 0
+  immuneToKnockback: 0
+  blocksMovement: 0
+  isElite: 1
+  elitePatternSet: {fileID: 11400000, guid: ac3e1c95f04c4b098fbea9c0e8b8d59a, type: 2}
+  attackCooldown: 3
+  attackWindup: 0.35
+  attackRecovery: 0.35
+  contactDamageRadius: 0.45
+  contactDamageSkin: 0.05
+  specialAttackType: 0
+  specialAttackRange: 3
+  specialAttackCooldown: 2
+  specialAttackWindup: 0.35
+  specialAttackRecovery: 0.3
+  rushSpeed: 7
+  rushDuration: 0.45
+  rushDamage: 0
+  rushHitRadius: 0.45
+  rushImpact:
+    knockbackForce: 0
+    knockbackDuration: 0
+    slowMultiplier: 1
+    slowDuration: 0
+    stunDuration: 0
+  jumpDuration: 0.35
+  jumpDamage: 0
+  jumpImpactRadius: 1.1
+  jumpMaxDistance: 4
+  jumpStayInRoom: 1
+  jumpImpact:
+    knockbackForce: 0
+    knockbackDuration: 0
+    slowMultiplier: 1
+    slowDuration: 0
+    stunDuration: 0
+  projectilePrefab: {fileID: 2381044973620445434, guid: 554da9809b14bd84f8b63a83d7512688, type: 3}
+  projectileDamage: 5
+  projectileSpeed: 8
+  projectileLifetime: 3
+  firePattern: 0
+  projectileCount: 1
+  spreadAngle: 30
+  burstInterval: 0.12
+  projectileWallHitMode: 0
+  projectileMaxBounceCount: 1
+  projectileImpact:
+    knockbackForce: 0
+    knockbackDuration: 0
+    slowMultiplier: 1
+    slowDuration: 0
+    stunDuration: 0
+  knockbackResistance: 0
+  rangedMovementType: 1
+  preferredRange: 6
+  kiteRetreatRange: 3
+  randomMoveIntervalMin: 0.8
+  randomMoveIntervalMax: 1.8
+  randomMoveRadius: 3

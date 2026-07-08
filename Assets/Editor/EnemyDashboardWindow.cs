@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -20,6 +21,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private const float DropWidth = 440f;
     private const float WarningPanelHeight = 180f;
     private const string DefaultDropItemCode = "Currency";
+    private const string NewEnemyAssetFolder = "Assets/Scriptable/Enemy";
 
     private readonly List<EnemyRow> _rows = new List<EnemyRow>(32);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
@@ -29,8 +31,21 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private bool _hasScanned;
     private bool _hasPoolScene;
     private bool _hasAssetChanges;
+    private bool _showNewEnemyForm;
     private string _lastScanLabel = "-";
     private EnemyDropDatabase _primaryDropDatabase;
+    private BossEncounterTable _primaryBossEncounterTable;
+    private bool _bossTableLookupAttempted;
+    private EnemyData _newEnemyTemplate;
+    private string _newEnemyName = string.Empty;
+    private int _newEnemyPrefabIndex;
+    private bool _newEnemyCreateAsBoss;
+    private int _newBossFloor = 1;
+    private string _newBossAreaDestinationId = string.Empty;
+    private string _newBossAreaId = string.Empty;
+    private bool _newBossIsFinal;
+    private string _newEnemyFeedback = string.Empty;
+    private MessageType _newEnemyFeedbackType = MessageType.Info;
 
     [MenuItem("JBRogLike/Enemy Dashboard")]
     public static void Open()
@@ -46,6 +61,9 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private void OnGUI()
     {
         DrawToolbar();
+
+        if (_showNewEnemyForm)
+            DrawNewEnemyPanel();
 
         if (!_hasScanned)
         {
@@ -63,10 +81,668 @@ public sealed class EnemyDashboardWindow : EditorWindow
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
         if (GUILayout.Button("Scan", EditorStyles.toolbarButton, GUILayout.Width(80f)))
             Scan();
+        _showNewEnemyForm = GUILayout.Toggle(_showNewEnemyForm, "New Enemy", EditorStyles.toolbarButton, GUILayout.Width(96f));
 
         GUILayout.FlexibleSpace();
         GUILayout.Label("Last scan: " + _lastScanLabel, EditorStyles.miniLabel);
         EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawNewEnemyPanel()
+    {
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        EditorGUILayout.LabelField("New Enemy", EditorStyles.boldLabel);
+
+        EnemyPoolManager manager = Object.FindAnyObjectByType<EnemyPoolManager>();
+        if (!CanCreateInPoolScene(manager))
+        {
+            EditorGUILayout.HelpBox("Main 씬을 열어야 생성 가능", MessageType.Warning);
+            DrawNewEnemyUndoNotice();
+            EditorGUILayout.EndVertical();
+            return;
+        }
+
+        List<EnemyController> prefabOptions = BuildUniquePoolPrefabs(manager);
+        EditorGUI.BeginChangeCheck();
+        _newEnemyTemplate = (EnemyData)EditorGUILayout.ObjectField("템플릿", _newEnemyTemplate, typeof(EnemyData), false);
+        _newEnemyName = EditorGUILayout.TextField("이름", _newEnemyName);
+        bool createAsBoss = EditorGUILayout.Toggle("보스로 생성", _newEnemyCreateAsBoss);
+        if (createAsBoss && !_newEnemyCreateAsBoss)
+            CopyBossDefaultsToForm();
+        _newEnemyCreateAsBoss = createAsBoss;
+
+        if (prefabOptions.Count > 0)
+        {
+            _newEnemyPrefabIndex = Mathf.Clamp(_newEnemyPrefabIndex, 0, prefabOptions.Count - 1);
+            _newEnemyPrefabIndex = EditorGUILayout.Popup("프리팹", _newEnemyPrefabIndex, BuildPrefabOptionLabels(prefabOptions));
+        }
+        else
+        {
+            _newEnemyPrefabIndex = 0;
+            EditorGUILayout.LabelField("프리팹", "EnemyPoolManager entries에 사용 가능한 프리팹 없음");
+        }
+
+        if (_newEnemyCreateAsBoss)
+            DrawBossCreationFields();
+
+        if (EditorGUI.EndChangeCheck())
+            _newEnemyFeedback = string.Empty;
+
+        List<string> errors = new List<string>();
+        List<string> warnings = new List<string>();
+        CollectNewEnemyValidation(manager, prefabOptions, errors, warnings, out _, out _);
+        DrawValidationMessages(errors, MessageType.Error);
+        DrawValidationMessages(warnings, MessageType.Warning);
+
+        if (!string.IsNullOrWhiteSpace(_newEnemyFeedback))
+            EditorGUILayout.HelpBox(_newEnemyFeedback, _newEnemyFeedbackType);
+
+        EditorGUI.BeginDisabledGroup(errors.Count > 0);
+        if (GUILayout.Button("생성", GUILayout.Width(96f)))
+            ExecuteNewEnemyCreation(manager, prefabOptions);
+        EditorGUI.EndDisabledGroup();
+
+        DrawNewEnemyUndoNotice();
+        EditorGUILayout.EndVertical();
+    }
+
+    private void DrawBossCreationFields()
+    {
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        _newBossFloor = EditorGUILayout.IntField("floor", Mathf.Max(1, _newBossFloor));
+        _newBossAreaDestinationId = EditorGUILayout.TextField("bossAreaDestinationId", _newBossAreaDestinationId);
+        _newBossAreaId = EditorGUILayout.TextField("areaId", _newBossAreaId);
+        _newBossIsFinal = EditorGUILayout.Toggle("isFinal", _newBossIsFinal);
+        EditorGUILayout.EndVertical();
+    }
+
+    private void ExecuteNewEnemyCreation(EnemyPoolManager manager, List<EnemyController> prefabOptions)
+    {
+        List<string> errors = new List<string>();
+        List<string> warnings = new List<string>();
+        CollectNewEnemyValidation(manager, prefabOptions, errors, warnings, out string enemyName, out string targetPath);
+        if (errors.Count > 0)
+        {
+            _newEnemyFeedback = string.Join("\n", errors);
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        EnemyDropDatabase dropDatabase = ResolvePrimaryDropDatabase();
+        if (dropDatabase == null)
+        {
+            _newEnemyFeedback = "EnemyDropDatabase asset not found.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        Undo.SetCurrentGroupName("Create Enemy Dashboard Enemy");
+        int undoGroup = Undo.GetCurrentGroup();
+        bool createAsBoss = _newEnemyCreateAsBoss;
+        EnemyController prefab = prefabOptions[_newEnemyPrefabIndex];
+        string templatePath = AssetDatabase.GetAssetPath(_newEnemyTemplate);
+        if (string.IsNullOrWhiteSpace(templatePath))
+        {
+            _newEnemyFeedback = "템플릿 에셋 경로를 찾을 수 없음.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        if (!AssetDatabase.CopyAsset(templatePath, targetPath))
+        {
+            _newEnemyFeedback = "EnemyData 에셋 복제 실패: " + targetPath;
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        AssetDatabase.ImportAsset(targetPath);
+        EnemyData createdEnemy = AssetDatabase.LoadAssetAtPath<EnemyData>(targetPath);
+        if (createdEnemy == null)
+        {
+            AssetDatabase.DeleteAsset(targetPath);
+            _newEnemyFeedback = "복제된 EnemyData 로드 실패. 생성 에셋 롤백.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        if (!TrySetCreatedEnemyName(createdEnemy, enemyName, out string error))
+        {
+            AssetDatabase.DeleteAsset(targetPath);
+            _newEnemyFeedback = error + " 생성 에셋 롤백.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        if (!TryAppendPoolEntry(manager, createdEnemy, prefab, out int poolIndex, out error))
+        {
+            AssetDatabase.DeleteAsset(targetPath);
+            _newEnemyFeedback = error + " 생성 에셋 롤백.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        RoomSpawner roomSpawner = Object.FindAnyObjectByType<RoomSpawner>();
+        int spawnTableIndex = -1;
+        string spawnTablePropertyName = string.Empty;
+        string spawnTableMessage = string.Empty;
+        BossEncounterTable bossTable = null;
+        int bossEntryIndex = -1;
+
+        if (createAsBoss)
+        {
+            if (!TryAppendBossEncounterEntry(createdEnemy, out bossTable, out bossEntryIndex, out error))
+            {
+                TryRemovePoolEntryAt(manager, poolIndex, out _);
+                AssetDatabase.DeleteAsset(targetPath);
+                _newEnemyFeedback = error + " 풀/생성 에셋 롤백.";
+                _newEnemyFeedbackType = MessageType.Error;
+                return;
+            }
+        }
+        else if (!TryAppendSpawnTableEntry(roomSpawner, createdEnemy, out spawnTablePropertyName, out spawnTableIndex, out spawnTableMessage, out error))
+        {
+            TryRemovePoolEntryAt(manager, poolIndex, out _);
+            AssetDatabase.DeleteAsset(targetPath);
+            _newEnemyFeedback = error + " 풀/생성 에셋 롤백.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        if (!TryCreateDropGroup(createdEnemy, out _, out error))
+        {
+            if (bossEntryIndex >= 0)
+                TryRemoveBossEncounterEntryAt(bossTable, bossEntryIndex, out _);
+            if (spawnTableIndex >= 0)
+                TryRemoveRoomSpawnerTableEntryAt(roomSpawner, spawnTablePropertyName, spawnTableIndex, out _);
+            TryRemovePoolEntryAt(manager, poolIndex, out _);
+            AssetDatabase.DeleteAsset(targetPath);
+            _newEnemyFeedback = error + " 스폰/보스/풀/생성 에셋 롤백.";
+            _newEnemyFeedbackType = MessageType.Error;
+            return;
+        }
+
+        Undo.CollapseUndoOperations(undoGroup);
+        Scan();
+        _newEnemyTemplate = null;
+        _newEnemyName = string.Empty;
+        _newEnemyPrefabIndex = 0;
+        _newEnemyCreateAsBoss = false;
+        _newBossFloor = 1;
+        _newBossAreaDestinationId = string.Empty;
+        _newBossAreaId = string.Empty;
+        _newBossIsFinal = false;
+        _newEnemyFeedback = "생성 완료: " + enemyName + ". Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 Ctrl+S.";
+        if (!string.IsNullOrWhiteSpace(spawnTableMessage))
+            _newEnemyFeedback += "\n" + spawnTableMessage;
+        if (warnings.Count > 0)
+            _newEnemyFeedback += "\n" + string.Join("\n", warnings);
+        _newEnemyFeedbackType = warnings.Count > 0 ? MessageType.Warning : MessageType.Info;
+        EditorGUIUtility.PingObject(createdEnemy);
+        Selection.activeObject = createdEnemy;
+    }
+
+    private void CollectNewEnemyValidation(
+        EnemyPoolManager manager,
+        List<EnemyController> prefabOptions,
+        List<string> errors,
+        List<string> warnings,
+        out string enemyName,
+        out string targetPath)
+    {
+        enemyName = (_newEnemyName ?? string.Empty).Trim();
+        targetPath = GetNewEnemyAssetPath(enemyName);
+
+        if (_newEnemyTemplate == null)
+            errors.Add("템플릿 선택 필요.");
+
+        if (!CanCreateInPoolScene(manager))
+            errors.Add("Main 씬을 열어야 생성 가능.");
+
+        if (prefabOptions == null || prefabOptions.Count == 0)
+            errors.Add("EnemyPoolManager entries에 사용 가능한 프리팹 없음.");
+        else if (_newEnemyPrefabIndex < 0 || _newEnemyPrefabIndex >= prefabOptions.Count || prefabOptions[_newEnemyPrefabIndex] == null)
+            errors.Add("프리팹 선택 필요.");
+
+        RoomSpawner roomSpawner = Object.FindAnyObjectByType<RoomSpawner>();
+        if (!_newEnemyCreateAsBoss && roomSpawner == null)
+            errors.Add("RoomSpawner가 씬에 없어 스폰 테이블 등록 불가.");
+
+        if (_newEnemyCreateAsBoss)
+        {
+            BossEncounterTable bossTable = ResolvePrimaryBossEncounterTable();
+            if (bossTable == null)
+                errors.Add("BossEncounterTable 에셋 없음.");
+            if (_newBossFloor < 1)
+                errors.Add("boss floor는 1 이상 필요.");
+            else if (bossTable != null && HasBossFloor(bossTable, _newBossFloor))
+                errors.Add("BossEncounterTable floor 중복: " + _newBossFloor);
+        }
+
+        if (string.IsNullOrWhiteSpace(enemyName))
+        {
+            errors.Add("이름 입력 필요.");
+            return;
+        }
+
+        if ((_newEnemyName ?? string.Empty) != enemyName)
+            errors.Add("이름 앞뒤 공백 제거 필요.");
+
+        if (HasInvalidFileNameCharacter(enemyName, out char invalidCharacter))
+            errors.Add("이름에 파일명 부적합 문자 포함: " + invalidCharacter);
+
+        if (!Directory.Exists(GetProjectRelativeFullPath(NewEnemyAssetFolder)))
+            errors.Add("EnemyData 폴더 없음: " + NewEnemyAssetFolder);
+
+        if (File.Exists(GetProjectRelativeFullPath(targetPath)))
+            errors.Add("이미 존재하는 EnemyData 에셋: " + targetPath);
+
+        if (TryFindScannedDuplicateEnemyName(enemyName, targetPath, out string duplicatePath))
+            warnings.Add("동명 EnemyData 에셋 다른 경로에 존재: " + duplicatePath);
+    }
+
+    private static void DrawValidationMessages(List<string> messages, MessageType type)
+    {
+        for (int i = 0; i < messages.Count; i++)
+            EditorGUILayout.HelpBox(messages[i], type);
+    }
+
+    private static void DrawNewEnemyUndoNotice()
+    {
+        EditorGUILayout.LabelField("에셋 생성은 Undo 불가. 생성 직후 Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 유저가 Ctrl+S.", EditorStyles.miniLabel);
+    }
+
+    private static List<EnemyController> BuildUniquePoolPrefabs(EnemyPoolManager manager)
+    {
+        List<EnemyController> prefabs = new List<EnemyController>();
+        if (manager == null)
+            return prefabs;
+
+        HashSet<EnemyController> seen = new HashSet<EnemyController>();
+        SerializedObject managerObject = new SerializedObject(manager);
+        SerializedProperty entries = managerObject.FindProperty("entries");
+        if (entries == null || !entries.isArray)
+            return prefabs;
+
+        for (int i = 0; i < entries.arraySize; i++)
+        {
+            SerializedProperty entry = entries.GetArrayElementAtIndex(i);
+            EnemyController prefab = GetObject<EnemyController>(entry.FindPropertyRelative("prefab"));
+            if (prefab != null && seen.Add(prefab))
+                prefabs.Add(prefab);
+        }
+
+        return prefabs;
+    }
+
+    private static string[] BuildPrefabOptionLabels(List<EnemyController> prefabOptions)
+    {
+        string[] labels = new string[prefabOptions.Count];
+        for (int i = 0; i < prefabOptions.Count; i++)
+            labels[i] = prefabOptions[i] != null ? prefabOptions[i].name : "<null>";
+
+        return labels;
+    }
+
+    private static bool TrySetCreatedEnemyName(EnemyData enemy, string enemyName, out string error)
+    {
+        error = string.Empty;
+        if (enemy == null)
+        {
+            error = "복제된 EnemyData가 null입니다.";
+            return false;
+        }
+
+        SerializedObject enemyObject = new SerializedObject(enemy);
+        enemyObject.Update();
+        SerializedProperty enemyNameProperty = enemyObject.FindProperty(nameof(EnemyData.enemyName));
+        if (enemyNameProperty == null)
+        {
+            error = "EnemyData.enemyName 필드를 찾을 수 없음.";
+            return false;
+        }
+
+        SerializedProperty objectNameProperty = enemyObject.FindProperty("m_Name");
+        if (objectNameProperty != null)
+            objectNameProperty.stringValue = enemyName;
+        enemyNameProperty.stringValue = enemyName;
+        enemyObject.ApplyModifiedProperties();
+        return true;
+    }
+
+    private void CopyBossDefaultsToForm()
+    {
+        BossEncounterTable table = ResolvePrimaryBossEncounterTable();
+        if (table == null || table.Entries == null || table.Entries.Count == 0)
+            return;
+
+        BossEncounterEntry entry = table.Entries[0];
+        if (entry == null)
+            return;
+
+        _newBossAreaDestinationId = entry.BossAreaDestinationId ?? string.Empty;
+        _newBossAreaId = entry.AreaId ?? string.Empty;
+        if (_newBossFloor < 1)
+            _newBossFloor = 1;
+    }
+
+    private static bool CanCreateInPoolScene(EnemyPoolManager manager)
+    {
+        return manager != null && string.Equals(manager.gameObject.scene.name, "Main", StringComparison.Ordinal);
+    }
+
+    private static bool TryAppendPoolEntry(
+        EnemyPoolManager manager,
+        EnemyData enemy,
+        EnemyController prefab,
+        out int index,
+        out string error)
+    {
+        index = -1;
+        error = string.Empty;
+
+        if (manager == null)
+        {
+            error = "EnemyPoolManager 없음.";
+            return false;
+        }
+
+        SerializedObject managerObject = new SerializedObject(manager);
+        managerObject.Update();
+        SerializedProperty entries = managerObject.FindProperty("entries");
+        if (entries == null || !entries.isArray)
+        {
+            error = "EnemyPoolManager.entries를 찾을 수 없음.";
+            return false;
+        }
+
+        index = entries.arraySize;
+        entries.InsertArrayElementAtIndex(index);
+        SerializedProperty entry = entries.GetArrayElementAtIndex(index);
+        SerializedProperty dataProperty = entry.FindPropertyRelative("data");
+        SerializedProperty prefabProperty = entry.FindPropertyRelative("prefab");
+        SerializedProperty preloadCountProperty = entry.FindPropertyRelative("preloadCount");
+        if (dataProperty == null || prefabProperty == null || preloadCountProperty == null)
+        {
+            error = "EnemyPoolManager entry 필드(data/prefab/preloadCount)를 찾을 수 없음.";
+            return false;
+        }
+
+        dataProperty.objectReferenceValue = enemy;
+        prefabProperty.objectReferenceValue = prefab;
+        preloadCountProperty.intValue = 0;
+
+        if (!managerObject.ApplyModifiedProperties())
+        {
+            error = "풀 엔트리 변경 적용 실패.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryRemovePoolEntryAt(EnemyPoolManager manager, int index, out string error)
+    {
+        error = string.Empty;
+        if (manager == null || index < 0)
+        {
+            error = "롤백할 풀 엔트리 없음.";
+            return false;
+        }
+
+        SerializedObject managerObject = new SerializedObject(manager);
+        managerObject.Update();
+        SerializedProperty entries = managerObject.FindProperty("entries");
+        if (entries == null || !entries.isArray || index >= entries.arraySize)
+        {
+            error = "롤백 대상 풀 엔트리 인덱스가 유효하지 않음.";
+            return false;
+        }
+
+        int previousSize = entries.arraySize;
+        entries.DeleteArrayElementAtIndex(index);
+        if (entries.arraySize == previousSize)
+            entries.DeleteArrayElementAtIndex(index);
+
+        managerObject.ApplyModifiedProperties();
+        return true;
+    }
+
+    private static bool TryAppendSpawnTableEntry(
+        RoomSpawner spawner,
+        EnemyData enemy,
+        out string propertyName,
+        out int index,
+        out string message,
+        out string error)
+    {
+        propertyName = string.Empty;
+        index = -1;
+        message = string.Empty;
+        error = string.Empty;
+
+        if (spawner == null)
+        {
+            error = "RoomSpawner가 씬에 없음.";
+            return false;
+        }
+
+        propertyName = enemy != null && enemy.IsElite ? "eliteRoomEnemyTable" : "enemyTable";
+        SerializedObject spawnerObject = new SerializedObject(spawner);
+        spawnerObject.Update();
+        SerializedProperty table = spawnerObject.FindProperty(propertyName);
+        if (table == null || !table.isArray)
+        {
+            error = "RoomSpawner." + propertyName + "를 찾을 수 없음.";
+            return false;
+        }
+
+        if (propertyName == "enemyTable" && table.arraySize == 0)
+        {
+            message = "풀 폴백 모드 — 스폰 테이블 등록 생략";
+            return true;
+        }
+
+        for (int i = 0; i < table.arraySize; i++)
+        {
+            if (GetObject<EnemyData>(table.GetArrayElementAtIndex(i)) == enemy)
+            {
+                message = "스폰 테이블에 이미 등록됨: " + propertyName;
+                return true;
+            }
+        }
+
+        index = table.arraySize;
+        table.InsertArrayElementAtIndex(index);
+        SerializedProperty element = table.GetArrayElementAtIndex(index);
+        element.objectReferenceValue = enemy;
+
+        if (!spawnerObject.ApplyModifiedProperties())
+        {
+            error = "RoomSpawner." + propertyName + " 변경 적용 실패.";
+            return false;
+        }
+
+        message = "스폰 테이블 등록: " + propertyName;
+        return true;
+    }
+
+    private static bool TryRemoveRoomSpawnerTableEntryAt(RoomSpawner spawner, string propertyName, int index, out string error)
+    {
+        error = string.Empty;
+        if (spawner == null || string.IsNullOrWhiteSpace(propertyName) || index < 0)
+        {
+            error = "롤백할 스폰 테이블 엔트리 없음.";
+            return false;
+        }
+
+        SerializedObject spawnerObject = new SerializedObject(spawner);
+        spawnerObject.Update();
+        SerializedProperty table = spawnerObject.FindProperty(propertyName);
+        if (table == null || !table.isArray || index >= table.arraySize)
+        {
+            error = "롤백 대상 스폰 테이블 인덱스가 유효하지 않음.";
+            return false;
+        }
+
+        DeleteArrayElement(table, index);
+        spawnerObject.ApplyModifiedProperties();
+        return true;
+    }
+
+    private bool TryAppendBossEncounterEntry(
+        EnemyData boss,
+        out BossEncounterTable table,
+        out int index,
+        out string error)
+    {
+        table = ResolvePrimaryBossEncounterTable();
+        index = -1;
+        error = string.Empty;
+
+        if (table == null)
+        {
+            error = "BossEncounterTable 에셋 없음.";
+            return false;
+        }
+
+        SerializedObject tableObject = new SerializedObject(table);
+        tableObject.Update();
+        SerializedProperty entries = tableObject.FindProperty("entries");
+        if (entries == null || !entries.isArray)
+        {
+            error = "BossEncounterTable.entries를 찾을 수 없음.";
+            return false;
+        }
+
+        index = entries.arraySize;
+        entries.InsertArrayElementAtIndex(index);
+        SerializedProperty entry = entries.GetArrayElementAtIndex(index);
+        SerializedProperty floor = entry.FindPropertyRelative("floor");
+        SerializedProperty bossProperty = entry.FindPropertyRelative("boss");
+        SerializedProperty bossAreaDestinationId = entry.FindPropertyRelative("bossAreaDestinationId");
+        SerializedProperty areaId = entry.FindPropertyRelative("areaId");
+        SerializedProperty isFinal = entry.FindPropertyRelative("isFinal");
+        if (floor == null || bossProperty == null || bossAreaDestinationId == null || areaId == null || isFinal == null)
+        {
+            error = "BossEncounterTable entry 필드(floor/boss/bossAreaDestinationId/areaId/isFinal)를 찾을 수 없음.";
+            return false;
+        }
+
+        floor.intValue = Mathf.Max(1, _newBossFloor);
+        bossProperty.objectReferenceValue = boss;
+        bossAreaDestinationId.stringValue = _newBossAreaDestinationId ?? string.Empty;
+        areaId.stringValue = _newBossAreaId ?? string.Empty;
+        isFinal.boolValue = _newBossIsFinal;
+
+        if (!tableObject.ApplyModifiedProperties())
+        {
+            error = "BossEncounterTable 변경 적용 실패.";
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool TryRemoveBossEncounterEntryAt(BossEncounterTable table, int index, out string error)
+    {
+        error = string.Empty;
+        if (table == null || index < 0)
+        {
+            error = "롤백할 보스 엔트리 없음.";
+            return false;
+        }
+
+        SerializedObject tableObject = new SerializedObject(table);
+        tableObject.Update();
+        SerializedProperty entries = tableObject.FindProperty("entries");
+        if (entries == null || !entries.isArray || index >= entries.arraySize)
+        {
+            error = "롤백 대상 보스 엔트리 인덱스가 유효하지 않음.";
+            return false;
+        }
+
+        DeleteArrayElement(entries, index);
+        tableObject.ApplyModifiedProperties();
+        return true;
+    }
+
+    private EnemyDropDatabase ResolvePrimaryDropDatabase()
+    {
+        if (_primaryDropDatabase != null)
+            return _primaryDropDatabase;
+
+        List<EnemyDropDatabase> databases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
+        _primaryDropDatabase = databases.Count > 0 ? databases[0] : null;
+        return _primaryDropDatabase;
+    }
+
+    private BossEncounterTable ResolvePrimaryBossEncounterTable()
+    {
+        if (_primaryBossEncounterTable != null)
+            return _primaryBossEncounterTable;
+
+        if (_bossTableLookupAttempted)
+            return null;
+
+        _bossTableLookupAttempted = true;
+        List<BossEncounterTable> tables = LoadAssets<BossEncounterTable>("t:BossEncounterTable");
+        _primaryBossEncounterTable = tables.Count > 0 ? tables[0] : null;
+        return _primaryBossEncounterTable;
+    }
+
+    private bool TryFindScannedDuplicateEnemyName(string enemyName, string targetPath, out string duplicatePath)
+    {
+        duplicatePath = string.Empty;
+        if (!_hasScanned)
+            return false;
+
+        for (int i = 0; i < _rows.Count; i++)
+        {
+            EnemyData enemy = _rows[i].Data;
+            if (enemy == null)
+                continue;
+
+            string path = AssetDatabase.GetAssetPath(enemy);
+            if (string.Equals(path, targetPath, StringComparison.Ordinal))
+                continue;
+
+            if (string.Equals(enemy.enemyName, enemyName, StringComparison.Ordinal) ||
+                string.Equals(enemy.name, enemyName, StringComparison.Ordinal))
+            {
+                duplicatePath = path;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool HasInvalidFileNameCharacter(string value, out char invalidCharacter)
+    {
+        invalidCharacter = '\0';
+        char[] invalidCharacters = Path.GetInvalidFileNameChars();
+        for (int i = 0; i < value.Length; i++)
+        {
+            char c = value[i];
+            if (c == '/' || c == '\\' || Array.IndexOf(invalidCharacters, c) >= 0)
+            {
+                invalidCharacter = c;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string GetNewEnemyAssetPath(string enemyName)
+    {
+        return NewEnemyAssetFolder + "/" + enemyName + ".asset";
+    }
+
+    private static string GetProjectRelativeFullPath(string assetPath)
+    {
+        string normalizedPath = assetPath.Replace('/', Path.DirectorySeparatorChar);
+        return Path.Combine(Directory.GetCurrentDirectory(), normalizedPath);
     }
 
     private void DrawSummary()
@@ -533,27 +1209,60 @@ public sealed class EnemyDashboardWindow : EditorWindow
 
     private void CreateDropGroup(EnemyRow row)
     {
-        if (_primaryDropDatabase == null || row.Data == null)
+        if (row == null || row.Data == null)
             return;
 
-        SerializedObject databaseObject = new SerializedObject(_primaryDropDatabase);
+        if (TryCreateDropGroup(row.Data, out DropGroupRecord record, out string error))
+        {
+            row.DropGroups.Add(record);
+            row.DropSummary = "-";
+            return;
+        }
+
+        ShowNotification(new GUIContent(error));
+    }
+
+    private bool TryCreateDropGroup(EnemyData enemy, out DropGroupRecord record, out string error)
+    {
+        record = null;
+        error = string.Empty;
+
+        EnemyDropDatabase database = ResolvePrimaryDropDatabase();
+        if (database == null)
+        {
+            error = "EnemyDropDatabase asset not found.";
+            return false;
+        }
+
+        if (enemy == null)
+        {
+            error = "EnemyData가 null입니다.";
+            return false;
+        }
+
+        SerializedObject databaseObject = new SerializedObject(database);
         databaseObject.Update();
 
         SerializedProperty groups = databaseObject.FindProperty("groups");
         if (groups == null || !groups.isArray)
-            return;
+        {
+            error = "EnemyDropDatabase.groups를 찾을 수 없습니다.";
+            return false;
+        }
 
         int index = groups.arraySize;
         groups.InsertArrayElementAtIndex(index);
         SerializedProperty group = groups.GetArrayElementAtIndex(index);
-        InitializeDropGroup(group, row.Data);
+        InitializeDropGroup(group, enemy);
 
-        if (ApplyAndMark(databaseObject))
+        if (!ApplyAndMark(databaseObject))
         {
-            DropGroupRecord record = new DropGroupRecord(_primaryDropDatabase, index);
-            row.DropGroups.Add(record);
-            row.DropSummary = "-";
+            error = "드랍 그룹 생성 변경 적용 실패.";
+            return false;
         }
+
+        record = new DropGroupRecord(database, index);
+        return true;
     }
 
     private static void InitializeDropGroup(SerializedProperty group, EnemyData enemy)
@@ -657,8 +1366,11 @@ public sealed class EnemyDashboardWindow : EditorWindow
         List<BossEncounterTable> bossTables = LoadAssets<BossEncounterTable>("t:BossEncounterTable");
 
         _primaryDropDatabase = dropDatabases.Count > 0 ? dropDatabases[0] : null;
+        _primaryBossEncounterTable = bossTables.Count > 0 ? bossTables[0] : null;
+        _bossTableLookupAttempted = true;
 
         Dictionary<EnemyData, EnemyController> prefabMap = BuildPrefabMap(out _hasPoolScene);
+        SpawnTableState spawnTableState = BuildSpawnTableState();
         Dictionary<EnemyData, List<DropGroupRecord>> dropGroups = BuildDropGroups(dropDatabases);
         HashSet<string> itemCodes = BuildItemCodeSet(itemDatabases);
         _itemCodes.UnionWith(itemCodes);
@@ -706,8 +1418,58 @@ public sealed class EnemyDashboardWindow : EditorWindow
             if (enemy.IsElite && enemy.ElitePatternSet == null)
                 AddWarning(row, WarningSeverity.Warning, "[Warn] isElite인데 ElitePatternSet null: " + row.DisplayName, enemy);
 
+            AddSpawnTableWarnings(row, spawnTableState);
+
             _rows.Add(row);
         }
+    }
+
+    private static SpawnTableState BuildSpawnTableState()
+    {
+        SpawnTableState state = new SpawnTableState();
+        RoomSpawner spawner = Object.FindAnyObjectByType<RoomSpawner>();
+        state.HasRoomSpawner = spawner != null;
+        if (spawner == null)
+            return state;
+
+        SerializedObject spawnerObject = new SerializedObject(spawner);
+        ReadSpawnTable(spawnerObject.FindProperty("enemyTable"), state.NormalEnemies, out state.NormalTableHasEntries);
+        bool unused;
+        ReadSpawnTable(spawnerObject.FindProperty("eliteRoomEnemyTable"), state.EliteEnemies, out unused);
+        return state;
+    }
+
+    private static void ReadSpawnTable(SerializedProperty table, HashSet<EnemyData> results, out bool hasEntries)
+    {
+        hasEntries = table != null && table.isArray && table.arraySize > 0;
+        if (!hasEntries)
+            return;
+
+        for (int i = 0; i < table.arraySize; i++)
+        {
+            EnemyData enemy = GetObject<EnemyData>(table.GetArrayElementAtIndex(i));
+            if (enemy != null)
+                results.Add(enemy);
+        }
+    }
+
+    private void AddSpawnTableWarnings(EnemyRow row, SpawnTableState state)
+    {
+        if (!state.HasRoomSpawner || row == null || row.Data == null || row.IsBoss)
+            return;
+
+        if ((row.Data.allowedRegions & SpawnRegion.Dungeon) == 0)
+            return;
+
+        if (row.Data.IsElite)
+        {
+            if (!state.EliteEnemies.Contains(row.Data))
+                AddWarning(row, WarningSeverity.Warning, "[Warn] 스폰 테이블(elite) 미등록: " + row.DisplayName, row.Data);
+            return;
+        }
+
+        if (state.NormalTableHasEntries && !state.NormalEnemies.Contains(row.Data))
+            AddWarning(row, WarningSeverity.Warning, "[Warn] 스폰 테이블(enemyTable) 미등록: " + row.DisplayName, row.Data);
     }
 
     private static Dictionary<EnemyData, EnemyController> BuildPrefabMap(out bool hasPoolScene)
@@ -998,6 +1760,21 @@ public sealed class EnemyDashboardWindow : EditorWindow
         return weight.ToString("0.##", CultureInfo.InvariantCulture);
     }
 
+    private static bool HasBossFloor(BossEncounterTable table, int floor)
+    {
+        if (table == null || table.Entries == null)
+            return false;
+
+        for (int i = 0; i < table.Entries.Count; i++)
+        {
+            BossEncounterEntry entry = table.Entries[i];
+            if (entry != null && entry.Floor == floor)
+                return true;
+        }
+
+        return false;
+    }
+
     private bool IsKnownItemCode(string itemCode)
     {
         return !string.IsNullOrWhiteSpace(itemCode) && _itemCodes.Contains(itemCode);
@@ -1039,6 +1816,14 @@ public sealed class EnemyDashboardWindow : EditorWindow
     {
         if (property != null)
             property.floatValue = value;
+    }
+
+    private static void DeleteArrayElement(SerializedProperty array, int index)
+    {
+        int previousSize = array.arraySize;
+        array.DeleteArrayElementAtIndex(index);
+        if (array.arraySize == previousSize)
+            array.DeleteArrayElementAtIndex(index);
     }
 
     private enum WarningSeverity
@@ -1105,6 +1890,14 @@ public sealed class EnemyDashboardWindow : EditorWindow
             Database = database;
             GroupIndex = groupIndex;
         }
+    }
+
+    private sealed class SpawnTableState
+    {
+        public readonly HashSet<EnemyData> NormalEnemies = new HashSet<EnemyData>();
+        public readonly HashSet<EnemyData> EliteEnemies = new HashSet<EnemyData>();
+        public bool HasRoomSpawner;
+        public bool NormalTableHasEntries;
     }
 
     private sealed class DashboardWarning
