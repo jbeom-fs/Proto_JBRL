@@ -19,6 +19,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private const float PrefabWidth = 170f;
     private const float BossWidth = 58f;
     private const float DropWidth = 440f;
+    private const float DeleteWidth = 52f;
     private const float WarningPanelHeight = 180f;
     private const string DefaultDropItemCode = "Currency";
     private const string NewEnemyAssetFolder = "Assets/Scriptable/Enemy";
@@ -46,6 +47,8 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private bool _newBossIsFinal;
     private string _newEnemyFeedback = string.Empty;
     private MessageType _newEnemyFeedbackType = MessageType.Info;
+    private string _operationFeedback = string.Empty;
+    private MessageType _operationFeedbackType = MessageType.Info;
 
     [MenuItem("JBRogLike/Enemy Dashboard")]
     public static void Open()
@@ -755,6 +758,9 @@ public sealed class EnemyDashboardWindow : EditorWindow
         if (_hasAssetChanges)
             EditorGUILayout.LabelField("값 변경됨 — Rescan 권장", EditorStyles.miniBoldLabel, GUILayout.Width(180f));
         EditorGUILayout.EndHorizontal();
+
+        if (!string.IsNullOrWhiteSpace(_operationFeedback))
+            EditorGUILayout.HelpBox(_operationFeedback, _operationFeedbackType);
     }
 
     private void DrawRowsPanel()
@@ -790,6 +796,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         Header("Prefab", PrefabWidth);
         Header("Boss", BossWidth);
         Header("Drops", DropWidth);
+        Header("", DeleteWidth);
         EditorGUILayout.EndHorizontal();
     }
 
@@ -814,6 +821,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         DrawPrefabCell(row);
         Cell(row.IsBoss ? "Boss" : "-", BossWidth);
         Cell(row.DropSummary, DropWidth);
+        DrawDeleteCell(row);
 
         EditorGUILayout.EndHorizontal();
 
@@ -821,6 +829,440 @@ public sealed class EnemyDashboardWindow : EditorWindow
             DrawDropEditor(row);
 
         EditorGUILayout.EndVertical();
+    }
+
+    private void DrawDeleteCell(EnemyRow row)
+    {
+        EnemyPoolManager manager = Object.FindAnyObjectByType<EnemyPoolManager>();
+        EditorGUI.BeginDisabledGroup(!CanCreateInPoolScene(manager));
+        if (GUILayout.Button("삭제", GUILayout.Width(DeleteWidth)))
+            ConfirmAndDeleteEnemy(row.Data);
+        EditorGUI.EndDisabledGroup();
+    }
+
+    private void ConfirmAndDeleteEnemy(EnemyData enemy)
+    {
+        if (enemy == null)
+            return;
+
+        DeleteAnalysis analysis = BuildDeleteAnalysis(enemy);
+        string body = BuildDeleteDialogBody(analysis);
+        bool deletePrefab = false;
+
+        if (analysis.CanDeletePrefab)
+        {
+            int choice = EditorUtility.DisplayDialogComplex(
+                "적 삭제 확인",
+                body,
+                "적만 삭제",
+                "취소",
+                "적+프리팹 삭제");
+            if (choice == 1)
+                return;
+
+            deletePrefab = choice == 2;
+        }
+        else
+        {
+            if (!EditorUtility.DisplayDialog("적 삭제 확인", body, "삭제", "취소"))
+                return;
+        }
+
+        ExecuteEnemyDeletion(analysis, deletePrefab);
+    }
+
+    private DeleteAnalysis BuildDeleteAnalysis(EnemyData enemy)
+    {
+        DeleteAnalysis analysis = new DeleteAnalysis(enemy);
+        analysis.EnemyAssetPath = AssetDatabase.GetAssetPath(enemy);
+
+        EnemyPoolManager poolManager = Object.FindAnyObjectByType<EnemyPoolManager>();
+        analysis.PoolManager = poolManager;
+        if (poolManager != null)
+            AnalyzePoolEntries(analysis, poolManager);
+
+        RoomSpawner spawner = Object.FindAnyObjectByType<RoomSpawner>();
+        analysis.RoomSpawner = spawner;
+        if (spawner != null)
+            analysis.SpawnTableCount = CountRoomSpawnerReferences(spawner, enemy);
+
+        List<EnemyDropDatabase> dropDatabases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
+        for (int i = 0; i < dropDatabases.Count; i++)
+            analysis.DropGroupCount += CountRelativeReferences(dropDatabases[i], "groups", "enemy", enemy);
+
+        List<BossEncounterTable> bossTables = LoadAssets<BossEncounterTable>("t:BossEncounterTable");
+        for (int i = 0; i < bossTables.Count; i++)
+            analysis.BossEntryCount += CountRelativeReferences(bossTables[i], "entries", "boss", enemy);
+
+        AnalyzePrefabOwnership(analysis);
+        return analysis;
+    }
+
+    private static void AnalyzePoolEntries(DeleteAnalysis analysis, EnemyPoolManager poolManager)
+    {
+        SerializedObject managerObject = new SerializedObject(poolManager);
+        SerializedProperty entries = managerObject.FindProperty("entries");
+        if (entries == null || !entries.isArray)
+            return;
+
+        List<PoolEntrySnapshot> snapshots = new List<PoolEntrySnapshot>(entries.arraySize);
+        for (int i = 0; i < entries.arraySize; i++)
+        {
+            SerializedProperty entry = entries.GetArrayElementAtIndex(i);
+            EnemyData data = GetObject<EnemyData>(entry.FindPropertyRelative("data"));
+            EnemyController prefab = GetObject<EnemyController>(entry.FindPropertyRelative("prefab"));
+            snapshots.Add(new PoolEntrySnapshot(data, prefab));
+
+            if (data == analysis.Target)
+            {
+                analysis.PoolEntryCount++;
+                if (prefab != null && !analysis.TargetPrefabs.Contains(prefab))
+                    analysis.TargetPrefabs.Add(prefab);
+            }
+        }
+
+        for (int i = 0; i < snapshots.Count; i++)
+        {
+            PoolEntrySnapshot snapshot = snapshots[i];
+            if (snapshot.Data == analysis.Target || snapshot.Prefab == null)
+                continue;
+
+            if (analysis.TargetPrefabs.Contains(snapshot.Prefab))
+                analysis.SharedPrefabs.Add(snapshot.Prefab);
+        }
+    }
+
+    private static void AnalyzePrefabOwnership(DeleteAnalysis analysis)
+    {
+        for (int i = 0; i < analysis.TargetPrefabs.Count; i++)
+        {
+            EnemyController prefab = analysis.TargetPrefabs[i];
+            if (prefab == null)
+                continue;
+
+            SerializedObject prefabObject = new SerializedObject(prefab);
+            SerializedProperty data = prefabObject.FindProperty("data");
+            if (GetObject<EnemyData>(data) == analysis.Target)
+                analysis.OwnedPrefabs.Add(prefab);
+        }
+    }
+
+    private static int CountRoomSpawnerReferences(RoomSpawner spawner, EnemyData enemy)
+    {
+        SerializedObject spawnerObject = new SerializedObject(spawner);
+        return CountDirectReferences(spawnerObject.FindProperty("enemyTable"), enemy) +
+               CountDirectReferences(spawnerObject.FindProperty("eliteRoomEnemyTable"), enemy);
+    }
+
+    private static int CountDirectReferences(SerializedProperty array, EnemyData enemy)
+    {
+        if (array == null || !array.isArray)
+            return 0;
+
+        int count = 0;
+        for (int i = 0; i < array.arraySize; i++)
+            if (GetObject<EnemyData>(array.GetArrayElementAtIndex(i)) == enemy)
+                count++;
+
+        return count;
+    }
+
+    private static int CountRelativeReferences(Object owner, string arrayName, string relativeName, EnemyData enemy)
+    {
+        if (owner == null)
+            return 0;
+
+        SerializedObject serializedObject = new SerializedObject(owner);
+        SerializedProperty array = serializedObject.FindProperty(arrayName);
+        if (array == null || !array.isArray)
+            return 0;
+
+        int count = 0;
+        for (int i = 0; i < array.arraySize; i++)
+        {
+            SerializedProperty element = array.GetArrayElementAtIndex(i);
+            if (GetObject<EnemyData>(element.FindPropertyRelative(relativeName)) == enemy)
+                count++;
+        }
+
+        return count;
+    }
+
+    private static string BuildDeleteDialogBody(DeleteAnalysis analysis)
+    {
+        string body =
+            analysis.DisplayName + " 삭제\n\n" +
+            "풀 " + analysis.PoolEntryCount + "건 / " +
+            "스폰테이블 " + analysis.SpawnTableCount + "건 / " +
+            "드랍 그룹 " + analysis.DropGroupCount + "건 / " +
+            "보스 엔트리 " + analysis.BossEntryCount + "건 / " +
+            "에셋 " + (string.IsNullOrWhiteSpace(analysis.EnemyAssetPath) ? 0 : 1) + "건\n";
+
+        if (analysis.TargetPrefabs.Count > 0)
+            body += "프리팹 후보 " + analysis.TargetPrefabs.Count + "건 / 소유 " + analysis.OwnedPrefabs.Count + "건 / 공유 " + analysis.SharedPrefabs.Count + "건\n";
+
+        if (analysis.SharedPrefabs.Count > 0)
+            body += "프리팹 공유 중 — 프리팹은 유지됨\n";
+        else if (analysis.TargetPrefabs.Count > 0 && analysis.OwnedPrefabs.Count == 0)
+            body += "프리팹 비소유 — 프리팹은 유지됨\n";
+
+        body += "\n에셋/프리팹 삭제는 Undo 불가, 엔트리 제거는 Undo 가능.";
+        return body;
+    }
+
+    private void ExecuteEnemyDeletion(DeleteAnalysis analysis, bool deletePrefab)
+    {
+        List<string> failures = new List<string>();
+        DeletionCounts removed = new DeletionCounts();
+
+        Undo.SetCurrentGroupName("Delete Enemy Dashboard Enemy");
+        int undoGroup = Undo.GetCurrentGroup();
+
+        removed.DropGroups = RemoveEnemyDropGroups(analysis.Target, failures);
+        removed.BossEntries = RemoveBossEntries(analysis.Target, failures);
+        removed.SpawnEntries = RemoveRoomSpawnerEntries(analysis.RoomSpawner, analysis.Target, failures);
+        removed.PoolEntries = RemovePoolEntries(analysis.PoolManager, analysis.Target, failures);
+
+        if (!deletePrefab)
+            removed.PrefabDataCleared = ClearOwnedPrefabData(analysis, failures);
+
+        Undo.CollapseUndoOperations(undoGroup);
+
+        bool enemyDeleted = false;
+        if (string.IsNullOrWhiteSpace(analysis.EnemyAssetPath))
+        {
+            failures.Add("EnemyData 에셋 경로 없음");
+        }
+        else
+        {
+            enemyDeleted = AssetDatabase.DeleteAsset(analysis.EnemyAssetPath);
+            if (!enemyDeleted)
+                failures.Add("EnemyData 에셋 삭제 실패: " + analysis.EnemyAssetPath);
+        }
+
+        int prefabsDeleted = 0;
+        if (deletePrefab && enemyDeleted)
+            prefabsDeleted = DeleteOwnedPrefabs(analysis, failures);
+        else if (deletePrefab)
+            failures.Add("EnemyData 삭제 실패로 프리팹 삭제 생략");
+
+        Scan();
+        _operationFeedback = BuildDeletionFeedback(analysis, removed, enemyDeleted, prefabsDeleted, failures);
+        _operationFeedbackType = failures.Count > 0 ? MessageType.Warning : MessageType.Info;
+    }
+
+    private static int RemoveEnemyDropGroups(EnemyData target, List<string> failures)
+    {
+        int removed = 0;
+        List<EnemyDropDatabase> databases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
+        for (int i = 0; i < databases.Count; i++)
+            removed += RemoveRelativeReferences(databases[i], "groups", "enemy", target, "DropDB groups", failures);
+
+        return removed;
+    }
+
+    private static int RemoveBossEntries(EnemyData target, List<string> failures)
+    {
+        int removed = 0;
+        List<BossEncounterTable> tables = LoadAssets<BossEncounterTable>("t:BossEncounterTable");
+        for (int i = 0; i < tables.Count; i++)
+            removed += RemoveRelativeReferences(tables[i], "entries", "boss", target, "BossEncounterTable entries", failures);
+
+        return removed;
+    }
+
+    private static int RemoveRelativeReferences(
+        Object owner,
+        string arrayName,
+        string relativeName,
+        EnemyData target,
+        string label,
+        List<string> failures)
+    {
+        if (owner == null)
+            return 0;
+
+        SerializedObject serializedObject = new SerializedObject(owner);
+        serializedObject.Update();
+        SerializedProperty array = serializedObject.FindProperty(arrayName);
+        if (array == null || !array.isArray)
+        {
+            failures.Add(label + " 배열 없음: " + owner.name);
+            return 0;
+        }
+
+        int removed = 0;
+        for (int i = array.arraySize - 1; i >= 0; i--)
+        {
+            SerializedProperty element = array.GetArrayElementAtIndex(i);
+            if (GetObject<EnemyData>(element.FindPropertyRelative(relativeName)) != target)
+                continue;
+
+            DeleteArrayElement(array, i);
+            removed++;
+        }
+
+        if (removed > 0 && !serializedObject.ApplyModifiedProperties())
+            failures.Add(label + " 제거 적용 실패: " + owner.name);
+
+        return removed;
+    }
+
+    private static int RemoveRoomSpawnerEntries(RoomSpawner spawner, EnemyData target, List<string> failures)
+    {
+        if (spawner == null)
+        {
+            failures.Add("RoomSpawner 없음");
+            return 0;
+        }
+
+        SerializedObject spawnerObject = new SerializedObject(spawner);
+        spawnerObject.Update();
+        int removed = 0;
+        removed += RemoveDirectReferences(spawnerObject.FindProperty("enemyTable"), target, "RoomSpawner.enemyTable", failures);
+        removed += RemoveDirectReferences(spawnerObject.FindProperty("eliteRoomEnemyTable"), target, "RoomSpawner.eliteRoomEnemyTable", failures);
+
+        if (removed > 0 && !spawnerObject.ApplyModifiedProperties())
+            failures.Add("RoomSpawner 스폰 테이블 제거 적용 실패");
+
+        return removed;
+    }
+
+    private static int RemovePoolEntries(EnemyPoolManager manager, EnemyData target, List<string> failures)
+    {
+        if (manager == null)
+        {
+            failures.Add("EnemyPoolManager 없음");
+            return 0;
+        }
+
+        SerializedObject managerObject = new SerializedObject(manager);
+        managerObject.Update();
+        SerializedProperty entries = managerObject.FindProperty("entries");
+        if (entries == null || !entries.isArray)
+        {
+            failures.Add("EnemyPoolManager.entries 없음");
+            return 0;
+        }
+
+        int removed = 0;
+        for (int i = entries.arraySize - 1; i >= 0; i--)
+        {
+            SerializedProperty entry = entries.GetArrayElementAtIndex(i);
+            if (GetObject<EnemyData>(entry.FindPropertyRelative("data")) != target)
+                continue;
+
+            DeleteArrayElement(entries, i);
+            removed++;
+        }
+
+        if (removed > 0 && !managerObject.ApplyModifiedProperties())
+            failures.Add("EnemyPoolManager.entries 제거 적용 실패");
+
+        return removed;
+    }
+
+    private static int RemoveDirectReferences(SerializedProperty array, EnemyData target, string label, List<string> failures)
+    {
+        if (array == null || !array.isArray)
+        {
+            failures.Add(label + " 배열 없음");
+            return 0;
+        }
+
+        int removed = 0;
+        for (int i = array.arraySize - 1; i >= 0; i--)
+        {
+            if (GetObject<EnemyData>(array.GetArrayElementAtIndex(i)) != target)
+                continue;
+
+            DeleteArrayElement(array, i);
+            removed++;
+        }
+
+        return removed;
+    }
+
+    private static int ClearOwnedPrefabData(DeleteAnalysis analysis, List<string> failures)
+    {
+        int cleared = 0;
+        for (int i = 0; i < analysis.OwnedPrefabs.Count; i++)
+        {
+            EnemyController prefab = analysis.OwnedPrefabs[i];
+            if (prefab == null)
+                continue;
+
+            SerializedObject prefabObject = new SerializedObject(prefab);
+            prefabObject.Update();
+            SerializedProperty data = prefabObject.FindProperty("data");
+            if (data == null)
+            {
+                failures.Add("프리팹 data 필드 없음: " + prefab.name);
+                continue;
+            }
+
+            if (GetObject<EnemyData>(data) != analysis.Target)
+                continue;
+
+            data.objectReferenceValue = null;
+            if (prefabObject.ApplyModifiedProperties())
+                cleared++;
+            else
+                failures.Add("프리팹 data 클리어 실패: " + prefab.name);
+        }
+
+        return cleared;
+    }
+
+    private static int DeleteOwnedPrefabs(DeleteAnalysis analysis, List<string> failures)
+    {
+        int deleted = 0;
+        for (int i = 0; i < analysis.OwnedPrefabs.Count; i++)
+        {
+            EnemyController prefab = analysis.OwnedPrefabs[i];
+            if (prefab == null)
+                continue;
+
+            if (analysis.SharedPrefabs.Contains(prefab))
+                continue;
+
+            string path = AssetDatabase.GetAssetPath(prefab);
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                failures.Add("프리팹 경로 없음: " + prefab.name);
+                continue;
+            }
+
+            if (AssetDatabase.DeleteAsset(path))
+                deleted++;
+            else
+                failures.Add("프리팹 삭제 실패: " + path);
+        }
+
+        return deleted;
+    }
+
+    private static string BuildDeletionFeedback(
+        DeleteAnalysis analysis,
+        DeletionCounts removed,
+        bool enemyDeleted,
+        int prefabsDeleted,
+        List<string> failures)
+    {
+        string feedback =
+            "삭제 완료: " + analysis.DisplayName +
+            "\n풀 " + removed.PoolEntries +
+            " / 스폰테이블 " + removed.SpawnEntries +
+            " / 드랍 그룹 " + removed.DropGroups +
+            " / 보스 엔트리 " + removed.BossEntries +
+            " / 프리팹 data 클리어 " + removed.PrefabDataCleared +
+            " / EnemyData 삭제 " + (enemyDeleted ? "성공" : "실패") +
+            " / 프리팹 삭제 " + prefabsDeleted;
+
+        if (failures.Count > 0)
+            feedback += "\n일부 제거 실패: " + string.Join("; ", failures) + ". Rescan 후 수동 확인 요망";
+
+        return feedback;
     }
 
     private void DrawEnemyDataEditors(EnemyRow row)
@@ -1898,6 +2340,53 @@ public sealed class EnemyDashboardWindow : EditorWindow
         public readonly HashSet<EnemyData> EliteEnemies = new HashSet<EnemyData>();
         public bool HasRoomSpawner;
         public bool NormalTableHasEntries;
+    }
+
+    private readonly struct PoolEntrySnapshot
+    {
+        public readonly EnemyData Data;
+        public readonly EnemyController Prefab;
+
+        public PoolEntrySnapshot(EnemyData data, EnemyController prefab)
+        {
+            Data = data;
+            Prefab = prefab;
+        }
+    }
+
+    private sealed class DeleteAnalysis
+    {
+        public readonly EnemyData Target;
+        public readonly string DisplayName;
+        public readonly List<EnemyController> TargetPrefabs = new List<EnemyController>();
+        public readonly List<EnemyController> OwnedPrefabs = new List<EnemyController>();
+        public readonly HashSet<EnemyController> SharedPrefabs = new HashSet<EnemyController>();
+        public EnemyPoolManager PoolManager;
+        public RoomSpawner RoomSpawner;
+        public string EnemyAssetPath;
+        public int PoolEntryCount;
+        public int SpawnTableCount;
+        public int DropGroupCount;
+        public int BossEntryCount;
+
+        public DeleteAnalysis(EnemyData target)
+        {
+            Target = target;
+            DisplayName = target != null && !string.IsNullOrWhiteSpace(target.enemyName)
+                ? target.enemyName
+                : target != null ? target.name : "<null>";
+        }
+
+        public bool CanDeletePrefab => TargetPrefabs.Count == 1 && OwnedPrefabs.Count == 1 && SharedPrefabs.Count == 0;
+    }
+
+    private struct DeletionCounts
+    {
+        public int DropGroups;
+        public int BossEntries;
+        public int SpawnEntries;
+        public int PoolEntries;
+        public int PrefabDataCleared;
     }
 
     private sealed class DashboardWarning
