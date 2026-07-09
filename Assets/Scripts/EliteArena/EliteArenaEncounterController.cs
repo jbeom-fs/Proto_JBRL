@@ -13,12 +13,16 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     [SerializeField] private Transform entrancePortalParent;
     [SerializeField] private Transform eliteRoomReturnPoint;
 
+    [Header("Arena Door")]
+    [SerializeField] private ArenaDoor arenaDoor;
+
     private RoomInfo _originRoom;
     private Vector3 _originReturnPosition;
     private EliteArenaPortal _activeEntrancePortal;
     private EnemyController _activeElite;
     private bool _hasEncounter;
     private bool _eliteDefeated;
+    private bool _warnedMissingArenaDoor;
 
     public bool IsEncounterActiveInArena => _hasEncounter && !_eliteDefeated;
 
@@ -103,6 +107,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
         _originRoom = room;
         _hasEncounter = true;
         _eliteDefeated = false;
+        CloseArenaDoor();
         HideReturnPortal();
 
         if (transitionManager == null && LocationTransitionManager.Active == null)
@@ -170,6 +175,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
         _hasEncounter = false;
         _eliteDefeated = false;
         HideReturnPortal();
+        CloseArenaDoor();
     }
 
     public void ClearRuntimeState()
@@ -247,7 +253,39 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             _activeElite = null;
 
         _eliteDefeated = true;
+        OpenArenaDoor();
         ShowReturnPortal();
+    }
+
+    private void CloseArenaDoor()
+    {
+        if (arenaDoor == null)
+        {
+            WarnMissingArenaDoor();
+            return;
+        }
+
+        arenaDoor.Close();
+    }
+
+    private void OpenArenaDoor()
+    {
+        if (arenaDoor == null)
+        {
+            WarnMissingArenaDoor();
+            return;
+        }
+
+        arenaDoor.Open();
+    }
+
+    private void WarnMissingArenaDoor()
+    {
+        if (_warnedMissingArenaDoor)
+            return;
+
+        Debug.LogWarning("[EliteArenaEncounterController] ArenaDoor reference is missing.", this);
+        _warnedMissingArenaDoor = true;
     }
 
     private EliteArenaPortal GetEntrancePortal()

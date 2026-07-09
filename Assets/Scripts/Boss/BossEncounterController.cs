@@ -11,12 +11,16 @@ public sealed class BossEncounterController : ArenaEncounterBase
     [SerializeField] private Transform exitPortalSpawnPoint;
     [SerializeField] private Transform exitPortalParent;
 
+    [Header("Boss Door")]
+    [SerializeField] private ArenaDoor arenaDoor;
+
     private BossEncounterEntry _activeEntry;
     private EnemyController _activeBoss;
     private BossExitPortal _activeExitPortal;
     private bool _hasEncounter;
     private bool _bossDefeated;
     private bool _proceedRequested;
+    private bool _warnedMissingArenaDoor;
 
     public event Action<BossEncounterEntry, PlayerController> ProceedRequested;
 
@@ -47,6 +51,7 @@ public sealed class BossEncounterController : ArenaEncounterBase
         if (_hasEncounter || entry == null || player == null)
             return false;
 
+        CloseArenaDoor();
         _activeEntry = entry;
         _hasEncounter = true;
         _bossDefeated = false;
@@ -114,6 +119,7 @@ public sealed class BossEncounterController : ArenaEncounterBase
         _bossDefeated = false;
         _proceedRequested = false;
         HideExitPortal();
+        CloseArenaDoor();
     }
 
     public void ClearRuntimeState()
@@ -172,7 +178,39 @@ public sealed class BossEncounterController : ArenaEncounterBase
             _activeBoss = null;
 
         _bossDefeated = true;
+        OpenArenaDoor();
         ShowExitPortal();
+    }
+
+    private void CloseArenaDoor()
+    {
+        if (arenaDoor == null)
+        {
+            WarnMissingArenaDoor();
+            return;
+        }
+
+        arenaDoor.Close();
+    }
+
+    private void OpenArenaDoor()
+    {
+        if (arenaDoor == null)
+        {
+            WarnMissingArenaDoor();
+            return;
+        }
+
+        arenaDoor.Open();
+    }
+
+    private void WarnMissingArenaDoor()
+    {
+        if (_warnedMissingArenaDoor)
+            return;
+
+        Debug.LogWarning("[BossEncounterController] ArenaDoor reference is missing.", this);
+        _warnedMissingArenaDoor = true;
     }
 
     private void ShowExitPortal()

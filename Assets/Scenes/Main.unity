@@ -239,6 +239,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1877801298}
+  - {fileID: 3501000001}
   m_Father: {fileID: 284404850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &50012722
@@ -264,6 +265,51 @@ MonoBehaviour:
   groundColor: {r: 0.75, g: 0.82, b: 0.95, a: 0.92}
   wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 0.95}
   doorColor: {r: 0.95, g: 0.78, b: 0.36, a: 0.95}
+--- !u!1 &3501000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3501000001}
+  - component: {fileID: 3501000002}
+  m_Layer: 0
+  m_Name: ArenaDoor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3501000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3501000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 50012721}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3501000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3501000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 845554cd69ff4f0da15752cbc0295849, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaDoor
+  doorTilemap: {fileID: 1617150381}
 --- !u!1 &51986288
 GameObject:
   m_ObjectHideFlags: 0
@@ -1233,6 +1279,8 @@ RectTransform:
   - {fileID: 2601000101}
   - {fileID: 2701000101}
   - {fileID: 300000011}
+  - {fileID: 3601000001}
+  - {fileID: 3401000001}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1240,6 +1288,156 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!1 &3601000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3601000001}
+  - component: {fileID: 3601000002}
+  m_Layer: 5
+  m_Name: ItemTooltipUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3601000001
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3601000000}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 183917852}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &3601000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3601000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f52a416af4ac4764b30232422eb3d2fd, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::ItemTooltipUI
+--- !u!1 &3401000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3401000001}
+  - component: {fileID: 3401000002}
+  - component: {fileID: 3401000003}
+  - component: {fileID: 3401000004}
+  - component: {fileID: 3401000005}
+  m_Layer: 5
+  m_Name: TeleportFadeOverlay
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3401000001
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3401000000}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 183917852}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &3401000002
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3401000000}
+  m_CullTransparentMesh: 1
+--- !u!114 &3401000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3401000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!225 &3401000004
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3401000000}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
+  m_IgnoreParentGroups: 0
+--- !u!114 &3401000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3401000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a42be281dacb485ab55208703378242f, type: 3}
+  m_Name: ""
+  m_EditorClassIdentifier: Assembly-CSharp::TeleportFadeOverlay
+  fadeOutDuration: 0.4
 --- !u!1 &186462597
 GameObject:
   m_ObjectHideFlags: 0
@@ -11827,6 +12025,7 @@ MonoBehaviour:
   roomSpawner: {fileID: 1736969809}
   engravingStationPlacer: {fileID: 2801000002}
   minimap: {fileID: 900100002}
+  teleportFadeOverlay: {fileID: 3401000005}
   generateNewDungeonOnEnter: 1
   resetFloorOnNewDungeonRun: 1
   disableCombatInTown: 1
@@ -137975,7 +138174,7 @@ MonoBehaviour:
   eliteSpawnPoint: {fileID: 0}
   returnPortal: {fileID: 0}
   returnPortalPrefab: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
-  returnPortalSpawnPoint: {fileID: 0}
+  returnPortalSpawnPoint: {fileID: 2401000021}
   returnPortalParent: {fileID: 0}
   walkabilityArea: {fileID: 2201000003}
   arenaDestinationId: elite_arena
@@ -137983,6 +138182,7 @@ MonoBehaviour:
   entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
   entrancePortalParent: {fileID: 0}
   eliteRoomReturnPoint: {fileID: 0}
+  arenaDoor: {fileID: 3501000002}
 --- !u!114 &2201000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -137998,7 +138198,7 @@ MonoBehaviour:
   id: elite_arena
   walkTilemap: {fileID: 1206688124}
   wallTilemap: {fileID: 1309604883}
-  doorTilemap: {fileID: 0}
+  doorTilemap: {fileID: 1617150381}
   footprintInsetMultiplier: 0.85
   debugLogFootprintFailures: 0
   drawCellBoundsGizmo: 1
@@ -138118,7 +138318,7 @@ MonoBehaviour:
   locationId: boss_arena
   groundTilemap: {fileID: 1206688124}
   wallTilemap: {fileID: 1363907958}
-  doorTilemap: {fileID: 0}
+  doorTilemap: {fileID: 1617150381}
   autoDiscoverChildren: 0
   walkableLayerName: Walkable
   wallLayerName: Wall
@@ -138182,7 +138382,7 @@ Transform:
   m_GameObject: {fileID: 2401000020}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -3, z: 0}
+  m_LocalPosition: {x: -0.75, y: 12.25, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -138235,7 +138435,7 @@ MonoBehaviour:
   id: boss_arena
   walkTilemap: {fileID: 1206688124}
   wallTilemap: {fileID: 1309604883}
-  doorTilemap: {fileID: 0}
+  doorTilemap: {fileID: 1617150381}
   footprintInsetMultiplier: 0.85
   debugLogFootprintFailures: 0
   drawCellBoundsGizmo: 1
@@ -138442,6 +138642,7 @@ MonoBehaviour:
   exitPortalPrefab: {fileID: 0}
   exitPortalSpawnPoint: {fileID: 2401000021}
   exitPortalParent: {fileID: 2401000001}
+  arenaDoor: {fileID: 3501000002}
 --- !u!1 &2501000000
 GameObject:
   m_ObjectHideFlags: 0

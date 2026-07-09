@@ -1,8 +1,6 @@
 ﻿using UnityEngine;
 public class LocationTransitionManager : MonoBehaviour
 {
-    private const string RunCoreItemCode = "Core";
-
     public static LocationTransitionManager Active { get; private set; }
 
     [Header("Roots")]
@@ -23,6 +21,7 @@ public class LocationTransitionManager : MonoBehaviour
     [SerializeField] private RoomSpawner roomSpawner;
     [SerializeField] private EngravingStationPlacer engravingStationPlacer;
     [SerializeField] private MinimapController minimap;
+    [SerializeField] private TeleportFadeOverlay teleportFadeOverlay;
 
     [Header("Flow")]
     [SerializeField] private bool generateNewDungeonOnEnter = true;
@@ -116,6 +115,9 @@ public class LocationTransitionManager : MonoBehaviour
 
         _currentDestination = destination;
         ApplyMinimapSourceForLocation(destination);
+        if (moved)
+            teleportFadeOverlay?.TriggerFade();
+
         _isChangingLocation = false;
         return moved;
     }
@@ -235,10 +237,10 @@ public class LocationTransitionManager : MonoBehaviour
     private void GrantRunCoreIfNeeded(PlayerController targetPlayer)
     {
         PlayerInventory inventory = targetPlayer != null ? targetPlayer.Inventory : null;
-        if (inventory == null || HasInventoryItemCode(inventory, RunCoreItemCode))
+        if (inventory == null || HasInventoryItemCode(inventory, ItemCodes.RunCore))
             return;
 
-        if (!inventory.TryGetDatabaseItem(RunCoreItemCode, out ItemData coreTemplate) || coreTemplate == null)
+        if (!inventory.TryGetDatabaseItem(ItemCodes.RunCore, out ItemData coreTemplate) || coreTemplate == null)
         {
             WarnMissingRunCore();
             return;

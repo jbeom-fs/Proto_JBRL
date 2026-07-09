@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler
+public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] private Image iconImage;
     [SerializeField] private TMP_Text countText;
@@ -17,6 +17,8 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler
 
     public void Bind(ItemData item, int count, InventoryUIController owner)
     {
+        ItemTooltipUI.HideActive();
+
         bool hasItem = item != null && count > 0;
         _owner = hasItem ? owner : null;
         _item = hasItem ? item : null;
@@ -41,6 +43,11 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler
             nameText.text = item.DisplayName;
     }
 
+    private void OnDisable()
+    {
+        ItemTooltipUI.HideActive();
+    }
+
     public void SetReferences(Image icon, TMP_Text count, TMP_Text itemName)
     {
         iconImage = icon;
@@ -57,5 +64,18 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler
             return;
 
         _owner?.HandleSlotClicked(_item);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        if (_item == null || !isActiveAndEnabled || !gameObject.activeInHierarchy)
+            return;
+
+        ItemTooltipUI.ShowActive(_item, transform as RectTransform);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        ItemTooltipUI.HideActive();
     }
 }

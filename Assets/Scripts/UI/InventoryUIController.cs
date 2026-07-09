@@ -60,6 +60,8 @@ public sealed class InventoryUIController : MonoBehaviour
 
     private void OnDisable()
     {
+        ItemTooltipUI.HideActive();
+
         if (playerInventory != null)
             playerInventory.OnInventoryChanged -= Refresh;
 
@@ -118,12 +120,16 @@ public sealed class InventoryUIController : MonoBehaviour
 
     public void Close()
     {
+        ItemTooltipUI.HideActive();
+
         if (root != null)
             root.SetActive(false);
     }
 
     private void Refresh()
     {
+        ItemTooltipUI.HideActive();
+
         if (playerInventory == null)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -254,6 +260,7 @@ public sealed class InventoryUIController : MonoBehaviour
         if (_activeTabIndex == tabIndex)
             return;
 
+        ItemTooltipUI.HideActive();
         _activeTabIndex = tabIndex;
         RefreshTabVisuals();
         Refresh();

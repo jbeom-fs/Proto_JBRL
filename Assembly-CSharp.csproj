@@ -61,6 +61,7 @@
     <Compile Include="Assets\Scripts\Soul\PlayerSoulEnhancements.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Items\ItemType.cs" />
+    <Compile Include="Assets\Scripts\UI\TeleportFadeOverlay.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulEnhancementTable.cs" />
     <Compile Include="Assets\Scripts\Inventory\InventoryItemStack.cs" />
@@ -112,8 +113,10 @@
     <Compile Include="Assets\Scripts\Generate\RoomFootprintSampler.cs" />
     <Compile Include="Assets\Scripts\Tool\LoadingScreenController.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />
+    <Compile Include="Assets\Scripts\Items\ItemCodes.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnRegion.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectilePool.cs" />
+    <Compile Include="Assets\Scripts\UI\OfferRowUI.cs" />
     <Compile Include="Assets\Scripts\Data\PlayerFormId.cs" />
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
@@ -164,6 +167,7 @@
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleService.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Items\ItemDatabase.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\ArenaDoor.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerStatusEffectType.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
@@ -177,6 +181,7 @@
     <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
+    <Compile Include="Assets\Scripts\UI\ItemTooltipUI.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillTargetResolver.cs" />
     <Compile Include="Assets\Scripts\UI\LocationMinimapRegistry.cs" />
     <Compile Include="Assets\Scripts\UI\CurrencyCounterUI.cs" />
