@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 public class LocationTransitionManager : MonoBehaviour
 {
+    private const string RunCoreItemCode = "Core";
+
     public static LocationTransitionManager Active { get; private set; }
 
     [Header("Roots")]
@@ -28,6 +30,7 @@ public class LocationTransitionManager : MonoBehaviour
     [SerializeField] private bool disableCombatInTown = true;
 
     private bool _warnedMissingReferences;
+    private bool _warnedMissingRunCore;
     private bool _isChangingLocation;
     private TeleportLocationData _currentDestination;
 
@@ -225,7 +228,48 @@ public class LocationTransitionManager : MonoBehaviour
 
         fogOfWar?.RequestFullInitialize();
         roomSpawner?.ResetRoomEncounterState();
+        GrantRunCoreIfNeeded(targetPlayer);
         targetPlayer?.SpawnAtStart();
+    }
+
+    private void GrantRunCoreIfNeeded(PlayerController targetPlayer)
+    {
+        PlayerInventory inventory = targetPlayer != null ? targetPlayer.Inventory : null;
+        if (inventory == null || HasInventoryItemCode(inventory, RunCoreItemCode))
+            return;
+
+        if (!inventory.TryGetDatabaseItem(RunCoreItemCode, out ItemData coreTemplate) || coreTemplate == null)
+        {
+            WarnMissingRunCore();
+            return;
+        }
+
+        inventory.AddItem(coreTemplate.CreateRuntimeClone(), 1);
+    }
+
+    private static bool HasInventoryItemCode(PlayerInventory inventory, string itemCode)
+    {
+        if (inventory == null || string.IsNullOrWhiteSpace(itemCode))
+            return false;
+
+        System.Collections.Generic.IReadOnlyList<InventoryItemStack> items = inventory.Items;
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemData item = items[i]?.Item;
+            if (item != null && item.ItemCode == itemCode)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void WarnMissingRunCore()
+    {
+        if (_warnedMissingRunCore)
+            return;
+
+        _warnedMissingRunCore = true;
+        Debug.LogWarning("[LocationTransitionManager] Core item not found in item database.", this);
     }
 
     private void CleanupDungeonRuntime()

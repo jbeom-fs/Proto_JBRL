@@ -210,6 +210,11 @@ public sealed class PlayerInventory : MonoBehaviour
         RaiseChanged();
     }
 
+    public void NotifyExternalChange()
+    {
+        RaiseChanged();
+    }
+
     private void RaiseChanged()
     {
         OnInventoryChanged?.Invoke();

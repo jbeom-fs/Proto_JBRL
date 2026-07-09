@@ -2,7 +2,7 @@ using UnityEngine;
 
 public sealed class GamePauseController : MonoBehaviour
 {
-    private const int PauseSourceCount = 5;
+    private const int PauseSourceCount = 6;
 
     private static GamePauseController s_Active;
 

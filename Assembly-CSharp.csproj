@@ -120,6 +120,7 @@
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillProjectileUtility.cs" />
     <Compile Include="Assets\Scripts\EliteArena\ArenaEncounterBase.cs" />
+    <Compile Include="Assets\Scripts\Data\RestAreaShopTable.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\LocationRoot.cs" />
     <Compile Include="Assets\Scripts\Tool\RuntimePerfLogger.cs" />
@@ -152,6 +153,7 @@
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternContext.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\Scripts\UI\FreischutzMagazineUI.cs" />
+    <Compile Include="Assets\Scripts\UI\RestAreaShopUIController.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulEnhancementCost.cs" />
     <Compile Include="Assets\Scripts\Items\DroppedItem.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
@@ -212,6 +214,7 @@
     <Compile Include="Assets\Scripts\Items\ItemEffectApplier.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
+    <Compile Include="Assets\Scripts\Boss\RestAreaShop.cs" />
     <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>
   <ItemGroup>

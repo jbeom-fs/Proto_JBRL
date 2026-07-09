@@ -4,5 +4,6 @@ public enum GamePauseSource
     Inventory = 1,
     PauseMenu = 2,
     Cutscene = 3,
-    EngravingLoadout = 4
+    EngravingLoadout = 4,
+    RestAreaShop = 5
 }

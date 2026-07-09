@@ -23,6 +23,7 @@ public sealed class ItemData
     [SerializeField] private string salvageItemCode;
     [SerializeField] private int salvageMinAmount = 1;
     [SerializeField] private int salvageMaxAmount = 1;
+    [NonSerialized] private bool _isRuntimeClone;
 
     public string ItemCode => itemCode;
     public string DisplayName => displayName;
@@ -40,4 +41,75 @@ public sealed class ItemData
     public string SalvageItemCode => salvageItemCode;
     public int SalvageMinAmount => salvageMinAmount;
     public int SalvageMaxAmount => salvageMaxAmount;
+
+    public ItemData CreateRuntimeClone()
+    {
+        return new ItemData
+        {
+            itemCode = itemCode,
+            displayName = displayName,
+            icon = icon,
+            description = description,
+            itemType = itemType,
+            stackable = stackable,
+            maxStack = maxStack,
+            removeOnFloorTransition = removeOnFloorTransition,
+            removeOnDungeonExit = removeOnDungeonExit,
+            useEffects = CloneEffects(useEffects),
+            passiveEffects = CloneEffects(passiveEffects),
+            soulFormId = soulFormId,
+            engraving = engraving,
+            salvageItemCode = salvageItemCode,
+            salvageMinAmount = salvageMinAmount,
+            salvageMaxAmount = salvageMaxAmount,
+            _isRuntimeClone = true
+        };
+    }
+
+    public bool AddPassiveEffectRuntime(ItemEffect effect)
+    {
+        if (!_isRuntimeClone)
+        {
+            Debug.LogError("[ItemData] Runtime passive effect add blocked for non-runtime item: " + itemCode + ".");
+            return false;
+        }
+
+        int length = passiveEffects != null ? passiveEffects.Length : 0;
+        ItemEffect[] next = new ItemEffect[length + 1];
+        for (int i = 0; i < length; i++)
+        {
+            next[i] = new ItemEffect
+            {
+                type = passiveEffects[i].type,
+                value = passiveEffects[i].value
+            };
+        }
+
+        next[length] = new ItemEffect
+        {
+            type = effect.type,
+            value = effect.value
+        };
+
+        passiveEffects = next;
+        return true;
+    }
+
+    private static ItemEffect[] CloneEffects(ItemEffect[] source)
+    {
+        if (source == null || source.Length == 0)
+            return Array.Empty<ItemEffect>();
+
+        ItemEffect[] clone = new ItemEffect[source.Length];
+        for (int i = 0; i < source.Length; i++)
+        {
+            clone[i] = new ItemEffect
+            {
+                type = source[i].type,
+                value = source[i].value
+            };
+        }
+
+        return clone;
+    }
 }
