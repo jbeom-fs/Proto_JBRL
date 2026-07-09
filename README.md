@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-08
-> 기준 커밋: master HEAD `a7604838` — **정비실 S2(Currency) + Enemy Dashboard S1~S4**: Currency 아이템+적 드랍+`CurrencyCounterUI` HUD(`0856c3f9`) + Enemy Dashboard 에디터 창(읽기 테이블 `465fcf12` → 인라인 편집 `fad08fe0` → 신규 적 생성 `73c0431a` → 적 삭제 `a7604838`). 이전: 정비실 S1+각인대 세션 커밋(`9feeb4a0`, §11e-6·§7-8)
+> 작성 기준일: 2026-07-09
+> 기준 커밋: master HEAD `7d65abc7` — **정비실 S3 완결(런 코어+일시강화 상점+툴팁, §11b-11) + 보스 흐름 픽스(ArenaDoor·페이드, §11e-7)**: 코어+상점(`959061ae`) → 툴팁+문 모듈+UI 씬 배치 전환(`7d65abc7`). 이전: 정비실 S2(Currency)+Enemy Dashboard S1~S4(`a7604838`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -2108,6 +2108,31 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 
 ---
 
+### 11b-11. 정비실 일시강화 — 런 코어 + 상점 + 툴팁 (S3, 2026-07-09)
+
+던전 런 한정 공유 스탯(Atk/Def/MaxHp/MoveSpeed) 강화. **신규 스탯 축 없이 Relic 평면 패시브 파이프라인(§11b-6)을 재사용**한다 — 구매=아이템 효과 추가라서 합산·런소멸·영속 제외가 전부 기존 경로.
+
+```
+던전 진입(StartNewDungeonRun) → GrantRunCoreIfNeeded
+    ItemDB "Core"(Relic/효과없음/비스택/removeOnDungeonExit=1) → CreateRuntimeClone() 지급
+정비실 상점(RestAreaShop 상호작용 → RestAreaShopUIController 모달, pause)
+    구매: 코어 클론 passiveEffects에 {type, perLevelValue} 엔트리 add
+        → Currency RemoveItem(cost) → NotifyExternalChange()
+        → RecalculateItemStats()가 즉시 반영 (MaxHp는 delta만큼 현재 HP 동시 증가)
+    비용: cost = baseCost × (level+1), 레벨 = 코어 효과 리스트의 타입별 엔트리 수
+런 종료(던전 이탈/사망/재시작) → 기존 경로로 코어·강화 소멸 (신규 소멸 코드 0)
+```
+
+- **런타임 클론이 핵심**: `ItemData`는 ItemDatabase 에셋의 인라인 `[Serializable]` 엔트리(공유 데이터 정의)라 **원본 효과 변이 = 에셋 오염**(에디터에서 Play 종료 후에도 잔존). `CreateRuntimeClone()`이 효과 배열까지 딥카피하고 `[NonSerialized] _isRuntimeClone` 플래그를 세움 — `AddPassiveEffectRuntime`은 플래그 없으면 에러 로그+거부.
+- **명시 통지 필수**: 효과 리스트 변이만으론 `OnInventoryChanged`가 발화하지 않음(트리거=인벤 증감뿐) → 구매 끝에 `PlayerInventory.NotifyExternalChange()` 호출. Currency 차감이 우연히 이벤트를 발행하지만 그 암묵 순서에 의존하지 않는다.
+- **코어 식별 = itemCode**(`ItemCodes.RunCore` 상수, 3곳 통일): 클론은 DB 원본과 참조가 달라 참조 비교 유틸(`HasItem`/`RemoveAllByCode` 등)이 못 찾음 — itemCode 스캔만 유효. (부작용: 콘솔 `/remove Core` 안 먹힘 — 개발 편의 한정 퀄크.)
+- **데이터**: `RestAreaShopTable` SO — 고정 진열 4종 `{displayName, effectType, perLevelValue, baseCost}`. 행 UI는 `OfferRowUI` 컴포넌트(씬 고정 4개).
+- **툴팁(`ItemTooltipUI`)**: 인벤 슬롯 호버(`IPointerEnter/Exit`) → 일반 아이템=`ItemData.description`(기존 필드), **공백이면 "내용없음"**(전 아이템 작성 예정이라 미작성 감지용 — 유저 확정) / 코어=passiveEffects 타입별 value 합산 수치만("공격 +N / 이동속도 +N%"), 설명 병기 없음. 위치=슬롯 우측+캔버스 경계 클램프+좌측 플립.
+- **UI 규약(유저 확정, 2026-07-09)**: **UI는 씬 사전 배치 + SetActive on/off — 런타임 코드 생성 금지.** 툴팁·상점 모두 SerializeField 씬 결선 전용(하이어라키에서 직접 편집 가능). 중첩 UI 씬 제작은 일회성 에디터 메뉴 스크립트로 생성 후 스크립트 삭제(TabBar 관행).
+- ⚠️ **GamePauseController 잠복 회귀 복구(S3b에서 발견)**: 씬 GameObject가 `610ce7c0`(2026-05-20) 때 실수로 비활성화 → `Active` null → 각인 모달 pause가 7주간 조용한 no-op이었음(콘솔만 serialized 직결 폴백으로 정상). 재활성화로 전 pause 소스 복원.
+
+---
+
 ## 11c. 시스템 11 — 개발자 콘솔
 
 인게임 개발자 콘솔 (`` ` `` 키 토글)로 명령어 입력·자동완성·결과 출력을 제공합니다.
@@ -2336,7 +2361,19 @@ N-1층 출구 → TryTransitionToFloor(N) → bossTable 히트
 - **씬 구성**: `RestAreaRoot`(LocationRoot `rest_area`, Map 그룹 하위 상시 활성) + 전용 tilemap + `TeleportDestinationDatabase` `rest_area` destination(locationType 1=Dungeon 필수, minimapLocationId/useTilemapMinimap) + `BossEntryPortal`(비활성 시작, 위치 고정 — 컨트롤러는 활성화만 하고 위치 안 건드림) + `EngravingStation` 씬 인스턴스(`sceneUI` 직결, placer 불필요).
 - ⚠️ **`WalkabilityArea` 필수**: fixed area 는 던전 grid 밖이라 이 컴포넌트로 walk/wall tilemap 을 `WalkabilityQuery`에 등록해야 이동 가능(§11d-3). 누락 시 텔레포트는 되는데 **이동 전면 불가**(실제 발생했던 함정).
 - Play 검증 통과(2026-07-07): 정비실 진입/각인대 비소멸/포탈→보스→처치→다음층/재방문 재사용.
-- **S2 완료(2026-07-08, `0856c3f9`)**: Currency ItemDB 등록(stackable/9999, removeOnDungeonExit) + 적 드랍 + `CurrencyCounterUI` HUD(아이콘=ItemDB 단일 소스, `OnInventoryChanged` 이벤트 구동, 0개 숨김). 런소멸은 기존 영속 필터(Soul|Material만 저장)+씬 리로드가 자동 보장 — 신규 코드는 HUD 1파일뿐. **후속 — S3: 정비실 일시강화 상점(배타·누진 선택지, 런 한정 버프 축 신규 설계 필요).**
+- **S2 완료(2026-07-08, `0856c3f9`)**: Currency ItemDB 등록(stackable/9999, removeOnDungeonExit) + 적 드랍 + `CurrencyCounterUI` HUD(아이콘=ItemDB 단일 소스, `OnInventoryChanged` 이벤트 구동, 0개 숨김). 런소멸은 기존 영속 필터(Soul|Material만 저장)+씬 리로드가 자동 보장 — 신규 코드는 HUD 1파일뿐. **S3 완료(2026-07-09, `959061ae`·`7d65abc7`)**: 런 코어+일시강화 상점+툴팁 — 상세 §11b-11. Currency 닫힌 루프(획득→소비) 완성, **정비실 축(S1~S3c) 종료.**
+
+---
+
+### 11e-7. 아레나 문(ArenaDoor)·출구 포탈·전환 페이드 (2026-07-09)
+
+QA 발견 픽스 2건. "보스/엘리트 클리어 직후 출구 포탈을 의도치 않게 밟아 즉시 이탈"과 "텔레포트 1프레임 컷".
+
+- **ArenaDoor**(`EliteArena/ArenaDoor.cs`): doorTilemap의 씬 배치 타일이 곧 문 정의(좌표 하드코딩 없음) — Awake 1회 캐시(셀+TileBase), `Close()`=복원/`Open()`=제거(멱등). WalkabilityArea가 doorTilemap을 라이브 조회하므로 SetTile만으로 통행 판정 즉시 반영. **차단 주체는 walkability 타일이지 물리 콜라이더가 아님**(플레이어 이동=타일 판정).
+- **배선(보스·엘리트 공용, 같은 인스턴스)**: 입장 시 Close / 클리어(OnBossDied·OnEliteDied) 시 Open / CancelEncounter 시 Close(클리어 후 층을 떠나도 문 원상 복구). 출구 포탈 스폰포인트는 문 뒤 포켓 — 클리어 시 문이 열려야 포탈에 닿을 수 있어 즉시 이탈이 구조적으로 불가.
+- ⚠️ **씬 구조 핵심 2건**: ①elite_arena/boss_arena WalkabilityArea가 **같은 walkTilemap/wallTilemap을 공유**(같은 공간 시분할) — `FindAreaContaining`이 first-match라 doorTilemap을 **양쪽 Area+미니맵 소스까지 결선해야** 문이 무시되지 않음. ②**포탈 위치의 단일 진실 = spawnPoint Transform**(`exitPortalSpawnPoint`/`returnPortalSpawnPoint`) — Show*Portal이 포탈 오브젝트 위치를 매번 덮어쓰므로 포탈 오브젝트를 옮겨도 소용없음. elite는 spawnPoint가 미결선(fileID 0)이라 폴백으로 아레나 중앙에 생성되던 것이 원인이었음.
+- **TeleportFadeOverlay**: `LocationTransitionManager.TryTeleportPlayer` 성공 시 즉시 알파 1(컷 프레임부터 가림) → unscaledDeltaTime 0.4s 페이드아웃. rest_area/엘리트/보스/마을↔던전 텔레포트 공통, 층전환 로딩 경로 무수정. raycast 상시 차단 없음(순수 시각).
+- **후속(합의)**: 보스별 전용 공간이 생기면 공간 소속 참조(door/walk/spawnPoint/portal — 현재 컨트롤러 하드결선=단일 공간 전제)를 `BossArenaSpace` 번들 컴포넌트로 추출 — 두 번째 공간 실수요 시점 착수. ArenaDoor가 그 첫 조각.
 
 ---
 
@@ -2719,6 +2756,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 아이템 효과 | `ItemEffect`(useEffects/passiveEffects) — Consumable 사용(HealHp) + Relic 평면 패시브(`PlayerItemStats` 스택 비례 합산) |
 | Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. 상세 §11b-8 |
 | 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속). 상세 §11b-9~10 |
+| 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
 | 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
 
 **지역 전환·아레나**
@@ -2729,8 +2767,9 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 공간 추상화 | `WorldEnvironmentQuery` 파사드 + `WalkabilityQuery`(Area 우선/Dungeon 폴백) + `WalkabilityArea` — **전 전투 판정 일원화**(Dungeon/Arena 무관 단일 API) |
 | Elite Arena | `EliteArenaEncounterController` + 진입/복귀 포탈 + 미니맵 즉시 복원 + Elite Dash/Jump WalkabilityQuery 통합. 상세 §11d |
 | Boss Area | `BossEncounterTable`(floor→boss/isFinal) + `ArenaEncounterBase` 공통 추출 + `BossEncounterController` + `DungeonManager` 보스층 분기 — **흐름 완성·통합 검증 통과, 남은 건 콘텐츠**. 상세 §11e |
-| 정비실 (Rest Area) | **S1+S2 완료(2026-07-08)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + rest_area fixed area(WalkabilityArea 필수) + **Currency 아이템·적 드랍·`CurrencyCounterUI` HUD**. 남은 S3(일시강화 상점). 상세 §11e-6 |
-| 일시정지 | `GamePauseController` + `GamePauseSource` 출처별 카운터(콘솔/인벤/메뉴/컷씬/각인 모달) |
+| 아레나 문·전환 연출 | `ArenaDoor`(doorTilemap 캐시·개폐, 보스·엘리트 공용 — 클리어 시 개방→문 뒤 출구 포탈, 즉시 이탈 원천 차단) + `TeleportFadeOverlay`(전 텔레포트 공통 암전 페이드). 상세 §11e-7 |
+| 정비실 (Rest Area) | **S1~S3c 완결(2026-07-09)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + Currency 아이템·드랍·HUD + **런 코어(클론)·일시강화 상점(`RestAreaShopTable`, 누진 비용)·아이템 툴팁**. 상세 §11b-11·§11e-6 |
+| 일시정지 | `GamePauseController` + `GamePauseSource` 출처별 카운터(콘솔/인벤/메뉴/컷씬/각인 모달/정비실 상점) — 씬 비활성 잠복 회귀 복구(2026-07-09, §11b-11) |
 
 **툴링·인프라·품질**
 
@@ -2752,7 +2791,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행)와 표시 고도화(틴트/스택 강도/적 슬로우·스턴 아이콘) |
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
-| 정비실 S3 (일시강화 상점) | **높음(다음 작업)** | S1 흐름+S2 Currency(아이템·드랍·HUD, `0856c3f9`) 완료(§11e-6). 남은 S3=정비실 일시강화 상점(배타·누진 선택지 A안, "얼마 모았냐=뭘 고르냐" 결정 생성. **런 한정 버프 적용 축 신규 설계 필요 — 착수 전 설계 논의 선행**) |
+| 정비실 (Rest Area) | — | **완료(S1~S3c, 2026-07-09)** — S1 흐름 + S2 Currency + S3 런 코어·일시강화 상점·툴팁(§11b-11, §11e-6). 남은 데이터 작업: 아이템 description 수기 작성(빈 것은 "내용없음" 표시로 발견 가능) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처(→정비실 S2·S3로 흡수), 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
 | Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
