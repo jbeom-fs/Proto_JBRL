@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -19,6 +20,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private const float DescWidth = 52f;
     private const float TypeSummaryWidth = 300f;
     private const float DropSourceWidth = 420f;
+    private const float DeleteWidth = 52f;
     private const float WarningPanelHeight = 180f;
     private const float DropEnemyWidth = 140f;
     private const float DropKindWidth = 42f;
@@ -344,6 +346,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         Header("Desc", DescWidth);
         Header("타입요약", TypeSummaryWidth);
         Header("드랍소스", DropSourceWidth);
+        Header("", DeleteWidth);
         EditorGUILayout.EndHorizontal();
     }
 
@@ -372,6 +375,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         Cell(row.HasDescription ? "✓" : "✗", DescWidth);
         Cell(row.TypeSummary, TypeSummaryWidth);
         DrawDropSourceCell(row);
+        DrawDeleteCell(row);
 
         EditorGUILayout.EndHorizontal();
 
@@ -391,6 +395,101 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (GUILayout.Button(row.DropSummary, GUILayout.Width(DropSourceWidth)))
             EditorGUIUtility.PingObject(row.DropSources[0].Database);
+    }
+
+    private void DrawDeleteCell(ItemRow row)
+    {
+        if (GUILayout.Button("삭제", GUILayout.Width(DeleteWidth)))
+            ConfirmAndDeleteItem(row);
+    }
+
+    private void ConfirmAndDeleteItem(ItemRow row)
+    {
+        DeleteAnalysis analysis = BuildDeleteAnalysis(row);
+        if (analysis == null)
+            return;
+
+        if (analysis.IsBlocked)
+        {
+            SetOperationFeedback("코드 상수 참조 아이템 — 삭제 차단: " + analysis.ItemCode, MessageType.Error);
+            return;
+        }
+
+        string body = BuildDeleteDialogBody(analysis);
+        if (!EditorUtility.DisplayDialog("아이템 삭제 확인", body, "삭제", "취소"))
+            return;
+
+        ExecuteItemDeletion(analysis);
+    }
+
+    private DeleteAnalysis BuildDeleteAnalysis(ItemRow row)
+    {
+        if (!TryGetRowItemProperty(row, out _, out SerializedProperty item))
+        {
+            SetOperationFeedback("항목 위치 변경됨. Rescan 권장", MessageType.Warning);
+            return null;
+        }
+
+        string itemCode = GetString(item.FindPropertyRelative("itemCode"));
+        string displayName = GetString(item.FindPropertyRelative("displayName"));
+        ItemType itemType = GetItemType(item.FindPropertyRelative("itemType"));
+        EngravingData engraving = GetObject<EngravingData>(item.FindPropertyRelative("engraving"));
+
+        DeleteAnalysis analysis = new DeleteAnalysis(row.Database, row.Index, itemCode, displayName, itemType, engraving);
+        analysis.IsBlocked = BuildBlockedItemCodeSet().Contains(itemCode);
+        analysis.DropEntryCount = CountLiveDropEntries(itemCode);
+        analysis.SalvageReferenceCount = CountLiveSalvageReferences(row.Database, row.Index, itemCode);
+        return analysis;
+    }
+
+    private static string BuildDeleteDialogBody(DeleteAnalysis analysis)
+    {
+        string displayName = !string.IsNullOrWhiteSpace(analysis.DisplayName) ? analysis.DisplayName : analysis.ItemCode;
+        string body =
+            displayName + " 삭제\n\n" +
+            "드랍 엔트리 " + analysis.DropEntryCount + "건 같이 제거 / DB 엔트리 1건 제거\n";
+
+        if (analysis.SalvageReferenceCount > 0)
+            body += "⚠ 타 아이템 salvage 참조 " + analysis.SalvageReferenceCount + "건 — 삭제 후 죽은 코드로 남음(수동 정리 필요)\n";
+
+        if (analysis.ItemType == ItemType.Engraving)
+            body += "각인 에셋은 유지됨(고아화) — Validator에서 재등록 가능\n";
+
+        body += "\n전부 Undo 가능(Ctrl+Z 1회)";
+        return body;
+    }
+
+    private void ExecuteItemDeletion(DeleteAnalysis analysis)
+    {
+        List<string> failures = new List<string>();
+
+        Undo.SetCurrentGroupName("Delete Item Dashboard Item");
+        int undoGroup = Undo.GetCurrentGroup();
+
+        int removedDropEntries = RemoveDropEntriesForItemCode(analysis.ItemCode, failures);
+        bool itemRemoved = RemoveItemEntry(analysis, failures);
+
+        Undo.CollapseUndoOperations(undoGroup);
+
+        Scan();
+        _hasAssetChanges = true;
+        _operationFeedback = BuildItemDeletionFeedback(analysis, removedDropEntries, itemRemoved, failures);
+        _operationFeedbackType = failures.Count > 0 || !itemRemoved ? MessageType.Warning : MessageType.Info;
+    }
+
+    private string BuildItemDeletionFeedback(DeleteAnalysis analysis, int removedDropEntries, bool itemRemoved, List<string> failures)
+    {
+        string feedback = itemRemoved
+            ? "삭제 완료: " + analysis.ItemCode + " / 드랍 엔트리 " + removedDropEntries + "건 제거"
+            : "삭제 실패: " + analysis.ItemCode + " / 드랍 엔트리 " + removedDropEntries + "건 제거";
+
+        if (analysis.SalvageReferenceCount > 0)
+            feedback += "\nsalvage 참조 " + analysis.SalvageReferenceCount + "건 잔존 — Rescan 경고 확인 필요";
+
+        if (failures.Count > 0)
+            feedback += "\n일부 제거 실패: " + string.Join(" / ", failures);
+
+        return feedback;
     }
 
     private void DrawRowFoldout(ItemRow row)
@@ -1424,6 +1523,216 @@ public sealed class ItemDashboardWindow : EditorWindow
         return count;
     }
 
+    private static HashSet<string> BuildBlockedItemCodeSet()
+    {
+        HashSet<string> codes = new HashSet<string>(StringComparer.Ordinal);
+        FieldInfo[] fields = typeof(ItemCodes).GetFields(BindingFlags.Public | BindingFlags.Static);
+        for (int i = 0; i < fields.Length; i++)
+        {
+            FieldInfo field = fields[i];
+            if (!field.IsLiteral || field.FieldType != typeof(string))
+                continue;
+
+            string value = field.GetRawConstantValue() as string;
+            if (!string.IsNullOrWhiteSpace(value))
+                codes.Add(value);
+        }
+
+        // Runtime serialized defaults: CurrencyCounterUI.currencyItemCode, RestAreaShopUIController.currencyItemCode.
+        codes.Add("Currency");
+        // Runtime lookup/drop key: PlayerController/EnemyController/RoomSpawner use DeterministicSeedUtility.EliteKeyDomain.
+        codes.Add(DeterministicSeedUtility.EliteKeyDomain);
+        return codes;
+    }
+
+    private static int CountLiveDropEntries(string itemCode)
+    {
+        int count = 0;
+        List<EnemyDropDatabase> databases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
+        for (int i = 0; i < databases.Count; i++)
+            count += CountDropEntriesInDatabase(databases[i], itemCode);
+
+        return count;
+    }
+
+    private static int CountDropEntriesInDatabase(EnemyDropDatabase database, string itemCode)
+    {
+        if (database == null)
+            return 0;
+
+        SerializedObject databaseObject = new SerializedObject(database);
+        SerializedProperty groups = databaseObject.FindProperty("groups");
+        if (groups == null || !groups.isArray)
+            return 0;
+
+        int count = 0;
+        for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
+        {
+            SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
+            count += CountDropEntriesInArray(group.FindPropertyRelative("drops"), itemCode);
+
+            SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+            if (choiceGroups == null || !choiceGroups.isArray)
+                continue;
+
+            for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+            {
+                SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
+                count += CountDropEntriesInArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+            }
+        }
+
+        return count;
+    }
+
+    private static int CountDropEntriesInArray(SerializedProperty array, string itemCode)
+    {
+        if (array == null || !array.isArray)
+            return 0;
+
+        int count = 0;
+        for (int i = 0; i < array.arraySize; i++)
+        {
+            SerializedProperty entry = array.GetArrayElementAtIndex(i);
+            if (string.Equals(GetString(entry.FindPropertyRelative("itemCode")), itemCode, StringComparison.Ordinal))
+                count++;
+        }
+
+        return count;
+    }
+
+    private static int CountLiveSalvageReferences(ItemDatabase targetDatabase, int targetIndex, string itemCode)
+    {
+        int count = 0;
+        List<ItemDatabase> databases = LoadAssets<ItemDatabase>("t:ItemDatabase");
+        for (int dbIndex = 0; dbIndex < databases.Count; dbIndex++)
+        {
+            ItemDatabase database = databases[dbIndex];
+            if (database == null)
+                continue;
+
+            SerializedObject databaseObject = new SerializedObject(database);
+            SerializedProperty items = databaseObject.FindProperty("items");
+            if (items == null || !items.isArray)
+                continue;
+
+            for (int itemIndex = 0; itemIndex < items.arraySize; itemIndex++)
+            {
+                if (database == targetDatabase && itemIndex == targetIndex)
+                    continue;
+
+                SerializedProperty item = items.GetArrayElementAtIndex(itemIndex);
+                string salvageItemCode = GetString(item.FindPropertyRelative("salvageItemCode"));
+                if (string.Equals(salvageItemCode, itemCode, StringComparison.Ordinal))
+                    count++;
+            }
+        }
+
+        return count;
+    }
+
+    private int RemoveDropEntriesForItemCode(string itemCode, List<string> failures)
+    {
+        int removed = 0;
+        List<EnemyDropDatabase> databases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
+        for (int i = 0; i < databases.Count; i++)
+            removed += RemoveDropEntriesFromDatabase(databases[i], itemCode, failures);
+
+        return removed;
+    }
+
+    private int RemoveDropEntriesFromDatabase(EnemyDropDatabase database, string itemCode, List<string> failures)
+    {
+        if (database == null)
+            return 0;
+
+        SerializedObject databaseObject = new SerializedObject(database);
+        databaseObject.Update();
+        SerializedProperty groups = databaseObject.FindProperty("groups");
+        if (groups == null || !groups.isArray)
+        {
+            failures.Add(database.name + ".groups 없음");
+            return 0;
+        }
+
+        int removed = 0;
+        for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
+        {
+            SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
+            removed += RemoveDropEntriesFromArray(group.FindPropertyRelative("drops"), itemCode);
+
+            SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+            if (choiceGroups == null || !choiceGroups.isArray)
+                continue;
+
+            for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+            {
+                SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
+                removed += RemoveDropEntriesFromArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+            }
+        }
+
+        if (removed > 0 && !ApplyAndMark(databaseObject))
+            failures.Add(database.name + " 드랍 엔트리 제거 적용 실패");
+
+        return removed;
+    }
+
+    private static int RemoveDropEntriesFromArray(SerializedProperty array, string itemCode)
+    {
+        if (array == null || !array.isArray)
+            return 0;
+
+        int removed = 0;
+        for (int i = array.arraySize - 1; i >= 0; i--)
+        {
+            SerializedProperty entry = array.GetArrayElementAtIndex(i);
+            if (!string.Equals(GetString(entry.FindPropertyRelative("itemCode")), itemCode, StringComparison.Ordinal))
+                continue;
+
+            DeleteArrayElement(array, i);
+            removed++;
+        }
+
+        return removed;
+    }
+
+    private bool RemoveItemEntry(DeleteAnalysis analysis, List<string> failures)
+    {
+        SerializedObject databaseObject = new SerializedObject(analysis.Database);
+        databaseObject.Update();
+
+        SerializedProperty items = databaseObject.FindProperty("items");
+        if (items == null || !items.isArray)
+        {
+            failures.Add(analysis.Database.name + ".items 없음");
+            return false;
+        }
+
+        if (analysis.Index < 0 || analysis.Index >= items.arraySize)
+        {
+            failures.Add("items index stale. Rescan 권장");
+            return false;
+        }
+
+        SerializedProperty item = items.GetArrayElementAtIndex(analysis.Index);
+        string currentCode = GetString(item.FindPropertyRelative("itemCode"));
+        if (!string.Equals(currentCode, analysis.ItemCode, StringComparison.Ordinal))
+        {
+            failures.Add("항목 위치 변경됨. Rescan 권장");
+            return false;
+        }
+
+        DeleteArrayElement(items, analysis.Index);
+        if (!ApplyAndMark(databaseObject))
+        {
+            failures.Add(analysis.Database.name + " 아이템 제거 적용 실패");
+            return false;
+        }
+
+        return true;
+    }
+
     private bool TryGetRowItemProperty(ItemRow row, out SerializedObject databaseObject, out SerializedProperty item)
     {
         databaseObject = null;
@@ -2267,6 +2576,35 @@ public sealed class ItemDashboardWindow : EditorWindow
         {
             Enemy = enemy;
             Label = label;
+        }
+    }
+
+    private sealed class DeleteAnalysis
+    {
+        public readonly ItemDatabase Database;
+        public readonly int Index;
+        public readonly string ItemCode;
+        public readonly string DisplayName;
+        public readonly ItemType ItemType;
+        public readonly EngravingData Engraving;
+        public bool IsBlocked;
+        public int DropEntryCount;
+        public int SalvageReferenceCount;
+
+        public DeleteAnalysis(
+            ItemDatabase database,
+            int index,
+            string itemCode,
+            string displayName,
+            ItemType itemType,
+            EngravingData engraving)
+        {
+            Database = database;
+            Index = index;
+            ItemCode = itemCode;
+            DisplayName = displayName;
+            ItemType = itemType;
+            Engraving = engraving;
         }
     }
 
