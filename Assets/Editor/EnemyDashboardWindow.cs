@@ -59,6 +59,22 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private void OnEnable()
     {
         minSize = new Vector2(1180f, 520f);
+        Undo.undoRedoPerformed += OnUndoRedoPerformed;
+    }
+
+    private void OnDisable()
+    {
+        Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+    }
+
+    private void OnUndoRedoPerformed()
+    {
+        if (!_hasScanned)
+            return;
+
+        // Undo 대상 판별보다 전체 재스캔이 싸서 필터링하지 않음.
+        Scan();
+        Repaint();
     }
 
     private void OnGUI()
