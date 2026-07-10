@@ -29,6 +29,9 @@ public sealed class ItemDashboardWindow : EditorWindow
     private const float DropChanceWidth = 76f;
     private const float DropRemoveWidth = 24f;
     private const string ShowInfoWarningsKey = "JBRogLike.ItemDashboard.ShowInfoWarnings";
+    private const string WarningsPanelHeightKey = "JBRogLike.ItemDashboard.WarningsPanelHeight";
+    private const float MinWarningsPanelHeight = 60f;
+    private const float WarningsPanelMaxPadding = 220f;
 
     private static readonly string[] s_TypeFilterOptions = BuildTypeFilterOptions();
 
@@ -41,6 +44,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private string[] _enemyOptionLabels = Array.Empty<string>();
     private Vector2 _rowScrollPosition;
     private Vector2 _warningScrollPosition;
+    private float _warningsPanelHeight = WarningPanelHeight;
     private bool _hasScanned;
     private bool _hasAssetChanges;
     private bool _showNewItemForm;
@@ -70,6 +74,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     {
         minSize = new Vector2(1280f, 560f);
         _showInfoWarnings = EditorPrefs.GetBool(ShowInfoWarningsKey, true);
+        _warningsPanelHeight = EditorPrefs.GetFloat(WarningsPanelHeightKey, WarningPanelHeight);
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
     }
 
@@ -91,6 +96,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private void OnGUI()
     {
         DrawToolbar();
+        ClampWarningsPanelHeight();
 
         if (_showNewItemForm)
             DrawNewItemPanel();
@@ -103,6 +109,7 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         DrawSummary();
         DrawRowsPanel();
+        DrawPanelSplitter();
         DrawWarningsPanel();
     }
 
@@ -322,13 +329,14 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private void DrawRowsPanel()
     {
+        _rowScrollPosition = EditorGUILayout.BeginScrollView(_rowScrollPosition, true, true, GUILayout.ExpandHeight(true));
         if (_rows.Count == 0)
         {
             EditorGUILayout.HelpBox("No ItemDatabase entries found.", MessageType.Info);
+            EditorGUILayout.EndScrollView();
             return;
         }
 
-        _rowScrollPosition = EditorGUILayout.BeginScrollView(_rowScrollPosition, true, true, GUILayout.MinHeight(260f));
         DrawHeader();
 
         bool drewAny = false;
@@ -1200,12 +1208,63 @@ public sealed class ItemDashboardWindow : EditorWindow
         return string.Equals(GetString(entry.FindPropertyRelative("itemCode")), expectedItemCode, StringComparison.Ordinal);
     }
 
+    private void DrawPanelSplitter()
+    {
+        Rect splitterRect = GUILayoutUtility.GetRect(0f, 5f, GUILayout.ExpandWidth(true));
+        int id = GUIUtility.GetControlID(FocusType.Passive);
+        Event evt = Event.current;
+
+        if (evt.type == EventType.Repaint)
+        {
+            Color color = EditorGUIUtility.isProSkin
+                ? new Color(0.32f, 0.32f, 0.32f, 1f)
+                : new Color(0.62f, 0.62f, 0.62f, 1f);
+            EditorGUI.DrawRect(new Rect(splitterRect.x, splitterRect.y + 2f, splitterRect.width, 1f), color);
+        }
+
+        EditorGUIUtility.AddCursorRect(splitterRect, MouseCursor.ResizeVertical);
+        switch (evt.GetTypeForControl(id))
+        {
+            case EventType.MouseDown:
+                if (evt.button == 0 && splitterRect.Contains(evt.mousePosition))
+                {
+                    GUIUtility.hotControl = id;
+                    evt.Use();
+                }
+                break;
+
+            case EventType.MouseDrag:
+                if (GUIUtility.hotControl == id)
+                {
+                    _warningsPanelHeight -= evt.delta.y;
+                    ClampWarningsPanelHeight();
+                    evt.Use();
+                    Repaint();
+                }
+                break;
+
+            case EventType.MouseUp:
+                if (GUIUtility.hotControl == id)
+                {
+                    GUIUtility.hotControl = 0;
+                    evt.Use();
+                    EditorPrefs.SetFloat(WarningsPanelHeightKey, _warningsPanelHeight);
+                }
+                break;
+        }
+    }
+
+    private void ClampWarningsPanelHeight()
+    {
+        float maxHeight = Mathf.Max(MinWarningsPanelHeight, position.height - WarningsPanelMaxPadding);
+        _warningsPanelHeight = Mathf.Clamp(_warningsPanelHeight, MinWarningsPanelHeight, maxHeight);
+    }
+
     private void DrawWarningsPanel()
     {
-        EditorGUILayout.Space(4f);
         EditorGUILayout.LabelField("Warnings", EditorStyles.boldLabel);
 
-        _warningScrollPosition = EditorGUILayout.BeginScrollView(_warningScrollPosition, false, true, GUILayout.MaxHeight(WarningPanelHeight));
+        _warningScrollPosition = EditorGUILayout.BeginScrollView(_warningScrollPosition, false, true, GUILayout.Height(_warningsPanelHeight));
         if (GetVisibleWarningCount() == 0)
         {
             EditorGUILayout.HelpBox("No warnings.", MessageType.Info);
