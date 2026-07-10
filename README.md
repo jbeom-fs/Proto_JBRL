@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-09
-> 기준 커밋: master HEAD `7d65abc7` — **정비실 S3 완결(런 코어+일시강화 상점+툴팁, §11b-11) + 보스 흐름 픽스(ArenaDoor·페이드, §11e-7)**: 코어+상점(`959061ae`) → 툴팁+문 모듈+UI 씬 배치 전환(`7d65abc7`). 이전: 정비실 S2(Currency)+Enemy Dashboard S1~S4(`a7604838`)
+> 작성 기준일: 2026-07-10
+> 기준 커밋: master HEAD `b9336c80` — **Item Dashboard S1~S4(§15 툴링) + Ailment 표시 축(적 스턴 신설·슬롯 프리팹화·틱 flash, §7-9·§8-7)**: Item Dashboard(`db780f4d`~`2fb1bca8`) → 스턴+아이콘(`2c5232b6`~`7859f84b`) → HitFlash 제거+틱 flash(`b9336c80`). 이전: 정비실 S3 완결+보스 흐름 픽스(`7d65abc7`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -187,7 +187,7 @@ Assets/Scripts/
 │   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. SkillDataEditor child 적용으로 조건부 인스펙터 사용
 │   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
-│   ├── StatusEffectIconTable.cs    # 상태이상 아이콘 SO 단일 소스 (StatusEffectIconType: Poison/Bleed/Slow/Stun → Sprite). Resources/UI 폴백, 적 인디케이터·플레이어 HUD 공용 (§7-9)
+│   ├── StatusEffectIconTable.cs    # 상태이상 표시 SO 단일 소스 (StatusEffectIconType: Poison/Bleed/Slow/Stun → Sprite + flashColor + slotPrefab). Resources/UI 폴백, 적 인디케이터·플레이어 HUD·틱 flash 공용 (§7-9)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
 │   └── EnemyData.cs                # 적 ScriptableObject — Contact(+Special Rush/Jump) / Ranged + 투사체 패턴
 │                                    #   (EnemySpecialAttackType: None/Rush/Jump + 전용 파라미터 그룹)
@@ -264,7 +264,7 @@ Assets/Scripts/
 │   ├── ProjectileFireRequest.cs    # 투사체 1회 발사 파라미터 (적·플레이어 공용)
 │   ├── ProjectileController.cs     # 풀링 발사체 — 벽 반사·관통·파괴, 맵 범위 밖 자동 release, Fog 가시성, 회전 모드 (KeepPrefab/FaceMoveDirection)
 │   ├── ProjectilePool.cs           # 투사체 사전 풀링 (SetActive/DisableComponents 모드) — ReleaseAllActiveProjectiles로 층 이동 시 일괄 회수
-│   ├── HitFlashFeedback.cs         # 피격 시 SpriteRenderer 색상 점멸 (적·플레이어 공용)
+│   ├── HitFlashFeedback.cs         # SpriteRenderer 색상 점멸 — 플레이어=피격 Play(), 적=DoT 틱 Flash(색=StatusEffectIconTable.flashColor, 적 피격 점멸은 2026-07-10 제거)
 │   ├── PlayerInvincibilityFlashFeedback.cs # 무적 시 셰이더 _FlashAmount 보간 (PropertyBlock)
 │   ├── CombatEventChannel.cs       # 전투 이벤트 버스 (ScriptableObject)
 │   └── WorldEnvironmentQuery.cs    # 전투 코드용 환경 query 파사드 — WalkabilityQuery에 위임 (IsWalkablePoint/IsFootprintWalkable/HasGeometryLineOfSight/IsWallAt/IsInsideKnownCombatSpace)
@@ -274,8 +274,9 @@ Assets/Scripts/
 │
 ├── Enemy/
 │   ├── EnemyController.cs          # 적 HP·피해·사망·상태이상·넉백 벽 클램핑 (Die 시 EnemyBrain.HandleDeathStarted 호출) + DoT 수신(ApplyAilments/방어 무시 틱, §7-9)
-│   ├── EnemyAilments.cs            # 독/출혈 DoT 버킷 (순수 C#) — 스택 가산·지속 리필·타입 프로파일(독 1.0s/캡10, 출혈 0.5s/캡5) + AilmentType/AilmentApplication 정의
-│   ├── EnemyAilmentIndicator.cs    # 적 머리 위 DoT 아이콘 (EnemyHealthBar 미러) — GetAilmentStacks 폴링, 고정 슬롯, TopAnchorY 앵커 첫 LateUpdate 배치
+│   ├── EnemyAilments.cs            # 독/출혈 DoT 버킷 (순수 C#) — 스택 가산·지속 리필·타입 프로파일(독 1.0s/캡10, 출혈 0.5s/캡5) + 활성 순서 추적(TryGetFirstActiveType, 틱 flash 색 판정) + _version 가드(Tick 중 Clear write-back 차단)
+│   ├── EnemyAilmentIndicator.cs    # 적 머리 위 상태이상 아이콘 4종(독/출혈/슬로우/스턴) — 슬롯 프리팹 Instantiate+폴링, 적용 순서 왼쪽 압축 정렬, TopAnchorY 앵커 첫 LateUpdate 배치
+│   ├── AilmentStatusSlotView.cs    # 상태이상 슬롯 프리팹 뷰(아이콘+스택 숫자 TMP) — SetIcon(긴변 fit 정규화)/SetStackCount/SetVisible만, 비주얼은 프리팹 저작
 │   │                               #   + RequireComponent(EnemyInventory), MarkAsEliteKeyHolder/ClearEliteKeyHolder
 │   │                               #   + Die 시 DropItemSpawner.SpawnDrops(_inventory, position) 호출
 │   ├── EnemyInventory.cs           # 적 드랍 목록 (EnemyDropItem readonly struct: ItemCode·Amount)
@@ -385,6 +386,7 @@ Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 ├── EngravingValidatorWindow.cs     # JBRogLike/Engraving Validator — EngravingData·ItemDatabase·EnemyDropDatabase 정합성 스캔 + 고아 각인 Add to ItemDatabase Fix
 ├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
+├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
 └── TeleportDestinationIdDrawer.cs  # `[TeleportDestinationId]` 문자열 필드를 TeleportDestinationDatabase 의 id 드롭다운으로 렌더링
 ```
 
@@ -1125,18 +1127,18 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 | 송출(적중 경로) | `ApplyCombatImpact(..., ailments, ailmentDamageMultiplier)` — 멜리(AttackExecutor)/투사체(ProjectileFireRequest)/대시(DashDamageRequest)에 slow와 동승. **탄 평타(basicAttackSkillData)도 데이터를 따름**(slow/마커와 동일 규약 — 향후 Passive 각인 "평타에 독 부여" 대비) |
 | 송출(비데미지 경로) | **Blink** = 블링크 대상 적 단건 `ApplyAilments` / **무데미지 Dash**(데미지 플래그 둘 다 off + ailments 있음) = path 스윕으로 DoT만 — `ApplyCombatImpact` 미경유(방어 감산 `Max(1,…)`의 최소 1뎀 함정 회피), 흡혈·콤보·OnEnemyHit 미발동. Buff는 지원 제외 |
 | 수신 | `EnemyAilments`(순수 C#, `Action<int>` 콜백 주입) — 타입별 버킷 `{totalTickDamage, stacks, remainingDuration, tickTimer}`. **재부여=스택 가산**(틱뎀 합산+지속 리필, 캡 도달 시 리필만), 프로파일: 독=1.0s틱/캡10(장기 누적) · 출혈=0.5s틱/캡5(단기 폭발) — 차별화는 수치뿐, 메커니즘 분기 코드 없음. 히치 프레임 다중 틱 while 처리 |
-| 틱 적용 | `EnemyController.ApplyAilmentTickDamage` — **방어 무시**(min 1만), HitFlash 없음, HP바 갱신, HP 0 → 기존 `Die()` 파이프라인(드랍·이벤트) 재사용. 틱은 크리/흡혈/콤보 전부 비대상 |
+| 틱 적용 | `EnemyController.ApplyAilmentTickDamage` — **방어 무시**(min 1만), HP바 갱신, HP 0 → 기존 `Die()` 파이프라인(드랍·이벤트) 재사용. 틱은 크리/흡혈/콤보 전부 비대상. **틱 순간 1회 flash**(2026-07-10): 색=먼저 걸린 상태이상(`TryGetFirstActiveType`, 독=녹/출혈=적 — 테이블 `flashColor`), 동시 부여는 출혈→독 적용 순서 고정으로 선행 판정 결정적, 같은 프레임 이중 틱 `frameCount` 가드. **적 피격 flash는 제거**(HP바가 피격 피드백 — 플레이어 쪽 `Play()` 무손상) |
 | 증폭 | `PlayerCombatController.AilmentDamageMultiplier`(=1+`Get(AilmentDamage)`/100) — **부여 시점 스냅샷**: 공격자가 배율을 파이프에 실어 보내고 적은 플레이어 무참조. 부여 후 폼전환·강화 변경 무영향. **마커 기폭뎀도 같은 배율 선증폭** 후 `RollCritDamage`(범용 효과뎀 배율 — DoT 각인 없어도 死스탯 아님) |
-| 표시 | `EnemyAilmentIndicator`(적 프리팹 8종 부착, EnemyHealthBar 미러) — `GetAilmentStacks` 폴링, 고정 슬롯(독=왼/출혈=오른) on/off. 위치 = `EnemyHealthBar.TopAnchorY`(콜라이더 기준 바 상단) + iconGap — HP바가 위치의 단일 진실. ⚠️앵커 배치는 첫 LateUpdate 1회(Awake 금지 — 콜라이더 radius가 `EnemyController.Awake`에서 조정되는 순서 함정) |
-| 아이콘 소스 | `StatusEffectIconTable`(SO, `Resources/UI/`) — Poison/Bleed/Slow/Stun 4종 단일 소스. 적 인디케이터와 **플레이어 HUD(`PlayerStatusEffectUI.SetIcon`) 양쪽이 수급**, SerializeField 우선+Resources 폴백 |
+| 표시 | `EnemyAilmentIndicator`(적 프리팹 8종 부착, EnemyHealthBar 미러) — 상태 4종(독/출혈/슬로우/스턴) 폴링, **적용 순서 왼쪽 압축 정렬**(off→on 엣지 리스트, 재부여=순서 유지, 셋 변경 시만 재배치) + 독·출혈 **스택 숫자**. 비주얼은 `AilmentStatusSlot` 공용 프리팹 1개(`AilmentStatusSlotView` — SetIcon 긴변 fit 정규화/SetStackCount/SetVisible, 크기·정렬·오프셋 전부 프리팹 저작) — 코드 조립 UI 소멸(2026-07-10). 위치 = `EnemyHealthBar.TopAnchorY` + iconGap — HP바가 위치의 단일 진실. ⚠️앵커 배치는 첫 LateUpdate 1회(Awake 금지 — 콜라이더 radius가 `EnemyController.Awake`에서 조정되는 순서 함정) |
+| 표시 소스 | `StatusEffectIconTable`(SO, `Resources/UI/`) — 타입 4종의 **아이콘 + flashColor + slotPrefab** 단일 소스. 적 인디케이터·**플레이어 HUD(`PlayerStatusEffectUI.SetIcon`)**·틱 flash(`HitFlashFeedback.Flash(type)`) 전부 수급, SerializeField 우선+Resources 폴백 |
 
 **데이터**: `SoulEnhancementTable` Dagger(form 2)/AilmentDamage(stat 9) perLevel 10 / maxLevel 10 → 만렙 틱뎀 2배. 폼 게이팅은 데이터 자동(비-Dagger = 테이블 엔트리 없음 = 배율 1.0).
 
 **콘솔**: `/ailment <poison|bleed> [tickDamage=2] [duration=5]` — 플레이어 최근접 생존 적에게 부여(검증용).
 
-**알려진 잠재 함정(무해, 기록)**: DoT 틱이 막타인 경우 `Die()→Clear()`가 Tick 실행 도중 호출되고 로컬 버킷 write-back이 이를 덮음 — 사망 후 Tick 미호출+`Initialize` 재Clear로 현 라이프사이클에선 관측 불가. 사망 외 시점에 Clear를 호출하는 코드가 생기면 콜백 후 재읽기 픽스 필요.
+**~~알려진 잠재 함정~~ → 픽스됨(2026-07-10)**: Tick 콜백 중 `Clear()` 발생 시 로컬 버킷 write-back이 덮는 문제 — `_version` 가드(Clear마다 증가, 콜백 후 불일치면 write-back 중단)로 원천 차단. 사망 외 시점 Clear 호출자가 생겨도 안전.
 
-**후속 예정**: 각인 Active/Passive 분류(Passive=평타 부착형 — 기획만), 틴트(B안) 표시, 스택 강도 표시, 적 슬로우/스턴 아이콘 표시(테이블 엔트리는 준비됨).
+**표시 후속 완료(2026-07-10)**: ~~틴트(B안)~~→틱 동기 flash로 대체 구현 / 스택 숫자 표시 / 슬로우·스턴 아이콘 + **적 스턴 상태 축 신설**(§8-7). 남은 기획: 각인 Active/Passive 분류(Passive=평타 부착형 — 기획만). 스택 소멸은 **전량 일괄(버킷 단일 duration)이 의도** — 개별 감쇠는 데이터 모델 변경 건.
 
 ---
 
@@ -1356,9 +1358,10 @@ Bounce:      X/Y 축별로 차단된 축의 방향만 반전
 | 상태이상 | 처리 |
 |--------|------|
 | 넉백 | 방향 × 힘 임펄스, `knockbackResistance`로 감쇠. CircleCast + 그리드 IsWalkable 양면 클램핑으로 벽 안 끼임 방지. `immuneToKnockback=true` 이면 즉시 velocity=0 후 무시 |
-| 슬로우 | `_activeSlows` 리스트에서 가장 강한 감속만 moveSpeed 승수에 반영, 지속시간 후 자동 제거 |
-| DoT (독/출혈) | `EnemyAilments` 버킷 위임 — `ApplyCombatImpact` 동승 또는 `ApplyAilments` 직접 부여, Update에서 `Tick`. 틱뎀은 방어 무시·HitFlash 없음, HP 0 → 기존 `Die()` 재사용. 아이콘 표시=`EnemyAilmentIndicator`. 상세 §7-9 |
-| 피격 점멸 | `HitFlashFeedback.Play()` — SpriteRenderer 색상 N회 점멸 |
+| 슬로우 | `_activeSlows` 리스트에서 가장 강한 감속만 moveSpeed 승수에 반영, 지속시간 후 자동 제거. `IsSlowed` 노출 |
+| 스턴 (2026-07-10 신설) | `ApplyStun(duration)` — 타이머 단일(재부여=Max 갱신, 스택 없음). `MoveSpeedMultiplier`에 fold(스턴=0)로 이동 정지 + `EnemyBrain` Update 게이트(엘리트 패턴 Tick 포함 전 행동·쿨회복 정지, 넉백락과 동일 위치) + `CanAttack` 이중 게이트. DoT 틱은 무관하게 진행. `IsStunned` 노출(⚠️아이콘 판정은 MoveSpeedMultiplier가 아닌 IsSlowed/IsStunned 분리 accessor — 스턴 중 슬로우 오표시 차단). 콘솔 `/stun`. 플레이어 스턴 부여 스킬/각인 데이터는 후속 |
+| DoT (독/출혈) | `EnemyAilments` 버킷 위임 — `ApplyCombatImpact` 동승 또는 `ApplyAilments` 직접 부여(출혈→독 순서 고정), Update에서 `Tick`. 틱뎀은 방어 무시, 틱 순간 flash(색=선행 상태이상), HP 0 → 기존 `Die()` 재사용. 표시=`EnemyAilmentIndicator`(4종 압축 정렬+스택 숫자). 상세 §7-9 |
+| 상태이상 점멸 | `HitFlashFeedback.Flash(type/Color)` — DoT 틱 순간만 발동(색=`StatusEffectIconTable.flashColor`). **적 피격 점멸은 제거(2026-07-10)** — HP바가 피격 피드백 담당. 플레이어 피격 `Play()`는 유지 |
 
 > 적이 플레이어에게 가하는 부가 효과는 `EnemyAttackImpactData`(knockback·slow·stun) 구조로 EnemyData 인스펙터에 노출됩니다. Rush/Jump/Projectile 각자 `rushImpact`/`jumpImpact`/`projectileImpact` 필드를 보유하며 일반 Contact 접촉 피해는 단순 데미지(`TakeDamage(attack)`)만 적용합니다.
 
@@ -2164,6 +2167,7 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | `/enhance <form> <stat> [count]` | Soul 강화 레벨 부여 (§11b-8) | form → `PlayerFormId` / stat → `SoulStatType` 토큰 (2층) |
 | `/engraving give/equip/unequip/show` | 영혼각인 풀 적재·슬롯 교체·조회 (§7-8, 인자 0-based) | 서브커맨드 토큰 |
 | `/ailment <poison\|bleed> [tickDamage=2] [duration=5]` | 최근접 생존 적에게 DoT 부여 (§7-9 검증용) | `poison` `bleed` |
+| `/stun [duration=2]` | 최근접 생존 적에게 스턴 부여 (§8-7 검증용) | 없음 |
 
 ### 11c-3. 자동완성 구조
 
@@ -2621,8 +2625,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 ```
 // ① AilmentType enum 에 값 append (EnemyAilments.cs — 기존 값 순서 유지)
 // ② EnemyAilments.s_Profiles 에 프로파일 추가 (tickInterval, maxStacks) + AilmentTypeCount 갱신
-// ③ StatusEffectIconType enum append + StatusEffectIconTable 에셋에 아이콘 엔트리 추가
-// ④ EnemyAilmentIndicator 에 슬롯 추가 (아이콘 확보 + 폴링 + 고정 슬롯 위치)
+// ③ StatusEffectIconType enum append + StatusEffectIconTable 에셋에 아이콘·flashColor 엔트리 추가
+// ④ EnemyAilmentIndicator 에 상태 인덱스 추가 (슬롯 Instantiate + 폴링 판정 — 압축 정렬·프리팹 비주얼은 공용이라 무수정)
 // ⑤ 스킬 에셋의 ailments 배열에 새 타입 기입 — 송출 배선은 공용이라 코드 무수정
 ```
 
@@ -2744,8 +2748,9 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 적→플레이어 | `PlayerStatusEffects`(순수 C# — 넉백/슬로우/스턴, Tick 타이머) + `ApplyEnemyCombatImpact` 단일 진입점 + `PlayerStatusEffectUI`(아이콘+잔여시간) |
-| 플레이어→적 (DoT) | **독/출혈 + AilmentDamage(S1~S4)** — `EnemyAilments` 버킷(스택 가산·프로파일 차별화) + `SkillData.ailments` 배열 송출(전 실행타입, 탄 평타 허용) + 방어 무시 틱 + 스냅샷 증폭 + 마커 기폭 선증폭 + `EnemyAilmentIndicator` + 콘솔 `/ailment`. **Soul 스탯 10종 실작동 완성**(2026-07-06). 상세 §7-9 |
-| 아이콘 단일 소스 | `StatusEffectIconTable`(SO, Resources 폴백) — Poison/Bleed/Slow/Stun, 적 인디케이터·플레이어 HUD 양쪽 수급 |
+| 플레이어→적 (DoT) | **독/출혈 + AilmentDamage(S1~S4)** — `EnemyAilments` 버킷(스택 가산·프로파일 차별화) + `SkillData.ailments` 배열 송출(전 실행타입, 탄 평타 허용) + 방어 무시 틱 + 스냅샷 증폭 + 마커 기폭 선증폭 + 콘솔 `/ailment`. **Soul 스탯 10종 실작동 완성**(2026-07-06). 상세 §7-9 |
+| 플레이어→적 (스턴) | **적 스턴 축(2026-07-10 신설)** — `ApplyStun` 타이머(Max 갱신) + 이동/행동/엘리트 패턴 정지 + 콘솔 `/stun`. 스킬/각인 데이터 부여는 후속. 상세 §8-7 |
+| 상태이상 표시 (2026-07-10 완결) | `EnemyAilmentIndicator` 4종(독/출혈/슬로우/스턴) **적용 순서 압축 정렬 + 스택 숫자** + `AilmentStatusSlot` 공용 프리팹(비주얼=인스펙터 저작) + **DoT 틱 동기 flash**(색=선행 상태이상, 적 피격 flash 제거). 표시 소스=`StatusEffectIconTable`(아이콘+flashColor+slotPrefab 단일 SO) |
 
 **아이템·경제·성장**
 
@@ -2775,8 +2780,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 | 묶음 | 핵심 구성 |
 |------|-----------|
-| 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 12개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment). 상세 §11c |
-| CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종, §15 참고) |
+| 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 13개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment /stun). 상세 §11c |
+| CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종) / **`ItemDashboardWindow`**(아이템 통합 조망·foldout 편집·itemCode rename 참조 추적·드랍 양방향 편집·생성/삭제 — 역참조 분석+코드상수 차단(`elite_key`=itemCode 겸용 확인), 전부 Undo 가능, 2026-07-10). 양 대시보드 공통: **Undo/Redo 자동 Rescan + 행/경고 패널 드래그 스플리터**(EditorPrefs 영속) |
 | 이벤트·공통 인프라 | `DungeonEventChannel`/`CombatEventChannel` 이벤트 버스 + `CombatLayers` 정적 캐시(WallMask 폴백 포함) + 던전 서비스 분리(Query/Spawn/FloorTransition) |
 | 성능 | NonAlloc 물리·A* 버퍼 재사용·오브젝트 풀·청크 로딩·미시 최적화(분리 벡터 throttle, LateUpdate 좌표 skip, 슬로우 재계산 만료 시점만, 픽셀 스프라이트 공유) + `PerfStage`/`RuntimePerfTraceLogger` 계측. 상세 §12 |
 | 리팩터·정리 | behavior-preserving 추출(`PlayerStatusEffects`/`ParryStackResource` 순수 C#) + 미사용 코드 삭제(Projectile/DoorController/DungeonPortal/NormalEnemyAI 등) + ExtendPack 데모 정리 + GameOver 자동 빌드 제거 + `PlayerEliteKeyInventory` 통합 제거 |
@@ -2789,7 +2794,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
-| 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행)와 표시 고도화(틴트/스택 강도/적 슬로우·스턴 아이콘) |
+| 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. **표시 고도화도 완료(2026-07-10)** — 압축 정렬·스택 숫자·슬로우/스턴 아이콘·틱 flash. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행) |
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
 | 정비실 (Rest Area) | — | **완료(S1~S3c, 2026-07-09)** — S1 흐름 + S2 Currency + S3 런 코어·일시강화 상점·툴팁(§11b-11, §11e-6). 남은 데이터 작업: 아이템 description 수기 작성(빈 것은 "내용없음" 표시로 발견 가능) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처(→정비실 S2·S3로 흡수), 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
@@ -2797,7 +2802,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
-| 상태이상 시스템 확장 | 낮음 | **독/출혈 DoT 완료(§7-9)**. 남은: 빙결 등 신규 타입(AilmentType append + 프로파일), 적 슬로우/스턴 아이콘 표시(`StatusEffectIconTable` 엔트리는 준비됨), 각인 Active/Passive 분류(Passive=평타 부착형, 기획만) |
+| 상태이상 시스템 확장 | 낮음 | **독/출혈 DoT + 표시 축 + 적 스턴 축 완료(§7-9·§8-7, 2026-07-10)**. 남은: 플레이어 스턴 부여 스킬/각인 데이터(축은 완성), 빙결 등 신규 타입(AilmentType append + 프로파일), 각인 Active/Passive 분류(Passive=평타 부착형, 기획만), HP바 크기 중앙 관리 SO(tier 3종 — 설계 합의, 예약) |
 | 세이브 / 로드 | 낮음 | **영구축(Soul+Material+강화레벨) JSON 영속 완료**(사망·앱 재시작, §11b-10). 남은: 세이브 보안(AES/HMAC — Protect/Unprotect seam만 비움), 런 중간 진행도 저장(현재 사망=런 종료) |
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장. Boss Arena는 WalkabilityArea 컴포넌트 부착만으로 지원 가능 |
 | AreaOverTime / Buff Elite 패턴 | 낮음 | ElitePatternData 추가 변형 자리 — 예: 광역 장판, 자기 강화 |
