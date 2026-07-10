@@ -15,9 +15,12 @@ public sealed class StatusEffectIconTable : ScriptableObject
 {
     public const string ResourcePath = "UI/StatusEffectIconTable";
 
+    [SerializeField] private AilmentStatusSlotView slotPrefab;
+
     public List<Entry> entries = new List<Entry>();
 
     private Dictionary<StatusEffectIconType, Sprite> _iconsByType;
+    public AilmentStatusSlotView SlotPrefab => slotPrefab;
 
     [Serializable]
     public sealed class Entry

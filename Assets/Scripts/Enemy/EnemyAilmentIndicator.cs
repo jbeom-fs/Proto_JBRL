@@ -16,214 +16,144 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     [Tooltip("Fallback local Y used when EnemyHealthBar is missing.")]
     [SerializeField] private float yOffset = 0.8f;
     [SerializeField] private float iconGap = 0.08f;
+    // 프리팹 아이콘 실제 크기와 수동 동기: HP바 위 Y 앵커 계산에만 사용.
     [SerializeField] private float iconWorldSize = 0.25f;
     [SerializeField] private float spacing = 0.28f;
 
-    [Header("Rendering")]
-    [SerializeField] private string sortingLayerName = "Default";
-    [SerializeField] private int sortingOrder = 12;
+    private static readonly StatusEffectIconType[] s_IconTypes =
+    {
+        StatusEffectIconType.Poison,
+        StatusEffectIconType.Bleed,
+        StatusEffectIconType.Slow,
+        StatusEffectIconType.Stun
+    };
 
     private EnemyController _enemy;
     private EnemyHealthBar _healthBar;
-    private GameObject _poisonObject;
-    private GameObject _bleedObject;
-    private GameObject _slowObject;
-    private GameObject _stunObject;
     private Vector3 _invScale = Vector3.one;
-    private Sprite _poisonIcon;
-    private Sprite _bleedIcon;
-    private Sprite _slowIcon;
-    private Sprite _stunIcon;
-    private bool _poisonVisible;
-    private bool _bleedVisible;
-    private bool _slowVisible;
-    private bool _stunVisible;
+    private readonly AilmentStatusSlotView[] _slots = new AilmentStatusSlotView[StatusCount];
+    private readonly bool[] _hasIcon = new bool[StatusCount];
+    private readonly bool[] _visible = new bool[StatusCount];
+    private readonly int[] _activeOrder = new int[StatusCount];
+    private int _activeOrderCount;
+    private bool _initialized;
     private bool _positioned;
+    private bool _warnedMissingTable;
+    private bool _warnedMissingSlotPrefab;
     private bool _warnedMissingPoison;
     private bool _warnedMissingBleed;
     private bool _warnedMissingSlow;
     private bool _warnedMissingStun;
-    private bool _warnedMissingTable;
-    private readonly int[] _activeOrder = new int[StatusCount];
-    private int _activeOrderCount;
 
     private void Awake()
     {
         _enemy = GetComponent<EnemyController>();
         _healthBar = GetComponent<EnemyHealthBar>();
         ResolveInverseScale();
-        ResolveIcons();
-        _poisonObject = CreateIconChild("Ailment_Poison", _poisonIcon);
-        _bleedObject = CreateIconChild("Ailment_Bleed", _bleedIcon);
-        _slowObject = CreateIconChild("Ailment_Slow", _slowIcon);
-        _stunObject = CreateIconChild("Ailment_Stun", _stunIcon);
-        ClearActiveStatuses();
+        CreateSlots();
     }
 
     private void LateUpdate()
     {
-        PositionIconsIfNeeded();
+        if (!_initialized)
+            return;
 
         if (_enemy == null || _enemy.IsDead || !_enemy.IsAlive)
         {
-            ClearActiveStatuses();
+            ClearRuntimeState(true);
             return;
         }
 
+        PositionSlotsIfNeeded();
+
+        int poisonStacks = _hasIcon[PoisonIndex] ? _enemy.GetAilmentStacks(AilmentType.Poison) : 0;
+        int bleedStacks = _hasIcon[BleedIndex] ? _enemy.GetAilmentStacks(AilmentType.Bleed) : 0;
+
+        SetSlotStackCount(PoisonIndex, poisonStacks);
+        SetSlotStackCount(BleedIndex, bleedStacks);
+
         bool orderChanged = false;
-        orderChanged |= UpdateStatusVisible(PoisonIndex, _poisonIcon != null && _enemy.GetAilmentStacks(AilmentType.Poison) > 0);
-        orderChanged |= UpdateStatusVisible(BleedIndex, _bleedIcon != null && _enemy.GetAilmentStacks(AilmentType.Bleed) > 0);
-        orderChanged |= UpdateStatusVisible(SlowIndex, _slowIcon != null && _enemy.IsSlowed);
-        orderChanged |= UpdateStatusVisible(StunIndex, _stunIcon != null && _enemy.IsStunned);
+        orderChanged |= UpdateStatusVisible(PoisonIndex, poisonStacks > 0);
+        orderChanged |= UpdateStatusVisible(BleedIndex, bleedStacks > 0);
+        orderChanged |= UpdateStatusVisible(SlowIndex, _hasIcon[SlowIndex] && _enemy.IsSlowed);
+        orderChanged |= UpdateStatusVisible(StunIndex, _hasIcon[StunIndex] && _enemy.IsStunned);
 
         if (orderChanged)
-            RefreshActiveIconPositions();
+            RefreshActiveSlotPositions();
     }
 
     private void OnDisable()
     {
-        ClearActiveStatuses();
-        _positioned = false;
+        ClearRuntimeState(true);
     }
 
-    private GameObject CreateIconChild(string childName, Sprite icon)
+    private void CreateSlots()
     {
-        GameObject child = new GameObject(childName);
-        Transform childTransform = child.transform;
-        childTransform.SetParent(transform, false);
-        childTransform.localPosition = new Vector3(spacing * StartSlotOffset * _invScale.x, 0f, 0f);
-        childTransform.localScale = ResolveIconScale(icon);
+        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        if (table == null)
+        {
+            WarnMissingTable();
+            return;
+        }
 
-        SpriteRenderer renderer = child.AddComponent<SpriteRenderer>();
-        renderer.sprite = icon;
-        renderer.sortingLayerName = sortingLayerName;
-        renderer.sortingOrder = sortingOrder;
-        child.SetActive(false);
-        return child;
+        AilmentStatusSlotView prefab = table.SlotPrefab;
+        if (prefab == null)
+        {
+            WarnMissingSlotPrefab();
+            return;
+        }
+
+        for (int i = 0; i < StatusCount; i++)
+        {
+            AilmentStatusSlotView slot = Instantiate(prefab, transform, false);
+            Transform slotTransform = slot.transform;
+            slotTransform.localScale = Vector3.Scale(slotTransform.localScale, _invScale);
+            slotTransform.localPosition = new Vector3(spacing * StartSlotOffset * _invScale.x, 0f, 0f);
+            slot.name = "Ailment_" + s_IconTypes[i];
+
+            if (table.TryGetIcon(s_IconTypes[i], out Sprite icon))
+            {
+                _hasIcon[i] = true;
+                slot.SetIcon(icon);
+            }
+            else
+            {
+                WarnMissingIcon(s_IconTypes[i]);
+                slot.SetIcon(null);
+            }
+
+            slot.SetStackCount(0);
+            slot.SetVisible(false);
+            _slots[i] = slot;
+        }
+
+        _initialized = true;
     }
 
-    private void PositionIconsIfNeeded()
+    private void PositionSlotsIfNeeded()
     {
         if (_positioned)
             return;
 
         _positioned = true;
-        RefreshActiveIconPositions();
-    }
-
-    private void SetIconPosition(GameObject iconObject, float slotOffset, float y)
-    {
-        if (iconObject == null)
-            return;
-
-        iconObject.transform.localPosition = new Vector3(spacing * slotOffset * _invScale.x, y, 0f);
-    }
-
-    private Vector3 ResolveIconScale(Sprite icon)
-    {
-        if (icon == null || iconWorldSize <= 0f)
-            return _invScale;
-
-        Vector2 size = icon.bounds.size;
-        float longest = Mathf.Max(size.x, size.y);
-        float baseScale = longest > 0.0001f ? iconWorldSize / longest : 1f;
-        return new Vector3(baseScale * _invScale.x, baseScale * _invScale.y, 1f);
-    }
-
-    private void ResolveInverseScale()
-    {
-        Vector3 scale = transform.lossyScale;
-        _invScale = new Vector3(SafeInv(scale.x), SafeInv(scale.y), 1f);
-    }
-
-    private void SetPoisonVisible(bool visible)
-    {
-        if (_poisonVisible == visible)
-            return;
-
-        _poisonVisible = visible;
-        if (_poisonObject != null)
-            _poisonObject.SetActive(visible);
-    }
-
-    private void SetBleedVisible(bool visible)
-    {
-        if (_bleedVisible == visible)
-            return;
-
-        _bleedVisible = visible;
-        if (_bleedObject != null)
-            _bleedObject.SetActive(visible);
-    }
-
-    private void SetSlowVisible(bool visible)
-    {
-        if (_slowVisible == visible)
-            return;
-
-        _slowVisible = visible;
-        if (_slowObject != null)
-            _slowObject.SetActive(visible);
-    }
-
-    private void SetStunVisible(bool visible)
-    {
-        if (_stunVisible == visible)
-            return;
-
-        _stunVisible = visible;
-        if (_stunObject != null)
-            _stunObject.SetActive(visible);
+        RefreshActiveSlotPositions();
     }
 
     private bool UpdateStatusVisible(int statusIndex, bool visible)
     {
-        if (IsStatusVisible(statusIndex) == visible)
+        if (_visible[statusIndex] == visible)
             return false;
 
-        SetStatusVisible(statusIndex, visible);
+        _visible[statusIndex] = visible;
+        if (_slots[statusIndex] != null)
+            _slots[statusIndex].SetVisible(visible);
+
         if (visible)
             AppendActiveStatus(statusIndex);
         else
             RemoveActiveStatus(statusIndex);
 
         return true;
-    }
-
-    private bool IsStatusVisible(int statusIndex)
-    {
-        switch (statusIndex)
-        {
-            case PoisonIndex:
-                return _poisonVisible;
-            case BleedIndex:
-                return _bleedVisible;
-            case SlowIndex:
-                return _slowVisible;
-            case StunIndex:
-                return _stunVisible;
-            default:
-                return false;
-        }
-    }
-
-    private void SetStatusVisible(int statusIndex, bool visible)
-    {
-        switch (statusIndex)
-        {
-            case PoisonIndex:
-                SetPoisonVisible(visible);
-                break;
-            case BleedIndex:
-                SetBleedVisible(visible);
-                break;
-            case SlowIndex:
-                SetSlowVisible(visible);
-                break;
-            case StunIndex:
-                SetStunVisible(visible);
-                break;
-        }
     }
 
     private void AppendActiveStatus(int statusIndex)
@@ -250,14 +180,21 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         }
     }
 
-    private void RefreshActiveIconPositions()
+    private void RefreshActiveSlotPositions()
     {
         if (!_positioned)
             return;
 
         float y = ResolveIconY();
         for (int i = 0; i < _activeOrderCount; i++)
-            SetIconPosition(GetStatusObject(_activeOrder[i]), StartSlotOffset + i, y);
+        {
+            AilmentStatusSlotView slot = _slots[_activeOrder[i]];
+            if (slot == null)
+                continue;
+
+            float slotOffset = StartSlotOffset + i;
+            slot.transform.localPosition = new Vector3(spacing * slotOffset * _invScale.x, y, 0f);
+        }
     }
 
     private float ResolveIconY()
@@ -267,58 +204,40 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             : yOffset * _invScale.y;
     }
 
-    private GameObject GetStatusObject(int statusIndex)
+    private void SetSlotStackCount(int statusIndex, int stackCount)
     {
-        switch (statusIndex)
-        {
-            case PoisonIndex:
-                return _poisonObject;
-            case BleedIndex:
-                return _bleedObject;
-            case SlowIndex:
-                return _slowObject;
-            case StunIndex:
-                return _stunObject;
-            default:
-                return null;
-        }
+        AilmentStatusSlotView slot = _slots[statusIndex];
+        if (slot != null)
+            slot.SetStackCount(stackCount);
     }
 
-    private void ClearActiveStatuses()
+    private void ClearRuntimeState(bool resetPositioned)
     {
-        SetPoisonVisible(false);
-        SetBleedVisible(false);
-        SetSlowVisible(false);
-        SetStunVisible(false);
+        for (int i = 0; i < StatusCount; i++)
+        {
+            _visible[i] = false;
+            if (_slots[i] == null)
+                continue;
+
+            _slots[i].SetVisible(false);
+            if (i == PoisonIndex || i == BleedIndex)
+                _slots[i].SetStackCount(0);
+        }
+
         _activeOrderCount = 0;
+        if (resetPositioned)
+            _positioned = false;
+    }
+
+    private void ResolveInverseScale()
+    {
+        Vector3 scale = transform.lossyScale;
+        _invScale = new Vector3(SafeInv(scale.x), SafeInv(scale.y), 1f);
     }
 
     private static float SafeInv(float value)
     {
         return Mathf.Abs(value) > 0.0001f ? 1f / value : 1f;
-    }
-
-    private void ResolveIcons()
-    {
-        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
-        if (table == null)
-        {
-            WarnMissingTable();
-            WarnMissingIcon(StatusEffectIconType.Poison);
-            WarnMissingIcon(StatusEffectIconType.Bleed);
-            WarnMissingIcon(StatusEffectIconType.Slow);
-            WarnMissingIcon(StatusEffectIconType.Stun);
-            return;
-        }
-
-        if (!table.TryGetIcon(StatusEffectIconType.Poison, out _poisonIcon))
-            WarnMissingIcon(StatusEffectIconType.Poison);
-        if (!table.TryGetIcon(StatusEffectIconType.Bleed, out _bleedIcon))
-            WarnMissingIcon(StatusEffectIconType.Bleed);
-        if (!table.TryGetIcon(StatusEffectIconType.Slow, out _slowIcon))
-            WarnMissingIcon(StatusEffectIconType.Slow);
-        if (!table.TryGetIcon(StatusEffectIconType.Stun, out _stunIcon))
-            WarnMissingIcon(StatusEffectIconType.Stun);
     }
 
     private void WarnMissingTable()
@@ -332,6 +251,17 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             "[EnemyAilmentIndicator] StatusEffectIconTable is missing. Expected Resources path: " +
             StatusEffectIconTable.ResourcePath,
             this);
+#endif
+    }
+
+    private void WarnMissingSlotPrefab()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedMissingSlotPrefab)
+            return;
+
+        _warnedMissingSlotPrefab = true;
+        Debug.LogWarning("[EnemyAilmentIndicator] AilmentStatusSlotView prefab is missing; indicator disabled.", this);
 #endif
     }
 

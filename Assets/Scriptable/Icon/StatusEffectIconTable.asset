@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34cc93cad24040638fd472626c3fb88e, type: 3}
   m_Name: StatusEffectIconTable
   m_EditorClassIdentifier: Assembly-CSharp::StatusEffectIconTable
+  slotPrefab: {fileID: 1331223471406157696, guid: 98591dccd6de3ac4680bdbfc7e292c7a, type: 3}
   entries:
   - type: 0
     icon: {fileID: 7567841161216447971, guid: 33a006553052a9a4690af3b50c1d78ad, type: 3}

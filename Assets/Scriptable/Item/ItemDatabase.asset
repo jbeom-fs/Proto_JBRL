@@ -314,9 +314,7 @@ MonoBehaviour:
     maxStack: 99
     removeOnFloorTransition: 1
     removeOnDungeonExit: 1
-    useEffects:
-    - type: 1
-      value: 0
+    useEffects: []
     passiveEffects: []
     soulFormId: 0
     engraving: {fileID: 0}

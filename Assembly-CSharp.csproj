@@ -81,6 +81,7 @@
     <Compile Include="Assets\Scripts\Items\SoulDropResolver.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverUIController.cs" />
     <Compile Include="Assets\Scripts\Visual\FogVisibilityRenderer.cs" />
+    <Compile Include="Assets\Scripts\Enemy\AilmentStatusSlotView.cs" />
     <Compile Include="Assets\Scripts\UI\InventorySlotUI.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
