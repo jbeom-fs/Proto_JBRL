@@ -20,6 +20,12 @@ public sealed class ItemDashboardWindow : EditorWindow
     private const float TypeSummaryWidth = 300f;
     private const float DropSourceWidth = 420f;
     private const float WarningPanelHeight = 180f;
+    private const float DropEnemyWidth = 140f;
+    private const float DropKindWidth = 42f;
+    private const float DropAmountWidth = 58f;
+    private const float DropGroupChanceWidth = 86f;
+    private const float DropChanceWidth = 76f;
+    private const float DropRemoveWidth = 24f;
     private const string ShowInfoWarningsKey = "JBRogLike.ItemDashboard.ShowInfoWarnings";
 
     private static readonly string[] s_TypeFilterOptions = BuildTypeFilterOptions();
@@ -35,13 +41,22 @@ public sealed class ItemDashboardWindow : EditorWindow
     private Vector2 _warningScrollPosition;
     private bool _hasScanned;
     private bool _hasAssetChanges;
+    private bool _showNewItemForm;
     private bool _showInfoWarnings = true;
     private int _typeFilterIndex;
     private string _searchText = string.Empty;
     private string _lastScanLabel = "-";
+    private ItemDatabase _primaryItemDatabase;
     private EnemyDropDatabase _primaryDropDatabase;
     private string _operationFeedback = string.Empty;
     private MessageType _operationFeedbackType = MessageType.Info;
+    private string _newItemCode = string.Empty;
+    private string _newItemDisplayName = string.Empty;
+    private ItemType _newItemType = ItemType.Material;
+    private bool _newItemCreateDropStub;
+    private int _newItemDropEnemyIndex;
+    private string _newItemFeedback = string.Empty;
+    private MessageType _newItemFeedbackType = MessageType.Info;
 
     [MenuItem("JBRogLike/Item Dashboard")]
     public static void Open()
@@ -59,6 +74,9 @@ public sealed class ItemDashboardWindow : EditorWindow
     {
         DrawToolbar();
 
+        if (_showNewItemForm)
+            DrawNewItemPanel();
+
         if (!_hasScanned)
         {
             EditorGUILayout.HelpBox("Click Scan to build the Item Dashboard.", MessageType.Info);
@@ -75,6 +93,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
         if (GUILayout.Button("Scan", EditorStyles.toolbarButton, GUILayout.Width(80f)))
             Scan();
+        _showNewItemForm = GUILayout.Toggle(_showNewItemForm, "New Item", EditorStyles.toolbarButton, GUILayout.Width(90f));
 
         _typeFilterIndex = EditorGUILayout.Popup(_typeFilterIndex, s_TypeFilterOptions, GetToolbarPopupStyle(), GUILayout.Width(128f));
         _searchText = GUILayout.TextField(_searchText ?? string.Empty, GetToolbarSearchStyle(), GUILayout.Width(220f));
@@ -103,6 +122,184 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (!string.IsNullOrWhiteSpace(_operationFeedback))
             EditorGUILayout.HelpBox(_operationFeedback, _operationFeedbackType);
+    }
+
+    private void DrawNewItemPanel()
+    {
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        EditorGUILayout.LabelField("New Item", EditorStyles.boldLabel);
+
+        string targetDatabaseLabel = _primaryItemDatabase != null ? _primaryItemDatabase.name : "ItemDatabase 없음";
+        EditorGUILayout.LabelField("대상 DB", targetDatabaseLabel);
+
+        EditorGUI.BeginChangeCheck();
+        _newItemCode = EditorGUILayout.TextField("itemCode", _newItemCode);
+        _newItemDisplayName = EditorGUILayout.TextField("displayName", _newItemDisplayName);
+        _newItemType = (ItemType)EditorGUILayout.EnumPopup("itemType", _newItemType);
+        _newItemCreateDropStub = EditorGUILayout.Toggle("드랍 스텁 등록", _newItemCreateDropStub);
+
+        if (_newItemCreateDropStub)
+        {
+            if (_enemyOptions.Count > 0)
+            {
+                _newItemDropEnemyIndex = Mathf.Clamp(_newItemDropEnemyIndex, 0, _enemyOptions.Count - 1);
+                _newItemDropEnemyIndex = EditorGUILayout.Popup("EnemyData", _newItemDropEnemyIndex, _enemyOptionLabels);
+            }
+            else
+            {
+                EditorGUILayout.LabelField("EnemyData", "스캔된 EnemyData 없음");
+            }
+        }
+
+        if (EditorGUI.EndChangeCheck())
+            _newItemFeedback = string.Empty;
+
+        List<string> errors = new List<string>();
+        List<string> warnings = new List<string>();
+        CollectNewItemValidation(errors, warnings, out string itemCode);
+        DrawValidationMessages(errors, MessageType.Error);
+        DrawValidationMessages(warnings, MessageType.Warning);
+
+        if (!string.IsNullOrWhiteSpace(_newItemFeedback))
+            EditorGUILayout.HelpBox(_newItemFeedback, _newItemFeedbackType);
+
+        EditorGUI.BeginDisabledGroup(errors.Count > 0);
+        if (GUILayout.Button("생성", GUILayout.Width(96f)))
+            ExecuteNewItemCreation(itemCode);
+        EditorGUI.EndDisabledGroup();
+
+        EditorGUILayout.LabelField("리스트 엔트리 추가는 Undo 가능. 저장은 Ctrl+S.", EditorStyles.miniLabel);
+        EditorGUILayout.EndVertical();
+    }
+
+    private void CollectNewItemValidation(List<string> errors, List<string> warnings, out string itemCode)
+    {
+        itemCode = _newItemCode ?? string.Empty;
+
+        if (!_hasScanned)
+            errors.Add("Scan 먼저 실행.");
+
+        if (_hasScanned && _primaryItemDatabase == null)
+            errors.Add("ItemDatabase asset not found.");
+
+        if (string.IsNullOrWhiteSpace(itemCode))
+        {
+            errors.Add("itemCode 입력 필요.");
+        }
+        else
+        {
+            if (itemCode.Trim() != itemCode)
+                errors.Add("itemCode 앞뒤 공백 제거 필요.");
+
+            if (_itemCodes.Contains(itemCode))
+                errors.Add("itemCode 중복: " + itemCode);
+        }
+
+        if (_newItemCreateDropStub)
+        {
+            if (_primaryDropDatabase == null)
+                errors.Add("드랍 스텁 등록 불가: EnemyDropDatabase asset not found.");
+
+            if (_enemyOptions.Count == 0)
+                errors.Add("드랍 스텁 등록 불가: EnemyData asset not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(_newItemDisplayName))
+            warnings.Add("표시명 미입력 — 생성 후 편집 가능.");
+    }
+
+    private static void DrawValidationMessages(List<string> messages, MessageType type)
+    {
+        for (int i = 0; i < messages.Count; i++)
+            EditorGUILayout.HelpBox(messages[i], type);
+    }
+
+    private void ExecuteNewItemCreation(string itemCode)
+    {
+        List<string> errors = new List<string>();
+        List<string> warnings = new List<string>();
+        CollectNewItemValidation(errors, warnings, out itemCode);
+        if (errors.Count > 0)
+        {
+            _newItemFeedback = string.Join("\n", errors);
+            _newItemFeedbackType = MessageType.Error;
+            return;
+        }
+
+        SerializedObject databaseObject = new SerializedObject(_primaryItemDatabase);
+        databaseObject.Update();
+
+        SerializedProperty items = databaseObject.FindProperty("items");
+        if (items == null || !items.isArray)
+        {
+            _newItemFeedback = "ItemDatabase.items를 찾을 수 없음.";
+            _newItemFeedbackType = MessageType.Error;
+            return;
+        }
+
+        int index = items.arraySize;
+        items.InsertArrayElementAtIndex(index);
+        SerializedProperty item = items.GetArrayElementAtIndex(index);
+        ResetItemEntry(item);
+        SetString(item.FindPropertyRelative("itemCode"), itemCode);
+        SetString(item.FindPropertyRelative("displayName"), _newItemDisplayName ?? string.Empty);
+        SetEnum(item.FindPropertyRelative("itemType"), (int)_newItemType);
+        ApplyNewItemTypeDefaults(item, _newItemType);
+
+        if (!ApplyAndMark(databaseObject))
+        {
+            _newItemFeedback = "아이템 생성 변경 적용 실패.";
+            _newItemFeedbackType = MessageType.Error;
+            return;
+        }
+
+        bool dropRequested = _newItemCreateDropStub;
+        bool dropCreated = false;
+        string dropError = string.Empty;
+        string dropEnemyName = string.Empty;
+        if (dropRequested)
+        {
+            EnemyData enemy = _enemyOptions[Mathf.Clamp(_newItemDropEnemyIndex, 0, _enemyOptions.Count - 1)].Enemy;
+            dropEnemyName = GetEnemyDisplayName(enemy);
+            dropCreated = TryAppendDropEntry(_primaryDropDatabase, enemy, itemCode, out dropError);
+        }
+
+        string feedback = "아이템 생성 완료: " + itemCode;
+        MessageType feedbackType = MessageType.Info;
+        if (dropRequested)
+        {
+            if (dropCreated)
+            {
+                feedback += "\n드랍 스텁 생성 완료: " + dropEnemyName;
+            }
+            else
+            {
+                feedback += "\n아이템 생성됨, 드랍 스텁 실패: " + dropError;
+                feedbackType = MessageType.Warning;
+            }
+        }
+        if (warnings.Count > 0)
+        {
+            feedback += "\n" + string.Join("\n", warnings);
+            if (feedbackType == MessageType.Info)
+                feedbackType = MessageType.Warning;
+        }
+
+        ResetNewItemForm();
+        Scan();
+        _hasAssetChanges = true;
+        _showNewItemForm = true;
+        _newItemFeedback = feedback;
+        _newItemFeedbackType = feedbackType;
+    }
+
+    private void ResetNewItemForm()
+    {
+        _newItemCode = string.Empty;
+        _newItemDisplayName = string.Empty;
+        _newItemType = ItemType.Material;
+        _newItemCreateDropStub = false;
+        _newItemDropEnemyIndex = 0;
     }
 
     private void DrawRowsPanel()
@@ -605,6 +802,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         }
         else
         {
+            DrawDropEntryHeader();
             for (int i = 0; i < row.DropSources.Count; i++)
                 DrawDropEntryRow(row, row.DropSources[i]);
         }
@@ -613,46 +811,60 @@ public sealed class ItemDashboardWindow : EditorWindow
         EditorGUILayout.EndVertical();
     }
 
+    private static void DrawDropEntryHeader()
+    {
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("적", EditorStyles.miniBoldLabel, GUILayout.Width(DropEnemyWidth));
+        GUILayout.Label("종류", EditorStyles.miniBoldLabel, GUILayout.Width(DropKindWidth));
+        GUILayout.Label("min", EditorStyles.miniBoldLabel, GUILayout.Width(DropAmountWidth));
+        GUILayout.Label("max", EditorStyles.miniBoldLabel, GUILayout.Width(DropAmountWidth));
+        GUILayout.Label("그룹확률", EditorStyles.miniBoldLabel, GUILayout.Width(DropGroupChanceWidth));
+        GUILayout.Label("확률/가중치", EditorStyles.miniBoldLabel, GUILayout.Width(DropChanceWidth));
+        GUILayout.Label(GUIContent.none, GUILayout.Width(DropRemoveWidth));
+        EditorGUILayout.EndHorizontal();
+    }
+
     private void DrawDropEntryRow(ItemRow row, DropSourceRecord source)
     {
         EditorGUILayout.BeginHorizontal();
 
         if (source.Enemy != null)
         {
-            if (GUILayout.Button(source.EnemyName, GUILayout.Width(140f)))
+            if (GUILayout.Button(source.EnemyName, GUILayout.Width(DropEnemyWidth)))
                 EditorGUIUtility.PingObject(source.Enemy);
         }
         else
         {
-            GUILayout.Label(source.EnemyName, GUILayout.Width(140f));
+            GUILayout.Label(source.EnemyName, GUILayout.Width(DropEnemyWidth));
         }
 
-        GUILayout.Label(source.Kind == DropEntryKind.Drop ? "drop" : "택1", GUILayout.Width(42f));
+        GUILayout.Label(source.Kind == DropEntryKind.Drop ? "drop" : "택1", GUILayout.Width(DropKindWidth));
 
         EditorGUI.BeginChangeCheck();
-        int min = EditorGUILayout.DelayedIntField(source.MinAmount, GUILayout.Width(58f));
-        int max = EditorGUILayout.DelayedIntField(source.MaxAmount, GUILayout.Width(58f));
+        int min = EditorGUILayout.DelayedIntField(source.MinAmount, GUILayout.Width(DropAmountWidth));
+        int max = EditorGUILayout.DelayedIntField(source.MaxAmount, GUILayout.Width(DropAmountWidth));
         bool amountChanged = EditorGUI.EndChangeCheck();
 
         if (source.Kind == DropEntryKind.Drop)
         {
+            GUILayout.Label("-", GUILayout.Width(DropGroupChanceWidth));
             EditorGUI.BeginChangeCheck();
-            float chance = EditorGUILayout.DelayedFloatField(source.Chance, GUILayout.Width(76f));
+            float chance = EditorGUILayout.DelayedFloatField(source.Chance, GUILayout.Width(DropChanceWidth));
             bool chanceChanged = EditorGUI.EndChangeCheck();
             if (amountChanged || chanceChanged)
                 ApplyDropEntryValues(row, source, min, max, chance);
         }
         else
         {
-            GUILayout.Label("그룹 " + FormatChance(source.GroupChance), GUILayout.Width(86f));
+            GUILayout.Label("그룹 " + FormatChance(source.GroupChance), GUILayout.Width(DropGroupChanceWidth));
             EditorGUI.BeginChangeCheck();
-            float weight = EditorGUILayout.DelayedFloatField(source.Weight, GUILayout.Width(76f));
+            float weight = EditorGUILayout.DelayedFloatField(source.Weight, GUILayout.Width(DropChanceWidth));
             bool weightChanged = EditorGUI.EndChangeCheck();
             if (amountChanged || weightChanged)
                 ApplyDropEntryValues(row, source, min, max, weight);
         }
 
-        bool removed = GUILayout.Button("-", GUILayout.Width(24f)) && RemoveDropEntry(row, source);
+        bool removed = GUILayout.Button("-", GUILayout.Width(DropRemoveWidth)) && RemoveDropEntry(row, source);
 
         EditorGUILayout.EndHorizontal();
 
@@ -743,13 +955,45 @@ public sealed class ItemDashboardWindow : EditorWindow
         if (enemy == null)
             return false;
 
-        SerializedObject databaseObject = new SerializedObject(_primaryDropDatabase);
+        if (!TryAppendDropEntry(_primaryDropDatabase, enemy, row.ItemCode, out string error))
+        {
+            SetOperationFeedback(error, MessageType.Error);
+            return false;
+        }
+
+        RebuildDropCachesForAllRows();
+        SetOperationFeedback("드랍 추가 완료: " + GetEnemyDisplayName(enemy) + " -> " + row.ItemCode, MessageType.Info);
+        return true;
+    }
+
+    private bool TryAppendDropEntry(EnemyDropDatabase database, EnemyData enemy, string itemCode, out string error)
+    {
+        error = string.Empty;
+        if (database == null)
+        {
+            error = "EnemyDropDatabase asset not found.";
+            return false;
+        }
+
+        if (enemy == null)
+        {
+            error = "EnemyData가 null입니다.";
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(itemCode))
+        {
+            error = "itemCode 공백.";
+            return false;
+        }
+
+        SerializedObject databaseObject = new SerializedObject(database);
         databaseObject.Update();
 
         SerializedProperty groups = databaseObject.FindProperty("groups");
         if (groups == null || !groups.isArray)
         {
-            SetOperationFeedback("EnemyDropDatabase.groups를 찾을 수 없음.", MessageType.Error);
+            error = "EnemyDropDatabase.groups를 찾을 수 없음.";
             return false;
         }
 
@@ -757,20 +1001,21 @@ public sealed class ItemDashboardWindow : EditorWindow
         SerializedProperty drops = group != null ? group.FindPropertyRelative("drops") : null;
         if (drops == null || !drops.isArray)
         {
-            SetOperationFeedback("EnemyDropDatabase drops[]를 찾을 수 없음.", MessageType.Error);
+            error = "EnemyDropDatabase drops[]를 찾을 수 없음.";
             return false;
         }
 
         int index = drops.arraySize;
         drops.InsertArrayElementAtIndex(index);
         SerializedProperty drop = drops.GetArrayElementAtIndex(index);
-        InitializeDrop(drop, row.ItemCode);
+        InitializeDrop(drop, itemCode);
 
         if (!ApplyAndMark(databaseObject))
+        {
+            error = "드랍 추가 변경 적용 실패.";
             return false;
+        }
 
-        RebuildDropCachesForAllRows();
-        SetOperationFeedback("드랍 추가 완료: " + GetEnemyDisplayName(enemy) + " -> " + row.ItemCode, MessageType.Info);
         return true;
     }
 
@@ -890,6 +1135,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         List<EnemyDropDatabase> dropDatabases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
         List<EnemyData> enemies = LoadAssets<EnemyData>("t:EnemyData");
 
+        _primaryItemDatabase = itemDatabases.Count > 0 ? itemDatabases[0] : null;
         _dropDatabases.AddRange(dropDatabases);
         _primaryDropDatabase = dropDatabases.Count > 0 ? dropDatabases[0] : null;
         BuildEnemyOptions(enemies);
@@ -1675,6 +1921,48 @@ public sealed class ItemDashboardWindow : EditorWindow
         return string.IsNullOrWhiteSpace(value) ? "-" : value;
     }
 
+    private static void ResetItemEntry(SerializedProperty item)
+    {
+        if (item == null)
+            return;
+
+        SetString(item.FindPropertyRelative("itemCode"), string.Empty);
+        SetString(item.FindPropertyRelative("displayName"), string.Empty);
+        SetObject(item.FindPropertyRelative("icon"), null);
+        SetString(item.FindPropertyRelative("description"), string.Empty);
+        SetEnum(item.FindPropertyRelative("itemType"), 0);
+        SetBool(item.FindPropertyRelative("stackable"), false);
+        SetInt(item.FindPropertyRelative("maxStack"), 1);
+        SetBool(item.FindPropertyRelative("removeOnFloorTransition"), false);
+        SetBool(item.FindPropertyRelative("removeOnDungeonExit"), false);
+        SetArraySize(item.FindPropertyRelative("useEffects"), 0);
+        SetArraySize(item.FindPropertyRelative("passiveEffects"), 0);
+        SetEnum(item.FindPropertyRelative("soulFormId"), 0);
+        SetObject(item.FindPropertyRelative("engraving"), null);
+        SetString(item.FindPropertyRelative("salvageItemCode"), string.Empty);
+        SetInt(item.FindPropertyRelative("salvageMinAmount"), 1);
+        SetInt(item.FindPropertyRelative("salvageMaxAmount"), 1);
+    }
+
+    private static void ApplyNewItemTypeDefaults(SerializedProperty item, ItemType itemType)
+    {
+        if (item == null)
+            return;
+
+        switch (itemType)
+        {
+            case ItemType.Currency:
+                SetBool(item.FindPropertyRelative("stackable"), true);
+                SetInt(item.FindPropertyRelative("maxStack"), 9999);
+                SetBool(item.FindPropertyRelative("removeOnDungeonExit"), true);
+                break;
+
+            case ItemType.Relic:
+                SetBool(item.FindPropertyRelative("removeOnDungeonExit"), true);
+                break;
+        }
+    }
+
     private static void InitializeDropGroup(SerializedProperty group, EnemyData enemy)
     {
         if (group == null)
@@ -1773,10 +2061,28 @@ public sealed class ItemDashboardWindow : EditorWindow
             property.floatValue = value;
     }
 
+    private static void SetBool(SerializedProperty property, bool value)
+    {
+        if (property != null)
+            property.boolValue = value;
+    }
+
     private static void SetEnum(SerializedProperty property, int value)
     {
         if (property != null)
             property.enumValueIndex = value;
+    }
+
+    private static void SetObject(SerializedProperty property, Object value)
+    {
+        if (property != null)
+            property.objectReferenceValue = value;
+    }
+
+    private static void SetArraySize(SerializedProperty property, int size)
+    {
+        if (property != null && property.isArray)
+            property.arraySize = size;
     }
 
     private enum WarningSeverity

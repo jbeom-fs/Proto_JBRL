@@ -62,7 +62,17 @@ MonoBehaviour:
       minAmount: 1
       maxAmount: 1
       chance: 1
+    choiceGroups: []
+  - enemy: {fileID: 11400000, guid: 845a446bd7ca4fec9eab4098da48a01e, type: 2}
+    drops:
     - itemCode: Test_Potion
+      minAmount: 1
+      maxAmount: 1
+      chance: 1
+    choiceGroups: []
+  - enemy: {fileID: 11400000, guid: 65c75f48657fab74f84a6900002dcdf0, type: 2}
+    drops:
+    - itemCode: TestItem
       minAmount: 1
       maxAmount: 1
       chance: 1
