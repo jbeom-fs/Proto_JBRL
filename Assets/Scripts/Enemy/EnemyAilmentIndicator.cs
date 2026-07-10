@@ -2,6 +2,11 @@ using UnityEngine;
 
 public sealed class EnemyAilmentIndicator : MonoBehaviour
 {
+    private const float PoisonSlotOffset = -1.5f;
+    private const float BleedSlotOffset = -0.5f;
+    private const float SlowSlotOffset = 0.5f;
+    private const float StunSlotOffset = 1.5f;
+
     [Header("Data")]
     [SerializeField] private StatusEffectIconTable iconTable;
 
@@ -20,14 +25,22 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     private EnemyHealthBar _healthBar;
     private GameObject _poisonObject;
     private GameObject _bleedObject;
+    private GameObject _slowObject;
+    private GameObject _stunObject;
     private Vector3 _invScale = Vector3.one;
     private Sprite _poisonIcon;
     private Sprite _bleedIcon;
+    private Sprite _slowIcon;
+    private Sprite _stunIcon;
     private bool _poisonVisible;
     private bool _bleedVisible;
+    private bool _slowVisible;
+    private bool _stunVisible;
     private bool _positioned;
     private bool _warnedMissingPoison;
     private bool _warnedMissingBleed;
+    private bool _warnedMissingSlow;
+    private bool _warnedMissingStun;
     private bool _warnedMissingTable;
 
     private void Awake()
@@ -36,10 +49,14 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         _healthBar = GetComponent<EnemyHealthBar>();
         ResolveInverseScale();
         ResolveIcons();
-        _poisonObject = CreateIconChild("Ailment_Poison", _poisonIcon, -0.5f);
-        _bleedObject = CreateIconChild("Ailment_Bleed", _bleedIcon, 0.5f);
+        _poisonObject = CreateIconChild("Ailment_Poison", _poisonIcon, PoisonSlotOffset);
+        _bleedObject = CreateIconChild("Ailment_Bleed", _bleedIcon, BleedSlotOffset);
+        _slowObject = CreateIconChild("Ailment_Slow", _slowIcon, SlowSlotOffset);
+        _stunObject = CreateIconChild("Ailment_Stun", _stunIcon, StunSlotOffset);
         SetPoisonVisible(false);
         SetBleedVisible(false);
+        SetSlowVisible(false);
+        SetStunVisible(false);
     }
 
     private void LateUpdate()
@@ -50,17 +67,23 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         {
             SetPoisonVisible(false);
             SetBleedVisible(false);
+            SetSlowVisible(false);
+            SetStunVisible(false);
             return;
         }
 
         SetPoisonVisible(_poisonIcon != null && _enemy.GetAilmentStacks(AilmentType.Poison) > 0);
         SetBleedVisible(_bleedIcon != null && _enemy.GetAilmentStacks(AilmentType.Bleed) > 0);
+        SetSlowVisible(_slowIcon != null && _enemy.IsSlowed);
+        SetStunVisible(_stunIcon != null && _enemy.IsStunned);
     }
 
     private void OnDisable()
     {
         SetPoisonVisible(false);
         SetBleedVisible(false);
+        SetSlowVisible(false);
+        SetStunVisible(false);
     }
 
     private GameObject CreateIconChild(string childName, Sprite icon, float slotOffset)
@@ -89,8 +112,10 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             ? _healthBar.TopAnchorY + (iconGap + iconWorldSize * 0.5f) * _invScale.y
             : yOffset * _invScale.y;
 
-        SetIconPosition(_poisonObject, -0.5f, y);
-        SetIconPosition(_bleedObject, 0.5f, y);
+        SetIconPosition(_poisonObject, PoisonSlotOffset, y);
+        SetIconPosition(_bleedObject, BleedSlotOffset, y);
+        SetIconPosition(_slowObject, SlowSlotOffset, y);
+        SetIconPosition(_stunObject, StunSlotOffset, y);
     }
 
     private void SetIconPosition(GameObject iconObject, float slotOffset, float y)
@@ -138,6 +163,26 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             _bleedObject.SetActive(visible);
     }
 
+    private void SetSlowVisible(bool visible)
+    {
+        if (_slowVisible == visible)
+            return;
+
+        _slowVisible = visible;
+        if (_slowObject != null)
+            _slowObject.SetActive(visible);
+    }
+
+    private void SetStunVisible(bool visible)
+    {
+        if (_stunVisible == visible)
+            return;
+
+        _stunVisible = visible;
+        if (_stunObject != null)
+            _stunObject.SetActive(visible);
+    }
+
     private static float SafeInv(float value)
     {
         return Mathf.Abs(value) > 0.0001f ? 1f / value : 1f;
@@ -151,6 +196,8 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             WarnMissingTable();
             WarnMissingIcon(StatusEffectIconType.Poison);
             WarnMissingIcon(StatusEffectIconType.Bleed);
+            WarnMissingIcon(StatusEffectIconType.Slow);
+            WarnMissingIcon(StatusEffectIconType.Stun);
             return;
         }
 
@@ -158,6 +205,10 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             WarnMissingIcon(StatusEffectIconType.Poison);
         if (!table.TryGetIcon(StatusEffectIconType.Bleed, out _bleedIcon))
             WarnMissingIcon(StatusEffectIconType.Bleed);
+        if (!table.TryGetIcon(StatusEffectIconType.Slow, out _slowIcon))
+            WarnMissingIcon(StatusEffectIconType.Slow);
+        if (!table.TryGetIcon(StatusEffectIconType.Stun, out _stunIcon))
+            WarnMissingIcon(StatusEffectIconType.Stun);
     }
 
     private void WarnMissingTable()
@@ -188,6 +239,20 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         {
             _warnedMissingBleed = true;
             Debug.LogWarning("[EnemyAilmentIndicator] Bleed icon missing; bleed slot disabled.", this);
+            return;
+        }
+
+        if (type == StatusEffectIconType.Slow && !_warnedMissingSlow)
+        {
+            _warnedMissingSlow = true;
+            Debug.LogWarning("[EnemyAilmentIndicator] Slow icon missing; slow slot disabled.", this);
+            return;
+        }
+
+        if (type == StatusEffectIconType.Stun && !_warnedMissingStun)
+        {
+            _warnedMissingStun = true;
+            Debug.LogWarning("[EnemyAilmentIndicator] Stun icon missing; stun slot disabled.", this);
         }
 #endif
     }

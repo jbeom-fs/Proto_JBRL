@@ -39,6 +39,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private EnemyAnimationController _animationController;
     private float _knockbackLockTimer;
     private float _activeSlowPercentage;
+    private float _stunRemaining;
     private float _deathTimer;
     private bool _deathFinished;
     private bool _holdsEliteKey;
@@ -57,7 +58,9 @@ public class EnemyController : MonoBehaviour, IDamageable
     public bool IsDead { get; private set; }
     public bool HoldsEliteKey => _holdsEliteKey;
     public bool IsKnockbackLocked => _knockbackLockTimer > 0f;
-    public float MoveSpeedMultiplier => Mathf.Clamp01(1f - _activeSlowPercentage);
+    public bool IsSlowed => _activeSlowPercentage > 0f;
+    public bool IsStunned => _stunRemaining > 0f;
+    public float MoveSpeedMultiplier => IsStunned ? 0f : Mathf.Clamp01(1f - _activeSlowPercentage);
     public float CollisionFootprintRadius => GetWorldColliderRadius();
     /// <summary>Marker anchor in world space. Uses collider center instead of transform pivot.</summary>
     public Vector3 MarkerAnchorWorld =>
@@ -129,6 +132,14 @@ public class EnemyController : MonoBehaviour, IDamageable
             return;
 
         _ailments?.Apply(type, tickDamage, duration);
+    }
+
+    public void ApplyStun(float duration)
+    {
+        if (duration <= 0f || IsDead || !IsAlive)
+            return;
+
+        _stunRemaining = Mathf.Max(_stunRemaining, duration);
     }
 
     public void ApplyAilments(AilmentApplication[] ailments, float damageMultiplier)
@@ -263,6 +274,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         }
 
         TickSlowEffects(Time.deltaTime);
+        TickStunEffect(Time.deltaTime);
         _ailments?.Tick(Time.deltaTime);
     }
 
@@ -358,6 +370,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     {
         _knockbackLockTimer = 0f;
         _activeSlowPercentage = 0f;
+        _stunRemaining = 0f;
         _activeSlows.Clear();
         _ailments?.Clear();
         if (_rb != null)
@@ -553,6 +566,13 @@ public class EnemyController : MonoBehaviour, IDamageable
         // 따라서 만료가 발생한 프레임에만 재계산하면 충분하고 ApplySlow가 신규 추가 케이스를 커버한다.
         if (anyExpired)
             RecalculateStrongestSlow();
+    }
+
+    private void TickStunEffect(float deltaTime)
+    {
+        if (_stunRemaining <= 0f) return;
+
+        _stunRemaining = Mathf.Max(0f, _stunRemaining - deltaTime);
     }
 
     private void RecalculateStrongestSlow()

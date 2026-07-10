@@ -171,6 +171,12 @@ public abstract class EnemyBrain : MonoBehaviour
             return;
         }
 
+        if (_enemy.IsStunned)
+        {
+            StopMoving();
+            return;
+        }
+
         // CheckRoomEntry가 복도에서 조기 종료하더라도 AI는 매 프레임 실제 월드 좌표를 그리드로 변환합니다.
         // 따라서 플레이어가 ROOM 밖 CORRIDOR에 있어도 목표 좌표가 끊기지 않습니다.
         if (!Target.RefreshTarget())
@@ -203,6 +209,9 @@ public abstract class EnemyBrain : MonoBehaviour
 
     public bool CanAttack(float sqrDistanceToPlayer)
     {
+        if (Enemy != null && Enemy.IsStunned)
+            return false;
+
         if (Data != null &&
             Data.IsElite &&
             Data.behaviorType == EnemyBehaviorType.Ranged)

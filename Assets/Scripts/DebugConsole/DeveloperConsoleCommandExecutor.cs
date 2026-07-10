@@ -332,6 +332,21 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Applied " + GetAilmentToken(type) + " to " + GetEnemyDisplayName(target) + " (stacks " + stacks + ").");
     }
 
+    public DeveloperConsoleCommandResult ExecuteStun(float duration)
+    {
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer == null)
+            return DeveloperConsoleCommandResult.Error("PlayerController.Active is missing.");
+
+        EnemyController target = FindNearestAliveEnemy(activePlayer.transform.position);
+        if (target == null)
+            return DeveloperConsoleCommandResult.Error("No alive enemy found.");
+
+        target.ApplyStun(duration);
+        return DeveloperConsoleCommandResult.Success(
+            "Applied stun to " + GetEnemyDisplayName(target) + " (" + duration + "s).");
+    }
+
     public void GetFormIds(List<string> output)
     {
         if (output == null)

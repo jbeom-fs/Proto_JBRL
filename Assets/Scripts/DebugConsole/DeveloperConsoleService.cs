@@ -15,6 +15,7 @@ public sealed class DeveloperConsoleService
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
+    private const string StunUsage = "Usage: /stun [duration=2]";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
@@ -101,6 +102,7 @@ public sealed class DeveloperConsoleService
         _commands["enhance"] = ExecuteEnhance;
         _commands["engraving"] = ExecuteEngraving;
         _commands["ailment"] = ExecuteAilment;
+        _commands["stun"] = ExecuteStun;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
@@ -212,6 +214,7 @@ public sealed class DeveloperConsoleService
             "\n" + EnhanceUsage +
             "\n" + EngravingUsage +
             "\n" + AilmentUsage +
+            "\n" + StunUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -420,6 +423,27 @@ public sealed class DeveloperConsoleService
             return DeveloperConsoleCommandResult.Error(AilmentUsage);
 
         return _executor.ExecuteAilment(type, tickDamage, duration);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteStun(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        string durationText = string.Empty;
+        if (!string.IsNullOrWhiteSpace(arguments))
+        {
+            string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length != 1)
+                return DeveloperConsoleCommandResult.Error(StunUsage);
+
+            durationText = parts[0];
+        }
+
+        if (!TryParsePositiveOptionalFloat(durationText, 2f, out float duration))
+            return DeveloperConsoleCommandResult.Error(StunUsage);
+
+        return _executor.ExecuteStun(duration);
     }
 
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)
