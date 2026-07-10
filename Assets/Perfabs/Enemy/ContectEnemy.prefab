@@ -376,6 +376,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitFlashFeedback
   targetRenderer: {fileID: 4786704437174148288}
+  iconTable: {fileID: 11400000, guid: b066e1f003ec16d4eabf6d4a1eef30df, type: 2}
   flashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.08
   flashCount: 1
@@ -425,5 +426,3 @@ MonoBehaviour:
   iconGap: 0.08
   iconWorldSize: 0.5
   spacing: 0.56
-  sortingLayerName: Default
-  sortingOrder: 12

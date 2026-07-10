@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 2550004066681987800}
   - component: {fileID: 730000000000000003}
   - component: {fileID: -2681141163455078920}
+  - component: {fileID: -5779492973161131341}
   m_Layer: 8
   m_Name: RangedEnemy03
   m_TagString: Untagged
@@ -233,8 +234,24 @@ MonoBehaviour:
   iconGap: 0.08
   iconWorldSize: 0.5
   spacing: 0.56
-  sortingLayerName: Default
-  sortingOrder: 12
+--- !u!114 &-5779492973161131341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2550004066681987757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a1a5d98bb0d4f9498716a7c8d4f1a32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitFlashFeedback
+  targetRenderer: {fileID: 2529847795632861024}
+  iconTable: {fileID: 11400000, guid: b066e1f003ec16d4eabf6d4a1eef30df, type: 2}
+  flashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.08
+  flashCount: 1
+  resetColorOnDisable: 1
 --- !u!1 &5313294262261449395
 GameObject:
   m_ObjectHideFlags: 0

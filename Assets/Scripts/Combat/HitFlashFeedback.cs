@@ -4,6 +4,7 @@ using UnityEngine;
 public class HitFlashFeedback : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer targetRenderer;
+    [SerializeField] private StatusEffectIconTable iconTable;
     [SerializeField] private Color flashColor = Color.red;
     [SerializeField, Min(0.01f)] private float flashDuration = 0.08f;
     [SerializeField, Min(1)] private int flashCount = 1;
@@ -35,6 +36,20 @@ public class HitFlashFeedback : MonoBehaviour
 
     public void Play()
     {
+        Flash(flashColor);
+    }
+
+    public void Flash(StatusEffectIconType type)
+    {
+        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        if (table != null && table.TryGetFlashColor(type, out Color color))
+            Flash(color);
+        else
+            Flash(flashColor);
+    }
+
+    public void Flash(Color color)
+    {
         if (!isActiveAndEnabled) return;
         if (ResolveRenderer() == null) return;
 
@@ -44,7 +59,7 @@ public class HitFlashFeedback : MonoBehaviour
             RestoreOriginalColor();
 
         CaptureOriginalColor();
-        _flashRoutine = StartCoroutine(FlashRoutine());
+        _flashRoutine = StartCoroutine(FlashRoutine(color));
     }
 
     public void ResetColor()
@@ -54,11 +69,11 @@ public class HitFlashFeedback : MonoBehaviour
         CaptureOriginalColor();
     }
 
-    private IEnumerator FlashRoutine()
+    private IEnumerator FlashRoutine(Color color)
     {
         for (int i = 0; i < flashCount; i++)
         {
-            targetRenderer.color = flashColor;
+            targetRenderer.color = color;
             yield return new WaitForSeconds(flashDuration);
             RestoreOriginalColor();
 

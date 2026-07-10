@@ -27,6 +27,7 @@ public sealed class StatusEffectIconTable : ScriptableObject
     {
         public StatusEffectIconType type;
         public Sprite icon;
+        public Color flashColor = Color.white;
     }
 
     public static StatusEffectIconTable Resolve(StatusEffectIconTable serialized)
@@ -40,6 +41,25 @@ public sealed class StatusEffectIconTable : ScriptableObject
     {
         EnsureCache();
         return _iconsByType.TryGetValue(type, out icon) && icon != null;
+    }
+
+    public bool TryGetFlashColor(StatusEffectIconType type, out Color color)
+    {
+        color = GetDefaultFlashColor(type);
+        if (entries == null)
+            return false;
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            Entry entry = entries[i];
+            if (entry == null || entry.type != type)
+                continue;
+
+            color = entry.flashColor.a > 0f ? entry.flashColor : GetDefaultFlashColor(type);
+            return true;
+        }
+
+        return false;
     }
 
     private void EnsureCache()
@@ -86,5 +106,18 @@ public sealed class StatusEffectIconTable : ScriptableObject
                 Debug.LogWarning("[StatusEffectIconTable] Missing icon for " + entry.type + ".", this);
         }
 #endif
+    }
+
+    private static Color GetDefaultFlashColor(StatusEffectIconType type)
+    {
+        switch (type)
+        {
+            case StatusEffectIconType.Poison:
+                return new Color(0.25f, 1f, 0.35f, 1f);
+            case StatusEffectIconType.Bleed:
+                return new Color(1f, 0.15f, 0.12f, 1f);
+            default:
+                return Color.white;
+        }
     }
 }

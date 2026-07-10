@@ -45,6 +45,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private bool _holdsEliteKey;
     private Vector3 _lastSafePosition;
     private bool _warnedMissingHitFlash;
+    private int _lastAilmentFlashFrame = -1;
     private EnemyAilments _ailments;
     private readonly List<SlowEffect> _activeSlows = new();
 
@@ -147,9 +148,18 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (IsDead || !IsAlive || ailments == null || ailments.Length == 0)
             return;
 
+        ApplyAilmentsOfType(ailments, AilmentType.Bleed, damageMultiplier);
+        ApplyAilmentsOfType(ailments, AilmentType.Poison, damageMultiplier);
+    }
+
+    private void ApplyAilmentsOfType(AilmentApplication[] ailments, AilmentType type, float damageMultiplier)
+    {
         for (int i = 0; i < ailments.Length; i++)
         {
             AilmentApplication entry = ailments[i];
+            if (entry.type != type)
+                continue;
+
             _ailments?.Apply(entry.type, entry.tickDamage * damageMultiplier, entry.duration);
         }
     }
@@ -164,10 +174,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (IsDead || !IsAlive) return 0;
 
         int actual = Mathf.Max(1, damage - (data?.defense ?? 0));
-        int hpBefore = _currentHp;
         _currentHp = Mathf.Max(0, _currentHp - actual);
-        if (_currentHp < hpBefore)
-            _hitFlash?.Play();
         _healthBar?.SetHp(_currentHp, data.maxHp);
 
 #if UNITY_EDITOR
@@ -184,6 +191,8 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (IsDead || !IsAlive)
             return;
 
+        FlashAilmentTickOnce();
+
         int maxHp = data != null ? data.maxHp : 0;
         _currentHp = Mathf.Max(0, _currentHp - damage);
         _healthBar?.SetHp(_currentHp, maxHp);
@@ -195,6 +204,23 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         if (_currentHp == 0)
             Die();
+    }
+
+    private void FlashAilmentTickOnce()
+    {
+        if (_lastAilmentFlashFrame == Time.frameCount)
+            return;
+
+        if (_ailments == null || !_ailments.TryGetFirstActiveType(out AilmentType type))
+            return;
+
+        _lastAilmentFlashFrame = Time.frameCount;
+        _hitFlash?.Flash(ToStatusEffectIconType(type));
+    }
+
+    private static StatusEffectIconType ToStatusEffectIconType(AilmentType type)
+    {
+        return type == AilmentType.Bleed ? StatusEffectIconType.Bleed : StatusEffectIconType.Poison;
     }
 
     // Developer console only: routes through the normal death pipeline.
@@ -371,8 +397,10 @@ public class EnemyController : MonoBehaviour, IDamageable
         _knockbackLockTimer = 0f;
         _activeSlowPercentage = 0f;
         _stunRemaining = 0f;
+        _lastAilmentFlashFrame = -1;
         _activeSlows.Clear();
         _ailments?.Clear();
+        _hitFlash?.ResetColor();
         if (_rb != null)
             _rb.linearVelocity = Vector2.zero;
     }
@@ -386,7 +414,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (!_warnedMissingHitFlash)
         {
-            Debug.LogWarning("[EnemyController] HitFlashFeedback 참조가 없어 피격 플래시를 생략합니다.", this);
+            Debug.LogWarning("[EnemyController] HitFlashFeedback 참조가 없어 상태이상 틱 플래시를 생략합니다.", this);
             _warnedMissingHitFlash = true;
         }
 #endif

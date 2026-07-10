@@ -27,6 +27,9 @@ public sealed class EnemyAilments
 
     private readonly Action<int> _applyTickDamage;
     private readonly Bucket[] _buckets = new Bucket[AilmentTypeCount];
+    private readonly AilmentType[] _activeOrder = new AilmentType[AilmentTypeCount];
+    private int _activeOrderCount;
+    private int _version;
 
     private readonly struct AilmentProfile
     {
@@ -74,6 +77,7 @@ public sealed class EnemyAilments
 
         AilmentProfile profile = s_Profiles[index];
         Bucket bucket = _buckets[index];
+        bool wasInactive = bucket.Stacks == 0;
 
         if (bucket.Stacks == 0)
             bucket.TickTimer = profile.TickInterval;
@@ -86,6 +90,9 @@ public sealed class EnemyAilments
 
         bucket.RemainingDuration = Mathf.Max(bucket.RemainingDuration, duration);
         _buckets[index] = bucket;
+
+        if (wasInactive && bucket.Stacks > 0)
+            AppendActiveType(type);
     }
 
     public void Tick(float dt)
@@ -104,14 +111,21 @@ public sealed class EnemyAilments
             bucket.TickTimer -= activeDelta;
 
             AilmentProfile profile = s_Profiles[i];
+            int versionBeforeTick = _version;
             while (bucket.TickTimer <= 0f)
             {
                 _applyTickDamage?.Invoke(Mathf.Max(1, Mathf.RoundToInt(bucket.TotalTickDamage)));
+                if (_version != versionBeforeTick)
+                    return;
+
                 bucket.TickTimer += profile.TickInterval;
             }
 
             if (bucket.RemainingDuration <= 0f)
+            {
                 bucket = default;
+                RemoveActiveType((AilmentType)i);
+            }
 
             _buckets[i] = bucket;
         }
@@ -121,11 +135,50 @@ public sealed class EnemyAilments
     {
         for (int i = 0; i < _buckets.Length; i++)
             _buckets[i] = default;
+
+        _activeOrderCount = 0;
+        _version++;
     }
 
     public int GetStacks(AilmentType type)
     {
         return TryGetIndex(type, out int index) ? _buckets[index].Stacks : 0;
+    }
+
+    public bool TryGetFirstActiveType(out AilmentType type)
+    {
+        if (_activeOrderCount > 0)
+        {
+            type = _activeOrder[0];
+            return true;
+        }
+
+        type = default;
+        return false;
+    }
+
+    private void AppendActiveType(AilmentType type)
+    {
+        if (_activeOrderCount >= _activeOrder.Length)
+            return;
+
+        _activeOrder[_activeOrderCount] = type;
+        _activeOrderCount++;
+    }
+
+    private void RemoveActiveType(AilmentType type)
+    {
+        for (int i = 0; i < _activeOrderCount; i++)
+        {
+            if (_activeOrder[i] != type)
+                continue;
+
+            for (int j = i; j < _activeOrderCount - 1; j++)
+                _activeOrder[j] = _activeOrder[j + 1];
+
+            _activeOrderCount--;
+            return;
+        }
     }
 
     private static bool TryGetIndex(AilmentType type, out int index)
