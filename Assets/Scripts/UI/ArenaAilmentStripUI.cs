@@ -22,6 +22,13 @@ public sealed class ArenaAilmentStripUI : MonoBehaviour
     private bool _warnedMissingTable;
     private bool _warnedMissingSlotPrefab;
 
+    public void Prewarm()
+    {
+        ResolveIconsIfNeeded();
+        EnsureSlotCount(s_StatusCount);
+        ClearSlots();
+    }
+
     public void Bind(EnemyController enemy)
     {
         if (enemy == null)

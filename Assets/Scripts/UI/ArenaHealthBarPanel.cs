@@ -23,6 +23,8 @@ public sealed class ArenaHealthBarPanel : MonoBehaviour
 
         Active = this;
         DetachAll();
+        PrewarmRows(bossRows);
+        PrewarmRows(eliteRows);
     }
 
     private void OnDestroy()
@@ -98,6 +100,15 @@ public sealed class ArenaHealthBarPanel : MonoBehaviour
 
         for (int i = 0; i < rows.Length; i++)
             rows[i]?.Release();
+    }
+
+    private static void PrewarmRows(ArenaHealthBarRowUI[] rows)
+    {
+        if (rows == null)
+            return;
+
+        for (int i = 0; i < rows.Length; i++)
+            rows[i]?.AilmentStrip?.Prewarm();
     }
 
     private void WarnCapacityOnce(bool isBoss)

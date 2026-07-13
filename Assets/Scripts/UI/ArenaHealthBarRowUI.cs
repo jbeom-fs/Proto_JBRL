@@ -12,6 +12,7 @@ public sealed class ArenaHealthBarRowUI : MonoBehaviour
     private EnemyController _enemy;
 
     public EnemyController BoundEnemy => _enemy;
+    public ArenaAilmentStripUI AilmentStrip => ailmentStrip;
     public bool IsAvailable => _enemy == null && !gameObject.activeSelf;
 
     public void Bind(EnemyController enemy)
