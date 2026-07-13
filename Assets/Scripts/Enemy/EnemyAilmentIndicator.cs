@@ -1,12 +1,8 @@
+using System;
 using UnityEngine;
 
 public sealed class EnemyAilmentIndicator : MonoBehaviour
 {
-    private const int PoisonIndex = 0;
-    private const int BleedIndex = 1;
-    private const int SlowIndex = 2;
-    private const int StunIndex = 3;
-    private const int StatusCount = 4;
     private const float StartSlotOffset = -1.5f;
 
     [Header("Data")]
@@ -21,29 +17,20 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     [SerializeField] private float spacing = 0.28f;
 
     private static readonly StatusEffectIconType[] s_IconTypes =
-    {
-        StatusEffectIconType.Poison,
-        StatusEffectIconType.Bleed,
-        StatusEffectIconType.Slow,
-        StatusEffectIconType.Stun
-    };
+        (StatusEffectIconType[])Enum.GetValues(typeof(StatusEffectIconType));
 
     private EnemyController _enemy;
     private EnemyHealthBar _healthBar;
     private Vector3 _invScale = Vector3.one;
-    private readonly AilmentStatusSlotView[] _slots = new AilmentStatusSlotView[StatusCount];
-    private readonly bool[] _hasIcon = new bool[StatusCount];
-    private readonly bool[] _visible = new bool[StatusCount];
-    private readonly int[] _activeOrder = new int[StatusCount];
-    private int _activeOrderCount;
+    private readonly AilmentStatusSlotView[] _slots = new AilmentStatusSlotView[s_IconTypes.Length];
+    private readonly bool[] _hasIcon = new bool[s_IconTypes.Length];
+    private readonly bool[] _warnedMissingIcons = new bool[s_IconTypes.Length];
+    private readonly AilmentStatusTracker _statusTracker = new AilmentStatusTracker();
     private bool _initialized;
     private bool _positioned;
+    private bool _suppressed;
     private bool _warnedMissingTable;
     private bool _warnedMissingSlotPrefab;
-    private bool _warnedMissingPoison;
-    private bool _warnedMissingBleed;
-    private bool _warnedMissingSlow;
-    private bool _warnedMissingStun;
 
     private void Awake()
     {
@@ -55,7 +42,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (!_initialized)
+        if (_suppressed || !_initialized)
             return;
 
         if (_enemy == null || _enemy.IsDead || !_enemy.IsAlive)
@@ -66,25 +53,39 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
 
         PositionSlotsIfNeeded();
 
-        int poisonStacks = _hasIcon[PoisonIndex] ? _enemy.GetAilmentStacks(AilmentType.Poison) : 0;
-        int bleedStacks = _hasIcon[BleedIndex] ? _enemy.GetAilmentStacks(AilmentType.Bleed) : 0;
+        int poisonStacks = HasIcon(StatusEffectIconType.Poison)
+            ? _enemy.GetAilmentStacks(AilmentType.Poison)
+            : 0;
+        int bleedStacks = HasIcon(StatusEffectIconType.Bleed)
+            ? _enemy.GetAilmentStacks(AilmentType.Bleed)
+            : 0;
 
-        SetSlotStackCount(PoisonIndex, poisonStacks);
-        SetSlotStackCount(BleedIndex, bleedStacks);
+        SetSlotStackCount(StatusEffectIconType.Poison, poisonStacks);
+        SetSlotStackCount(StatusEffectIconType.Bleed, bleedStacks);
 
-        bool orderChanged = false;
-        orderChanged |= UpdateStatusVisible(PoisonIndex, poisonStacks > 0);
-        orderChanged |= UpdateStatusVisible(BleedIndex, bleedStacks > 0);
-        orderChanged |= UpdateStatusVisible(SlowIndex, _hasIcon[SlowIndex] && _enemy.IsSlowed);
-        orderChanged |= UpdateStatusVisible(StunIndex, _hasIcon[StunIndex] && _enemy.IsStunned);
+        bool orderChanged = _statusTracker.Update(
+            poisonStacks,
+            bleedStacks,
+            HasIcon(StatusEffectIconType.Slow) && _enemy.IsSlowed,
+            HasIcon(StatusEffectIconType.Stun) && _enemy.IsStunned);
 
         if (orderChanged)
+        {
+            RefreshSlotVisibility();
             RefreshActiveSlotPositions();
+        }
     }
 
     private void OnDisable()
     {
         ClearRuntimeState(true);
+    }
+
+    public void SetSuppressed(bool suppressed)
+    {
+        _suppressed = suppressed;
+        if (suppressed)
+            ClearRuntimeState(true);
     }
 
     private void CreateSlots()
@@ -103,7 +104,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             return;
         }
 
-        for (int i = 0; i < StatusCount; i++)
+        for (int i = 0; i < s_IconTypes.Length; i++)
         {
             AilmentStatusSlotView slot = Instantiate(prefab, transform, false);
             Transform slotTransform = slot.transform;
@@ -139,44 +140,12 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
         RefreshActiveSlotPositions();
     }
 
-    private bool UpdateStatusVisible(int statusIndex, bool visible)
+    private void RefreshSlotVisibility()
     {
-        if (_visible[statusIndex] == visible)
-            return false;
-
-        _visible[statusIndex] = visible;
-        if (_slots[statusIndex] != null)
-            _slots[statusIndex].SetVisible(visible);
-
-        if (visible)
-            AppendActiveStatus(statusIndex);
-        else
-            RemoveActiveStatus(statusIndex);
-
-        return true;
-    }
-
-    private void AppendActiveStatus(int statusIndex)
-    {
-        if (_activeOrderCount >= _activeOrder.Length)
-            return;
-
-        _activeOrder[_activeOrderCount] = statusIndex;
-        _activeOrderCount++;
-    }
-
-    private void RemoveActiveStatus(int statusIndex)
-    {
-        for (int i = 0; i < _activeOrderCount; i++)
+        for (int i = 0; i < s_IconTypes.Length; i++)
         {
-            if (_activeOrder[i] != statusIndex)
-                continue;
-
-            for (int j = i; j < _activeOrderCount - 1; j++)
-                _activeOrder[j] = _activeOrder[j + 1];
-
-            _activeOrderCount--;
-            return;
+            if (_slots[i] != null)
+                _slots[i].SetVisible(_statusTracker.IsActive(s_IconTypes[i]));
         }
     }
 
@@ -186,9 +155,14 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             return;
 
         float y = ResolveIconY();
-        for (int i = 0; i < _activeOrderCount; i++)
+        var activeStatuses = _statusTracker.ActiveStatuses;
+        for (int i = 0; i < activeStatuses.Count; i++)
         {
-            AilmentStatusSlotView slot = _slots[_activeOrder[i]];
+            int statusIndex = GetStatusIndex(activeStatuses[i].Type);
+            if (statusIndex < 0)
+                continue;
+
+            AilmentStatusSlotView slot = _slots[statusIndex];
             if (slot == null)
                 continue;
 
@@ -204,8 +178,12 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
             : yOffset * _invScale.y;
     }
 
-    private void SetSlotStackCount(int statusIndex, int stackCount)
+    private void SetSlotStackCount(StatusEffectIconType type, int stackCount)
     {
+        int statusIndex = GetStatusIndex(type);
+        if (statusIndex < 0)
+            return;
+
         AilmentStatusSlotView slot = _slots[statusIndex];
         if (slot != null)
             slot.SetStackCount(stackCount);
@@ -213,18 +191,18 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
 
     private void ClearRuntimeState(bool resetPositioned)
     {
-        for (int i = 0; i < StatusCount; i++)
+        for (int i = 0; i < s_IconTypes.Length; i++)
         {
-            _visible[i] = false;
             if (_slots[i] == null)
                 continue;
 
             _slots[i].SetVisible(false);
-            if (i == PoisonIndex || i == BleedIndex)
+            StatusEffectIconType type = s_IconTypes[i];
+            if (type == StatusEffectIconType.Poison || type == StatusEffectIconType.Bleed)
                 _slots[i].SetStackCount(0);
         }
 
-        _activeOrderCount = 0;
+        _statusTracker.Reset();
         if (resetPositioned)
             _positioned = false;
     }
@@ -238,6 +216,17 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     private static float SafeInv(float value)
     {
         return Mathf.Abs(value) > 0.0001f ? 1f / value : 1f;
+    }
+
+    private bool HasIcon(StatusEffectIconType type)
+    {
+        int statusIndex = GetStatusIndex(type);
+        return statusIndex >= 0 && _hasIcon[statusIndex];
+    }
+
+    private static int GetStatusIndex(StatusEffectIconType type)
+    {
+        return Array.IndexOf(s_IconTypes, type);
     }
 
     private void WarnMissingTable()
@@ -268,32 +257,15 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     private void WarnMissingIcon(StatusEffectIconType type)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (type == StatusEffectIconType.Poison && !_warnedMissingPoison)
-        {
-            _warnedMissingPoison = true;
-            Debug.LogWarning("[EnemyAilmentIndicator] Poison icon missing; poison slot disabled.", this);
+        int statusIndex = GetStatusIndex(type);
+        if (statusIndex < 0 || _warnedMissingIcons[statusIndex])
             return;
-        }
 
-        if (type == StatusEffectIconType.Bleed && !_warnedMissingBleed)
-        {
-            _warnedMissingBleed = true;
-            Debug.LogWarning("[EnemyAilmentIndicator] Bleed icon missing; bleed slot disabled.", this);
-            return;
-        }
-
-        if (type == StatusEffectIconType.Slow && !_warnedMissingSlow)
-        {
-            _warnedMissingSlow = true;
-            Debug.LogWarning("[EnemyAilmentIndicator] Slow icon missing; slow slot disabled.", this);
-            return;
-        }
-
-        if (type == StatusEffectIconType.Stun && !_warnedMissingStun)
-        {
-            _warnedMissingStun = true;
-            Debug.LogWarning("[EnemyAilmentIndicator] Stun icon missing; stun slot disabled.", this);
-        }
+        _warnedMissingIcons[statusIndex] = true;
+        Debug.LogWarning(
+            "[EnemyAilmentIndicator] " + type + " icon missing; " +
+            type.ToString().ToLowerInvariant() + " slot disabled.",
+            this);
 #endif
     }
 }

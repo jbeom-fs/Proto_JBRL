@@ -142,7 +142,9 @@
     <Compile Include="Assets\Scripts\Items\DropItemSpawner.cs" />
     <Compile Include="Assets\Scripts\Combat\AimDirectionUtility.cs" />
     <Compile Include="Assets\Scripts\UI\SkillUIManager.cs" />
+    <Compile Include="Assets\Scripts\UI\AilmentCanvasSlotView.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternData.cs" />
+    <Compile Include="Assets\Scripts\UI\ArenaAilmentStripUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyDropDatabase.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAnimationController.cs" />
     <Compile Include="Assets\Scripts\Items\ItemEffect.cs" />
@@ -203,6 +205,7 @@
     <Compile Include="Assets\Scripts\Combat\ParryStackResource.cs" />
     <Compile Include="Assets\Scripts\UI\StatusEffectIconView.cs" />
     <Compile Include="Assets\Scripts\UI\SoulAltarStatRowUI.cs" />
+    <Compile Include="Assets\Scripts\Enemy\AilmentStatusTracker.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulStatType.cs" />
     <Compile Include="Assets\Scripts\Combat\ComboMeter.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />

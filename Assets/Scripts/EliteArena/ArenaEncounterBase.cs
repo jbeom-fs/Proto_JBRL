@@ -56,6 +56,7 @@ public abstract class ArenaEncounterBase : MonoBehaviour
         enemy.transform.SetParent(null);
         enemy.Initialize(enemyData);
         enemy.GetComponent<EnemyHealthBar>()?.SetBarSuppressed(true);
+        enemy.GetComponent<EnemyAilmentIndicator>()?.SetSuppressed(true);
         if (dropDatabase != null && dropRng != null)
             enemy.RollDrops(dropDatabase.GetDropGroup(enemyData), dropRng);
 

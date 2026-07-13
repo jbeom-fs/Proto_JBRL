@@ -32,6 +32,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private int             _currentHp;
     private EnemyHealthBar  _healthBar;
+    private EnemyAilmentIndicator _ailmentIndicator;
     private Rigidbody2D     _rb;
     private CircleCollider2D _circleCollider;
     private EnemyInventory _inventory;
@@ -80,6 +81,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         (_rb, _circleCollider) = CharacterPhysicsSetup.Configure(gameObject, "Enemy");
         _inventory = GetComponent<EnemyInventory>();
         _healthBar = GetComponent<EnemyHealthBar>();
+        _ailmentIndicator = GetComponent<EnemyAilmentIndicator>();
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
         _ailments = new EnemyAilments(ApplyAilmentTickDamage);
@@ -110,6 +112,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _deathFinished = false;
         _deathTimer = 0f;
         _healthBar?.SetBarSuppressed(false);
+        _ailmentIndicator?.SetSuppressed(false);
         _healthBar?.SetHp(_currentHp, data.maxHp);
         _lastSafePosition = transform.position;
         ResetStatusEffects();

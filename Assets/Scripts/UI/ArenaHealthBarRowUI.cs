@@ -7,6 +7,7 @@ public sealed class ArenaHealthBarRowUI : MonoBehaviour
     [SerializeField] private TMP_Text nameText;
     [SerializeField] private Image hpFill;
     [SerializeField] private Image backgroundImage;
+    [SerializeField] private ArenaAilmentStripUI ailmentStrip;
 
     private EnemyController _enemy;
 
@@ -26,6 +27,7 @@ public sealed class ArenaHealthBarRowUI : MonoBehaviour
         if (backgroundImage != null)
             backgroundImage.enabled = true;
 
+        ailmentStrip?.Bind(enemy);
         RefreshHp();
         gameObject.SetActive(true);
     }
@@ -37,6 +39,7 @@ public sealed class ArenaHealthBarRowUI : MonoBehaviour
         if (nameText != null)
             nameText.text = string.Empty;
 
+        ailmentStrip?.Release();
         gameObject.SetActive(false);
     }
 
