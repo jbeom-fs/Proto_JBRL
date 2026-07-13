@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-10
-> 기준 커밋: master HEAD `b9336c80` — **Item Dashboard S1~S4(§15 툴링) + Ailment 표시 축(적 스턴 신설·슬롯 프리팹화·틱 flash, §7-9·§8-7)**: Item Dashboard(`db780f4d`~`2fb1bca8`) → 스턴+아이콘(`2c5232b6`~`7859f84b`) → HitFlash 제거+틱 flash(`b9336c80`). 이전: 정비실 S3 완결+보스 흐름 픽스(`7d65abc7`)
+> 작성 기준일: 2026-07-13
+> 기준 커밋: master HEAD `3464e12c` — **아레나 스크린 HP바 축 S1~S3(§10-1-2) + Dashboard 저장 UX(§15 툴링) + Blink 착지 픽스(§7-3)**: HP바(`02214e6f`~`08151b59`) → Dashboard Save·즉시커밋(`de01022b`,`3464e12c`) → Blink 2단 픽스(`d2b67aaf`,`cc19dc02`). 이전: Item Dashboard S1~S4+Ailment 표시 축(`b9336c80`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -275,7 +275,8 @@ Assets/Scripts/
 ├── Enemy/
 │   ├── EnemyController.cs          # 적 HP·피해·사망·상태이상·넉백 벽 클램핑 (Die 시 EnemyBrain.HandleDeathStarted 호출) + DoT 수신(ApplyAilments/방어 무시 틱, §7-9)
 │   ├── EnemyAilments.cs            # 독/출혈 DoT 버킷 (순수 C#) — 스택 가산·지속 리필·타입 프로파일(독 1.0s/캡10, 출혈 0.5s/캡5) + 활성 순서 추적(TryGetFirstActiveType, 틱 flash 색 판정) + _version 가드(Tick 중 Clear write-back 차단)
-│   ├── EnemyAilmentIndicator.cs    # 적 머리 위 상태이상 아이콘 4종(독/출혈/슬로우/스턴) — 슬롯 프리팹 Instantiate+폴링, 적용 순서 왼쪽 압축 정렬, TopAnchorY 앵커 첫 LateUpdate 배치
+│   ├── EnemyAilmentIndicator.cs    # 적 머리 위 상태이상 아이콘(독/출혈/슬로우/스턴) — 슬롯 프리팹 Instantiate+폴링, 적용 순서 왼쪽 압축 정렬, TopAnchorY 앵커 첫 LateUpdate 배치. SetSuppressed(아레나 적=스크린 스트립으로 대체, §10-1-2), 칸 수=enum 길이 파생
+│   ├── AilmentStatusTracker.cs     # 상태이상 표시 상태 산출 (순수 C#) — 활성 셋·off→on 적용 순서·스택 수. 월드 인디케이터/아레나 스트립 공유 (2026-07-13)
 │   ├── AilmentStatusSlotView.cs    # 상태이상 슬롯 프리팹 뷰(아이콘+스택 숫자 TMP) — SetIcon(긴변 fit 정규화)/SetStackCount/SetVisible만, 비주얼은 프리팹 저작
 │   │                               #   + RequireComponent(EnemyInventory), MarkAsEliteKeyHolder/ClearEliteKeyHolder
 │   │                               #   + Die 시 DropItemSpawner.SpawnDrops(_inventory, position) 호출
@@ -328,6 +329,10 @@ Assets/Scripts/
 │   ├── FreischutzMagazineUI.cs     # 마탄 폼 탄창 UI — Bullet/Bullet_empty 이미지 칸 + x/max·Reloading 텍스트. 현재 폼이 Bullet 일 때만 노출
 │   ├── ComboCounterUI.cs           # 콤보 카운터 UI (TMP 폴링) — PlayerCombatController.IsComboBonusActive && CurrentComboStack>0 일 때 `x{count}` 표시. 배율 비노출, ComboDamage 효과 활성(Sword) 폼에서만. 윈도우 만료 시 자동 숨김
 │   ├── CurrencyCounterUI.cs        # Currency HUD 카운터 — OnInventoryChanged 이벤트 구동(resolve 전만 lazy Update), 아이콘=ItemDB 단일 소스 런타임 주입, count 0 숨김. 우상단 미니맵 아래
+│   ├── ArenaHealthBarPanel.cs      # 엘리트/보스 스크린 HP바 패널 — 씬 사전 배치 행(보스2+엘리트3) Attach/Detach 할당, Awake에서 스트립 Prewarm. static Active. §10-1-2
+│   ├── ArenaHealthBarRowUI.cs      # 상단 HP바 행 1개 — Bind(EnemyController)+폴링(fillAmount), 사망/비활성 자동 Release. BossRow/EliteRow 프리팹으로 저작
+│   ├── ArenaAilmentStripUI.cs      # 행 하단 상태이상 스트립 — AilmentStatusTracker 공유, AilmentCanvasSlot 프리팹 인스턴스 재사용(prewarm, 파괴 없음), slotScale 차등
+│   ├── AilmentCanvasSlotView.cs    # 캔버스 상태이상 슬롯 1칸 뷰 (Image+스택 TMP — 독/출혈만 숫자). AilmentStatusSlotView(월드판) 미러
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임. 아이콘은 StatusEffectIconTable 수급(실패 시 씬 결선 폴백)
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트, SetIcon 주입)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
@@ -900,6 +905,11 @@ ExecuteSkillIfReady(slotIndex, expectedSkill):
          Projectile   → ExecuteProjectile()   (Bullet AllowPartialUse 면 실제 발사 수 = 소모)
          Dash         → ExecuteDash()
          Blink        → ExecuteBlink()  (가장 가까운 적 뒤로 순간이동, Dagger Q)
+                         착지 = 각도 스윕(뒤 0°→±45→±90→±135→180°, 같은 offset 링) +
+                         제자리 ε(0.5f) 기각. 플레이어 시전이면 후보 검증=PlayerController.
+                         CanOccupyPosition(이동 반경+MovementBlockerQuery 동일 규칙),
+                         착지=TeleportTo() 경유(_lastSafePosition 갱신 — LateUpdate 안전망
+                         스냅백 차단). 전 후보 실패 시 Failure=마커·자원·쿨 미소모 (2026-07-13)
          Buff         → ExecuteBuff()   (현재 Dagger R 마커 버프 전용 — 범용 버프 미구현)
          AreaOverTime → 미구현 (경고 로그 1회)
   ⑤ 성공 시 Spend(resourceType, result.ResourceConsumed) / ApplySkillReload /
@@ -1540,7 +1550,36 @@ StatusEffectIconView (슬롯 1개):
 
 상태이상 발행은 `CombatEventChannel` 이 아니라 `PlayerCombatController` 의 직접 이벤트(`OnStatusEffectApplied`/`Ended`) — UI 한 곳만 구독하면 충분하기 때문입니다.
 
-아이콘 스프라이트는 `StatusEffectIconTable`(SO, `Resources/UI/`) 단일 소스에서 수급합니다 — OnEnable 1회 `SetIcon(Slow/Stun)`, 테이블/엔트리 미해석 시 경고 후 씬에 직접 결선된 기존 스프라이트가 폴백. 적 측 독/출혈 아이콘(`EnemyAilmentIndicator`, §7-9)도 같은 테이블을 씁니다.
+아이콘 스프라이트는 `StatusEffectIconTable`(SO, `Resources/UI/`) 단일 소스에서 수급합니다 — OnEnable 1회 `SetIcon(Slow/Stun)`, 테이블/엔트리 미해석 시 경고 후 씬에 직접 결선된 기존 스프라이트가 폴백. 적 측 독/출혈 아이콘(`EnemyAilmentIndicator`, §7-9)도 같은 테이블을 씁니다. (테이블 실위치는 2026-07-13에 `Assets/Resources/UI/`로 이동 — 그 전까지 `Scriptable/Icon/`에 있어 Resources 폴백이 죽은 경로였음.)
+
+### 10-1-2. 아레나 스크린 HP바·상태이상 스트립 (ArenaHealthBarPanel, 2026-07-13)
+
+엘리트/보스는 머리 위 월드 HP바 대신 **overlay 캔버스 상단 행(row)** 으로 표시합니다. 일반 몹은 기존 월드바/월드 아이콘 유지.
+
+```
+ArenaHealthBarPanel (씬 사전 배치, VerticalLayoutGroup, static Active):
+  ├── BossRow_1~2  (BossRow.prefab 인스턴스 — 히에라르키 먼저 = 항상 위)
+  ├── EliteRow_1~3 (EliteRow.prefab 인스턴스)
+  │     행 = ArenaHealthBarRowUI: BG/Fill(Image Filled)/Name(TMP) + 하단 Strip
+  │     Bind(EnemyController)=폴링 시작+SetActive, Release=비움 — 비활성 행은
+  │     레이아웃이 무시하므로 다수(기믹 2~3마리) 시 위에서부터 자동 압축
+  ├── Attach(enemy, isBoss)/Detach/DetachAll — 스폰 경로 태깅
+  │     (EliteArena/Boss 컨트롤러의 스폰·사망·Cancel 지점 배선, EnemyData 플래그 없음)
+  └── Awake: 전 스트립 Prewarm (슬롯 선생성 — 전투 중 Instantiate 0)
+
+ArenaAilmentStripUI (행 하단, HorizontalLayoutGroup):
+  ├── AilmentStatusTracker (순수 C# — 활성 셋·적용 순서·스택. 월드
+  │     EnemyAilmentIndicator 와 공유, 표시 규칙 동일: 왼쪽 압축·독/출혈만 스택 숫자)
+  ├── 슬롯 = AilmentCanvasSlot.prefab (StatusEffectIconTable.canvasSlotPrefab 단일 소스)
+  │     필요 수만큼 생성 후 재사용(파괴 없음), 칸 수 = enum 길이 파생(하드코딩 0)
+  └── slotScale (씬 값, 보스 1.5) + layout childScaleWidth/Height
+```
+
+핵심 규칙:
+- **월드바 억제 = suppress 방식만**: 아레나 스폰(`ArenaEncounterBase.SpawnArenaEnemyAtPosition`)에서 `EnemyHealthBar.SetBarSuppressed(true)`+`EnemyAilmentIndicator.SetSuppressed(true)`, `EnemyController.Initialize`에서 리셋. ⚠️ 아레나 적=풀 인스턴스라 **컴포넌트 삭제/Destroy=풀 오염**(일반 스폰 재사용 시 바 영구 소실) — 금지.
+- **상태이상 종류 추가 = enum + 테이블 아이콘 엔트리만** (tracker/스트립/월드 인디케이터 전부 enum 길이 파생, 2026-07-13).
+- 행 비주얼 저작 = `BossRow`/`EliteRow` 프리팹(씬 인스턴스 5개에 자동 반영). Strip 위치는 수동 오프셋(바 높이+간격) — 바 크기 변경 시 Strip Y·행 LayoutElement 높이 동기 필요.
+- ⚠️ 잠재함정: 보스전 기믹으로 일반몹을 `SpawnArenaEnemyAtPosition`으로 스폰하면 월드바 억제+스크린행 없음=HP 표시 없는 몹 → 그때 suppress bool 파라미터 추가 / 패널의 캔버스 내 순서는 모달보다 위(먼저)로 유저 배치 — SetAsLastSibling 금지.
 
 ### 10-2. 스킬 슬롯 UI
 
@@ -2775,13 +2814,14 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 아레나 문·전환 연출 | `ArenaDoor`(doorTilemap 캐시·개폐, 보스·엘리트 공용 — 클리어 시 개방→문 뒤 출구 포탈, 즉시 이탈 원천 차단) + `TeleportFadeOverlay`(전 텔레포트 공통 암전 페이드). 상세 §11e-7 |
 | 정비실 (Rest Area) | **S1~S3c 완결(2026-07-09)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + Currency 아이템·드랍·HUD + **런 코어(클론)·일시강화 상점(`RestAreaShopTable`, 누진 비용)·아이템 툴팁**. 상세 §11b-11·§11e-6 |
 | 일시정지 | `GamePauseController` + `GamePauseSource` 출처별 카운터(콘솔/인벤/메뉴/컷씬/각인 모달/정비실 상점) — 씬 비활성 잠복 회귀 복구(2026-07-09, §11b-11) |
+| 아레나 스크린 HP바 | **S1~S3 완결(2026-07-13)** — `ArenaHealthBarPanel`(씬 사전 배치 행, 스폰 경로 태깅 Attach) + 상태이상 스트립(`AilmentStatusTracker` 월드/캔버스 공유, `AilmentCanvasSlot` 프리팹, prewarm) + 월드바 suppress(풀 안전) + `BossRow`/`EliteRow` 프리팹 저작. 상세 §10-1-2 |
 
 **툴링·인프라·품질**
 
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 13개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment /stun). 상세 §11c |
-| CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종) / **`ItemDashboardWindow`**(아이템 통합 조망·foldout 편집·itemCode rename 참조 추적·드랍 양방향 편집·생성/삭제 — 역참조 분석+코드상수 차단(`elite_key`=itemCode 겸용 확인), 전부 Undo 가능, 2026-07-10). 양 대시보드 공통: **Undo/Redo 자동 Rescan + 행/경고 패널 드래그 스플리터**(EditorPrefs 영속) |
+| CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종) / **`ItemDashboardWindow`**(아이템 통합 조망·foldout 편집·itemCode rename 참조 추적·드랍 양방향 편집·생성/삭제 — 역참조 분석+코드상수 차단(`elite_key`=itemCode 겸용 확인), 전부 Undo 가능, 2026-07-10). 양 대시보드 공통: **Undo/Redo 자동 Rescan + 행/경고 패널 드래그 스플리터**(EditorPrefs 영속) + **스코프 Save Assets**(스캔 범위만 `SaveAssetIfDirty`, 전역 SaveAssets 금지 유지 — Enemy는 씬 dirty 경고+`Save Scene` 확인 다이얼로그) + **숫자 필드 즉시 커밋**(Delayed 편집 버퍼 유실 해소 — 텍스트 itemCode류만 Delayed 유지, Save 진입 시 포커스 플러시→delayCall, 2026-07-13) |
 | 이벤트·공통 인프라 | `DungeonEventChannel`/`CombatEventChannel` 이벤트 버스 + `CombatLayers` 정적 캐시(WallMask 폴백 포함) + 던전 서비스 분리(Query/Spawn/FloorTransition) |
 | 성능 | NonAlloc 물리·A* 버퍼 재사용·오브젝트 풀·청크 로딩·미시 최적화(분리 벡터 throttle, LateUpdate 좌표 skip, 슬로우 재계산 만료 시점만, 픽셀 스프라이트 공유) + `PerfStage`/`RuntimePerfTraceLogger` 계측. 상세 §12 |
 | 리팩터·정리 | behavior-preserving 추출(`PlayerStatusEffects`/`ParryStackResource` 순수 C#) + 미사용 코드 삭제(Projectile/DoorController/DungeonPortal/NormalEnemyAI 등) + ExtendPack 데모 정리 + GameOver 자동 빌드 제거 + `PlayerEliteKeyInventory` 통합 제거 |
@@ -2802,7 +2842,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
-| 상태이상 시스템 확장 | 낮음 | **독/출혈 DoT + 표시 축 + 적 스턴 축 완료(§7-9·§8-7, 2026-07-10)**. 남은: 플레이어 스턴 부여 스킬/각인 데이터(축은 완성), 빙결 등 신규 타입(AilmentType append + 프로파일), 각인 Active/Passive 분류(Passive=평타 부착형, 기획만), HP바 크기 중앙 관리 SO(tier 3종 — 설계 합의, 예약) |
+| 상태이상 시스템 확장 | 낮음 | **독/출혈 DoT + 표시 축 + 적 스턴 축 완료(§7-9·§8-7, 2026-07-10)**. 남은: 플레이어 스턴 부여 스킬/각인 데이터(축은 완성), 빙결 등 신규 타입(AilmentType append + 프로파일), 각인 Active/Passive 분류(Passive=평타 부착형, 기획만). ~~HP바 크기 중앙 관리 SO~~→아레나 스크린 HP바로 대체 완료(§10-1-2, 2026-07-13) |
 | 세이브 / 로드 | 낮음 | **영구축(Soul+Material+강화레벨) JSON 영속 완료**(사망·앱 재시작, §11b-10). 남은: 세이브 보안(AES/HMAC — Protect/Unprotect seam만 비움), 런 중간 진행도 저장(현재 사망=런 종료) |
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장. Boss Arena는 WalkabilityArea 컴포넌트 부착만으로 지원 가능 |
 | AreaOverTime / Buff Elite 패턴 | 낮음 | ElitePatternData 추가 변형 자리 — 예: 광역 장판, 자기 강화 |
