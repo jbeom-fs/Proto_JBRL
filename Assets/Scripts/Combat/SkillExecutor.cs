@@ -197,19 +197,25 @@ public sealed class SkillExecutor
             awayFromCaster = ResolveExecutionDirection(context);
         awayFromCaster.Normalize();
 
+        PlayerController playerController = context.CasterTransform.GetComponent<PlayerController>();
         float radius = context.CasterCombat != null ? context.CasterCombat.CachedHitRadius : Mathf.Max(0.01f, context.HitRadius);
         if (!TryFindBlinkLandingPosition(
                 start,
                 targetPosition,
                 awayFromCaster,
                 Mathf.Max(0f, skill.blinkBehindOffset),
+                playerController,
                 radius,
                 out Vector3 blinkPosition))
         {
             return SkillExecutionResult.Failure;
         }
 
-        context.CasterTransform.position = blinkPosition;
+        if (playerController != null)
+            playerController.TeleportTo(blinkPosition);
+        else
+            context.CasterTransform.position = blinkPosition;
+
         if (skill.appliesDaggerMarker)
             DaggerMarkerRegistry.Instance.Apply(target, skill.markerDuration);
         target.ApplyAilments(skill.ailments, ResolveAilmentMultiplier(context));
@@ -223,6 +229,7 @@ public sealed class SkillExecutor
         Vector3 targetPosition,
         Vector2 behindDirection,
         float offset,
+        PlayerController playerController,
         float footprintRadius,
         out Vector3 landingPosition)
     {
@@ -240,7 +247,10 @@ public sealed class SkillExecutor
             if (((Vector2)(candidate - currentPosition)).sqrMagnitude <= currentPositionEpsilonSqr)
                 continue;
 
-            if (!WorldEnvironmentQuery.IsFootprintWalkable(candidate, footprintRadius))
+            bool canOccupy = playerController != null
+                ? playerController.CanOccupyPosition(candidate)
+                : WorldEnvironmentQuery.IsFootprintWalkable(candidate, footprintRadius);
+            if (!canOccupy)
                 continue;
 
             landingPosition = candidate;

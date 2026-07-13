@@ -388,6 +388,8 @@ public class PlayerController : MonoBehaviour
         return false;
     }
 
+    public bool CanOccupyPosition(Vector3 position) => CanMoveTo(position);
+
     private bool CanMoveTo(Vector3 pos)
     {
         LocationTransitionManager locationManager = LocationTransitionManager.Active;
