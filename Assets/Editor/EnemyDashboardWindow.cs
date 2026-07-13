@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 public sealed class EnemyDashboardWindow : EditorWindow
@@ -30,6 +32,9 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private readonly List<EnemyRow> _rows = new List<EnemyRow>(32);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
     private readonly HashSet<string> _itemCodes = new HashSet<string>(StringComparer.Ordinal);
+    private readonly List<EnemyDropDatabase> _scannedDropDatabases = new List<EnemyDropDatabase>(4);
+    private readonly List<BossEncounterTable> _scannedBossEncounterTables = new List<BossEncounterTable>(2);
+    private readonly List<EnemyController> _scannedSpawnPrefabs = new List<EnemyController>(32);
     private Vector2 _rowScrollPosition;
     private Vector2 _warningScrollPosition;
     private float _warningsPanelHeight = WarningPanelHeight;
@@ -110,8 +115,129 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _showNewEnemyForm = GUILayout.Toggle(_showNewEnemyForm, "New Enemy", EditorStyles.toolbarButton, GUILayout.Width(96f));
 
         GUILayout.FlexibleSpace();
+        if (GUILayout.Button("Save Assets", EditorStyles.toolbarButton, GUILayout.Width(96f)))
+            SaveScopedAssets();
+
+        bool activeSceneDirty = IsActiveSceneDirty();
+        if (activeSceneDirty)
+            GUILayout.Label("씬 변경은 별도 저장 필요", EditorStyles.miniBoldLabel);
+
+        EditorGUI.BeginDisabledGroup(!activeSceneDirty);
+        if (GUILayout.Button("Save Scene", EditorStyles.toolbarButton, GUILayout.Width(90f)))
+            SaveActiveScene();
+        EditorGUI.EndDisabledGroup();
+
         GUILayout.Label("Last scan: " + _lastScanLabel, EditorStyles.miniLabel);
         EditorGUILayout.EndHorizontal();
+    }
+
+    // SerializedObject/Undo paths stay separate. Global SaveAssets is forbidden; save only dirty scanned assets.
+    private void SaveScopedAssets()
+    {
+        if (!_hasScanned)
+        {
+            Debug.LogWarning("[EnemyDashboardWindow] Scan first; no scoped assets were saved.");
+            return;
+        }
+
+        var assets = new HashSet<Object>();
+        CollectScopedAssets(assets);
+        int savedCount = SaveDirtyAssets(assets, out int dirtyCount);
+        if (savedCount == dirtyCount)
+            _hasAssetChanges = false;
+
+        Debug.Log(
+            "[EnemyDashboardWindow] Scoped save: assets=" + assets.Count +
+            ", dirty=" + dirtyCount + ", saved=" + savedCount + ".");
+        Repaint();
+    }
+
+    private void CollectScopedAssets(HashSet<Object> assets)
+    {
+        for (int i = 0; i < _rows.Count; i++)
+        {
+            EnemyRow row = _rows[i];
+            if (row == null)
+                continue;
+
+            AddMainAsset(assets, row.Data);
+            AddMainAsset(assets, row.Prefab);
+            for (int groupIndex = 0; groupIndex < row.DropGroups.Count; groupIndex++)
+                AddMainAsset(assets, row.DropGroups[groupIndex].Database);
+        }
+
+        AddMainAssets(assets, _scannedDropDatabases);
+        AddMainAssets(assets, _scannedBossEncounterTables);
+        AddMainAssets(assets, _scannedSpawnPrefabs);
+        AddMainAsset(assets, _primaryDropDatabase);
+        AddMainAsset(assets, _primaryBossEncounterTable);
+    }
+
+    private static void AddMainAssets<T>(HashSet<Object> assets, List<T> source) where T : Object
+    {
+        for (int i = 0; i < source.Count; i++)
+            AddMainAsset(assets, source[i]);
+    }
+
+    private static void AddMainAsset(HashSet<Object> assets, Object asset)
+    {
+        if (asset == null)
+            return;
+
+        string path = AssetDatabase.GetAssetPath(asset);
+        if (string.IsNullOrEmpty(path))
+            return;
+
+        Object mainAsset = AssetDatabase.LoadMainAssetAtPath(path);
+        if (mainAsset != null)
+            assets.Add(mainAsset);
+    }
+
+    private static int SaveDirtyAssets(HashSet<Object> assets, out int dirtyCount)
+    {
+        dirtyCount = 0;
+        int savedCount = 0;
+        foreach (Object asset in assets)
+        {
+            if (asset == null || !EditorUtility.IsDirty(asset))
+                continue;
+
+            dirtyCount++;
+            AssetDatabase.SaveAssetIfDirty(asset);
+            if (!EditorUtility.IsDirty(asset))
+                savedCount++;
+        }
+
+        return savedCount;
+    }
+
+    private static bool IsActiveSceneDirty()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        return scene.IsValid() && scene.isDirty;
+    }
+
+    private void SaveActiveScene()
+    {
+        Scene scene = SceneManager.GetActiveScene();
+        if (!scene.IsValid() || !scene.isDirty)
+            return;
+
+        bool saveScene = EditorUtility.DisplayDialog(
+            "씬 저장 확인",
+            "현재 활성 씬에 저장되지 않은 변경이 있습니다.\n" +
+            "이 씬의 무관한 미저장 변경도 함께 저장됩니다.\n\n" +
+            "지금 Save Scene을 실행할까요?",
+            "Save Scene",
+            "나중에");
+        if (!saveScene)
+            return;
+
+        bool saved = EditorSceneManager.SaveScene(scene);
+        Debug.Log(
+            "[EnemyDashboardWindow] Scene save: " +
+            (saved ? "saved" : "failed") + ".");
+        Repaint();
     }
 
     private void DrawNewEnemyPanel()
@@ -297,7 +423,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _newBossAreaDestinationId = string.Empty;
         _newBossAreaId = string.Empty;
         _newBossIsFinal = false;
-        _newEnemyFeedback = "생성 완료: " + enemyName + ". Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 Ctrl+S.";
+        _newEnemyFeedback = "생성 완료: " + enemyName + ". Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 상단 Save Scene.";
         if (!string.IsNullOrWhiteSpace(spawnTableMessage))
             _newEnemyFeedback += "\n" + spawnTableMessage;
         if (warnings.Count > 0)
@@ -374,7 +500,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
 
     private static void DrawNewEnemyUndoNotice()
     {
-        EditorGUILayout.LabelField("에셋 생성은 Undo 불가. 생성 직후 Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 유저가 Ctrl+S.", EditorStyles.miniLabel);
+        EditorGUILayout.LabelField("에셋 생성은 Undo 불가. 생성 직후 Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 상단 Save Scene.", EditorStyles.miniLabel);
     }
 
     private static List<EnemyController> BuildUniquePoolPrefabs(EnemyPoolManager manager)
@@ -1873,6 +1999,9 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _rows.Clear();
         _warnings.Clear();
         _itemCodes.Clear();
+        _scannedDropDatabases.Clear();
+        _scannedBossEncounterTables.Clear();
+        _scannedSpawnPrefabs.Clear();
         _hasScanned = true;
         _hasAssetChanges = false;
         _lastScanLabel = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
@@ -1882,11 +2011,16 @@ public sealed class EnemyDashboardWindow : EditorWindow
         List<ItemDatabase> itemDatabases = LoadAssets<ItemDatabase>("t:ItemDatabase");
         List<BossEncounterTable> bossTables = LoadAssets<BossEncounterTable>("t:BossEncounterTable");
 
+        _scannedDropDatabases.AddRange(dropDatabases);
+        _scannedBossEncounterTables.AddRange(bossTables);
         _primaryDropDatabase = dropDatabases.Count > 0 ? dropDatabases[0] : null;
         _primaryBossEncounterTable = bossTables.Count > 0 ? bossTables[0] : null;
         _bossTableLookupAttempted = true;
 
         Dictionary<EnemyData, EnemyController> prefabMap = BuildPrefabMap(out _hasPoolScene);
+        if (_hasPoolScene)
+            _scannedSpawnPrefabs.AddRange(
+                BuildUniquePoolPrefabs(Object.FindAnyObjectByType<EnemyPoolManager>()));
         SpawnTableState spawnTableState = BuildSpawnTableState();
         Dictionary<EnemyData, List<DropGroupRecord>> dropGroups = BuildDropGroups(dropDatabases);
         HashSet<string> itemCodes = BuildItemCodeSet(itemDatabases);

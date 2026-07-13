@@ -37,6 +37,7 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private readonly List<ItemRow> _rows = new List<ItemRow>(64);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
+    private readonly List<ItemDatabase> _itemDatabases = new List<ItemDatabase>(4);
     private readonly List<EnemyDropDatabase> _dropDatabases = new List<EnemyDropDatabase>(4);
     private readonly List<DropEntryRecord> _dropEntries = new List<DropEntryRecord>(64);
     private readonly List<EnemyOption> _enemyOptions = new List<EnemyOption>(32);
@@ -129,8 +130,72 @@ public sealed class ItemDashboardWindow : EditorWindow
             EditorPrefs.SetBool(ShowInfoWarningsKey, _showInfoWarnings);
 
         GUILayout.FlexibleSpace();
+        if (GUILayout.Button("Save Assets", EditorStyles.toolbarButton, GUILayout.Width(96f)))
+            SaveScopedAssets();
         GUILayout.Label("Last scan: " + _lastScanLabel, EditorStyles.miniLabel);
         EditorGUILayout.EndHorizontal();
+    }
+
+    // SerializedObject/Undo paths stay separate. Global SaveAssets is forbidden; save only dirty scanned databases.
+    private void SaveScopedAssets()
+    {
+        if (!_hasScanned)
+        {
+            Debug.LogWarning("[ItemDashboardWindow] Scan first; no scoped assets were saved.");
+            return;
+        }
+
+        var assets = new HashSet<Object>();
+        AddMainAssets(assets, _itemDatabases);
+        AddMainAssets(assets, _dropDatabases);
+        AddMainAsset(assets, _primaryItemDatabase);
+        AddMainAsset(assets, _primaryDropDatabase);
+
+        int savedCount = SaveDirtyAssets(assets, out int dirtyCount);
+        if (savedCount == dirtyCount)
+            _hasAssetChanges = false;
+        Debug.Log(
+            "[ItemDashboardWindow] Scoped save: assets=" + assets.Count +
+            ", dirty=" + dirtyCount + ", saved=" + savedCount + ".");
+        Repaint();
+    }
+
+    private static void AddMainAssets<T>(HashSet<Object> assets, List<T> source) where T : Object
+    {
+        for (int i = 0; i < source.Count; i++)
+            AddMainAsset(assets, source[i]);
+    }
+
+    private static void AddMainAsset(HashSet<Object> assets, Object asset)
+    {
+        if (asset == null)
+            return;
+
+        string path = AssetDatabase.GetAssetPath(asset);
+        if (string.IsNullOrEmpty(path))
+            return;
+
+        Object mainAsset = AssetDatabase.LoadMainAssetAtPath(path);
+        if (mainAsset != null)
+            assets.Add(mainAsset);
+    }
+
+    private static int SaveDirtyAssets(HashSet<Object> assets, out int dirtyCount)
+    {
+        dirtyCount = 0;
+        int savedCount = 0;
+        foreach (Object asset in assets)
+        {
+            if (asset == null || !EditorUtility.IsDirty(asset))
+                continue;
+
+            dirtyCount++;
+            AssetDatabase.SaveAssetIfDirty(asset);
+            if (!EditorUtility.IsDirty(asset))
+                savedCount++;
+        }
+
+        return savedCount;
     }
 
     private void DrawSummary()
@@ -193,7 +258,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             ExecuteNewItemCreation(itemCode);
         EditorGUI.EndDisabledGroup();
 
-        EditorGUILayout.LabelField("리스트 엔트리 추가는 Undo 가능. 저장은 Ctrl+S.", EditorStyles.miniLabel);
+        EditorGUILayout.LabelField("리스트 엔트리 추가는 Undo 가능. 저장은 상단 Save Assets.", EditorStyles.miniLabel);
         EditorGUILayout.EndVertical();
     }
 
@@ -1297,6 +1362,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     {
         _rows.Clear();
         _warnings.Clear();
+        _itemDatabases.Clear();
         _dropDatabases.Clear();
         _dropEntries.Clear();
         _itemCodes.Clear();
@@ -1309,6 +1375,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         List<EnemyDropDatabase> dropDatabases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
         List<EnemyData> enemies = LoadAssets<EnemyData>("t:EnemyData");
 
+        _itemDatabases.AddRange(itemDatabases);
         _primaryItemDatabase = itemDatabases.Count > 0 ? itemDatabases[0] : null;
         _dropDatabases.AddRange(dropDatabases);
         _primaryDropDatabase = dropDatabases.Count > 0 ? dropDatabases[0] : null;
