@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\System\GamePersistenceCoordinator.cs" />
+    <Compile Include="Assets\Scripts\UI\ArenaHealthBarPanel.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireRequest.cs" />
     <Compile Include="Assets\Scripts\Data\StatusEffectIconTable.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerResource.cs" />
@@ -166,6 +167,7 @@
     <Compile Include="Assets\Scripts\Combat\PlayerCombatController.cs" />
     <Compile Include="Assets\Scripts\Boss\BossExitPortal.cs" />
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleService.cs" />
+    <Compile Include="Assets\Scripts\UI\ArenaHealthBarRowUI.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTilemapRenderer.cs" />
     <Compile Include="Assets\Scripts\Items\ItemDatabase.cs" />
     <Compile Include="Assets\Scripts\EliteArena\ArenaDoor.cs" />

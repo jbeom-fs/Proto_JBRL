@@ -16,6 +16,9 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     [Header("Arena Door")]
     [SerializeField] private ArenaDoor arenaDoor;
 
+    [Header("Screen Health Bar")]
+    [SerializeField] private ArenaHealthBarPanel healthBarPanel;
+
     private RoomInfo _originRoom;
     private Vector3 _originReturnPosition;
     private EliteArenaPortal _activeEntrancePortal;
@@ -25,6 +28,9 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     private bool _warnedMissingArenaDoor;
 
     public bool IsEncounterActiveInArena => _hasEncounter && !_eliteDefeated;
+
+    private ArenaHealthBarPanel HealthBarPanel =>
+        healthBarPanel != null ? healthBarPanel : ArenaHealthBarPanel.Active;
 
     private void Awake()
     {
@@ -172,6 +178,8 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             _activeElite = null;
         }
 
+        HealthBarPanel?.DetachAll();
+
         _hasEncounter = false;
         _eliteDefeated = false;
         HideReturnPortal();
@@ -226,6 +234,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             return false;
 
         _activeElite = enemy;
+        HealthBarPanel?.Attach(enemy, false);
         return true;
     }
 
@@ -248,6 +257,8 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     {
         if (enemy != null)
             enemy.OnDied -= OnEliteDied;
+
+        HealthBarPanel?.Detach(enemy);
 
         if (_activeElite == enemy)
             _activeElite = null;

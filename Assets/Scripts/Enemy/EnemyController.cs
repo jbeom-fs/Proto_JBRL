@@ -57,6 +57,9 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     public bool IsAlive => _currentHp > 0 && !IsDead;
     public bool IsDead { get; private set; }
+    public int CurrentHp => _currentHp;
+    public int MaxHp => data?.maxHp ?? 0;
+    public string DisplayName => data?.enemyName ?? string.Empty;
     public bool HoldsEliteKey => _holdsEliteKey;
     public bool IsKnockbackLocked => _knockbackLockTimer > 0f;
     public bool IsSlowed => _activeSlowPercentage > 0f;
@@ -106,6 +109,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _holdsEliteKey = false;
         _deathFinished = false;
         _deathTimer = 0f;
+        _healthBar?.SetBarSuppressed(false);
         _healthBar?.SetHp(_currentHp, data.maxHp);
         _lastSafePosition = transform.position;
         ResetStatusEffects();

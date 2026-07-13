@@ -52,6 +52,7 @@ public class EnemyHealthBar : MonoBehaviour
     private bool           _isVisible;
     private bool           _initialized;
     private bool           _anchorResolved;
+    private bool           _barSuppressed;
 
     // ── 정적 픽셀 스프라이트 (적 N마리가 공유, 텍스처 1회만 생성) ────
 
@@ -125,10 +126,29 @@ public class EnemyHealthBar : MonoBehaviour
     //  갱신 (EnemyController에서 호출)
     // ══════════════════════════════════════════════════════════════
 
+    /// <summary>월드 체력바 표시를 억제하거나 해제합니다.</summary>
+    public void SetBarSuppressed(bool suppressed)
+    {
+        EnsureInitialized();
+        _barSuppressed = suppressed;
+
+        if (!suppressed)
+            return;
+
+        _hideTimer = 0f;
+        SetVisible(false);
+    }
+
     /// <summary>HP 값을 받아 바 크기·색상을 즉시 갱신합니다.</summary>
     public void SetHp(int current, int max)
     {
         EnsureInitialized();
+
+        if (_barSuppressed)
+        {
+            SetVisible(false);
+            return;
+        }
 
         float ratio = max > 0 ? Mathf.Clamp01((float)current / max) : 0f;
         float y = ResolveAnchorY();

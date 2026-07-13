@@ -14,6 +14,9 @@ public sealed class BossEncounterController : ArenaEncounterBase
     [Header("Boss Door")]
     [SerializeField] private ArenaDoor arenaDoor;
 
+    [Header("Screen Health Bar")]
+    [SerializeField] private ArenaHealthBarPanel healthBarPanel;
+
     private BossEncounterEntry _activeEntry;
     private EnemyController _activeBoss;
     private BossExitPortal _activeExitPortal;
@@ -27,6 +30,9 @@ public sealed class BossEncounterController : ArenaEncounterBase
     public bool IsEncounterActive => _hasEncounter && !_bossDefeated;
     public bool IsBossDefeated => _hasEncounter && _bossDefeated;
     public BossEncounterEntry ActiveEntry => _activeEntry;
+
+    private ArenaHealthBarPanel HealthBarPanel =>
+        healthBarPanel != null ? healthBarPanel : ArenaHealthBarPanel.Active;
 
     private void Awake()
     {
@@ -114,6 +120,8 @@ public sealed class BossEncounterController : ArenaEncounterBase
             _activeBoss = null;
         }
 
+        HealthBarPanel?.DetachAll();
+
         _activeEntry = null;
         _hasEncounter = false;
         _bossDefeated = false;
@@ -151,6 +159,7 @@ public sealed class BossEncounterController : ArenaEncounterBase
             return false;
 
         _activeBoss = boss;
+        HealthBarPanel?.Attach(boss, true);
         return true;
     }
 
@@ -173,6 +182,8 @@ public sealed class BossEncounterController : ArenaEncounterBase
     {
         if (boss != null)
             boss.OnDied -= OnBossDied;
+
+        HealthBarPanel?.Detach(boss);
 
         if (_activeBoss == boss)
             _activeBoss = null;
