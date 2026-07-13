@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Elite_Magma_01
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: Elite_Magma_01
-  maxHp: 35
+  maxHp: 2000
   attack: 5
   defense: 0
   expReward: 20

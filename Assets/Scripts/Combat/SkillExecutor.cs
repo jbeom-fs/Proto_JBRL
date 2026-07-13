@@ -24,6 +24,8 @@ public readonly struct SkillExecutionResult
 public sealed class SkillExecutor
 {
     private const int BlinkEnemyBufferSize = 64;
+    private const float BlinkCurrentPositionEpsilon = 0.5f;
+    private static readonly float[] s_BlinkLandingAngles = { 0f, 45f, -45f, 90f, -90f, 135f, -135f, 180f };
 
     private readonly AttackExecutor _attackExecutor;
     private readonly SkillTargetResolver _targetResolver;
@@ -190,22 +192,19 @@ public sealed class SkillExecutor
 
         Vector3 start = context.CasterTransform.position;
         Vector3 targetPosition = target.transform.position;
-        Vector3 awayFromCaster = targetPosition - start;
+        Vector2 awayFromCaster = targetPosition - start;
         if (awayFromCaster.sqrMagnitude <= 0.0001f)
             awayFromCaster = ResolveExecutionDirection(context);
         awayFromCaster.Normalize();
 
-        Vector3 desired = targetPosition + awayFromCaster * Mathf.Max(0f, skill.blinkBehindOffset);
         float radius = context.CasterCombat != null ? context.CasterCombat.CachedHitRadius : Mathf.Max(0.01f, context.HitRadius);
-        Vector3 blinkPosition = desired;
-        if (!WorldEnvironmentQuery.IsFootprintWalkable(blinkPosition, radius) &&
-            !WorldEnvironmentQuery.TryFindNearestWalkable(
-                desired,
+        if (!TryFindBlinkLandingPosition(
+                start,
                 targetPosition,
-                Mathf.Max(skill.blinkBehindOffset + radius, radius),
+                awayFromCaster,
+                Mathf.Max(0f, skill.blinkBehindOffset),
                 radius,
-                4,
-                out blinkPosition))
+                out Vector3 blinkPosition))
         {
             return SkillExecutionResult.Failure;
         }
@@ -217,6 +216,39 @@ public sealed class SkillExecutor
 
         PlayConfiguredAnimation(context, skill, (targetPosition - start).normalized);
         return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
+    }
+
+    private static bool TryFindBlinkLandingPosition(
+        Vector3 currentPosition,
+        Vector3 targetPosition,
+        Vector2 behindDirection,
+        float offset,
+        float footprintRadius,
+        out Vector3 landingPosition)
+    {
+        float currentPositionEpsilonSqr = BlinkCurrentPositionEpsilon * BlinkCurrentPositionEpsilon;
+        for (int i = 0; i < s_BlinkLandingAngles.Length; i++)
+        {
+            float radians = s_BlinkLandingAngles[i] * Mathf.Deg2Rad;
+            float cosine = Mathf.Cos(radians);
+            float sine = Mathf.Sin(radians);
+            Vector2 direction = new Vector2(
+                behindDirection.x * cosine - behindDirection.y * sine,
+                behindDirection.x * sine + behindDirection.y * cosine);
+            Vector3 candidate = targetPosition + (Vector3)(direction * offset);
+            // A landing within 0.5f is effectively no reposition, so Blink must not consume a cast.
+            if (((Vector2)(candidate - currentPosition)).sqrMagnitude <= currentPositionEpsilonSqr)
+                continue;
+
+            if (!WorldEnvironmentQuery.IsFootprintWalkable(candidate, footprintRadius))
+                continue;
+
+            landingPosition = candidate;
+            return true;
+        }
+
+        landingPosition = default;
+        return false;
     }
 
     private SkillExecutionResult ExecuteBuff(SkillExecutionContext context)
