@@ -41,6 +41,8 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private bool _hasScanned;
     private bool _hasPoolScene;
     private bool _hasAssetChanges;
+    private bool _saveActionPending;
+    private Action _queuedSaveAction;
     private bool _showNewEnemyForm;
     private string _lastScanLabel = "-";
     private EnemyDropDatabase _primaryDropDatabase;
@@ -75,6 +77,9 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private void OnDisable()
     {
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        EditorApplication.delayCall -= ExecuteQueuedSaveAction;
+        _saveActionPending = false;
+        _queuedSaveAction = null;
     }
 
     private void OnUndoRedoPerformed()
@@ -133,6 +138,11 @@ public sealed class EnemyDashboardWindow : EditorWindow
 
     // SerializedObject/Undo paths stay separate. Global SaveAssets is forbidden; save only dirty scanned assets.
     private void SaveScopedAssets()
+    {
+        QueueSaveAfterFocusFlush(SaveScopedAssetsCore);
+    }
+
+    private void SaveScopedAssetsCore()
     {
         if (!_hasScanned)
         {
@@ -219,6 +229,11 @@ public sealed class EnemyDashboardWindow : EditorWindow
 
     private void SaveActiveScene()
     {
+        QueueSaveAfterFocusFlush(SaveActiveSceneCore);
+    }
+
+    private void SaveActiveSceneCore()
+    {
         Scene scene = SceneManager.GetActiveScene();
         if (!scene.IsValid() || !scene.isDirty)
             return;
@@ -238,6 +253,34 @@ public sealed class EnemyDashboardWindow : EditorWindow
             "[EnemyDashboardWindow] Scene save: " +
             (saved ? "saved" : "failed") + ".");
         Repaint();
+    }
+
+    private void QueueSaveAfterFocusFlush(Action saveAction)
+    {
+        if (_saveActionPending)
+            return;
+
+        GUI.FocusControl(null);
+        EditorGUIUtility.editingTextField = false;
+
+        _saveActionPending = true;
+        _queuedSaveAction = saveAction;
+        EditorApplication.delayCall += ExecuteQueuedSaveAction;
+        Repaint();
+    }
+
+    private void ExecuteQueuedSaveAction()
+    {
+        EditorApplication.delayCall -= ExecuteQueuedSaveAction;
+
+        Action saveAction = _queuedSaveAction;
+        _queuedSaveAction = null;
+        _saveActionPending = false;
+
+        if (this == null)
+            return;
+
+        saveAction?.Invoke();
     }
 
     private void DrawNewEnemyPanel()
@@ -1439,14 +1482,14 @@ public sealed class EnemyDashboardWindow : EditorWindow
         int nextSpawnCost = spawnCost != null ? spawnCost.intValue : 1;
 
         EditorGUI.BeginChangeCheck();
-        nextMaxHp = EditorGUILayout.DelayedIntField(nextMaxHp, GUILayout.Width(StatWidth));
-        nextAttack = EditorGUILayout.DelayedIntField(nextAttack, GUILayout.Width(StatWidth));
-        nextDefense = EditorGUILayout.DelayedIntField(nextDefense, GUILayout.Width(StatWidth));
-        nextExpReward = EditorGUILayout.DelayedIntField(nextExpReward, GUILayout.Width(StatWidth));
-        nextMoveSpeed = EditorGUILayout.DelayedFloatField(nextMoveSpeed, GUILayout.Width(MoveWidth));
-        nextMinFloor = EditorGUILayout.DelayedIntField(nextMinFloor, GUILayout.Width(FloorEditWidth));
-        nextMaxFloor = EditorGUILayout.DelayedIntField(nextMaxFloor, GUILayout.Width(FloorEditWidth));
-        nextSpawnCost = EditorGUILayout.DelayedIntField(nextSpawnCost, GUILayout.Width(CostWidth));
+        nextMaxHp = EditorGUILayout.IntField(nextMaxHp, GUILayout.Width(StatWidth));
+        nextAttack = EditorGUILayout.IntField(nextAttack, GUILayout.Width(StatWidth));
+        nextDefense = EditorGUILayout.IntField(nextDefense, GUILayout.Width(StatWidth));
+        nextExpReward = EditorGUILayout.IntField(nextExpReward, GUILayout.Width(StatWidth));
+        nextMoveSpeed = EditorGUILayout.FloatField(nextMoveSpeed, GUILayout.Width(MoveWidth));
+        nextMinFloor = EditorGUILayout.IntField(nextMinFloor, GUILayout.Width(FloorEditWidth));
+        nextMaxFloor = EditorGUILayout.IntField(nextMaxFloor, GUILayout.Width(FloorEditWidth));
+        nextSpawnCost = EditorGUILayout.IntField(nextSpawnCost, GUILayout.Width(CostWidth));
 
         if (!EditorGUI.EndChangeCheck())
             return;
@@ -1754,7 +1797,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         }
 
         EditorGUI.BeginChangeCheck();
-        int value = EditorGUILayout.DelayedIntField(property.intValue, GUILayout.Width(width));
+        int value = EditorGUILayout.IntField(property.intValue, GUILayout.Width(width));
         if (!EditorGUI.EndChangeCheck())
             return false;
 
@@ -1771,7 +1814,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         }
 
         EditorGUI.BeginChangeCheck();
-        float value = EditorGUILayout.DelayedFloatField(property.floatValue, GUILayout.Width(width));
+        float value = EditorGUILayout.FloatField(property.floatValue, GUILayout.Width(width));
         if (!EditorGUI.EndChangeCheck())
             return false;
 

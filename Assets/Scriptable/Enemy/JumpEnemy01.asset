@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: JumpEnemy01
   m_EditorClassIdentifier: Assembly-CSharp::EnemyData
   enemyName: JumpEnemy01
-  maxHp: 18
-  attack: 3
+  maxHp: 200
+  attack: 5
   defense: 0
   expReward: 12
   deathDelay: 0.5

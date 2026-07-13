@@ -48,6 +48,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private float _warningsPanelHeight = WarningPanelHeight;
     private bool _hasScanned;
     private bool _hasAssetChanges;
+    private bool _isScopedSaveQueued;
     private bool _showNewItemForm;
     private bool _showInfoWarnings = true;
     private int _typeFilterIndex;
@@ -82,6 +83,8 @@ public sealed class ItemDashboardWindow : EditorWindow
     private void OnDisable()
     {
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        EditorApplication.delayCall -= SaveScopedAssetsAfterFocusFlush;
+        _isScopedSaveQueued = false;
     }
 
     private void OnUndoRedoPerformed()
@@ -138,6 +141,24 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     // SerializedObject/Undo paths stay separate. Global SaveAssets is forbidden; save only dirty scanned databases.
     private void SaveScopedAssets()
+    {
+        if (_isScopedSaveQueued)
+            return;
+
+        GUI.FocusControl(null);
+        EditorGUIUtility.editingTextField = false;
+        _isScopedSaveQueued = true;
+        EditorApplication.delayCall += SaveScopedAssetsAfterFocusFlush;
+        Repaint();
+    }
+
+    private void SaveScopedAssetsAfterFocusFlush()
+    {
+        _isScopedSaveQueued = false;
+        SaveScopedAssetsNow();
+    }
+
+    private void SaveScopedAssetsNow()
     {
         if (!_hasScanned)
         {
@@ -747,7 +768,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         EditorGUILayout.BeginHorizontal();
         EditorGUI.BeginChangeCheck();
         bool nextStackable = stackable != null && EditorGUILayout.Toggle("stackable", stackable.boolValue);
-        int nextMaxStack = maxStack != null ? EditorGUILayout.DelayedIntField("maxStack", maxStack.intValue) : 1;
+        int nextMaxStack = maxStack != null ? EditorGUILayout.IntField("maxStack", maxStack.intValue) : 1;
         bool changed = EditorGUI.EndChangeCheck();
         EditorGUILayout.EndHorizontal();
 
@@ -853,8 +874,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         SerializedProperty salvageMaxAmount = item.FindPropertyRelative("salvageMaxAmount");
         EditorGUILayout.BeginHorizontal();
         EditorGUI.BeginChangeCheck();
-        int min = salvageMinAmount != null ? EditorGUILayout.DelayedIntField("salvageMin", salvageMinAmount.intValue) : 1;
-        int max = salvageMaxAmount != null ? EditorGUILayout.DelayedIntField("salvageMax", salvageMaxAmount.intValue) : min;
+        int min = salvageMinAmount != null ? EditorGUILayout.IntField("salvageMin", salvageMinAmount.intValue) : 1;
+        int max = salvageMaxAmount != null ? EditorGUILayout.IntField("salvageMax", salvageMaxAmount.intValue) : min;
         bool changed = EditorGUI.EndChangeCheck();
         EditorGUILayout.EndHorizontal();
 
@@ -924,7 +945,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             EditorGUILayout.BeginHorizontal();
             EditorGUI.BeginChangeCheck();
             int nextType = type != null ? EditorGUILayout.Popup(type.enumValueIndex, type.enumDisplayNames, GUILayout.Width(170f)) : 0;
-            int nextValue = value != null ? EditorGUILayout.DelayedIntField(value.intValue, GUILayout.Width(80f)) : 0;
+            int nextValue = value != null ? EditorGUILayout.IntField(value.intValue, GUILayout.Width(80f)) : 0;
             bool changed = EditorGUI.EndChangeCheck();
 
             bool deleted = false;
@@ -1029,15 +1050,15 @@ public sealed class ItemDashboardWindow : EditorWindow
         GUILayout.Label(source.Kind == DropEntryKind.Drop ? "drop" : "택1", GUILayout.Width(DropKindWidth));
 
         EditorGUI.BeginChangeCheck();
-        int min = EditorGUILayout.DelayedIntField(source.MinAmount, GUILayout.Width(DropAmountWidth));
-        int max = EditorGUILayout.DelayedIntField(source.MaxAmount, GUILayout.Width(DropAmountWidth));
+        int min = EditorGUILayout.IntField(source.MinAmount, GUILayout.Width(DropAmountWidth));
+        int max = EditorGUILayout.IntField(source.MaxAmount, GUILayout.Width(DropAmountWidth));
         bool amountChanged = EditorGUI.EndChangeCheck();
 
         if (source.Kind == DropEntryKind.Drop)
         {
             GUILayout.Label("-", GUILayout.Width(DropGroupChanceWidth));
             EditorGUI.BeginChangeCheck();
-            float chance = EditorGUILayout.DelayedFloatField(source.Chance, GUILayout.Width(DropChanceWidth));
+            float chance = EditorGUILayout.FloatField(source.Chance, GUILayout.Width(DropChanceWidth));
             bool chanceChanged = EditorGUI.EndChangeCheck();
             if (amountChanged || chanceChanged)
                 ApplyDropEntryValues(row, source, min, max, chance);
@@ -1046,7 +1067,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         {
             GUILayout.Label("그룹 " + FormatChance(source.GroupChance), GUILayout.Width(DropGroupChanceWidth));
             EditorGUI.BeginChangeCheck();
-            float weight = EditorGUILayout.DelayedFloatField(source.Weight, GUILayout.Width(DropChanceWidth));
+            float weight = EditorGUILayout.FloatField(source.Weight, GUILayout.Width(DropChanceWidth));
             bool weightChanged = EditorGUI.EndChangeCheck();
             if (amountChanged || weightChanged)
                 ApplyDropEntryValues(row, source, min, max, weight);
