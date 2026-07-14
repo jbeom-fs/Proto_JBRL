@@ -13,9 +13,6 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     [SerializeField] private Transform entrancePortalParent;
     [SerializeField] private Transform eliteRoomReturnPoint;
 
-    [Header("Arena Door")]
-    [SerializeField] private ArenaDoor arenaDoor;
-
     [Header("Screen Health Bar")]
     [SerializeField] private ArenaHealthBarPanel healthBarPanel;
 
@@ -25,7 +22,6 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     private EnemyController _activeElite;
     private bool _hasEncounter;
     private bool _eliteDefeated;
-    private bool _warnedMissingArenaDoor;
 
     public bool IsEncounterActiveInArena => _hasEncounter && !_eliteDefeated;
 
@@ -266,37 +262,6 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
         _eliteDefeated = true;
         OpenArenaDoor();
         ShowReturnPortal();
-    }
-
-    private void CloseArenaDoor()
-    {
-        if (arenaDoor == null)
-        {
-            WarnMissingArenaDoor();
-            return;
-        }
-
-        arenaDoor.Close();
-    }
-
-    private void OpenArenaDoor()
-    {
-        if (arenaDoor == null)
-        {
-            WarnMissingArenaDoor();
-            return;
-        }
-
-        arenaDoor.Open();
-    }
-
-    private void WarnMissingArenaDoor()
-    {
-        if (_warnedMissingArenaDoor)
-            return;
-
-        Debug.LogWarning("[EliteArenaEncounterController] ArenaDoor reference is missing.", this);
-        _warnedMissingArenaDoor = true;
     }
 
     private EliteArenaPortal GetEntrancePortal()

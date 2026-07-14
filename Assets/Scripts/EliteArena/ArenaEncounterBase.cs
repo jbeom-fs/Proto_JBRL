@@ -7,6 +7,9 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     [Header("Teleport")]
     [SerializeField] protected LocationTransitionManager transitionManager;
 
+    [Header("Arena Door")]
+    [SerializeField] private ArenaDoor arenaDoor;
+
     [Header("Arena")]
     [SerializeField] protected Tilemap arenaWalkTilemap;
     [SerializeField] protected Tilemap arenaWallTilemap;
@@ -21,6 +24,7 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     [SerializeField] protected WalkabilityArea walkabilityArea;
 
     private EliteArenaReturnPortal _activeReturnPortal;
+    private bool _warnedMissingArenaDoor;
 
     protected bool TryTeleportPlayerToArena(PlayerController player, string destinationId)
     {
@@ -37,6 +41,37 @@ public abstract class ArenaEncounterBase : MonoBehaviour
             ? transitionManager
             : LocationTransitionManager.Active;
         router?.RestoreDungeonMinimapSource();
+    }
+
+    protected void CloseArenaDoor()
+    {
+        if (arenaDoor == null)
+        {
+            WarnMissingArenaDoor();
+            return;
+        }
+
+        arenaDoor.Close();
+    }
+
+    protected void OpenArenaDoor()
+    {
+        if (arenaDoor == null)
+        {
+            WarnMissingArenaDoor();
+            return;
+        }
+
+        arenaDoor.Open();
+    }
+
+    protected void WarnMissingArenaDoor()
+    {
+        if (_warnedMissingArenaDoor)
+            return;
+
+        Debug.LogWarning("[" + GetType().Name + "] ArenaDoor reference is missing.", this);
+        _warnedMissingArenaDoor = true;
     }
 
     protected EnemyController SpawnArenaEnemyAtPosition(

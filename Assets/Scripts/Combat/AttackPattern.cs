@@ -209,7 +209,7 @@ public static class AttackPattern
             return;
 
         Vector2 facingDir = ResolveFacing(facing);
-        float angle = Vector2.SignedAngle(Vector2.up, facingDir);
+        float angle = AimDirectionUtility.ToAuthoredFacingAngle(facingDir);
         Quaternion rotation = Quaternion.Euler(0f, 0f, angle);
 
         for (int i = 0; i < customCells.Count; i++)

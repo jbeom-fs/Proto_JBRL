@@ -4,6 +4,14 @@ public static class AimDirectionUtility
 {
     private const float AxisDeadZone = 0.001f;
 
+    /// <summary>
+    /// Converts the authored-space +Y=forward convention to a Z-axis rotation angle in degrees.
+    /// </summary>
+    public static float ToAuthoredFacingAngle(Vector2 facing)
+    {
+        return Vector2.SignedAngle(Vector2.up, facing);
+    }
+
     public static bool TryGetEightWayRaw(Vector2 input, out Vector2Int rawDirection)
     {
         rawDirection = new Vector2Int(

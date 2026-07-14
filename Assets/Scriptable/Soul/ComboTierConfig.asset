@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComboTierConfig
   stacksPerTier: 5
   maxTier: 4
-  window: 2
+  window: 5
   gainPerHit: 1
   tierBonusPct:
   - 10

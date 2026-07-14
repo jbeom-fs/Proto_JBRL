@@ -323,7 +323,7 @@ public class SkillRangePreviewer : MonoBehaviour
             Vector2 customFacing = useMouseAim
                 ? previewDirection
                 : AimDirectionUtility.ToNormalizedDirection(facing);
-            float customAngle = Vector2.SignedAngle(Vector2.up, customFacing);
+            float customAngle = AimDirectionUtility.ToAuthoredFacingAngle(customFacing);
             Apply(0, false);
             UpdateCustomCellFill(skill, _previewShapeCells, customAngle);
             return;

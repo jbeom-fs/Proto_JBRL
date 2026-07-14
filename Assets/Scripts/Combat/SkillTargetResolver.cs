@@ -222,7 +222,7 @@ public sealed class SkillTargetResolver
 
         Vector2 facing = ResolveCustomWorldFacing(aimDirection, dungeonGridAimDirection);
         float cellSize = WorldEnvironmentQuery.GetCellSize(originWorld);
-        float angle = Vector2.SignedAngle(Vector2.up, facing);
+        float angle = AimDirectionUtility.ToAuthoredFacingAngle(facing);
         matcher = new CustomShapeMatcher(originWorld, angle, cellSize, customCells);
         return true;
     }
