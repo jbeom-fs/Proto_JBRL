@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-13
-> 기준 커밋: master HEAD `3464e12c` — **아레나 스크린 HP바 축 S1~S3(§10-1-2) + Dashboard 저장 UX(§15 툴링) + Blink 착지 픽스(§7-3)**: HP바(`02214e6f`~`08151b59`) → Dashboard Save·즉시커밋(`de01022b`,`3464e12c`) → Blink 2단 픽스(`d2b67aaf`,`cc19dc02`). 이전: Item Dashboard S1~S4+Ailment 표시 축(`b9336c80`)
+> 작성 기준일: 2026-07-14
+> 기준 커밋: master HEAD `06e60d4e` — **세이브 소실 예방 3종(§11b-10) + ComboDamage 단계제 전환·콤보 HUD 정식화(§11b-8) + 소품 리팩터**: 세이브(`91c06773`) → 콤보 S1(`9116ad3d`)·S2 HUD(`c2f484a9`) → SignedAngle 통합·ArenaDoor base 승격(`06e60d4e`). 이전: 아레나 스크린 HP바 축+Dashboard 저장 UX+Blink 픽스(`3464e12c`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -253,7 +253,8 @@ Assets/Scripts/
 │   ├── SkillTargetResolver.cs      # 스킬 셀·월드 타겟·미리보기 반경·투사체 거리 공통 계산. Custom은 연속 월드 포인트와 matcher 생성 담당
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
-│   ├── ComboMeter.cs               # ComboDamage 콤보 스택 추적 (순수 C#, window 2s/cap 20) — 적중 적립, 윈도우 만료 시 리셋. RegisterHit/Tick/Reset
+│   ├── ComboMeter.cs               # ComboDamage 단계제 콤보 추적 (순수 C#) — tier+progress 모델, 적중 적립(이월·캡), 윈도우 만료 시 단계 -1 계단 하락, 적 0=풀 리필 동결. RegisterHit/AddStacks/Tick(dt, enemiesPresent)/Reset
+│   ├── ComboTierConfig.cs          # 콤보 단계 설정 SO (Scriptable/Soul/) — stacksPerTier/maxTier/window/gainPerHit/tierBonusPct[] 전부 가변, OnValidate 배열 길이 경고
 │   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. static Active(픽업·UI 결선용, OnEnable/OnDisable). debugEngravingPool은 Slice D에서 제거(실드랍이 대체)
 │   ├── EngravingStation.cs         # 영혼각인 교체대 (Slice E2, TownSoulAltar 미러) — Collider2D 트리거 + InteractConfirmPressedThisFrame → ui.Open(consumeOnCommit ? this : null). UI는 placer의 Bind(ui) 주입 또는 씬 배치 시 sceneUI 직결. 던전 stair방=런타임 스폰·커밋 시 소멸(NotifyConsumed), 정비실=씬 배치·비소멸
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
@@ -327,7 +328,7 @@ Assets/Scripts/
 │   ├── PlayerStatusBarUI.cs        # 플레이어 HP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerInventory.OnInventoryChanged 로 elite_key 보유 수에 따라 아이콘 토글. MP 바 제거
 │   ├── ParryStackBarUI.cs          # 패리 폼 자원 UI — 현재 ParryStack 을 Slider 로 표시 (임시). 현재 폼이 Parry 일 때만 노출
 │   ├── FreischutzMagazineUI.cs     # 마탄 폼 탄창 UI — Bullet/Bullet_empty 이미지 칸 + x/max·Reloading 텍스트. 현재 폼이 Bullet 일 때만 노출
-│   ├── ComboCounterUI.cs           # 콤보 카운터 UI (TMP 폴링) — PlayerCombatController.IsComboBonusActive && CurrentComboStack>0 일 때 `x{count}` 표시. 배율 비노출, ComboDamage 효과 활성(Sword) 폼에서만. 윈도우 만료 시 자동 숨김
+│   ├── ComboCounterUI.cs           # 콤보 HUD (정식화, 2026-07-14) — x{총스택} TMP + 단계 orb 4개 점등(orbOnOverlays SerializeField 직결) + 유예 slider. TMP·slider fill 색=tierColors[단계], 0스택 전체 숨김(드라이버+Content 분리=숨김 중 폴링 유지), 변경값 캐시. 배율 비노출
 │   ├── CurrencyCounterUI.cs        # Currency HUD 카운터 — OnInventoryChanged 이벤트 구동(resolve 전만 lazy Update), 아이콘=ItemDB 단일 소스 런타임 주입, count 0 숨김. 우상단 미니맵 아래
 │   ├── ArenaHealthBarPanel.cs      # 엘리트/보스 스크린 HP바 패널 — 씬 사전 배치 행(보스2+엘리트3) Attach/Detach 할당, Awake에서 스트립 Prewarm. static Active. §10-1-2
 │   ├── ArenaHealthBarRowUI.cs      # 상단 HP바 행 1개 — Bind(EnemyController)+폴링(fillAmount), 사망/비활성 자동 Release. BossRow/EliteRow 프리팹으로 저작
@@ -825,7 +826,7 @@ PlayerCombatController
   ├── PlayerResource (HP 상태) · ISkillResourceLedger 구현 (Bullet 탄창 / ParryStack 자원 원장)
   ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태) — BindSkillSlots 가 EngravingLoadout 토큰으로 시드/바인딩
   ├── EngravingLoadout (영혼각인 폼별 토큰 로드아웃, OnChanged→리바인드) — 있으면 슬롯 소스, 없으면 weapon.skills 폴백
-  ├── ComboMeter (_combo) — ComboDamage 콤보 스택 (CurrentComboStack/IsComboBonusActive 노출)
+  ├── ComboMeter (_combo) — ComboDamage 단계제 콤보 (ComboTierConfig SO 주입, CurrentComboStack/Tier/MaxComboTier/WindowRemainingNormalized/IsComboBonusActive 노출)
   ├── AttackExecutor / SkillExecutor (스킬 실행 라우팅)
   ├── PlayerDashController (대시 코루틴, RequireComponent)
   ├── PlayerInputReader (RequireComponent)
@@ -2113,7 +2114,7 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | ReloadSpeed | `EffectiveReloadTime` — `reloadTime × (1 − %/100)` |
 | Crit | `PlayerCombatController.RollCritDamage(base, out didCrit)` — `chance = Get(Crit)` 굴림 성공 시 `round(base × EffectiveCritDamageMultiplier)`. 데미지 int 빌드 6곳(멜리평타/멜리스킬/대시/투사체/마커폭발/탄)에서 굴림. 배율은 `critDamageMultiplier`[SerializeField, 기본 2.0]를 `EffectiveCritDamageMultiplier` accessor 1곳으로 노출(향후 Relic/소울 가산 seam) |
 | Lifesteal | `EnemyController.ApplyCombatImpact` 가 actual(방어 감산 후 실제 입힌 양) 반환 → 멜리(`AttackExecutor.DamageDealtThisAttack` 합산)/투사체/대시/마커 전 소스가 `PlayerCombatController.ReportLifestealDamage(actual)` 호출 → `pool += actual × Get(Lifesteal)`, float 잔여풀로 floor 회복(min-1 과회복·반올림 손실 방지) |
-| ComboDamage | `ComboMeter`(순수 C#, window 2s/cap 20 — ParryStack decay 패턴) 가 스택 보유. **적립**=평타·멜리스킬·투사체·대시·마커폭발 적중 시 `RegisterComboHit()`(전부 Lifesteal 적중 seam 동승, 멜리 다중타격 스윙=+1/투사체·대시=적당+1). **적용**=`RollCritDamage` choke 1곳에 fold(`ApplyComboMultiplier`: `round(base × (1 + count × Get(ComboDamage)/100))`, 크리 굴림 직전) → 평타·스킬 전 데미지 증폭. **리셋**=사망·방진입·문열림·층이동 + 2s 무타격 윈도우 만료. 데이터=`SoulEnhancementTable` Sword/ComboDamage(perLevel 0.5, maxL10 → 스택당 5%, 20스택 풀콤보 +100%) |
+| ComboDamage | **단계제(tier) 모델(2026-07-14 전환)** — `ComboMeter`(순수 C#) tier+progress 상태, 설정=`ComboTierConfig` SO(stacksPerTier 5/maxTier 4/window 2s/gainPerHit 1/tierBonusPct[10,25,45,70] 전부 가변). **적립**=평타·멜리스킬·투사체·대시·마커폭발 적중 시 `RegisterComboHit()`(Lifesteal 적중 seam 동승) → progress 가산·이월, 캡=maxTier 도달 시 표시 고정+윈도우 리필만. **적용**=`RollCritDamage` choke 1곳 fold — `round(base × (1 + tierBonusPct[tier] × Get(ComboDamage)/100))`, 크리 직전. **배율은 단계에서만**(진행 스택 무관, 테이블 perLevel 0.1 → 만렙 계수 1.0). **유예시간=생존 적 있을 때만 감소**(`EnemyPoolManager.HasActiveEnemies` 풀 체크아웃 게이트 — 방 이벤트 아님, 아레나 자동 커버). 적 0=윈도우 풀 리필 동결(콤보 유지, 재개 시 풀 윈도우). 만료=단계 -1+진행 0 계단 하락(히치 다단 안전). **리셋 3트리거=사망·층이동·던전 이탈**(`CleanupDungeonRuntime` 합류 — 방진입·문열림 리셋 폐기, 콤보=층 단위 리소스). 콘솔 `/combo show·add` |
 | AilmentDamage | `PlayerCombatController.AilmentDamageMultiplier`(=1+%/100) — DoT 부여 시점에 틱뎀 스냅샷 증폭 + 마커 기폭뎀 선증폭. 기반 = 독/출혈 DoT 시스템(§7-9). 데이터=`SoulEnhancementTable` Dagger/AilmentDamage(perLevel 10, maxL10 → 만렙 틱뎀 2배) |
 
 **Soul 강화 스탯 10종 전부 적용 훅 실작동(2026-07-06 AilmentDamage 로 완성).** `Crit`/`Lifesteal`/`ComboDamage`/`AilmentDamage` 의 폼 게이팅은 `_soulBonus.Get`(활성 폼 스코프)이 0이면 무효과로 자동 처리되어 코드에 `PlayerFormId` 분기가 없습니다(비-Sword 폼은 ComboDamage 테이블 엔트리 없어 배율 1.0, 비-Dagger 폼은 AilmentDamage 배율 1.0). 검증 가시성을 위해 `LogDamageDealt` 데미지 로그에 `[combo xN]` 접미사를 표기합니다.
@@ -2143,10 +2144,16 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | 구성 | 역할 |
 |------|------|
 | `SaveData` (DTO) | `version` + `items{itemCode,count}` + `enhancements{form,stat,level}`. Soul·Material 둘 다 인벤토리 아이템이라 items 한 리스트로 흡수 |
-| `SaveService` | `Application.persistentDataPath/save.json`. `Save`/`TryLoad`(try-catch·version 가드·경고 1회)/`HasSave`/`Delete`. `Protect(string)→byte[]`/`Unprotect` 는 현재 passthrough — **AES/HMAC 삽입 seam** |
+| `SaveService` | `Application.persistentDataPath/save.json`. `Save`/`TryLoad`(try-catch·version 가드·경고 1회)/`HasSave`/`Delete`. `Protect(string)→byte[]`/`Unprotect` 는 현재 passthrough — **AES/HMAC 삽입 seam**. **소실 예방 2종(2026-07-14)**: 로드 실패 3경로(파싱/빈 데이터/version) 시 `save.bak` 백업 후 진행 + 원자적 쓰기(`save.json.tmp` 선쓰기 → `File.Replace`/`Move`, 쓰기 중 크래시 오염 차단) |
 | `GamePersistenceCoordinator` (씬 MonoBehaviour, DontDestroyOnLoad 미사용) | `Start` 에서 TryLoad→ApplyFromSave(영구 아이템 교체+`SetLevel`). 저장: `OnInventoryChanged`/`OnChanged`→dirty→LateUpdate flush + 사망 전 `GameOverFlowController.ConfirmGameOver` 의 SaveAll + OnApplicationQuit/Pause |
 
 `PlayerSoulEnhancements.GetLevels` 읽기 전용 스냅샷으로 직렬화 경로 무변경. 복원 중에는 `_isApplying` 가드로 저장 폭주를 막습니다.
+
+**세이브 소실 예방 3종 (2026-07-14, `91c06773`)** — 구조적 취약("로드 실패 → 빈 상태 시작 → 다음 저장이 전체 덮어쓰기 = 영구 소실") 봉인:
+- **로드 실패 시 `save.bak` 백업**(SaveService) — 파싱 예외/빈 데이터/version 불일치 3경로 전부, 백업 예외 격리·경고에 경로 표기. 사후 복구망.
+- **미해석 엔트리 pass-through 보존**(Coordinator) — unknown itemCode(Item Dashboard rename 등)·비영속 타입 엔트리를 버리지 않고 보존 리스트에 적재, 다음 `CaptureToSave` 때 재기록(현재 인벤과 itemCode 중복 시 제외). rename 원복 시 아이템 부활. ⚠️ 경고 문구는 아직 "skipped"(실제론 보존 — 문구 정정 소품).
+- **원자적 쓰기**(SaveService.Save) — tmp 선쓰기 후 Replace/Move, 잔존 tmp 선삭제.
+Play 4시나리오(손상 파일/version 999/가짜 itemCode 왕복/tmp 잔재) 검증 통과. 포맷·version 무변경.
 
 ---
 
@@ -2207,6 +2214,7 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | `/engraving give/equip/unequip/show` | 영혼각인 풀 적재·슬롯 교체·조회 (§7-8, 인자 0-based) | 서브커맨드 토큰 |
 | `/ailment <poison\|bleed> [tickDamage=2] [duration=5]` | 최근접 생존 적에게 DoT 부여 (§7-9 검증용) | `poison` `bleed` |
 | `/stun [duration=2]` | 최근접 생존 적에게 스턴 부여 (§8-7 검증용) | 없음 |
+| `/combo <show \| add <n>>` | 콤보 상태 조회(단계/진행/총스택/윈도우/배율) / 스택 강제 적립 (§11b-8 검증용, add는 raw 스택) | `show` `add` |
 
 ### 11c-3. 자동완성 구조
 
@@ -2221,6 +2229,7 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
   "form"     → { "set" }
   "give"     → { "soul", "relic", "consumable", "currency", "material", "key", "equipment" }
   "dooropen" → { "normal", "elite" }
+  "combo"    → { "show", "add" }
   "tp"       → TeleportDestinationDatabase.GetDestinationIds()
 
 하위 인수 제안 (_subArgumentProviders Dictionary):
@@ -2412,7 +2421,7 @@ N-1층 출구 → TryTransitionToFloor(N) → bossTable 히트
 
 QA 발견 픽스 2건. "보스/엘리트 클리어 직후 출구 포탈을 의도치 않게 밟아 즉시 이탈"과 "텔레포트 1프레임 컷".
 
-- **ArenaDoor**(`EliteArena/ArenaDoor.cs`): doorTilemap의 씬 배치 타일이 곧 문 정의(좌표 하드코딩 없음) — Awake 1회 캐시(셀+TileBase), `Close()`=복원/`Open()`=제거(멱등). WalkabilityArea가 doorTilemap을 라이브 조회하므로 SetTile만으로 통행 판정 즉시 반영. **차단 주체는 walkability 타일이지 물리 콜라이더가 아님**(플레이어 이동=타일 판정).
+- **ArenaDoor**(`EliteArena/ArenaDoor.cs`): doorTilemap의 씬 배치 타일이 곧 문 정의(좌표 하드코딩 없음) — Awake 1회 캐시(셀+TileBase), `Close()`=복원/`Open()`=제거(멱등). WalkabilityArea가 doorTilemap을 라이브 조회하므로 SetTile만으로 통행 판정 즉시 반영. **차단 주체는 walkability 타일이지 물리 콜라이더가 아님**(플레이어 이동=타일 판정). 문 제어 3메서드(`Close/OpenArenaDoor`/`WarnMissingArenaDoor`)+`arenaDoor` 필드는 `ArenaEncounterBase` 승격(2026-07-14, 보스·엘리트 복제 소멸 — 필드명 유지로 씬 결선 보존).
 - **배선(보스·엘리트 공용, 같은 인스턴스)**: 입장 시 Close / 클리어(OnBossDied·OnEliteDied) 시 Open / CancelEncounter 시 Close(클리어 후 층을 떠나도 문 원상 복구). 출구 포탈 스폰포인트는 문 뒤 포켓 — 클리어 시 문이 열려야 포탈에 닿을 수 있어 즉시 이탈이 구조적으로 불가.
 - ⚠️ **씬 구조 핵심 2건**: ①elite_arena/boss_arena WalkabilityArea가 **같은 walkTilemap/wallTilemap을 공유**(같은 공간 시분할) — `FindAreaContaining`이 first-match라 doorTilemap을 **양쪽 Area+미니맵 소스까지 결선해야** 문이 무시되지 않음. ②**포탈 위치의 단일 진실 = spawnPoint Transform**(`exitPortalSpawnPoint`/`returnPortalSpawnPoint`) — Show*Portal이 포탈 오브젝트 위치를 매번 덮어쓰므로 포탈 오브젝트를 옮겨도 소용없음. elite는 spawnPoint가 미결선(fileID 0)이라 폴백으로 아레나 중앙에 생성되던 것이 원인이었음.
 - **TeleportFadeOverlay**: `LocationTransitionManager.TryTeleportPlayer` 성공 시 즉시 알파 1(컷 프레임부터 가림) → unscaledDeltaTime 0.4s 페이드아웃. rest_area/엘리트/보스/마을↔던전 텔레포트 공통, 층전환 로딩 경로 무수정. raycast 상시 차단 없음(순수 시각).
@@ -2757,7 +2766,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 데이터·실행 구조 | WeaponData/SkillData/EnemyData(SO) + `SkillExecutor` 라우팅(InstantArea/Projectile/Dash/Blink/Buff) + `SkillSlotRuntime`(슬롯 상태) + `SkillExecutionContext` + `SkillTargetResolver`(미리보기·실행 동일 계산) + `AttackExecutor`(판정 분리, 시야 차단, 멀티/단일 타겟). 상세 §7 |
 | 자원 시스템 | MP 폐지 — `SkillResourceType`(None/Bullet/ParryStack) + `ISkillResourceLedger` + 실소모만 Spend(실패 시 쿨다운·소모 없음) + castDelay/recoveryDelay 이동 잠금 |
 | 공격 패턴 | 기본 6종 + **Custom 저작 파이프라인**: customCells 그리드 페인팅(에디터) → `CustomCellFill` 셀 채움 미리보기 → 셀별 회전 `OverlapBox` 판정 + `Linecast` 벽차단. 상세 §7-5, §10-3 |
-| 조준·미리보기 | `AimDirectionUtility` 8방향+360° 통합(스킬/투사체/대시/미리보기 공유) + `SkillRangePreviewer`(패턴별/대시 벽 클리핑/기본 공격 홀드) |
+| 조준·미리보기 | `AimDirectionUtility` 8방향+360° 통합(스킬/투사체/대시/미리보기 공유) + `ToAuthoredFacingAngle`(+Y=전방 규약→회전각 단일 격리점, 3파일 중복 통합 2026-07-14) + `SkillRangePreviewer`(패턴별/대시 벽 클리핑/기본 공격 홀드) |
 | 투사체 | `ProjectileFireService`(적·플레이어 공유, Single/Burst/Spread/Circle) + 타겟 정책(DestroyOnHit/Pierce/HitOncePerTarget) + 벽 처리(Destroy/PassThrough/Bounce) + 풀링(`ProjectilePool`) + 회전 모드·비행 애니·맵 범위 가드·Fog 통합. 상세 §7-6 |
 | 대시 | `PlayerDashController` — path/contact 독립 판정, 무적 옵션, 외부 무적 카운터, `OnEnemyHit` 콜백(마커 폭발 훅), 무데미지+ailments=DoT 스윕. 상세 §7-7 |
 | 피격·무적 | 피격 무적시간 + `HitFlashFeedback`(색상) ↔ `PlayerInvincibilityFlashFeedback`(셰이더) 분리 + 접촉 피해(`Collider2D.Distance`) + 사망 단발 처리 + 게임오버 UI 흐름 |
@@ -2770,7 +2779,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 폼 시스템 | `PlayerFormData`/`PlayerFormId`/`PlayerFormDatabase` + `TrySwitchForm`(Soul 보유 게이팅 + `FormSwitchResult`) + loadout 단일 소스(`WeaponData.skills[4]`+`basicAttackSkillData` 폼별 평타) + `OnLoadoutChanged`→스킬 UI 자동 갱신 + 콘솔 `/form set` |
 | 폼별 메커니즘 | **Sword**(콤보) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(패리 가로채기→스택 자원, `ParryStackResource` 순수 C#) |
 | 폼 애니메이션 | 4폼 전용 스프라이트시트→5클립+AnimatorController+에셋 결선, Parry 정면/측면 분기(`ApplyParryFacing`), 스킬 애니는 **SkillData 단일 진입점**(`PlaySkillAnimation`) |
-| 폼 자원 UI | `ParryStackBarUI` / `FreischutzMagazineUI` / `ComboCounterUI`(x{count}, 디자인 개선 예정) — BasicAttackMode 로 표시 분기 |
+| 폼 자원 UI | `ParryStackBarUI` / `FreischutzMagazineUI` / `ComboCounterUI`(**정식화 2026-07-14** — x{총스택}+단계 orb 4개+유예 slider, 단계별 색) — BasicAttackMode 로 표시 분기 |
 
 **적 AI·스폰**
 
@@ -2798,8 +2807,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 아이템 기반 | `ItemDatabase`/`ItemData`(itemCode·효과·salvage·정리 플래그) + `PlayerInventory`(스택 정책·`OwnsSoulForm`·층/던전 이탈 자동 정리) + 인벤토리 UI(5탭·슬롯 클릭 사용·드래그 패널). 상세 §11b |
 | 드랍 파이프라인 | `EnemyDropDatabase`(독립+가중치 pick-one, 결정적 롤) + `EnemyInventory`→`DropItemSpawner`→`DroppedItem`(타입 무분기 픽업) + Elite Key 결정론 드랍·Elite Door 개방 + 소울 분해(`SoulDropResolver`) |
 | 아이템 효과 | `ItemEffect`(useEffects/passiveEffects) — Consumable 사용(HealHp) + Relic 평면 패시브(`PlayerItemStats` 스택 비례 합산) |
-| Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. 상세 §11b-8 |
-| 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속). 상세 §11b-9~10 |
+| Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage(단계제, `ComboTierConfig` SO)/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. 상세 §11b-8 |
+| 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속) + **소실 예방 3종**(.bak 백업·unknown itemCode 보존·원자적 쓰기, 2026-07-14). 상세 §11b-9~10 |
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
 | 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
 
@@ -2820,7 +2829,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 | 묶음 | 핵심 구성 |
 |------|-----------|
-| 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 13개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment /stun). 상세 §11c |
+| 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 14개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment /stun /combo). 상세 §11c |
 | CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종) / **`ItemDashboardWindow`**(아이템 통합 조망·foldout 편집·itemCode rename 참조 추적·드랍 양방향 편집·생성/삭제 — 역참조 분석+코드상수 차단(`elite_key`=itemCode 겸용 확인), 전부 Undo 가능, 2026-07-10). 양 대시보드 공통: **Undo/Redo 자동 Rescan + 행/경고 패널 드래그 스플리터**(EditorPrefs 영속) + **스코프 Save Assets**(스캔 범위만 `SaveAssetIfDirty`, 전역 SaveAssets 금지 유지 — Enemy는 씬 dirty 경고+`Save Scene` 확인 다이얼로그) + **숫자 필드 즉시 커밋**(Delayed 편집 버퍼 유실 해소 — 텍스트 itemCode류만 Delayed 유지, Save 진입 시 포커스 플러시→delayCall, 2026-07-13) |
 | 이벤트·공통 인프라 | `DungeonEventChannel`/`CombatEventChannel` 이벤트 버스 + `CombatLayers` 정적 캐시(WallMask 폴백 포함) + 던전 서비스 분리(Query/Spawn/FloorTransition) |
 | 성능 | NonAlloc 물리·A* 버퍼 재사용·오브젝트 풀·청크 로딩·미시 최적화(분리 벡터 throttle, LateUpdate 좌표 skip, 슬로우 재계산 만료 시점만, 픽셀 스프라이트 공유) + `PerfStage`/`RuntimePerfTraceLogger` 계측. 상세 §12 |
@@ -2834,7 +2843,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
 | 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
-| 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. **표시 고도화도 완료(2026-07-10)** — 압축 정렬·스택 숫자·슬로우/스턴 아이콘·틱 flash. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행) |
+| 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. **표시 고도화도 완료(2026-07-10)** — 압축 정렬·스택 숫자·슬로우/스턴 아이콘·틱 flash. **ComboDamage는 단계제 전환+HUD 정식화 완료(2026-07-14, §11b-8)**. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행) |
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
 | 정비실 (Rest Area) | — | **완료(S1~S3c, 2026-07-09)** — S1 흐름 + S2 Currency + S3 런 코어·일시강화 상점·툴팁(§11b-11, §11e-6). 남은 데이터 작업: 아이템 description 수기 작성(빈 것은 "내용없음" 표시로 발견 가능) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처(→정비실 S2·S3로 흡수), 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
@@ -2843,7 +2852,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
 | 상태이상 시스템 확장 | 낮음 | **독/출혈 DoT + 표시 축 + 적 스턴 축 완료(§7-9·§8-7, 2026-07-10)**. 남은: 플레이어 스턴 부여 스킬/각인 데이터(축은 완성), 빙결 등 신규 타입(AilmentType append + 프로파일), 각인 Active/Passive 분류(Passive=평타 부착형, 기획만). ~~HP바 크기 중앙 관리 SO~~→아레나 스크린 HP바로 대체 완료(§10-1-2, 2026-07-13) |
-| 세이브 / 로드 | 낮음 | **영구축(Soul+Material+강화레벨) JSON 영속 완료**(사망·앱 재시작, §11b-10). 남은: 세이브 보안(AES/HMAC — Protect/Unprotect seam만 비움), 런 중간 진행도 저장(현재 사망=런 종료) |
+| 세이브 / 로드 | 낮음 | **영구축(Soul+Material+강화레벨) JSON 영속 완료**(사망·앱 재시작, §11b-10) + **소실 예방 3종 완료(2026-07-14)** — .bak 백업·unknown itemCode pass-through 보존·원자적 쓰기. 남은: 세이브 보안(AES/HMAC — Protect/Unprotect seam만 비움), 런 중간 진행도 저장(현재 사망=런 종료) |
 | 보스 룸 | 낮음 | RoomType.Boss 추가 후 RoomRegistry 확장. Boss Arena는 WalkabilityArea 컴포넌트 부착만으로 지원 가능 |
 | AreaOverTime / Buff Elite 패턴 | 낮음 | ElitePatternData 추가 변형 자리 — 예: 광역 장판, 자기 강화 |
 | MonsterDen 방 타입 등록 | 낮음 | RoomRegistry에서 자동 분류 조건 추가 필요 |
