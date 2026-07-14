@@ -76726,6 +76726,7 @@ MonoBehaviour:
   soulEnhancements: {fileID: 1562452775}
   engravingLoadout: {fileID: 0}
   soulEnhancementTable: {fileID: 11400000, guid: 813f9f5f59f59fa4c83ee1ef000f5421, type: 2}
+  comboTierConfig: {fileID: 11400000, guid: a8f47d2c1b394e56a7c8091d2e3f4a5b, type: 2}
   playerMovement: {fileID: 1562452755}
   maxHp: 1000
   baseAttack: 0

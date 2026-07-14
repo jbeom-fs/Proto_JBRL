@@ -1,48 +1,84 @@
-using UnityEngine;
+using System;
 
 /// <summary>
-/// Tracks a running combo count that increments on every landed attack action
-/// and fully resets if no hit lands within a sliding time window. Used as the
-/// stack source for the Sword <see cref="SoulStatType.ComboDamage"/> bonus.
+/// Tracks tiered combo progress for the Sword <see cref="SoulStatType.ComboDamage"/> bonus.
 /// </summary>
 public sealed class ComboMeter
 {
+    private readonly int _stacksPerTier;
+    private readonly int _maxTier;
     private readonly float _window;
-    private readonly int _maxStack;
-    private int _count;
+    private readonly int _gainPerHit;
+    private int _tier;
+    private int _progress;
     private float _windowTimer;
 
-    public ComboMeter(float window, int maxStack)
+    public ComboMeter(int stacksPerTier, int maxTier, float window, int gainPerHit)
     {
-        _window = Mathf.Max(0.01f, window);
-        _maxStack = Mathf.Max(0, maxStack);
+        _stacksPerTier = Math.Max(1, stacksPerTier);
+        _maxTier = Math.Max(0, maxTier);
+        _window = Math.Max(0.01f, window);
+        _gainPerHit = Math.Max(0, gainPerHit);
     }
 
-    public int Count => _count;
+    public int TotalStacks => _tier * _stacksPerTier + _progress;
+    public int Count => TotalStacks;
+    public int Tier => _tier;
+    public int Progress => _progress;
+    public float WindowRemaining => TotalStacks > 0 ? Math.Max(0f, _windowTimer) : 0f;
+    public float WindowRemainingNormalized => TotalStacks > 0
+        ? Math.Min(1f, Math.Max(0f, _windowTimer / _window))
+        : 0f;
 
-    /// <summary>Registers a single landed attack action (one swing/projectile = one step).</summary>
+    /// <summary>Registers one landed attack action and applies configured stack gain.</summary>
     public void RegisterHit()
     {
-        _count = Mathf.Min(_maxStack, _count + 1);
-        _windowTimer = _window;
+        if (_gainPerHit <= 0)
+        {
+            _windowTimer = _window;
+            return;
+        }
+
+        AddStacks(_gainPerHit);
     }
 
-    public void Tick(float deltaTime)
+    /// <summary>Adds an exact number of stacks. Used by hit gain and debug commands.</summary>
+    public void AddStacks(int amount)
     {
-        if (_count <= 0)
+        if (amount <= 0)
+            return;
+
+        _windowTimer = _window;
+        if (_tier >= _maxTier)
+            return;
+
+        long nextTotal = Math.Min(
+            (long)_maxTier * _stacksPerTier,
+            (long)TotalStacks + amount);
+        _tier = (int)(nextTotal / _stacksPerTier);
+        _progress = _tier >= _maxTier ? 0 : (int)(nextTotal % _stacksPerTier);
+    }
+
+    public void Tick(float deltaTime, bool enemiesPresent)
+    {
+        if (!enemiesPresent || TotalStacks <= 0 || deltaTime <= 0f)
             return;
 
         _windowTimer -= deltaTime;
-        if (_windowTimer <= 0f)
+        while (_windowTimer <= 0f && TotalStacks > 0)
         {
-            _count = 0;
-            _windowTimer = 0f;
+            if (_tier > 0)
+                _tier--;
+
+            _progress = 0;
+            _windowTimer = TotalStacks > 0 ? _windowTimer + _window : 0f;
         }
     }
 
     public void Reset()
     {
-        _count = 0;
+        _tier = 0;
+        _progress = 0;
         _windowTimer = 0f;
     }
 }

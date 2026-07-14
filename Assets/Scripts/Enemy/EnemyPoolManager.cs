@@ -19,6 +19,8 @@ public class EnemyPoolManager : MonoBehaviour
     private readonly Dictionary<EnemyData, Queue<EnemyController>> _pools = new();
     private readonly Dictionary<EnemyController, EnemyData> _activeData = new();
 
+    public bool HasActiveEnemies => _activeData.Count > 0;
+
     public static void ReleaseAllActiveEnemiesForLocationChange()
     {
         Instance?.ReleaseAllActive();

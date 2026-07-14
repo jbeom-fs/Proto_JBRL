@@ -37,6 +37,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [SerializeField] private PlayerSoulEnhancements soulEnhancements;
     [SerializeField] private EngravingLoadout engravingLoadout;
     [SerializeField] private SoulEnhancementTable soulEnhancementTable;
+    [SerializeField] private ComboTierConfig comboTierConfig;
     public PlayerController  playerMovement;
 
     [Header("기본 스탯")]
@@ -67,8 +68,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [SerializeField, Min(1)] private int parryStackDecayAmount = 1;
 
     [Header("Combo")]
-    [SerializeField, Min(0.01f)] private float comboWindow = 2f;
-    [SerializeField, Min(0)] private int comboMaxStack = 20;
+    // Legacy fields retained only to preserve existing serialized paths. ComboTierConfig drives runtime values.
+#pragma warning disable 0414
+    [SerializeField, HideInInspector] private float comboWindow = 2f;
+    [SerializeField, HideInInspector] private int comboMaxStack = 20;
+#pragma warning restore 0414
 
     [Header("Parry Basic Attack")]
     [SerializeField, Min(0f)] private float parryStartupDelay = 0.08f;
@@ -139,7 +143,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
     public int MaxParryStack => maxParryStack;
-    public int CurrentComboStack => _combo != null ? _combo.Count : 0;
+    public int CurrentComboStack => _combo != null ? _combo.TotalStacks : 0;
+    public int CurrentComboTier => _combo != null ? _combo.Tier : 0;
+    public int CurrentComboProgress => _combo != null ? _combo.Progress : 0;
+    public float ComboWindowRemaining => _combo != null ? _combo.WindowRemaining : 0f;
+    public float ComboWindowRemainingNormalized => _combo != null ? _combo.WindowRemainingNormalized : 0f;
+    public float CurrentComboDamageMultiplier => GetComboDamageMultiplier();
     public bool IsComboBonusActive => _soulBonus.Get(SoulStatType.ComboDamage) > 0f;
     public PlayerFormId CurrentFormId =>
         _formController != null && _formController.CurrentForm != null
@@ -211,7 +220,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             parryStackGraceDuration,
             parryStackDecayInterval,
             parryStackDecayAmount);
-        _combo = new ComboMeter(comboWindow, comboMaxStack);
+        if (comboTierConfig != null)
+        {
+            _combo = new ComboMeter(
+                comboTierConfig.StacksPerTier,
+                comboTierConfig.MaxTier,
+                comboTierConfig.Window,
+                comboTierConfig.GainPerHit);
+        }
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
@@ -239,6 +255,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             Debug.LogError("[PlayerCombatController] PlayerInputReader가 없습니다 — RequireComponent로 추가되어야 합니다.", this);
         if (_dashController == null)
             Debug.LogError("[PlayerCombatController] PlayerDashController가 없습니다 — RequireComponent로 추가되어야 합니다.", this);
+        if (comboTierConfig == null)
+            Debug.LogError("[PlayerCombatController] ComboTierConfig가 연결되지 않아 콤보가 비활성화됩니다.", this);
         if (_hitFlash == null)
             Debug.LogWarning("[PlayerCombatController] HitFlashFeedback을 찾지 못했습니다 — 자식에 추가하거나 SerializeField로 연결하세요.", this);
         if (invincibilityFlashFeedback == null)
@@ -505,27 +523,51 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     }
 
     /// <summary>
-    /// Scales outgoing damage by the current combo stack: <c>base × (1 + count × ComboDamage% / 100)</c>.
-    /// Returns <paramref name="baseDamage"/> unchanged when no combo stack or no ComboDamage bonus
-    /// (zero effect for non-Sword forms via data gating).
+    /// Scales outgoing damage by the current combo tier immediately before the critical roll.
     /// </summary>
     private int ApplyComboMultiplier(int baseDamage)
     {
-        int count = _combo != null ? _combo.Count : 0;
-        if (count <= 0)
+        float multiplier = GetComboDamageMultiplier();
+        if (multiplier == 1f)
             return baseDamage;
 
-        float pct = _soulBonus.Get(SoulStatType.ComboDamage);
-        if (pct <= 0f)
-            return baseDamage;
+        return Mathf.Max(1, Mathf.RoundToInt(baseDamage * multiplier));
+    }
 
-        return Mathf.Max(1, Mathf.RoundToInt(baseDamage * (1f + count * pct / 100f)));
+    private float GetComboDamageMultiplier()
+    {
+        int tier = _combo != null ? _combo.Tier : 0;
+        if (tier <= 0 || comboTierConfig == null)
+            return 1f;
+
+        float soulScale = _soulBonus.Get(SoulStatType.ComboDamage);
+        if (soulScale <= 0f)
+            return 1f;
+
+        return 1f + comboTierConfig.GetTierBonusPct(tier) * soulScale / 100f;
     }
 
     /// <summary>Registers one landed attack action (one swing/projectile) toward the combo stack.</summary>
     public void RegisterComboHit()
     {
+        if (!IsComboBonusActive)
+            return;
+
         _combo?.RegisterHit();
+    }
+
+    public bool AddComboStacks(int amount)
+    {
+        if (_combo == null || amount <= 0)
+            return false;
+
+        _combo.AddStacks(amount);
+        return true;
+    }
+
+    public void ResetCombo()
+    {
+        _combo?.Reset();
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
@@ -534,8 +576,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (amount <= 0)
             return;
 
-        string combo = _combo != null && _combo.Count > 0
-            ? $" [combo x{_combo.Count}]"
+        string combo = IsComboBonusActive && CurrentComboStack > 0
+            ? $" [combo x{CurrentComboStack}]"
             : string.Empty;
         Debug.Log((isCrit
             ? $"[Combat] 데미지 {amount} (CRITICAL)"
@@ -570,7 +612,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _status?.Tick(Time.deltaTime);
         _parryStack?.Tick(Time.deltaTime);
-        _combo?.Tick(Time.deltaTime);
+        bool hasActiveEnemies = EnemyPoolManager.Instance != null && EnemyPoolManager.Instance.HasActiveEnemies;
+        _combo?.Tick(Time.deltaTime, hasActiveEnemies);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
@@ -1243,7 +1286,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         IsDead = true;
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
-        _combo?.Reset();
+        ResetCombo();
         ClearSkillTimingState();
         ClearParryState();
         ClearReloadState();
@@ -1438,19 +1481,17 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void HandleRoomEntered(RoomEnteredEventArgs args)
     {
         _parryStack?.Reset();
-        _combo?.Reset();
     }
 
     private void HandleRoomDoorsOpened(RoomInfo room)
     {
         _parryStack?.Reset();
-        _combo?.Reset();
     }
 
     private void HandleFloorChanged(int previousFloor, int newFloor)
     {
         _parryStack?.Reset();
-        _combo?.Reset();
+        ResetCombo();
     }
 
     private static bool IsCombatBlockedByLocation()

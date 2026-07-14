@@ -14,6 +14,7 @@ public sealed class DeveloperConsoleService
     private const string EnhanceUsage = "Usage: /enhance <form> <stat> [count]";
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
+    private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
 
@@ -21,6 +22,7 @@ public sealed class DeveloperConsoleService
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
     private static readonly string[] s_EngravingArgs = { "give", "equip", "unequip", "show" };
+    private static readonly string[] s_ComboArgs = { "show", "add" };
     private static readonly string[] s_AilmentArgs = { "poison", "bleed" };
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
@@ -101,6 +103,7 @@ public sealed class DeveloperConsoleService
         _commands["give"] = ExecuteGive;
         _commands["enhance"] = ExecuteEnhance;
         _commands["engraving"] = ExecuteEngraving;
+        _commands["combo"] = ExecuteCombo;
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
 
@@ -109,6 +112,7 @@ public sealed class DeveloperConsoleService
         _argumentProviders["give"] = ProvideGiveCategorySuggestions;
         _argumentProviders["enhance"] = ProvideEnhanceFormSuggestions;
         _argumentProviders["engraving"] = ProvideEngravingSuggestions;
+        _argumentProviders["combo"] = ProvideComboSuggestions;
         _argumentProviders["ailment"] = ProvideAilmentSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
@@ -139,6 +143,9 @@ public sealed class DeveloperConsoleService
 
     private static void ProvideEngravingSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_EngravingArgs, currentArg, output, maxCount);
+
+    private static void ProvideComboSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_ComboArgs, currentArg, output, maxCount);
 
     private static void ProvideAilmentSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_AilmentArgs, currentArg, output, maxCount);
@@ -213,6 +220,7 @@ public sealed class DeveloperConsoleService
             "\n" + GiveUsage +
             "\n" + EnhanceUsage +
             "\n" + EngravingUsage +
+            "\n" + ComboUsage +
             "\n" + AilmentUsage +
             "\n" + StunUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
@@ -403,6 +411,29 @@ public sealed class DeveloperConsoleService
         }
 
         return DeveloperConsoleCommandResult.Error(EngravingUsage);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteCombo(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error(ComboUsage);
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1 && string.Equals(parts[0], "show", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecuteComboShow();
+
+        if (parts.Length == 2 && string.Equals(parts[0], "add", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParsePositiveInt(parts[1], out int amount))
+                return DeveloperConsoleCommandResult.Error(ComboUsage);
+
+            return _executor.ExecuteComboAdd(amount);
+        }
+
+        return DeveloperConsoleCommandResult.Error(ComboUsage);
     }
 
     private DeveloperConsoleCommandResult ExecuteAilment(string arguments)

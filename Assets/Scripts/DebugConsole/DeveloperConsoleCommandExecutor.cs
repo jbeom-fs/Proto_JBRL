@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 
@@ -316,6 +317,28 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return DeveloperConsoleCommandResult.Success(builder.ToString());
     }
 
+    public DeveloperConsoleCommandResult ExecuteComboShow()
+    {
+        PlayerCombatController combat = ResolvePlayerCombatController();
+        if (combat == null)
+            return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+
+        return DeveloperConsoleCommandResult.Success(FormatComboState(combat));
+    }
+
+    public DeveloperConsoleCommandResult ExecuteComboAdd(int amount)
+    {
+        PlayerCombatController combat = ResolvePlayerCombatController();
+        if (combat == null)
+            return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+
+        if (!combat.AddComboStacks(amount))
+            return DeveloperConsoleCommandResult.Error("Combo meter is not available.");
+
+        return DeveloperConsoleCommandResult.Success(
+            "Added " + amount + " combo stack(s). " + FormatComboState(combat));
+    }
+
     public DeveloperConsoleCommandResult ExecuteAilment(AilmentType type, float tickDamage, float duration)
     {
         PlayerController activePlayer = PlayerController.Active;
@@ -562,6 +585,16 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             return enemy.data.enemyName;
 
         return enemy.name;
+    }
+
+    private static string FormatComboState(PlayerCombatController combat)
+    {
+        return "Combo tier " + combat.CurrentComboTier +
+               " | progress " + combat.CurrentComboProgress +
+               " | total " + combat.CurrentComboStack +
+               " | window " + combat.ComboWindowRemaining.ToString("0.00", CultureInfo.InvariantCulture) +
+               "s (" + (combat.ComboWindowRemainingNormalized * 100f).ToString("0", CultureInfo.InvariantCulture) +
+               "%) | multiplier x" + combat.CurrentComboDamageMultiplier.ToString("0.###", CultureInfo.InvariantCulture);
     }
 
     private static string GetAilmentToken(AilmentType type)

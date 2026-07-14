@@ -285,6 +285,10 @@ public class LocationTransitionManager : MonoBehaviour
             EngravingLoadout engravings = player.GetComponent<EngravingLoadout>();
             if (engravings != null)
                 engravings.ClearAll();
+
+            PlayerCombatController combat = player.GetComponent<PlayerCombatController>();
+            if (combat != null)
+                combat.ResetCombo();
         }
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();

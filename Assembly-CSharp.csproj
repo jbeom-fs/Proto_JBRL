@@ -208,6 +208,7 @@
     <Compile Include="Assets\Scripts\Enemy\AilmentStatusTracker.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulStatType.cs" />
     <Compile Include="Assets\Scripts\Combat\ComboMeter.cs" />
+    <Compile Include="Assets\Scripts\Combat\ComboTierConfig.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />
