@@ -17,9 +17,19 @@ public sealed class SaveService
 
     public void Save(SaveData data)
     {
+        string tempPath = _path + ".tmp";
+
+        if (File.Exists(tempPath))
+            File.Delete(tempPath);
+
         string json = JsonUtility.ToJson(data, prettyPrint: true);
         byte[] bytes = Protect(json);
-        File.WriteAllBytes(_path, bytes);
+        File.WriteAllBytes(tempPath, bytes);
+
+        if (File.Exists(_path))
+            File.Replace(tempPath, _path, null);
+        else
+            File.Move(tempPath, _path);
     }
 
     public bool TryLoad(out SaveData data)
@@ -72,11 +82,24 @@ public sealed class SaveService
 
     private void WarnLoadFailed(string message)
     {
+        string backupPath = Path.ChangeExtension(_path, ".bak");
+        string backupMessage;
+
+        try
+        {
+            File.Copy(_path, backupPath, overwrite: true);
+            backupMessage = " Backup created at: " + backupPath + ".";
+        }
+        catch (Exception exception)
+        {
+            backupMessage = " Backup failed: " + exception.Message + ".";
+        }
+
         if (_loadWarningLogged)
             return;
 
         _loadWarningLogged = true;
-        Debug.LogWarning("[SaveService] " + message + " Save ignored.");
+        Debug.LogWarning("[SaveService] " + message + " Save ignored." + backupMessage);
     }
 
     private static byte[] Protect(string json)

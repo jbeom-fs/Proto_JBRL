@@ -8,6 +8,7 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
 
     private readonly List<ItemData> _removeItemBuffer = new List<ItemData>(16);
     private readonly List<SoulEnhancementLevelSnapshot> _enhancementBuffer = new List<SoulEnhancementLevelSnapshot>(32);
+    private readonly List<ItemStackSave> _unresolvedItemEntries = new List<ItemStackSave>();
     private readonly HashSet<string> _unknownItemWarnings = new HashSet<string>();
 
     private SaveService _service;
@@ -68,6 +69,7 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
     public SaveData CaptureToSave()
     {
         SaveData data = new SaveData();
+        HashSet<string> capturedItemCodes = new HashSet<string>();
 
         if (inventory != null)
         {
@@ -87,6 +89,7 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
                     itemCode = item.ItemCode,
                     count = stack.Count
                 });
+                capturedItemCodes.Add(item.ItemCode);
             }
         }
 
@@ -112,11 +115,22 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
             _enhancementBuffer.Clear();
         }
 
+        for (int i = 0; i < _unresolvedItemEntries.Count; i++)
+        {
+            ItemStackSave unresolved = _unresolvedItemEntries[i];
+            if (capturedItemCodes.Contains(unresolved.itemCode))
+                continue;
+
+            data.items.Add(unresolved);
+        }
+
         return data;
     }
 
     public void ApplyFromSave(SaveData data)
     {
+        _unresolvedItemEntries.Clear();
+
         if (data == null)
             return;
 
@@ -197,11 +211,15 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
             if (!inventory.TryGetDatabaseItem(saved.itemCode, out ItemData item) || item == null)
             {
                 WarnUnknownItem(saved.itemCode);
+                _unresolvedItemEntries.Add(saved);
                 continue;
             }
 
             if (!IsPersistentItemType(item.ItemType))
+            {
+                _unresolvedItemEntries.Add(saved);
                 continue;
+            }
 
             inventory.AddItem(item, saved.count);
         }
