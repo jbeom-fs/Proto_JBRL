@@ -61,7 +61,16 @@ public sealed class ComboMeter
 
     public void Tick(float deltaTime, bool enemiesPresent)
     {
-        if (!enemiesPresent || TotalStacks <= 0 || deltaTime <= 0f)
+        if (TotalStacks <= 0)
+            return;
+
+        if (!enemiesPresent)
+        {
+            _windowTimer = _window;
+            return;
+        }
+
+        if (deltaTime <= 0f)
             return;
 
         _windowTimer -= deltaTime;

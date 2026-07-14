@@ -146,6 +146,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int CurrentComboStack => _combo != null ? _combo.TotalStacks : 0;
     public int CurrentComboTier => _combo != null ? _combo.Tier : 0;
     public int CurrentComboProgress => _combo != null ? _combo.Progress : 0;
+    public int MaxComboTier => comboTierConfig != null ? comboTierConfig.MaxTier : 0;
     public float ComboWindowRemaining => _combo != null ? _combo.WindowRemaining : 0f;
     public float ComboWindowRemainingNormalized => _combo != null ? _combo.WindowRemainingNormalized : 0f;
     public float CurrentComboDamageMultiplier => GetComboDamageMultiplier();
