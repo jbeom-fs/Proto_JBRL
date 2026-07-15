@@ -21,6 +21,8 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _cooldown;
     private SerializedProperty _castDelay;
     private SerializedProperty _recoveryDelay;
+    private SerializedProperty _recastStages;
+    private SerializedProperty _recastWindow;
     private SerializedProperty _damage;
 
     private SerializedProperty _animationType;
@@ -97,6 +99,8 @@ public sealed class SkillDataEditor : Editor
         _cooldown = serializedObject.FindProperty("cooldown");
         _castDelay = serializedObject.FindProperty("castDelay");
         _recoveryDelay = serializedObject.FindProperty("recoveryDelay");
+        _recastStages = serializedObject.FindProperty("recastStages");
+        _recastWindow = serializedObject.FindProperty("recastWindow");
         _damage = serializedObject.FindProperty("damage");
 
         _animationType = serializedObject.FindProperty("animationType");
@@ -154,6 +158,7 @@ public sealed class SkillDataEditor : Editor
 
         DrawEngravingSection();
         DrawBasicSection();
+        DrawRecastChainSection();
         DrawResourceSection();
         DrawAnimationSection();
         SkillExecutionType executionType = GetExecutionType();
@@ -244,6 +249,50 @@ public sealed class SkillDataEditor : Editor
         if (GetResourceType() == SkillResourceType.Bullet)
             DrawProperty(_bulletShortageMode);
         DrawProperty(_reloadAmount);
+    }
+
+    private void DrawRecastChainSection()
+    {
+        DrawSectionHeader("Recast Chain");
+        DrawProperty(_recastStages);
+
+        if (_recastStages == null ||
+            _recastStages.hasMultipleDifferentValues ||
+            _recastStages.arraySize == 0)
+        {
+            return;
+        }
+
+        DrawProperty(_recastWindow);
+        if (targets == null || targets.Length != 1)
+            return;
+
+        for (int i = 0; i < _recastStages.arraySize; i++)
+        {
+            SerializedProperty element = _recastStages.GetArrayElementAtIndex(i);
+            SkillData stage = element.objectReferenceValue as SkillData;
+            if (stage == null)
+            {
+                EditorGUILayout.HelpBox(
+                    $"Recast stage {i + 1} is null. Runtime ignores the request and lets the chain expire naturally.",
+                    MessageType.Warning);
+                continue;
+            }
+
+            if (stage.recastStages != null && stage.recastStages.Count > 0)
+            {
+                EditorGUILayout.HelpBox(
+                    $"Recast stage {i + 1} has its own recastStages. Nested chains are unsupported in V1 and ignored.",
+                    MessageType.Warning);
+            }
+
+            if (stage.castDelay > 0f)
+            {
+                EditorGUILayout.HelpBox(
+                    $"Recast stage {i + 1} has castDelay > 0. V1 executes recast stages immediately and ignores this delay.",
+                    MessageType.Warning);
+            }
+        }
     }
 
     private void DrawAnimationSection()
@@ -746,6 +795,7 @@ public sealed class SkillDataEditor : Editor
         DrawNegativeWarning(_cooldown, "Cooldown");
         DrawNegativeWarning(_castDelay, "Cast Delay");
         DrawNegativeWarning(_recoveryDelay, "Recovery Delay");
+        DrawNegativeWarning(_recastWindow, "Recast Window");
         DrawNegativeWarning(_damage, "Damage");
 
         if (_executionType != null && _executionType.hasMultipleDifferentValues)

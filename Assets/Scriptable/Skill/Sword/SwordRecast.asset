@@ -9,40 +9,45 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: TestSkill_1
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: TestSkill
-  icon: {fileID: -3859272008004827343, guid: 8e48bf0ec9762e94aab377d59d969b45, type: 3}
-  description: Test
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: SwordRecast
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uC7AC\uC0AC\uC6A9\uC2A4\uD0AC"
+  icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
+  description: 
   executionType: 0
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
   bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 1
-  castDelay: 0.3
-  recoveryDelay: 1
-  recastStages: []
+  cooldown: 2
+  castDelay: 0
+  recoveryDelay: 0
+  recastStages:
+  - {fileID: 11400000, guid: c6cd4436aeecfaa43961ba239b023b22, type: 2}
+  - {fileID: 11400000, guid: f732d034522f1024fab9fcc75028bf30, type: 2}
+  - {fileID: 11400000, guid: 4a221ff4455e4ac418575a23d29cb04b, type: 2}
   recastWindow: 1.5
-  animationType: 1
+  animationType: 0
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 1
-  attackPattern: 5
-  patternRange: 14
+  damage: 10
+  attackPattern: 6
+  patternRange: 1
   coneHalfAngle: 45
-  customCells: []
+  customCells:
+  - {x: 0, y: 1}
+  - {x: 0, y: 2}
   hitSteps: []
   cancelable: 0
-  isMultiTarget: 1
+  isMultiTarget: 0
   canPenetrateWalls: 0
-  knockbackForce: 30
-  knockbackDuration: 0.15
-  slowPercentage: 0.5
-  slowDuration: 1.5
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
   ailments: []
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
@@ -68,3 +73,5 @@ MonoBehaviour:
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
   blinkBehindOffset: 0.75
+  owningForm: 1
+  grade: 0

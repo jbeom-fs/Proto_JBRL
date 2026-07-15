@@ -26,6 +26,9 @@ public class SkillSlotUI : MonoBehaviour
     [SerializeField] private Image           cooldownOverlay; // Image Type: Filled / Radial 360
     [SerializeField] private TextMeshProUGUI cooldownText;
 
+    [Header("Recast Chain")]
+    [SerializeField] private Color recastWindowFillColor = new Color(1f, 0.55f, 0.1f, 0.9f);
+
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
     private int                    _slotIndex;
@@ -38,6 +41,21 @@ public class SkillSlotUI : MonoBehaviour
     private bool      _trackingCooldown;
     private int       _lastDisplayedTenths = int.MinValue;
     private bool?     _cooldownUIVisible;
+    private Sprite    _rootIconSprite;
+    private bool      _rootIconEnabled;
+    private Color     _normalFillColor;
+    private Image.Type _normalFillType;
+    private Image.FillMethod _normalFillMethod;
+    private int       _normalFillOrigin;
+    private bool      _normalFillClockwise;
+    private bool      _isInitialized;
+    private bool      _showingRecast;
+    private Sprite    _lastAppliedIcon;
+    private bool      _lastAppliedIconEnabled;
+    private bool      _hasLastAppliedIcon;
+    private Color     _lastAppliedFillColor;
+    private bool      _hasLastAppliedFillColor;
+    private float     _lastAppliedFillAmount = -1f;
 
     // ══════════════════════════════════════════════════════════════
     //  초기화 (SkillUIManager가 호출)
@@ -79,6 +97,14 @@ public class SkillSlotUI : MonoBehaviour
             return;
         }
 
+        _normalFillColor = cooldownOverlay.color;
+        _normalFillType = cooldownOverlay.type;
+        _normalFillMethod = cooldownOverlay.fillMethod;
+        _normalFillOrigin = cooldownOverlay.fillOrigin;
+        _normalFillClockwise = cooldownOverlay.fillClockwise;
+        _isInitialized = true;
+        InvalidateVisualCaches();
+
         if (_channel != null)
             _channel.OnSkillUsed += HandleSkillUsed;
 
@@ -94,8 +120,24 @@ public class SkillSlotUI : MonoBehaviour
 
     private void OnEnable()
     {
-        _cooldownUIVisible = null;
-        _lastDisplayedTenths = int.MinValue;
+        InvalidateVisualCaches();
+        if (!_isInitialized)
+            return;
+
+        _showingRecast = false;
+        RestoreNormalOverlayConfiguration();
+        ApplyIcon(_rootIconSprite, _rootIconEnabled);
+        ApplyFillColor(_normalFillColor);
+    }
+
+    private void OnDisable()
+    {
+        if (!_isInitialized)
+            return;
+
+        ExitRecastVisuals();
+        SetCooldownVisible(false);
+        InvalidateVisualCaches();
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -108,15 +150,29 @@ public class SkillSlotUI : MonoBehaviour
     /// </summary>
     public void RefreshIcon()
     {
+        SkillData previousSkill = _skill;
         _skill = null;
 
         if (_combat != null)
             _skill = _combat.GetSkillData(_slotIndex);
 
+        if (!ReferenceEquals(previousSkill, _skill))
+        {
+            _trackingCooldown = false;
+            _cooldownMax = 0f;
+            _lastDisplayedTenths = int.MinValue;
+
+            if (_showingRecast)
+                ExitRecastVisuals();
+
+            SetCooldownVisible(false);
+        }
+
         // 스킬 아이콘 or 빈 슬롯 스프라이트 — 둘 다 없으면 Image 비활성화
-        Sprite display = (_skill != null && _skill.icon != null) ? _skill.icon : _emptySlotSprite;
-        iconImage.sprite  = display;
-        iconImage.enabled = display != null;
+        _rootIconSprite = (_skill != null && _skill.icon != null) ? _skill.icon : _emptySlotSprite;
+        _rootIconEnabled = _rootIconSprite != null;
+        if (!_showingRecast)
+            ApplyIcon(_rootIconSprite, _rootIconEnabled);
 
         // 스킬 없음 → 쿨타임 UI 초기화
         if (_skill == null)
@@ -146,9 +202,37 @@ public class SkillSlotUI : MonoBehaviour
 
     private void Update()
     {
-        if (!_trackingCooldown) return;
+        if (_combat == null)
+            return;
 
+        SkillData currentRootSkill = _combat.GetSkillData(_slotIndex);
+        if (!ReferenceEquals(currentRootSkill, _skill))
+            RefreshIcon();
+
+        if (_combat.TryGetRecastState(
+                _slotIndex,
+                out float recastRemaining,
+                out float recastTotal,
+                out SkillData nextStage))
+        {
+            UpdateRecastVisuals(recastRemaining, recastTotal, nextStage);
+            return;
+        }
+
+        ExitRecastVisuals();
+        UpdateCooldownVisuals();
+    }
+
+    private void UpdateCooldownVisuals()
+    {
         float remaining = _combat.GetSkillCooldownRemaining(_slotIndex);
+
+        if (!_trackingCooldown && remaining > 0f)
+        {
+            _trackingCooldown = true;
+            _cooldownMax = _combat.GetSkillCooldownMax(_slotIndex);
+            _lastDisplayedTenths = int.MinValue;
+        }
 
         if (remaining <= 0f)
         {
@@ -159,7 +243,7 @@ public class SkillSlotUI : MonoBehaviour
         }
 
         // fillAmount: 1(사용 직후) → 0(완료)
-        cooldownOverlay.fillAmount = _cooldownMax > 0f ? remaining / _cooldownMax : 0f;
+        ApplyFillAmount(_cooldownMax > 0f ? remaining / _cooldownMax : 0f);
         int tenths = Mathf.RoundToInt(remaining * 10f);
         if (tenths != _lastDisplayedTenths)
         {
@@ -170,6 +254,122 @@ public class SkillSlotUI : MonoBehaviour
     }
 
     // ── 헬퍼 ────────────────────────────────────────────────────────
+
+    private void UpdateRecastVisuals(float remaining, float total, SkillData nextStage)
+    {
+        if (!_showingRecast)
+        {
+            _showingRecast = true;
+            _lastDisplayedTenths = int.MinValue;
+            _lastAppliedFillAmount = -1f;
+            ConfigureRecastOverlay();
+        }
+
+        Sprite stageIcon = nextStage != null && nextStage.icon != null
+            ? nextStage.icon
+            : _rootIconSprite;
+        ApplyIcon(stageIcon, stageIcon != null);
+        ApplyFillColor(recastWindowFillColor);
+        ApplyFillAmount(total > 0f ? remaining / total : 0f);
+        UpdateRemainingText(remaining);
+        SetCooldownVisible(true);
+    }
+
+    private void ExitRecastVisuals()
+    {
+        if (!_showingRecast)
+            return;
+
+        _showingRecast = false;
+        RestoreNormalOverlayConfiguration();
+        ApplyIcon(_rootIconSprite, _rootIconEnabled);
+        ApplyFillColor(_normalFillColor);
+        _lastDisplayedTenths = int.MinValue;
+        _lastAppliedFillAmount = -1f;
+    }
+
+    private void ConfigureRecastOverlay()
+    {
+        if (cooldownOverlay.type != Image.Type.Filled)
+            cooldownOverlay.type = Image.Type.Filled;
+        if (cooldownOverlay.fillMethod != Image.FillMethod.Radial360)
+            cooldownOverlay.fillMethod = Image.FillMethod.Radial360;
+
+        int topOrigin = (int)Image.Origin360.Top;
+        if (cooldownOverlay.fillOrigin != topOrigin)
+            cooldownOverlay.fillOrigin = topOrigin;
+        if (!cooldownOverlay.fillClockwise)
+            cooldownOverlay.fillClockwise = true;
+    }
+
+    private void RestoreNormalOverlayConfiguration()
+    {
+        if (cooldownOverlay.type != _normalFillType)
+            cooldownOverlay.type = _normalFillType;
+        if (cooldownOverlay.fillMethod != _normalFillMethod)
+            cooldownOverlay.fillMethod = _normalFillMethod;
+        if (cooldownOverlay.fillOrigin != _normalFillOrigin)
+            cooldownOverlay.fillOrigin = _normalFillOrigin;
+        if (cooldownOverlay.fillClockwise != _normalFillClockwise)
+            cooldownOverlay.fillClockwise = _normalFillClockwise;
+    }
+
+    private void UpdateRemainingText(float remaining)
+    {
+        int tenths = Mathf.RoundToInt(Mathf.Max(0f, remaining) * 10f);
+        if (tenths == _lastDisplayedTenths)
+            return;
+
+        _lastDisplayedTenths = tenths;
+        cooldownText.text = $"{tenths * 0.1f:F1}s";
+    }
+
+    private void ApplyIcon(Sprite sprite, bool enabledState)
+    {
+        if (_hasLastAppliedIcon &&
+            _lastAppliedIcon == sprite &&
+            _lastAppliedIconEnabled == enabledState)
+        {
+            return;
+        }
+
+        _hasLastAppliedIcon = true;
+        _lastAppliedIcon = sprite;
+        _lastAppliedIconEnabled = enabledState;
+        iconImage.sprite = sprite;
+        iconImage.enabled = enabledState;
+    }
+
+    private void ApplyFillColor(Color color)
+    {
+        if (_hasLastAppliedFillColor && _lastAppliedFillColor == color)
+            return;
+
+        _hasLastAppliedFillColor = true;
+        _lastAppliedFillColor = color;
+        cooldownOverlay.color = color;
+    }
+
+    private void ApplyFillAmount(float fillAmount)
+    {
+        float clamped = Mathf.Clamp01(fillAmount);
+        if (_lastAppliedFillAmount >= 0f && Mathf.Approximately(_lastAppliedFillAmount, clamped))
+            return;
+
+        _lastAppliedFillAmount = clamped;
+        cooldownOverlay.fillAmount = clamped;
+    }
+
+    private void InvalidateVisualCaches()
+    {
+        _cooldownUIVisible = null;
+        _lastDisplayedTenths = int.MinValue;
+        _hasLastAppliedIcon = false;
+        _lastAppliedIcon = null;
+        _lastAppliedIconEnabled = false;
+        _hasLastAppliedFillColor = false;
+        _lastAppliedFillAmount = -1f;
+    }
 
     private void SetCooldownVisible(bool visible)
     {

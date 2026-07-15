@@ -26,6 +26,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private const float DefaultPlayerHitRadius = 0.5f;
     private const float MouseAimEpsilonSqr = 0.0001f;
 
+    private struct RecastChainEntry
+    {
+        public SkillData RootSkill;
+        public int StageIndex;
+        public float WindowTimer;
+    }
+
     public static PlayerCombatController Active { get; private set; }
 
     // ── Inspector 필드 ───────────────────────────────────────────────
@@ -116,6 +123,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
     private Coroutine _skillCastRoutine;
+    private readonly RecastChainEntry[] _recastChains = new RecastChainEntry[SkillSlotCount];
     private Coroutine _parryRoutine;
     private Coroutine _reloadRoutine;
     private PlayerStatusEffects _status;
@@ -632,6 +640,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void Update()
     {
         _skillHitFlashRenderer?.Tick(Time.deltaTime);
+        TickRecastChain(Time.deltaTime);
 
         if (IsDead)
             return;
@@ -909,15 +918,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
+
+        if (TryHandleRecastInput(slotIndex, slot, cancelsActiveMultiHit))
+            return;
+
         if (!slot.CanUse(this)) return;
 
         SkillData skill = slot.Data;
         if (cancelsActiveMultiHit)
-        {
-            SkillData canceledSkill = _skillExecutor.ActiveMultiHitSkill;
-            _skillExecutor.CancelMultiHit();
-            combatChannel?.RaiseSkillCanceled(canceledSkill, skill);
-        }
+            CancelActiveMultiHitFor(skill);
 
         float castDelay = Mathf.Max(0f, skill.castDelay);
         if (castDelay > 0f)
@@ -940,6 +949,83 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                !_isSkillCasting &&
                !_isParrySequenceActive &&
                !_isReloading;
+    }
+
+    private bool TryHandleRecastInput(
+        int slotIndex,
+        SkillSlotRuntime slot,
+        bool cancelsActiveMultiHit)
+    {
+        if ((uint)slotIndex >= (uint)_recastChains.Length)
+            return false;
+
+        RecastChainEntry chain = _recastChains[slotIndex];
+        if (chain.RootSkill == null)
+            return false;
+
+        List<SkillData> stages = chain.RootSkill.recastStages;
+        if (chain.WindowTimer <= 0f ||
+            !ReferenceEquals(slot.Data, chain.RootSkill) ||
+            stages == null ||
+            (uint)chain.StageIndex >= (uint)stages.Count)
+        {
+            return true;
+        }
+
+        SkillData stage = stages[chain.StageIndex];
+        if (stage == null)
+            return true;
+
+        int requiredAmount = SkillSlotRuntime.ResolveRequiredAmount(stage);
+        if (!Has(stage.resourceType, requiredAmount))
+            return true;
+
+        if (cancelsActiveMultiHit)
+            CancelActiveMultiHitFor(stage);
+
+        if (!IsPendingRecastStage(slotIndex, stage))
+            return true;
+
+        requiredAmount = SkillSlotRuntime.ResolveRequiredAmount(stage);
+        if (!Has(stage.resourceType, requiredAmount))
+            return true;
+
+        SkillExecutionContext context = CreateSkillExecutionContext(stage, slotIndex);
+        SkillExecutionResult result = _skillExecutor.Execute(context);
+        if (!result.Success)
+            return true;
+
+        Spend(stage.resourceType, result.ResourceConsumed);
+        ApplySkillReload(stage);
+        StartSkillRecovery(stage.recoveryDelay);
+        AdvanceRecastChain(slotIndex);
+        combatChannel?.RaiseSkillUsed(stage);
+        return true;
+    }
+
+    private bool IsPendingRecastStage(int slotIndex, SkillData stage)
+    {
+        if ((uint)slotIndex >= (uint)_recastChains.Length)
+            return false;
+
+        RecastChainEntry chain = _recastChains[slotIndex];
+        if (chain.RootSkill == null ||
+            chain.WindowTimer <= 0f ||
+            chain.RootSkill.recastStages == null ||
+            (uint)chain.StageIndex >= (uint)chain.RootSkill.recastStages.Count)
+        {
+            return false;
+        }
+
+        return ReferenceEquals(chain.RootSkill.recastStages[chain.StageIndex], stage) &&
+               ReferenceEquals(GetSkillSlot(slotIndex)?.Data, chain.RootSkill);
+    }
+
+    private void CancelActiveMultiHitFor(SkillData cancelingSkill)
+    {
+        SkillData canceledSkill = _skillExecutor.ActiveMultiHitSkill;
+        _skillExecutor.CancelMultiHit();
+        combatChannel?.RaiseSkillCanceled(canceledSkill, cancelingSkill);
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -1001,6 +1087,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         slot.StartCooldown(EffectiveSkillCooldownMultiplier());
         ConsumePendingDaggerCooldownReset(slotIndex);
         StartSkillRecovery(skill.recoveryDelay);
+        OpenRecastChain(slotIndex, skill);
         combatChannel?.RaiseSkillUsed(skill);
 
         return true;
@@ -1118,6 +1205,64 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void StartSkillRecovery(float recoveryDelay)
     {
         _skillRecoveryTimer = Mathf.Max(_skillRecoveryTimer, Mathf.Max(0f, recoveryDelay));
+    }
+
+    private void TickRecastChain(float deltaTime)
+    {
+        float elapsed = Mathf.Max(0f, deltaTime);
+        for (int slotIndex = 0; slotIndex < _recastChains.Length; slotIndex++)
+        {
+            if (_recastChains[slotIndex].RootSkill == null)
+                continue;
+
+            _recastChains[slotIndex].WindowTimer -= elapsed;
+            if (_recastChains[slotIndex].WindowTimer <= 0f)
+                ResetRecastChain(slotIndex);
+        }
+    }
+
+    private void OpenRecastChain(int slotIndex, SkillData rootSkill)
+    {
+        if ((uint)slotIndex >= (uint)_recastChains.Length ||
+            rootSkill == null ||
+            rootSkill.recastStages == null ||
+            rootSkill.recastStages.Count == 0)
+        {
+            return;
+        }
+
+        _recastChains[slotIndex] = new RecastChainEntry
+        {
+            RootSkill = rootSkill,
+            StageIndex = 0,
+            WindowTimer = Mathf.Max(0f, rootSkill.recastWindow)
+        };
+    }
+
+    private void AdvanceRecastChain(int slotIndex)
+    {
+        if ((uint)slotIndex >= (uint)_recastChains.Length)
+            return;
+
+        RecastChainEntry chain = _recastChains[slotIndex];
+        if (chain.RootSkill == null || chain.RootSkill.recastStages == null)
+            return;
+
+        chain.StageIndex++;
+        if (chain.StageIndex >= chain.RootSkill.recastStages.Count)
+        {
+            ResetRecastChain(slotIndex);
+            return;
+        }
+
+        chain.WindowTimer = Mathf.Max(0f, chain.RootSkill.recastWindow);
+        _recastChains[slotIndex] = chain;
+    }
+
+    private void ResetRecastChain(int slotIndex)
+    {
+        if ((uint)slotIndex < (uint)_recastChains.Length)
+            _recastChains[slotIndex] = default;
     }
 
     private void ClearSkillTimingState()
@@ -1494,6 +1639,40 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     }
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
+    public bool TryGetRecastState(
+        int slotIndex,
+        out float remaining,
+        out float total,
+        out SkillData nextStage)
+    {
+        remaining = 0f;
+        total = 0f;
+        nextStage = null;
+        EnsureSkillSlotsBound();
+
+        if ((uint)slotIndex >= (uint)_recastChains.Length)
+            return false;
+
+        RecastChainEntry chain = _recastChains[slotIndex];
+        List<SkillData> stages = chain.RootSkill != null ? chain.RootSkill.recastStages : null;
+        if (chain.RootSkill == null ||
+            chain.WindowTimer <= 0f ||
+            stages == null ||
+            (uint)chain.StageIndex >= (uint)stages.Count ||
+            !ReferenceEquals(GetSkillSlot(slotIndex)?.Data, chain.RootSkill))
+        {
+            return false;
+        }
+
+        nextStage = stages[chain.StageIndex];
+        if (nextStage == null)
+            return false;
+
+        total = Mathf.Max(0f, chain.RootSkill.recastWindow);
+        remaining = total > 0f ? Mathf.Clamp(chain.WindowTimer, 0f, total) : 0f;
+        return true;
+    }
+
     public float GetSkillCooldownRemaining(int slotIndex)
     {
         EnsureSkillSlotsBound();

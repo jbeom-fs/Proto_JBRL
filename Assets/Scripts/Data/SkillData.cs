@@ -84,6 +84,13 @@ public class SkillData : ScriptableObject
     [Min(0f)]
     public float recoveryDelay = 0f;
 
+    [Tooltip("Root skill only. Follow-up skills triggered by repeated input on the same slot; the first recast uses element 0.")]
+    public List<SkillData> recastStages = new();
+
+    [Tooltip("Root skill only. Time after the root or a successful recast stage during which the next stage can be triggered.")]
+    [Min(0f)]
+    public float recastWindow = 1.5f;
+
     [Space(8)]
     [Header("Animation")]
     [SerializeField] private SkillAnimationType animationType = SkillAnimationType.None;

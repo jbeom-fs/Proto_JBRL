@@ -239,7 +239,7 @@ public class SkillRangePreviewer : MonoBehaviour
         if (combat != null && combat.IsDead) return;
         if (combat == null) return;
 
-        _currentSkill = combat.GetSkillData(slot);
+        _currentSkill = ResolvePreviewSkill(slot);
         if (_currentSkill == null) return;
         _activeSlot   = slot;
         _lastFacing   = movement != null ? movement.FacingDirection : Vector2Int.down;
@@ -248,6 +248,24 @@ public class SkillRangePreviewer : MonoBehaviour
 
         BuildPreview(_currentSkill);
         _lr.enabled = true;
+    }
+
+    private SkillData ResolvePreviewSkill(int slot)
+    {
+        if (combat == null)
+            return null;
+
+        if (combat.TryGetRecastState(
+                slot,
+                out _,
+                out _,
+                out SkillData nextStage) &&
+            nextStage != null)
+        {
+            return nextStage;
+        }
+
+        return combat.GetSkillData(slot);
     }
 
     private void HidePreview()
@@ -783,16 +801,16 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private bool RefreshActiveSkillPreviewIfChanged()
     {
-        SkillData equippedSkill = combat != null ? combat.GetSkillData(_activeSlot) : null;
-        if (equippedSkill != _currentSkill)
+        SkillData previewSkill = ResolvePreviewSkill(_activeSlot);
+        if (previewSkill != _currentSkill)
         {
-            if (equippedSkill == null)
+            if (previewSkill == null)
             {
                 HidePreview();
                 return true;
             }
 
-            _currentSkill = equippedSkill;
+            _currentSkill = previewSkill;
             _lastFacing = movement != null ? movement.FacingDirection : Vector2Int.down;
             _lastAimDirection = GetPreviewRawDirection();
             _lastPreviewDirection = GetPreviewDirection();

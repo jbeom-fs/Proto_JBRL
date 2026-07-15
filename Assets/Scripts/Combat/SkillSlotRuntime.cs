@@ -54,7 +54,7 @@ public sealed class SkillSlotRuntime
         CooldownRemaining = 0f;
     }
 
-    private static int ResolveRequiredAmount(SkillData skill)
+    internal static int ResolveRequiredAmount(SkillData skill)
     {
         if (skill == null || skill.resourceType == SkillResourceType.None)
             return 0;

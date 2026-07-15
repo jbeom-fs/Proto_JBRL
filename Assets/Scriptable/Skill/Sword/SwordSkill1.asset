@@ -24,6 +24,8 @@ MonoBehaviour:
   cooldown: 2
   castDelay: 0
   recoveryDelay: 0
+  recastStages: []
+  recastWindow: 1.5
   animationType: 1
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
