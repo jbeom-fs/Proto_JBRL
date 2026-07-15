@@ -33,6 +33,7 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _coneHalfAngle;
     private SerializedProperty _customCells;
     private SerializedProperty _hitSteps;
+    private SerializedProperty _cancelable;
     private SerializedProperty _isMultiTarget;
     private SerializedProperty _canPenetrateWalls;
 
@@ -108,6 +109,7 @@ public sealed class SkillDataEditor : Editor
         _coneHalfAngle = serializedObject.FindProperty("coneHalfAngle");
         _customCells = serializedObject.FindProperty("customCells");
         _hitSteps = serializedObject.FindProperty("hitSteps");
+        _cancelable = serializedObject.FindProperty("cancelable");
         _isMultiTarget = serializedObject.FindProperty("isMultiTarget");
         _canPenetrateWalls = serializedObject.FindProperty("canPenetrateWalls");
 
@@ -299,6 +301,8 @@ public sealed class SkillDataEditor : Editor
         {
             DrawBaseHitEditor();
             DrawProperty(_hitSteps);
+            if (!_hitSteps.hasMultipleDifferentValues && _hitSteps.arraySize > 0)
+                DrawProperty(_cancelable);
             return;
         }
 
@@ -326,6 +330,7 @@ public sealed class SkillDataEditor : Editor
 
         if (_hitSteps.arraySize > 0)
         {
+            DrawProperty(_cancelable);
             EditorGUILayout.HelpBox(
                 "Steps are follow-up hits after the base hit (1 step = 2 hits total).",
                 MessageType.Info);

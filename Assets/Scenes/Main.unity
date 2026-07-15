@@ -78140,7 +78140,7 @@ MonoBehaviour:
   dungeonChannel: {fileID: 11400000, guid: 53b84eb6f4117e64b946207c46fc4d16, type: 2}
   inventory: {fileID: 1562452773}
   soulEnhancements: {fileID: 1562452775}
-  engravingLoadout: {fileID: 0}
+  engravingLoadout: {fileID: 1562452776}
   soulEnhancementTable: {fileID: 11400000, guid: 813f9f5f59f59fa4c83ee1ef000f5421, type: 2}
   comboTierConfig: {fileID: 11400000, guid: a8f47d2c1b394e56a7c8091d2e3f4a5b, type: 2}
   playerMovement: {fileID: 1562452755}
@@ -85176,10 +85176,10 @@ MonoBehaviour:
   transitionManager: {fileID: 920100002}
   eliteArenaEncounterController: {fileID: 2201000002}
   player: {fileID: 1562452755}
-  playerInventory: {fileID: 0}
-  playerSoulEnhancements: {fileID: 0}
-  engravingLoadout: {fileID: 0}
-  playerCombatController: {fileID: 0}
+  playerInventory: {fileID: 1562452773}
+  playerSoulEnhancements: {fileID: 1562452775}
+  engravingLoadout: {fileID: 1562452776}
+  playerCombatController: {fileID: 1562452756}
   playerFormController: {fileID: 1562452774}
   teleportDestinationDatabase: {fileID: 11400000, guid: 6b019d483f774c33b2de338a6ca0e9d5, type: 2}
 --- !u!4 &1860777228

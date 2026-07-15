@@ -18,6 +18,7 @@ public sealed class MultiHitSkillRunner
     }
 
     public bool IsActive { get; private set; }
+    public SkillData ActiveSkill => IsActive ? _context?.Skill : null;
 
     public void Start(SkillExecutionContext context)
     {

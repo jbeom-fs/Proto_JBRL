@@ -114,6 +114,9 @@ public class SkillData : ScriptableObject
     [Tooltip("Follow-up hits after the base hit. Empty means a single base hit. Each step delay is measured from the previous hit.")]
     public List<HitStep> hitSteps = new();
 
+    [Tooltip("Allows another skill cast to cancel active multi-hit follow-up hits. Remaining hits are discarded; cost and cooldown are not refunded.")]
+    public bool cancelable = false;
+
     [Tooltip("Allows InstantArea targeting to affect multiple resolved targets.")]
     public bool isMultiTarget = false;
 

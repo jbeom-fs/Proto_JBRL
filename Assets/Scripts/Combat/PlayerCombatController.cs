@@ -51,6 +51,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [Header("Animation")]
     [SerializeField] private SkillData basicAttackSkillData;
 
+    [Header("Skill Hit Flash")]
+    [SerializeField] private bool enableSkillHitFlash = true;
+    [SerializeField] private Color skillHitFlashColor = new Color(0.9f, 0.1f, 0.1f, 0.55f);
+    [SerializeField, Min(0f)] private float skillHitFlashDuration = 0.2f;
+
     [Header("피해 감지")]
     [Tooltip("공격 판정 반경 (월드 단위). 타일 크기의 약 40% 권장.")]
     [SerializeField] private float hitRadius = 0.3f;
@@ -90,6 +95,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private readonly DaggerMarkerRegistry _daggerMarkers = DaggerMarkerRegistry.Instance;
     private AttackExecutor _attackExecutor;
     private SkillExecutor _skillExecutor;
+    private SkillHitFlashRenderer _skillHitFlashRenderer;
     private readonly List<Vector3> _basicAttackWorldTargets = new();
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
@@ -219,7 +225,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         CachePlayerHitInfo();
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
-        _skillExecutor = new SkillExecutor(_attackExecutor, CanContinueMultiHit);
+        LineRenderer previewLineRenderer = GetComponent<LineRenderer>();
+        int flashSortingLayerId = previewLineRenderer != null ? previewLineRenderer.sortingLayerID : 0;
+        int flashSortingOrder =
+            (previewLineRenderer != null ? previewLineRenderer.sortingOrder : 0) +
+            SkillHitFlashRenderer.FlashSortingOffset;
+        _skillHitFlashRenderer = new SkillHitFlashRenderer(flashSortingLayerId, flashSortingOrder);
+        _skillExecutor = new SkillExecutor(
+            _attackExecutor,
+            CanContinueMultiHit,
+            HandleInstantAreaHit);
         _daggerDashEnemyHitCallback = HandleDaggerDashEnemyHit;
         _daggerProjectileEnemyHitCallback = HandleDaggerProjectileEnemyHit;
         _status = new PlayerStatusEffects(v => playerMovement?.TryApplyExternalDisplacement(v));
@@ -289,6 +304,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         UnsubscribeSoulEnhancements();
         UnsubscribeInventory();
         UnsubscribeDungeonChannel();
+        _skillHitFlashRenderer?.Dispose();
         if (ReferenceEquals(Active, this))
             Active = null;
     }
@@ -297,6 +313,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         UnsubscribeSoulEnhancements();
         UnsubscribeInventory();
+        _skillHitFlashRenderer?.Clear();
         ClearSkillTimingState();
         ClearParryState();
         ClearReloadState();
@@ -614,6 +631,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void Update()
     {
+        _skillHitFlashRenderer?.Tick(Time.deltaTime);
+
         if (IsDead)
             return;
 
@@ -642,13 +661,29 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         if (_inputReader.WasReloadPressed && IsCurrentFormBulletMode())
             TryStartReload();
-        if (IsSkillBusy) return;
+        if (IsSkillBusy && !CanCancelActiveMultiHit()) return;
 
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
         if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
         if (_inputReader.WasSkillPressed(1)) TryUseSkill(1);
         if (_inputReader.WasSkillPressed(2)) TryUseSkill(2);
         if (_inputReader.WasSkillPressed(3)) TryUseSkill(3);
+    }
+
+    private void HandleInstantAreaHit(
+        IReadOnlyList<Vector3> worldTargets,
+        CustomShapeMatcher? customShape,
+        float cellSize)
+    {
+        if (!enableSkillHitFlash)
+            return;
+
+        _skillHitFlashRenderer?.Flash(
+            worldTargets,
+            customShape,
+            cellSize,
+            skillHitFlashColor,
+            skillHitFlashDuration);
     }
 
     public Vector2 RefreshAimDirection()
@@ -869,13 +904,21 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsDead) return;
         if (IsDashing) return;
         if (IsStunned) return;
-        if (IsSkillBusy) return;
+        bool cancelsActiveMultiHit = CanCancelActiveMultiHit();
+        if (IsSkillBusy && !cancelsActiveMultiHit) return;
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
         if (!slot.CanUse(this)) return;
 
         SkillData skill = slot.Data;
+        if (cancelsActiveMultiHit)
+        {
+            SkillData canceledSkill = _skillExecutor.ActiveMultiHitSkill;
+            _skillExecutor.CancelMultiHit();
+            combatChannel?.RaiseSkillCanceled(canceledSkill, skill);
+        }
+
         float castDelay = Mathf.Max(0f, skill.castDelay);
         if (castDelay > 0f)
         {
@@ -884,6 +927,19 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         }
 
         ExecuteSkillIfReady(slotIndex, skill);
+    }
+
+    private bool CanCancelActiveMultiHit()
+    {
+        if (_skillExecutor == null || !_skillExecutor.IsMultiHitActive)
+            return false;
+
+        SkillData activeSkill = _skillExecutor.ActiveMultiHitSkill;
+        return activeSkill != null &&
+               activeSkill.cancelable &&
+               !_isSkillCasting &&
+               !_isParrySequenceActive &&
+               !_isReloading;
     }
 
     // ══════════════════════════════════════════════════════════════

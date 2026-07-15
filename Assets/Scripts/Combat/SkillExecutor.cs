@@ -17,6 +17,11 @@ public readonly struct SkillExecutionResult
     public static SkillExecutionResult SuccessWithCost(int resourceConsumed) => new(true, resourceConsumed);
 }
 
+public delegate void SkillInstantAreaHitHandler(
+    IReadOnlyList<Vector3> worldTargets,
+    CustomShapeMatcher? customShape,
+    float cellSize);
+
 /// <summary>
 /// Executes skill effects.
 /// This first version preserves the existing immediate area-damage behavior;
@@ -32,27 +37,38 @@ public sealed class SkillExecutor
     private readonly SkillTargetResolver _targetResolver;
     private readonly ProjectileFireService _projectileFireService;
     private readonly MultiHitSkillRunner _multiHitRunner;
+    private readonly SkillInstantAreaHitHandler _onInstantAreaHit;
     private readonly HashSet<SkillExecutionType> _reportedUnsupportedTypes = new();
     private readonly HashSet<SkillData> _reportedMissingProjectilePrefabs = new();
     private readonly HashSet<PlayerCombatController> _reportedMissingDashControllers = new();
     private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
 
     public SkillExecutor(AttackExecutor attackExecutor)
-        : this(attackExecutor, null)
+        : this(attackExecutor, null, null)
     {
     }
 
     public SkillExecutor(
         AttackExecutor attackExecutor,
         Func<SkillExecutionContext, bool> canContinueMultiHit)
+        : this(attackExecutor, canContinueMultiHit, null)
+    {
+    }
+
+    public SkillExecutor(
+        AttackExecutor attackExecutor,
+        Func<SkillExecutionContext, bool> canContinueMultiHit,
+        SkillInstantAreaHitHandler onInstantAreaHit)
     {
         _attackExecutor = attackExecutor;
         _targetResolver = new SkillTargetResolver();
         _projectileFireService = new ProjectileFireService();
         _multiHitRunner = new MultiHitSkillRunner(ExecuteInstantAreaHit, canContinueMultiHit);
+        _onInstantAreaHit = onInstantAreaHit;
     }
 
     public bool IsMultiHitActive => _multiHitRunner.IsActive;
+    public SkillData ActiveMultiHitSkill => _multiHitRunner.ActiveSkill;
 
     public void TickMultiHit(float deltaTime)
     {
@@ -132,6 +148,7 @@ public sealed class SkillExecutor
             ResolveAilmentMultiplier(context),
             context.HitRadius,
             customShape);
+        NotifyInstantAreaHit(targets, customShape, context.CasterPosition);
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.DamageDealtThisAttack > 0)
         {
@@ -193,6 +210,7 @@ public sealed class SkillExecutor
             ResolveAilmentMultiplier(context),
             context.HitRadius,
             customShape);
+        NotifyInstantAreaHit(targets, customShape, origin);
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.DamageDealtThisAttack > 0)
         {
@@ -201,6 +219,28 @@ public sealed class SkillExecutor
         }
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
+    }
+
+    private void NotifyInstantAreaHit(
+        IReadOnlyList<Vector3> worldTargets,
+        CustomShapeMatcher? customShape,
+        Vector3 origin)
+    {
+        if (_onInstantAreaHit == null)
+            return;
+
+        float cellSize = customShape.HasValue
+            ? customShape.Value.CellSize
+            : WorldEnvironmentQuery.GetCellSize(origin);
+
+        try
+        {
+            _onInstantAreaHit(worldTargets, customShape, cellSize);
+        }
+        catch (Exception exception)
+        {
+            Debug.LogException(exception);
+        }
     }
 
     private SkillExecutionResult ExecuteProjectile(SkillExecutionContext context)
