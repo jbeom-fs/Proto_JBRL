@@ -161,7 +161,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
     public bool IsParryBusy => _isParrySequenceActive;
-    public bool IsSkillBusy => _isSkillCasting || _skillRecoveryTimer > 0f || _isParrySequenceActive || _isReloading;
+    public bool IsSkillBusy =>
+        _isSkillCasting ||
+        _skillRecoveryTimer > 0f ||
+        _isParrySequenceActive ||
+        _isReloading ||
+        (_skillExecutor != null && _skillExecutor.IsMultiHitActive);
     public bool IsSlowed => _status != null && _status.IsSlowed;
     public float SlowRemainingTime => _status != null ? _status.SlowRemainingTime : 0f;
     public float SlowTotalDurationForUi => _status != null ? _status.SlowTotalDurationForUi : 0f;
@@ -170,7 +175,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public float StunRemainingTime => _status != null ? _status.StunRemainingTime : 0f;
     public float StunTotalDurationForUi => _status != null ? _status.StunTotalDurationForUi : 0f;
     public float StunRemainingRatio => _status != null ? _status.StunRemainingRatio : 0f;
-    public bool BlocksPlayerMovement => _isSkillCasting || _skillRecoveryTimer > 0f || (blockMovementDuringParry && _isParrySequenceActive);
+    public bool BlocksPlayerMovement =>
+        _isSkillCasting ||
+        _skillRecoveryTimer > 0f ||
+        (blockMovementDuringParry && _isParrySequenceActive) ||
+        (_skillExecutor != null && _skillExecutor.IsMultiHitActive);
     public float MoveSpeedMultiplier =>
         (_status != null ? _status.MoveSpeedMultiplier : 1f) *
         (1f + _itemStats.MoveSpeedBonusPercent / 100f);
@@ -210,7 +219,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         CachePlayerHitInfo();
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
-        _skillExecutor = new SkillExecutor(_attackExecutor);
+        _skillExecutor = new SkillExecutor(_attackExecutor, CanContinueMultiHit);
         _daggerDashEnemyHitCallback = HandleDaggerDashEnemyHit;
         _daggerProjectileEnemyHitCallback = HandleDaggerProjectileEnemyHit;
         _status = new PlayerStatusEffects(v => playerMovement?.TryApplyExternalDisplacement(v));
@@ -620,6 +629,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         TickSkillSlots(Time.deltaTime);
         TickSkillRecovery(Time.deltaTime);
         TickDaggerState(Time.deltaTime);
+        _skillExecutor?.TickMultiHit(Time.deltaTime);
 
         if (_inputReader == null) return;
 
@@ -1064,6 +1074,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _isSkillCasting = false;
         _skillRecoveryTimer = 0f;
+        _skillExecutor?.CancelMultiHit();
     }
 
     private bool CanUseMagazine()
@@ -1186,6 +1197,20 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             gridFacing,
             TotalAttack,
             hitRadius);
+    }
+
+    private bool CanContinueMultiHit(SkillExecutionContext context)
+    {
+        if (context == null)
+            return false;
+
+        PlayerFormData currentForm = _formController != null ? _formController.CurrentForm : null;
+        return !IsDead &&
+               !IsStunned &&
+               !IsDashing &&
+               (DungeonManager.Instance == null || !DungeonManager.Instance.IsTransitioning) &&
+               !IsCombatBlockedByLocation() &&
+               ReferenceEquals(currentForm, context.CasterFormData);
     }
 
     private Vector2Int GetGridAimDirection()

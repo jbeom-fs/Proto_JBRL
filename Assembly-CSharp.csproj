@@ -155,6 +155,7 @@
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleCommandExecutor.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyAilments.cs" />
     <Compile Include="Assets\Scripts\Boss\RestAreaController.cs" />
+    <Compile Include="Assets\Scripts\Combat\MultiHitSkillRunner.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverSceneReloadRestartHandler.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseSource.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternContext.cs" />
@@ -207,8 +208,8 @@
     <Compile Include="Assets\Scripts\UI\SoulAltarStatRowUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\AilmentStatusTracker.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulStatType.cs" />
-    <Compile Include="Assets\Scripts\Combat\ComboMeter.cs" />
     <Compile Include="Assets\Scripts\Combat\ComboTierConfig.cs" />
+    <Compile Include="Assets\Scripts\Combat\ComboMeter.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteJumpPatternData.cs" />
     <Compile Include="Assets\Scripts\Data\EnemyData.cs" />
     <Compile Include="Assets\Scripts\UI\UIDraggableWindow.cs" />

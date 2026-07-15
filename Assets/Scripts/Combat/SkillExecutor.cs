@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -30,16 +31,37 @@ public sealed class SkillExecutor
     private readonly AttackExecutor _attackExecutor;
     private readonly SkillTargetResolver _targetResolver;
     private readonly ProjectileFireService _projectileFireService;
+    private readonly MultiHitSkillRunner _multiHitRunner;
     private readonly HashSet<SkillExecutionType> _reportedUnsupportedTypes = new();
     private readonly HashSet<SkillData> _reportedMissingProjectilePrefabs = new();
     private readonly HashSet<PlayerCombatController> _reportedMissingDashControllers = new();
     private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
 
     public SkillExecutor(AttackExecutor attackExecutor)
+        : this(attackExecutor, null)
+    {
+    }
+
+    public SkillExecutor(
+        AttackExecutor attackExecutor,
+        Func<SkillExecutionContext, bool> canContinueMultiHit)
     {
         _attackExecutor = attackExecutor;
         _targetResolver = new SkillTargetResolver();
         _projectileFireService = new ProjectileFireService();
+        _multiHitRunner = new MultiHitSkillRunner(ExecuteInstantAreaHit, canContinueMultiHit);
+    }
+
+    public bool IsMultiHitActive => _multiHitRunner.IsActive;
+
+    public void TickMultiHit(float deltaTime)
+    {
+        _multiHitRunner.Tick(deltaTime);
+    }
+
+    public void CancelMultiHit()
+    {
+        _multiHitRunner.Cancel();
     }
 
     public SkillExecutionResult Execute(SkillExecutionContext context)
@@ -118,7 +140,67 @@ public sealed class SkillExecutor
         }
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
+        if (context.Skill.hitSteps != null && context.Skill.hitSteps.Count > 0)
+            _multiHitRunner.Start(context);
+
         return SkillExecutionResult.SuccessWithCost(context.Skill.consumeAmount);
+    }
+
+    private void ExecuteInstantAreaHit(SkillExecutionContext context, HitStep hitStep)
+    {
+        _attackExecutor.BeginAttackActivation();
+
+        Vector3 origin = context.CasterTransform.position;
+        IReadOnlyList<Vector2Int> overrideCells = hitStep.overrideCells;
+        bool usesOverride = overrideCells != null && overrideCells.Count > 0;
+        List<Vector3> targets = _targetResolver.ResolveWorldTargets(context, origin, overrideCells);
+
+        CustomShapeMatcher? customShape = null;
+        CustomShapeMatcher matcher;
+        bool hasCustomShape = usesOverride
+            ? SkillTargetResolver.TryCreateCustomShapeMatcher(
+                overrideCells,
+                origin,
+                context.AimDirection,
+                context.GridAimDirection,
+                out matcher)
+            : SkillTargetResolver.TryCreateCustomShapeMatcher(
+                context.Skill,
+                origin,
+                context.AimDirection,
+                context.GridAimDirection,
+                out matcher);
+        if (hasCustomShape)
+            customShape = matcher;
+
+        int scaledDamage = Mathf.RoundToInt(
+            (context.TotalAttack + context.Skill.damage) * hitStep.damagePct / 100f);
+        bool didCrit = false;
+        int damage = context.CasterCombat != null
+            ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
+            : scaledDamage;
+
+        _attackExecutor.ExecuteAttackWorld(
+            targets,
+            damage,
+            context.Skill.canPenetrateWalls,
+            context.Skill.isMultiTarget,
+            context.Skill.knockbackForce,
+            context.Skill.knockbackDuration,
+            context.Skill.slowPercentage,
+            context.Skill.slowDuration,
+            context.Skill.ailments,
+            ResolveAilmentMultiplier(context),
+            context.HitRadius,
+            customShape);
+        context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
+        if (_attackExecutor.DamageDealtThisAttack > 0)
+        {
+            context.CasterCombat?.RegisterComboHit();
+            context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
+        }
+
+        PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
     }
 
     private SkillExecutionResult ExecuteProjectile(SkillExecutionContext context)

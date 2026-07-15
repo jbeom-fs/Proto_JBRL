@@ -28,6 +28,27 @@ public sealed class SkillTargetResolver
         return _worldTargetBuffer;
     }
 
+    public List<Vector3> ResolveWorldTargets(
+        SkillExecutionContext context,
+        Vector3 originWorld,
+        IReadOnlyList<Vector2Int> overrideCells)
+    {
+        _worldTargetBuffer.Clear();
+        if (context == null || context.Skill == null) return _worldTargetBuffer;
+
+        bool usesOverride = overrideCells != null && overrideCells.Count > 0;
+        FillWorldTargets(
+            usesOverride ? AttackPatternType.Custom : context.Skill.attackPattern,
+            originWorld,
+            context.AimDirection,
+            context.GridAimDirection,
+            context.Skill.patternRange,
+            context.Skill.coneHalfAngle,
+            usesOverride ? overrideCells : context.Skill.customCells,
+            _worldTargetBuffer);
+        return _worldTargetBuffer;
+    }
+
     public static void ResolveShapeCells(
         SkillData skill,
         Vector2Int origin,
@@ -201,6 +222,22 @@ public sealed class SkillTargetResolver
         return TryCreateCustomShapeMatcher(
             skill.attackPattern,
             skill.customCells,
+            originWorld,
+            aimDirection,
+            dungeonGridAimDirection,
+            out matcher);
+    }
+
+    public static bool TryCreateCustomShapeMatcher(
+        IReadOnlyList<Vector2Int> customCells,
+        Vector3 originWorld,
+        Vector2 aimDirection,
+        Vector2Int dungeonGridAimDirection,
+        out CustomShapeMatcher matcher)
+    {
+        return TryCreateCustomShapeMatcher(
+            AttackPatternType.Custom,
+            customCells,
             originWorld,
             aimDirection,
             dungeonGridAimDirection,

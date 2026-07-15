@@ -580,9 +580,9 @@ MonoBehaviour:
   tierColors:
   - {r: 1, g: 1, b: 1, a: 1}
   - {r: 1, g: 1, b: 1, a: 1}
-  - {r: 0.4026344, g: 0.9811321, b: 0.8821785, a: 1}
-  - {r: 1, g: 0.99119747, b: 0.28773582, a: 1}
-  - {r: 0.8018868, g: 0.50396603, b: 0.18534178, a: 1}
+  - {r: 0.9528302, g: 0.92174536, b: 0.049439307, a: 1}
+  - {r: 0.8018868, g: 0.3319822, b: 0.011347434, a: 1}
+  - {r: 1, g: 0.05929699, b: 0, a: 1}
   - {r: 0.7924528, g: 0, b: 0.02236108, a: 1}
 --- !u!1 &119784921
 GameObject:
@@ -145299,6 +145299,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EliteArenaEncounterController
   transitionManager: {fileID: 920100002}
+  arenaDoor: {fileID: 3501000002}
   arenaWalkTilemap: {fileID: 1206688124}
   arenaWallTilemap: {fileID: 1309604883}
   dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
@@ -145313,7 +145314,6 @@ MonoBehaviour:
   entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
   entrancePortalParent: {fileID: 0}
   eliteRoomReturnPoint: {fileID: 0}
-  arenaDoor: {fileID: 3501000002}
   healthBarPanel: {fileID: 324191796}
 --- !u!114 &2201000003
 MonoBehaviour:
@@ -145761,6 +145761,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossEncounterController
   transitionManager: {fileID: 920100002}
+  arenaDoor: {fileID: 3501000002}
   arenaWalkTilemap: {fileID: 1206688124}
   arenaWallTilemap: {fileID: 1309604883}
   dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
@@ -145774,7 +145775,6 @@ MonoBehaviour:
   exitPortalPrefab: {fileID: 0}
   exitPortalSpawnPoint: {fileID: 2401000021}
   exitPortalParent: {fileID: 2401000001}
-  arenaDoor: {fileID: 3501000002}
   healthBarPanel: {fileID: 324191796}
 --- !u!1 &2501000000
 GameObject:

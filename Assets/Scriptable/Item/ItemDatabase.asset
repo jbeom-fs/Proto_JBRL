@@ -89,7 +89,7 @@ MonoBehaviour:
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
-    removeOnDungeonExit: 1
+    removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
     soulFormId: 1
@@ -105,7 +105,7 @@ MonoBehaviour:
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
-    removeOnDungeonExit: 1
+    removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
     soulFormId: 2
@@ -121,7 +121,7 @@ MonoBehaviour:
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
-    removeOnDungeonExit: 1
+    removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
     soulFormId: 3
@@ -137,7 +137,7 @@ MonoBehaviour:
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
-    removeOnDungeonExit: 1
+    removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
     soulFormId: 4

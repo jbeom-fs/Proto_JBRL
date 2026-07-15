@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,6 +22,14 @@ public enum BulletShortageMode
 {
     RequireFullCost = 0,
     AllowPartialUse = 1
+}
+
+[Serializable]
+public class HitStep
+{
+    public float delay;
+    public int damagePct = 100;
+    public List<Vector2Int> overrideCells = new();
 }
 
 /// <summary>
@@ -101,6 +110,9 @@ public class SkillData : ScriptableObject
 
     [Tooltip("Custom 패턴 전용. 시전자 기준 상대 셀(위=전방). 실행 시 조준 방향으로 회전.")]
     public List<Vector2Int> customCells = new List<Vector2Int>();
+
+    [Tooltip("Follow-up hits after the base hit. Empty means a single base hit. Each step delay is measured from the previous hit.")]
+    public List<HitStep> hitSteps = new();
 
     [Tooltip("Allows InstantArea targeting to affect multiple resolved targets.")]
     public bool isMultiTarget = false;

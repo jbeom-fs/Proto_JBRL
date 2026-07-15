@@ -32,6 +32,7 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _patternRange;
     private SerializedProperty _coneHalfAngle;
     private SerializedProperty _customCells;
+    private SerializedProperty _hitSteps;
     private SerializedProperty _isMultiTarget;
     private SerializedProperty _canPenetrateWalls;
 
@@ -105,6 +106,7 @@ public sealed class SkillDataEditor : Editor
         _patternRange = serializedObject.FindProperty("patternRange");
         _coneHalfAngle = serializedObject.FindProperty("coneHalfAngle");
         _customCells = serializedObject.FindProperty("customCells");
+        _hitSteps = serializedObject.FindProperty("hitSteps");
         _isMultiTarget = serializedObject.FindProperty("isMultiTarget");
         _canPenetrateWalls = serializedObject.FindProperty("canPenetrateWalls");
 
@@ -288,6 +290,10 @@ public sealed class SkillDataEditor : Editor
             if (_customCells != null && !_customCells.hasMultipleDifferentValues && _customCells.arraySize == 0)
                 EditorGUILayout.HelpBox("Custom pattern has no cells.", MessageType.Warning);
         }
+        DrawProperty(_hitSteps);
+        EditorGUILayout.HelpBox(
+            "Steps are follow-up hits after the base hit (1 step = 2 hits total).",
+            MessageType.Info);
         DrawProperty(_isMultiTarget);
         DrawProperty(_canPenetrateWalls);
     }

@@ -10,6 +10,7 @@ public sealed class SkillExecutionContext
     public PlayerCombatController CasterCombat { get; }
     public PlayerDashController CasterDash { get; }
     public PlayerFormController CasterForm { get; }
+    public PlayerFormData CasterFormData { get; }
     public Transform CasterTransform { get; }
     public SkillData Skill { get; }
     public int SlotIndex { get; }
@@ -34,6 +35,7 @@ public sealed class SkillExecutionContext
         CasterCombat = casterCombat;
         CasterDash = casterDash;
         CasterForm = casterForm;
+        CasterFormData = casterForm != null ? casterForm.CurrentForm : null;
         CasterTransform = casterTransform;
         Skill = skill;
         SlotIndex = slotIndex;
