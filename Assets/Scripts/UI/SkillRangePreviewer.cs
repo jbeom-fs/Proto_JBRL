@@ -64,6 +64,9 @@ public class SkillRangePreviewer : MonoBehaviour
     // ── 정적 꼭짓점 버퍼 (GC 방지, 최대 256점) ─────────────────────
     private static readonly Vector3[] s_Buf = new Vector3[256];
     private readonly List<Vector2Int> _previewShapeCells = new();
+    private readonly List<Vector2Int> _customFillCells = new();
+    private readonly HashSet<Vector2Int> _customFillCellSet = new();
+    private readonly List<Vector2Int> _lastCustomFillCells = new();
 
     // ── 런타임 상태 ─────────────────────────────────────────────────
     private LineRenderer _lr;
@@ -73,7 +76,6 @@ public class SkillRangePreviewer : MonoBehaviour
     private Mesh _customFillMesh;
     private Material _customFillMaterial;
     private SkillData _lastCustomFillSkill;
-    private int _lastCustomFillCellCount = -1;
     private int          _activeSlot           = -1;   // -1 = 스킬 미표시
     private SkillData    _currentSkill;
     private bool         _isBasicAttackPreview  = false;
@@ -149,10 +151,13 @@ public class SkillRangePreviewer : MonoBehaviour
 
         HandleInput();
 
-        if (_activeSlot >= 0 && _currentSkill != null)
+        if (_activeSlot >= 0)
         {
+            if (RefreshActiveSkillPreviewIfChanged())
+                return;
+
             // 방향 의존 패턴(Line·Cone·Single)은 FacingDirection 이 바뀔 때만 재계산
-            if (RequiresFacingRefresh(_currentSkill))
+            if (_currentSkill != null && RequiresFacingRefresh(_currentSkill))
             {
                 RefreshDirectionalPreview(_currentSkill);
             }
@@ -309,23 +314,14 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
         bool useMouseAim = IsMouseAimPreview();
-        Vector2 previewDirection = useMouseAim ? GetPreviewDirection() : Vector2.down;
+        Vector2 previewDirection = GetPreviewDirection();
+        float customAngle = AimDirectionUtility.ToAuthoredFacingAngle(previewDirection);
 
         if (skill.attackPattern == AttackPatternType.Custom)
         {
-            _previewShapeCells.Clear();
-            if (skill.customCells != null)
-            {
-                for (int i = 0; i < skill.customCells.Count; i++)
-                    _previewShapeCells.Add(skill.customCells[i]);
-            }
-
-            Vector2 customFacing = useMouseAim
-                ? previewDirection
-                : AimDirectionUtility.ToNormalizedDirection(facing);
-            float customAngle = AimDirectionUtility.ToAuthoredFacingAngle(customFacing);
+            CollectCustomFillCells(skill, true);
             Apply(0, false);
-            UpdateCustomCellFill(skill, _previewShapeCells, customAngle);
+            UpdateCustomCellFill(skill, _customFillCells, customAngle);
             return;
         }
 
@@ -388,6 +384,9 @@ public class SkillRangePreviewer : MonoBehaviour
                 break;
 
         }
+
+        CollectCustomFillCells(skill, false);
+        UpdateCustomCellFill(skill, _customFillCells, customAngle);
     }
 
     private void BuildProjectilePreview(SkillData skill)
@@ -739,25 +738,139 @@ public class SkillRangePreviewer : MonoBehaviour
     //  벽 클리핑 — 꼭짓점이 벽을 뚫지 않도록 경계에서 자름
     // ══════════════════════════════════════════════════════════════
     
+    private void CollectCustomFillCells(SkillData skill, bool includeBaseCells)
+    {
+        _customFillCells.Clear();
+        _customFillCellSet.Clear();
+
+        if (skill == null)
+            return;
+
+        if (includeBaseCells)
+            AddCustomFillCells(skill.customCells);
+
+        if (skill.executionType == SkillExecutionType.InstantArea && skill.hitSteps != null)
+        {
+            for (int i = 0; i < skill.hitSteps.Count; i++)
+            {
+                HitStep step = skill.hitSteps[i];
+                if (step != null)
+                    AddCustomFillCells(step.overrideCells);
+            }
+        }
+
+        _customFillCells.Sort(CompareCustomFillCells);
+    }
+
+    private void AddCustomFillCells(IReadOnlyList<Vector2Int> cells)
+    {
+        if (cells == null)
+            return;
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            Vector2Int cell = cells[i];
+            if (_customFillCellSet.Add(cell))
+                _customFillCells.Add(cell);
+        }
+    }
+
+    private static int CompareCustomFillCells(Vector2Int left, Vector2Int right)
+    {
+        int yCompare = left.y.CompareTo(right.y);
+        return yCompare != 0 ? yCompare : left.x.CompareTo(right.x);
+    }
+
+    private bool RefreshActiveSkillPreviewIfChanged()
+    {
+        SkillData equippedSkill = combat != null ? combat.GetSkillData(_activeSlot) : null;
+        if (equippedSkill != _currentSkill)
+        {
+            if (equippedSkill == null)
+            {
+                HidePreview();
+                return true;
+            }
+
+            _currentSkill = equippedSkill;
+            _lastFacing = movement != null ? movement.FacingDirection : Vector2Int.down;
+            _lastAimDirection = GetPreviewRawDirection();
+            _lastPreviewDirection = GetPreviewDirection();
+            BuildPreview(_currentSkill);
+            _lr.enabled = true;
+            return true;
+        }
+
+        if (_currentSkill == null)
+        {
+            HidePreview();
+            return true;
+        }
+
+        if (_currentSkill.executionType != SkillExecutionType.InstantArea)
+            return false;
+
+        CollectCustomFillCells(
+            _currentSkill,
+            _currentSkill.attackPattern == AttackPatternType.Custom);
+        if (!HasCustomFillSnapshotChanged(_currentSkill, _customFillCells))
+            return false;
+
+        BuildPreview(_currentSkill);
+        return true;
+    }
+
     private void UpdateCustomCellFill(SkillData skill, IReadOnlyList<Vector2Int> cells, float angleDeg)
     {
+        bool snapshotChanged = HasCustomFillSnapshotChanged(skill, cells);
         if (cells == null || cells.Count == 0)
         {
+            if (snapshotChanged)
+                CacheCustomFillSnapshot(skill, cells);
             SetCustomFillVisible(false);
             return;
         }
 
         EnsureCustomFill();
-        if (_lastCustomFillSkill != skill || _lastCustomFillCellCount != cells.Count)
+        if (snapshotChanged)
         {
             BuildCustomCellFillMesh(cells);
-            _lastCustomFillSkill = skill;
-            _lastCustomFillCellCount = cells.Count;
+            CacheCustomFillSnapshot(skill, cells);
         }
 
         _customFillObject.transform.localPosition = Vector3.zero;
         _customFillObject.transform.localRotation = Quaternion.Euler(0f, 0f, angleDeg);
         SetCustomFillVisible(true);
+    }
+
+    private bool HasCustomFillSnapshotChanged(
+        SkillData skill,
+        IReadOnlyList<Vector2Int> cells)
+    {
+        int cellCount = cells != null ? cells.Count : 0;
+        if (_lastCustomFillSkill != skill || _lastCustomFillCells.Count != cellCount)
+            return true;
+
+        for (int i = 0; i < cellCount; i++)
+        {
+            if (_lastCustomFillCells[i] != cells[i])
+                return true;
+        }
+
+        return false;
+    }
+
+    private void CacheCustomFillSnapshot(
+        SkillData skill,
+        IReadOnlyList<Vector2Int> cells)
+    {
+        _lastCustomFillSkill = skill;
+        _lastCustomFillCells.Clear();
+        if (cells == null)
+            return;
+
+        for (int i = 0; i < cells.Count; i++)
+            _lastCustomFillCells.Add(cells[i]);
     }
 
     private void EnsureCustomFill()
@@ -896,7 +1009,27 @@ public class SkillRangePreviewer : MonoBehaviour
         if (skill == null) return false;
         if (skill.executionType == SkillExecutionType.Projectile) return true;
         if (skill.executionType == SkillExecutionType.Dash) return true;
-        return SkillTargetResolver.IsDirectional(skill.attackPattern);
+        return SkillTargetResolver.IsDirectional(skill.attackPattern) ||
+               HasInstantAreaStepOverrideCells(skill);
+    }
+
+    private static bool HasInstantAreaStepOverrideCells(SkillData skill)
+    {
+        if (skill == null ||
+            skill.executionType != SkillExecutionType.InstantArea ||
+            skill.hitSteps == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < skill.hitSteps.Count; i++)
+        {
+            HitStep step = skill.hitSteps[i];
+            if (step != null && step.overrideCells != null && step.overrideCells.Count > 0)
+                return true;
+        }
+
+        return false;
     }
 
     private void RefreshDirectionalPreview(SkillData skill)
@@ -951,9 +1084,18 @@ public class SkillRangePreviewer : MonoBehaviour
 
     private static bool UsesEightWayPreviewDirection(SkillData skill)
     {
-        return skill != null &&
-               (skill.executionType == SkillExecutionType.Projectile ||
-                skill.executionType == SkillExecutionType.Dash);
+        if (skill == null)
+            return false;
+
+        if (skill.executionType == SkillExecutionType.Projectile ||
+            skill.executionType == SkillExecutionType.Dash)
+        {
+            return true;
+        }
+
+        return skill.executionType == SkillExecutionType.InstantArea &&
+               (skill.attackPattern == AttackPatternType.Custom ||
+                HasInstantAreaStepOverrideCells(skill));
     }
 
     private static bool IsDirectional(AttackPatternType p) =>

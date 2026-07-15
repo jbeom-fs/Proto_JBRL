@@ -77,6 +77,7 @@ public sealed class SkillDataEditor : Editor
     private string _linkedItemDisplayName;
     private int _customCellGridRadius = 4;
     private bool _rawCustomCellsFoldout;
+    private int _selectedHitPhaseIndex;
 
     private void OnEnable()
     {
@@ -281,55 +282,220 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_patternRange);
         if (IsAttackPattern(AttackPatternType.Cone))
             DrawProperty(_coneHalfAngle);
-        if (IsAttackPattern(AttackPatternType.Custom))
-        {
-            DrawCustomCellsEditor();
-            EditorGUILayout.HelpBox(
-                "Cells are authored relative to the caster with +Y as forward. patternRange is not used by Custom.",
-                MessageType.Info);
-            if (_customCells != null && !_customCells.hasMultipleDifferentValues && _customCells.arraySize == 0)
-                EditorGUILayout.HelpBox("Custom pattern has no cells.", MessageType.Warning);
-        }
-        DrawProperty(_hitSteps);
-        EditorGUILayout.HelpBox(
-            "Steps are follow-up hits after the base hit (1 step = 2 hits total).",
-            MessageType.Info);
+        DrawHitStepsEditor();
         DrawProperty(_isMultiTarget);
         DrawProperty(_canPenetrateWalls);
     }
 
-    private void DrawCustomCellsEditor()
+    private void DrawHitStepsEditor()
     {
-        if (_customCells == null)
-            return;
-
-        if (targets.Length > 1 || _customCells.hasMultipleDifferentValues)
+        if (_hitSteps == null)
         {
-            EditorGUILayout.HelpBox("Select a single asset to edit cells.", MessageType.Info);
-            DrawProperty(_customCells);
+            DrawBaseHitEditor();
             return;
         }
 
-        HashSet<Vector2Int> cells = ReadCustomCellSet();
+        if (targets.Length > 1 || _hitSteps.hasMultipleDifferentValues)
+        {
+            DrawBaseHitEditor();
+            DrawProperty(_hitSteps);
+            return;
+        }
+
+        _selectedHitPhaseIndex = Mathf.Clamp(_selectedHitPhaseIndex, 0, _hitSteps.arraySize);
+
+        EditorGUILayout.Space(4f);
+        EditorGUILayout.LabelField("Hit Timeline", EditorStyles.boldLabel);
+        string[] phaseLabels = new string[_hitSteps.arraySize + 1];
+        phaseLabels[0] = "Base";
+        for (int i = 0; i < _hitSteps.arraySize; i++)
+            phaseLabels[i + 1] = "Step " + (i + 1);
+
+        int columnCount = Mathf.Min(phaseLabels.Length, 4);
+        _selectedHitPhaseIndex = GUILayout.SelectionGrid(
+            _selectedHitPhaseIndex,
+            phaseLabels,
+            columnCount,
+            EditorStyles.miniButton);
+        DrawHitStepListControls();
+
+        if (_selectedHitPhaseIndex == 0)
+            DrawBaseHitEditor();
+        else
+            DrawHitStepEditor(_selectedHitPhaseIndex - 1);
+
+        if (_hitSteps.arraySize > 0)
+        {
+            EditorGUILayout.HelpBox(
+                "Steps are follow-up hits after the base hit (1 step = 2 hits total).",
+                MessageType.Info);
+        }
+    }
+
+    private void DrawBaseHitEditor()
+    {
+        if (!IsAttackPattern(AttackPatternType.Custom))
+            return;
+
+        DrawCustomCellsEditor(_customCells);
+        EditorGUILayout.HelpBox(
+            "Cells are authored relative to the caster with +Y as forward. patternRange is not used by Custom.",
+            MessageType.Info);
+        if (_customCells != null && !_customCells.hasMultipleDifferentValues && _customCells.arraySize == 0)
+            EditorGUILayout.HelpBox("Custom pattern has no cells.", MessageType.Warning);
+    }
+
+    private void DrawHitStepEditor(int stepIndex)
+    {
+        if (stepIndex < 0 || stepIndex >= _hitSteps.arraySize)
+            return;
+
+        SerializedProperty step = _hitSteps.GetArrayElementAtIndex(stepIndex);
+        DrawProperty(step.FindPropertyRelative("delay"));
+        DrawProperty(step.FindPropertyRelative("damagePct"));
+
+        SerializedProperty overrideCells = step.FindPropertyRelative("overrideCells");
+        if (overrideCells == null)
+            return;
+
+        HashSet<Vector2Int> hintCells = null;
+        if (overrideCells.arraySize == 0)
+        {
+            hintCells = ReadBaseShapeCellSet();
+            EditorGUILayout.HelpBox(
+                "Empty override repeats the base shape. Faint cells show the current base shape; click any cell to start an override.",
+                MessageType.Info);
+        }
+
+        DrawCustomCellsEditor(overrideCells, hintCells);
+    }
+
+    private void DrawHitStepListControls()
+    {
+        bool addClicked;
+        bool deleteClicked;
+        bool moveUpClicked;
+        bool moveDownClicked;
+
+        EditorGUILayout.BeginHorizontal();
+        addClicked = GUILayout.Button("+", GUILayout.Width(32f));
+        using (new EditorGUI.DisabledScope(_selectedHitPhaseIndex == 0))
+            deleteClicked = GUILayout.Button("-", GUILayout.Width(32f));
+        using (new EditorGUI.DisabledScope(_selectedHitPhaseIndex <= 1))
+            moveUpClicked = GUILayout.Button("Up", GUILayout.Width(44f));
+        using (new EditorGUI.DisabledScope(
+                   _selectedHitPhaseIndex == 0 || _selectedHitPhaseIndex >= _hitSteps.arraySize))
+        {
+            moveDownClicked = GUILayout.Button("Down", GUILayout.Width(48f));
+        }
+        EditorGUILayout.EndHorizontal();
+
+        if (addClicked)
+        {
+            int newStepIndex = _hitSteps.arraySize;
+            _hitSteps.InsertArrayElementAtIndex(newStepIndex);
+            SerializedProperty newStep = _hitSteps.GetArrayElementAtIndex(newStepIndex);
+            newStep.FindPropertyRelative("delay").floatValue = 0f;
+            newStep.FindPropertyRelative("damagePct").intValue = 100;
+            newStep.FindPropertyRelative("overrideCells").arraySize = 0;
+            _selectedHitPhaseIndex = newStepIndex + 1;
+            ApplyHitStepListChangeAndExitGUI();
+        }
+
+        if (deleteClicked)
+        {
+            int stepIndex = _selectedHitPhaseIndex - 1;
+            _hitSteps.DeleteArrayElementAtIndex(stepIndex);
+            _selectedHitPhaseIndex = Mathf.Clamp(_selectedHitPhaseIndex, 0, _hitSteps.arraySize);
+            ApplyHitStepListChangeAndExitGUI();
+        }
+
+        if (moveUpClicked)
+        {
+            int stepIndex = _selectedHitPhaseIndex - 1;
+            _hitSteps.MoveArrayElement(stepIndex, stepIndex - 1);
+            _selectedHitPhaseIndex--;
+            ApplyHitStepListChangeAndExitGUI();
+        }
+
+        if (moveDownClicked)
+        {
+            int stepIndex = _selectedHitPhaseIndex - 1;
+            _hitSteps.MoveArrayElement(stepIndex, stepIndex + 1);
+            _selectedHitPhaseIndex++;
+            ApplyHitStepListChangeAndExitGUI();
+        }
+    }
+
+    private void ApplyHitStepListChangeAndExitGUI()
+    {
+        serializedObject.ApplyModifiedProperties();
+        GUIUtility.ExitGUI();
+    }
+
+    private void DrawCustomCellsEditor(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> hintCells = null)
+    {
+        if (cellsProperty == null)
+            return;
+
+        if (targets.Length > 1 || cellsProperty.hasMultipleDifferentValues)
+        {
+            EditorGUILayout.HelpBox("Select a single asset to edit cells.", MessageType.Info);
+            DrawProperty(cellsProperty);
+            return;
+        }
+
+        HashSet<Vector2Int> cells = ReadCustomCellSet(cellsProperty);
         ExpandCustomCellGridRadius(cells);
-        DrawCustomCellGridControls(cells.Count);
-        DrawCustomCellGrid(cells);
+        if (hintCells != null)
+            ExpandCustomCellGridRadius(hintCells);
+        DrawCustomCellGridControls(cellsProperty, cells.Count);
+        DrawCustomCellGrid(cellsProperty, cells, hintCells);
 
         _rawCustomCellsFoldout = EditorGUILayout.Foldout(_rawCustomCellsFoldout, "Raw Cell List", true);
         if (_rawCustomCellsFoldout)
         {
             EditorGUI.indentLevel++;
-            DrawProperty(_customCells);
+            DrawProperty(cellsProperty);
             EditorGUI.indentLevel--;
         }
     }
 
-    private HashSet<Vector2Int> ReadCustomCellSet()
+    private static HashSet<Vector2Int> ReadCustomCellSet(SerializedProperty cellsProperty)
     {
         HashSet<Vector2Int> cells = new HashSet<Vector2Int>();
-        for (int i = 0; i < _customCells.arraySize; i++)
-            cells.Add(_customCells.GetArrayElementAtIndex(i).vector2IntValue);
+        if (cellsProperty == null)
+            return cells;
 
+        for (int i = 0; i < cellsProperty.arraySize; i++)
+            cells.Add(cellsProperty.GetArrayElementAtIndex(i).vector2IntValue);
+
+        return cells;
+    }
+
+    private HashSet<Vector2Int> ReadBaseShapeCellSet()
+    {
+        if (IsAttackPattern(AttackPatternType.Custom))
+            return ReadCustomCellSet(_customCells);
+
+        HashSet<Vector2Int> cells = new HashSet<Vector2Int>();
+        if (_attackPattern == null || _attackPattern.hasMultipleDifferentValues)
+            return cells;
+
+        List<Vector2Int> resolvedCells = new List<Vector2Int>();
+        float coneHalfAngle = _coneHalfAngle != null && !_coneHalfAngle.hasMultipleDifferentValues
+            ? _coneHalfAngle.floatValue
+            : 45f;
+        AttackPattern.FillTargets(
+            (AttackPatternType)_attackPattern.enumValueIndex,
+            Vector2Int.zero,
+            Vector2Int.up,
+            Mathf.Max(0, GetIntValue(_patternRange)),
+            coneHalfAngle,
+            resolvedCells);
+        cells.UnionWith(resolvedCells);
         return cells;
     }
 
@@ -342,7 +508,7 @@ public sealed class SkillDataEditor : Editor
         _customCellGridRadius = Mathf.Clamp(requiredRadius, 1, 12);
     }
 
-    private void DrawCustomCellGridControls(int cellCount)
+    private void DrawCustomCellGridControls(SerializedProperty cellsProperty, int cellCount)
     {
         EditorGUILayout.BeginHorizontal();
         EditorGUILayout.LabelField("Radius: " + _customCellGridRadius, GUILayout.Width(72f));
@@ -363,14 +529,17 @@ public sealed class SkillDataEditor : Editor
         EditorGUILayout.LabelField("Cells: " + cellCount, GUILayout.Width(64f));
         if (GUILayout.Button("Clear", GUILayout.Width(52f)))
         {
-            _customCells.arraySize = 0;
+            cellsProperty.arraySize = 0;
             serializedObject.ApplyModifiedProperties();
         }
 
         EditorGUILayout.EndHorizontal();
     }
 
-    private void DrawCustomCellGrid(HashSet<Vector2Int> cells)
+    private void DrawCustomCellGrid(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> cells,
+        HashSet<Vector2Int> hintCells)
     {
         Color originalColor = GUI.backgroundColor;
         for (int y = _customCellGridRadius; y >= -_customCellGridRadius; y--)
@@ -382,12 +551,13 @@ public sealed class SkillDataEditor : Editor
             {
                 Vector2Int cell = new Vector2Int(x, y);
                 bool active = cells.Contains(cell);
+                bool hinted = !active && hintCells != null && hintCells.Contains(cell);
                 bool isCenter = x == 0 && y == 0;
 
-                GUI.backgroundColor = GetCustomCellButtonColor(active, isCenter, originalColor);
-                string label = isCenter ? "P" : active ? "X" : string.Empty;
+                GUI.backgroundColor = GetCustomCellButtonColor(active, hinted, isCenter, originalColor);
+                string label = isCenter ? "P" : active ? "X" : hinted ? "." : string.Empty;
                 if (GUILayout.Button(label, GUILayout.Width(18f), GUILayout.Height(18f)))
-                    ToggleCustomCell(cells, cell);
+                    ToggleCustomCell(cellsProperty, cells, cell);
             }
 
             GUI.backgroundColor = originalColor;
@@ -397,28 +567,39 @@ public sealed class SkillDataEditor : Editor
         GUI.backgroundColor = originalColor;
     }
 
-    private static Color GetCustomCellButtonColor(bool active, bool isCenter, Color fallback)
+    private static Color GetCustomCellButtonColor(
+        bool active,
+        bool hinted,
+        bool isCenter,
+        Color fallback)
     {
         if (active && isCenter)
             return new Color(0.25f, 0.9f, 1f);
         if (active)
             return new Color(0.35f, 0.9f, 0.35f);
+        if (hinted)
+            return Color.Lerp(fallback, new Color(0.35f, 0.9f, 0.35f), 0.3f);
         if (isCenter)
             return new Color(1f, 0.8f, 0.25f);
 
         return fallback;
     }
 
-    private void ToggleCustomCell(HashSet<Vector2Int> cells, Vector2Int cell)
+    private void ToggleCustomCell(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> cells,
+        Vector2Int cell)
     {
         if (!cells.Add(cell))
             cells.Remove(cell);
 
-        WriteCustomCellSet(cells);
+        WriteCustomCellSet(cellsProperty, cells);
         serializedObject.ApplyModifiedProperties();
     }
 
-    private void WriteCustomCellSet(HashSet<Vector2Int> cells)
+    private static void WriteCustomCellSet(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> cells)
     {
         List<Vector2Int> orderedCells = new List<Vector2Int>(cells);
         orderedCells.Sort((left, right) =>
@@ -427,9 +608,9 @@ public sealed class SkillDataEditor : Editor
             return yCompare != 0 ? yCompare : left.x.CompareTo(right.x);
         });
 
-        _customCells.arraySize = orderedCells.Count;
+        cellsProperty.arraySize = orderedCells.Count;
         for (int i = 0; i < orderedCells.Count; i++)
-            _customCells.GetArrayElementAtIndex(i).vector2IntValue = orderedCells[i];
+            cellsProperty.GetArrayElementAtIndex(i).vector2IntValue = orderedCells[i];
     }
 
     private void DrawProjectileSection()
