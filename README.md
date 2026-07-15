@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-14
-> 기준 커밋: master HEAD `06e60d4e` — **세이브 소실 예방 3종(§11b-10) + ComboDamage 단계제 전환·콤보 HUD 정식화(§11b-8) + 소품 리팩터**: 세이브(`91c06773`) → 콤보 S1(`9116ad3d`)·S2 HUD(`c2f484a9`) → SignedAngle 통합·ArenaDoor base 승격(`06e60d4e`). 이전: 아레나 스크린 HP바 축+Dashboard 저장 UX+Blink 픽스(`3464e12c`)
+> 작성 기준일: 2026-07-15
+> 기준 커밋: master HEAD `9b2fff5e` — **Sword 콤보 축 완성(§7-10): 멀티히트 연타 + cancelable 캔슬 + 재시전 체인 + 히트 플래시**: 멀티히트 S1(`77cf1458`)·S2 저작(`ddb96e9d`) → cancelable+히트 플래시(`6a201b2e`) → 재시전 체인(`9b2fff5e`). 이전: 세이브 소실 예방 3종+콤보 단계제·HUD(`06e60d4e`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -608,6 +608,7 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 | `OnPlayerHpChanged(cur, max)` | PlayerCombatController | PlayerStatusBarUI |
 | `OnPlayerDied(PlayerCombatController)` | PlayerCombatController | GameOverFlowController |
 | `OnSkillUsed(SkillData)` | PlayerCombatController | SkillSlotUI (쿨다운 표시) |
+| `OnSkillCanceled(canceled, canceling)` | PlayerCombatController | (없음 — 캔슬 패시브 각인 대비 seam, 2026-07-15. **자발적 캔슬만** 발행: cancelable 멀티히트를 스킬로 끊은 경우. 사망·스턴 등 강제 중단은 미발행) |
 
 > 플레이어 상태이상(슬로우/스턴) 알림은 채널이 아닌 `PlayerCombatController` 직접 이벤트로 발행됩니다.
 >
@@ -1153,6 +1154,46 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 ---
 
+### 7-10. 멀티히트·캔슬·재시전 체인 — Sword 콤보 축 (2026-07-15)
+
+**Sword 폼 정체성 = 콤보 + 캔슬**(유저 확정). 콤보 적립(§11b-8)이 히트 단위라 연타 = 콤보 가속, 캔슬 = 연타를 끊고 잇는 손맛. 메커니즘 4조각이 한 축:
+
+**① 멀티히트 후속타 — `SkillData.hitSteps` (S1 `77cf1458` + S2 저작 `ddb96e9d`)**
+
+| 조각 | 구현 |
+|------|------|
+| 데이터 | `hitSteps: List<HitStep>{delay, damagePct, overrideCells}` 인라인 배열(별도 SO 없음 — ailments 선례). **additive 의미론: 본체 1타 + 스텝 = 추가 후속타**(스텝 1개 = 총 2타). 빈 배열 = 기존 단타 무변경. `overrideCells` 비면 본체 형태 반복, 채우면 그 타만 다른 형태(타별 범위 상이 가능) |
+| 실행 | 본체 타는 기존 단타 코드 그대로 → 잔여 스텝은 `MultiHitSkillRunner`(순수 C#, Tick(dt), 히치 다단 while) 예약. **타마다 `BeginAttackActivation`** = 같은 적 재타격·크리 독립 롤·흡혈/콤보 타 단위 적립. 각도=시전 스냅샷, 원점=타 시점 위치. 비용·쿨=시전 1회 |
+| 계약 | 러너 활성 = `IsSkillBusy`·`BlocksPlayerMovement` 합류(시퀀스 중 이동·타 스킬 차단). 강제 중단(잔여 폐기·환불 없음) = 사망·스턴·대시·층전환·폼변경 — `canContinue` 콜백 주입 |
+| 저작 | SkillDataEditor **Hit Timeline**: Base/Step 선택·추가·삭제·Up/Down + 셀 페인터를 SerializedProperty 대상으로 일반화(본체/스텝 공용). 빈 override = 본체 형태 흐린 힌트, 클릭으로 override 시작. InstantArea 전용(Projectile은 기존 Burst가 커버) |
+| 미리보기 | 합집합 — 본체 ∪ 전 스텝 셀(비Custom 본체 = 기존 outline + 셀 오버레이). hold 중 셀 편집 실시간 감지(스냅샷 비교) |
+
+**② cancelable 피캔슬 + 캔슬 이벤트 (`6a201b2e`)**
+
+- `SkillData.cancelable`(기본 false) = **피캔슬 1플래그**: 멀티히트 후속타 진행 중 **다른 스킬의 "성공한 시전"**(자원·쿨 통과)으로 끊김 — 잔여 타 폐기, 비용·쿨 환불 없음, 기발동 타는 유효. 가캔슬(canCancel) 비채택 — 실수요 시 기본 true로 역호환 추가 가능.
+- 게이트: `IsSkillBusy` 정의 무변경, Update·TryUseSkill에서 "busy 사유가 멀티히트뿐 + cancelable"일 때만 통과. **recovery는 시퀀스 활성 중 캔슬을 막지 않음**(끊긴 스킬의 recovery 동승분). 평타는 캔슬 수단 아님.
+- `RaiseSkillCanceled(canceled, canceling)` 발행(§5) — **캔슬 시 발동 패시브 각인**(기획) 대비 seam. 소비자 아직 없음.
+
+**③ 재시전 체인 — `SkillData.recastStages` (B안, `9b2fff5e`)**
+
+| 조각 | 구현 |
+|------|------|
+| 데이터 | `recastStages: List<SkillData>`(**단계 = 완전한 SkillData 참조** — 인라인 아님) + `recastWindow`(기본 1.5s). 단계마다 Custom 형태·hitSteps·cancelable·애니 개별 저작. 단계는 plain SkillData면 충분(풀·드랍 안 탐 — 루트만 EngravingData) |
+| 상태 | PlayerCombatController **슬롯별 독립 4칸**(`RecastChainEntry{root, stageIndex, windowTimer}`) — Q·W 체인 동시 활성 가능. 시전 레벨 상태머신(러너 무관) |
+| 흐름 | 루트 시전 성공 → 체인 오픈(루트 쿨은 현행대로 이 시점 시작). 같은 슬롯 재입력 = 슬롯 쿨 우회 + 단계 실행(단계 자원 각자 소모·recovery·RaiseSkillUsed, **단계 쿨 없음**) → 인덱스++·윈도우 리셋. 단계 castDelay V1 미지원(에디터 경고) |
+| **종료 = 딱 둘** | **유예 만료 / 전 단계 소진**. 사망·스턴·층전환·폼변경·다른 슬롯 스킬은 체인 무접촉(행동 불능 동안 윈도우 자연 만료가 정리). 무결성 불일치(무기·각인 교체 등) = 폐기 아닌 **실행 거부**만 |
+| 캔슬 연계 | cancelable 연타 진행 중 같은 슬롯 재입력 → 캔슬 게이트가 시퀀스 끊고(`RaiseSkillCanceled`) 체인 분기가 다음 단계 실행 — "연타 끊고 다음 단 잇기"가 조합으로 성립 |
+| UI | SkillSlotUI 3단(§10-2): 평시 쿨다운 / 체인 중 **유예 게이지**(색=`recastWindowFillColor` 인스펙터)+다음 단계 아이콘 / 종료 시 원복+쿨 잔량 복귀. 미리보기도 체인 중 **다음 단계 형태** 표시(§10-3) |
+
+**④ 스킬 발동 히트 플래시 (`6a201b2e`)**
+
+- `SkillHitFlashRenderer`(순수 C#) — InstantArea 본체·후속타마다 **실제 판정 형태**를 월드 고정 붉은 반투명 패널로 0.2s 페이드(연타 리듬 시각화). Custom = matcher 산출 공유(판정-표시 불일치 원천 차단), 레거시 = 타겟 포인트 축정렬 쿼드.
+- 메시 풀 8개 재사용(파괴 0)·MaterialPropertyBlock 알파 페이드·미리보기 fill +10 대비 +11. 튜닝 = PCC 인스펙터(enable/color/duration). 평타·Projectile·Dash·Blink 제외. 캔슬 시 기표시 플래시는 페이드 완료(과거 타), 사망 후에도 페이드 지속.
+
+**저작 유의점**: ⓐ체인 단계·루트의 `recoveryDelay ≥ recastWindow`면 busy에 막혀 재입력 불가 = 체인 사망(튜닝 규칙: recovery < window) ⓑmaxTier식 함정 없음 — 스텝·단계 수 자유 ⓒ색 튜닝 위치: 미리보기=`SkillRangePreviewer.previewColor`, 플래시=PCC "Skill Hit Flash", 유예 게이지=SkillSlotUI(전부 Play 정지 상태에서). **보류**: Composite 혼합 시퀀스(dash→area→projectile 체인)는 태초 각인 실수요 시 별도 executionType — hitSteps/recastStages와 충돌 없음.
+
+---
+
 ## 8. 시스템 5 — 적 AI
 
 ### 8-1. FSM 구조
@@ -1596,6 +1637,8 @@ SkillUIManager:
   └── OnFloorChanged → WeaponData 교체 시 슬롯 갱신
 ```
 
+**재시전 체인 3단 표시 (2026-07-15, §7-10)**: `TryGetRecastState(slot, …)` 폴링 — 체인 활성이면 덮개가 **유예 게이지**(색=`recastWindowFillColor` SerializeField, Radial360 강제 후 원설정 복원)+아이콘=**다음 단계 스킬**, 종료 시 원래 아이콘·색·루트 쿨 잔량 복귀(쿨은 첫 시전부터 진행돼 차감된 상태). 단계 발동의 `RaiseSkillUsed(단계)`는 `usedSkill != _skill` 비교로 루트 쿨 추적 미오염. 전 항목 변경값 캐시.
+
 ### 10-3. 스킬 범위 미리보기 (SkillRangePreviewer)
 
 스킬 키 홀드 시 스킬 범위, 기본 공격 키 홀드 시 기본 공격 범위를 LineRenderer로 시각화합니다(슬롯별 홀드 감지는 바인딩과 무관한 `IsSkillHeld(slot)`/`IsBasicAttackHeld` 사용 — 두 프리셋 공용).
@@ -1625,6 +1668,8 @@ SkillUIManager:
 ```
 
 플레이어가 사망(`PlayerCombatController.IsDead`)한 경우 활성 미리보기를 즉시 숨기고 입력 처리도 중단합니다.
+
+**멀티히트·체인 대응 (2026-07-15, §7-10)**: ①InstantArea 미리보기 = **본체 ∪ 전 스텝 overrideCells 합집합**(비Custom 본체는 기존 outline + 셀 오버레이) — hold 중 셀 편집도 스냅샷 비교로 실시간 갱신 ②미리보기 대상 = `ResolvePreviewSkill(slot)`: 체인 활성이면 **다음 단계 스킬**, 아니면 루트 — 재입력으로 단계가 넘어가면 기존 "스킬 변경 감지" 경로가 재빌드, 체인 종료 시 루트 복귀.
 
 ### 10-4. 게임오버 UI 흐름
 
@@ -2766,6 +2811,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 데이터·실행 구조 | WeaponData/SkillData/EnemyData(SO) + `SkillExecutor` 라우팅(InstantArea/Projectile/Dash/Blink/Buff) + `SkillSlotRuntime`(슬롯 상태) + `SkillExecutionContext` + `SkillTargetResolver`(미리보기·실행 동일 계산) + `AttackExecutor`(판정 분리, 시야 차단, 멀티/단일 타겟). 상세 §7 |
 | 자원 시스템 | MP 폐지 — `SkillResourceType`(None/Bullet/ParryStack) + `ISkillResourceLedger` + 실소모만 Spend(실패 시 쿨다운·소모 없음) + castDelay/recoveryDelay 이동 잠금 |
 | 공격 패턴 | 기본 6종 + **Custom 저작 파이프라인**: customCells 그리드 페인팅(에디터) → `CustomCellFill` 셀 채움 미리보기 → 셀별 회전 `OverlapBox` 판정 + `Linecast` 벽차단. 상세 §7-5, §10-3 |
+| **Sword 콤보 축** | **멀티히트 후속타**(`hitSteps` additive, `MultiHitSkillRunner` 타 단위 판정·콤보 적립, 스텝별 형태 override+페인팅) + **cancelable 피캔슬**(성공 시전만 트리거, `RaiseSkillCanceled` seam) + **재시전 체인**(`recastStages`=SkillData 참조, 슬롯별 독립, 종료=만료·소진뿐, UI 유예 게이지+다음 단계 아이콘·미리보기) + **히트 플래시**(타별 실판정 형태 월드 고정 페이드). 상세 §7-10 (2026-07-15) |
 | 조준·미리보기 | `AimDirectionUtility` 8방향+360° 통합(스킬/투사체/대시/미리보기 공유) + `ToAuthoredFacingAngle`(+Y=전방 규약→회전각 단일 격리점, 3파일 중복 통합 2026-07-14) + `SkillRangePreviewer`(패턴별/대시 벽 클리핑/기본 공격 홀드) |
 | 투사체 | `ProjectileFireService`(적·플레이어 공유, Single/Burst/Spread/Circle) + 타겟 정책(DestroyOnHit/Pierce/HitOncePerTarget) + 벽 처리(Destroy/PassThrough/Bounce) + 풀링(`ProjectilePool`) + 회전 모드·비행 애니·맵 범위 가드·Fog 통합. 상세 §7-6 |
 | 대시 | `PlayerDashController` — path/contact 독립 판정, 무적 옵션, 외부 무적 카운터, `OnEnemyHit` 콜백(마커 폭발 훅), 무데미지+ailments=DoT 스윕. 상세 §7-7 |
@@ -2777,7 +2823,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 폼 시스템 | `PlayerFormData`/`PlayerFormId`/`PlayerFormDatabase` + `TrySwitchForm`(Soul 보유 게이팅 + `FormSwitchResult`) + loadout 단일 소스(`WeaponData.skills[4]`+`basicAttackSkillData` 폼별 평타) + `OnLoadoutChanged`→스킬 UI 자동 갱신 + 콘솔 `/form set` |
-| 폼별 메커니즘 | **Sword**(콤보) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(패리 가로채기→스택 자원, `ParryStackResource` 순수 C#) |
+| 폼별 메커니즘 | **Sword**(콤보+캔슬 — 연타·체인·피캔슬, §7-10, 정체성 확정 2026-07-15) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(패리 가로채기→스택 자원, `ParryStackResource` 순수 C#) |
 | 폼 애니메이션 | 4폼 전용 스프라이트시트→5클립+AnimatorController+에셋 결선, Parry 정면/측면 분기(`ApplyParryFacing`), 스킬 애니는 **SkillData 단일 진입점**(`PlaySkillAnimation`) |
 | 폼 자원 UI | `ParryStackBarUI` / `FreischutzMagazineUI` / `ComboCounterUI`(**정식화 2026-07-14** — x{총스택}+단계 orb 4개+유예 slider, 단계별 색) — BasicAttackMode 로 표시 분기 |
 
