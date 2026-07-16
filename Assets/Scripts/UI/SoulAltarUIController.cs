@@ -23,6 +23,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
     [SerializeField] private ItemDatabase itemDatabase;
     [SerializeField] private AltarSection[] sections;
     [SerializeField] private Button closeButton;
+    [SerializeField] private ShardPaymentModalUI paymentModal;
 
     private static readonly PlayerFormId[] s_FormScanOrder =
     {
@@ -36,6 +37,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
     private string[] _sectionHeaderTexts;
     private bool _subscribed;
     private bool _warnedMissingReferences;
+    private bool _consoleProtectedAltar;
 
     public bool IsOpen { get; private set; }
 
@@ -62,13 +64,29 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         if (DeveloperConsoleUI.IsOpen)
         {
-            Close();
+            if (paymentModal != null && paymentModal.IsOpen)
+            {
+                paymentModal.Close();
+                _consoleProtectedAltar = true;
+            }
+            else if (!_consoleProtectedAltar)
+            {
+                Close();
+            }
+
             return;
         }
 
+        _consoleProtectedAltar = false;
+
         Keyboard keyboard = Keyboard.current;
         if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-            Close();
+        {
+            if (paymentModal != null && paymentModal.IsOpen)
+                paymentModal.Close();
+            else
+                Close();
+        }
     }
 
     public void Open()
@@ -86,6 +104,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
     {
         Unsubscribe();
         IsOpen = false;
+        if (paymentModal != null)
+            paymentModal.Close();
 
         if (panel != null)
             panel.SetActive(false);
@@ -93,7 +113,29 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
     public void HandleEnhanceClicked(PlayerFormId form, SoulStatType stat)
     {
+        if (SoulStatTypeUtility.IsShared(stat))
+        {
+            OpenSharedPayment(stat);
+            return;
+        }
+
         TryEnhance(form, stat);
+    }
+
+    private void OpenSharedPayment(SoulStatType stat)
+    {
+        if (!HasRequiredReferences() || paymentModal == null)
+            return;
+
+        if (!enhancementTable.TryGetGrowth(PlayerFormId.Normal, stat, out SoulStatGrowth growth))
+            return;
+
+        int currentLevel = soulEnhancements.GetLevel(PlayerFormId.Normal, stat);
+        if (currentLevel >= Mathf.Max(0, growth.maxLevel))
+            return;
+
+        int cost = SoulEnhancementCost.GetMaterialCost(growth, currentLevel);
+        paymentModal.Open(stat, cost);
     }
 
     private void TryEnhance(PlayerFormId form, SoulStatType stat)
@@ -189,9 +231,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
             SoulStatGrowth growth = _growthBuffer[i];
             int currentLevel = soulEnhancements.GetLevel(section.form, growth.stat);
             int cost = SoulEnhancementCost.GetMaterialCost(growth, currentLevel);
-            row.Bind(section.form, growth, currentLevel, cost, shardItem, shardCount);
-            if (shared)
-                row.SetInteractable(false);
+            row.Bind(section.form, growth, currentLevel, cost, shardItem, shardCount, shared);
         }
     }
 
@@ -253,6 +293,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
                      playerInventory != null &&
                      soulEnhancements != null &&
                      enhancementTable != null &&
+                     paymentModal != null &&
                      sections != null &&
                      sections.Length == 5;
 
