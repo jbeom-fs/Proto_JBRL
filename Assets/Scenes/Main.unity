@@ -1733,6 +1733,7 @@ MonoBehaviour:
   iconImage: {fileID: 175907016}
   cooldownOverlay: {fileID: 2065925711}
   cooldownText: {fileID: 718781529}
+  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
 --- !u!1 &183917848
 GameObject:
   m_ObjectHideFlags: 0
@@ -15211,6 +15212,7 @@ MonoBehaviour:
   iconImage: {fileID: 896344613}
   cooldownOverlay: {fileID: 697083395}
   cooldownText: {fileID: 289830674}
+  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
 --- !u!114 &896344613
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78149,6 +78151,9 @@ MonoBehaviour:
   baseDefense: 1
   currentWeapon: {fileID: 11400000, guid: 8d4f0edb16dd4f88a98db580508d1a22, type: 2}
   basicAttackSkillData: {fileID: 11400000, guid: ee7ce463d16647b8aa6d4309d5c51015, type: 2}
+  enableSkillHitFlash: 1
+  skillHitFlashColor: {r: 0, g: 0.10700178, b: 1, a: 0.55}
+  skillHitFlashDuration: 0.2
   hitRadius: 0.3
   damageInvincibleDuration: 0.2
   critDamageMultiplier: 2
@@ -78491,7 +78496,7 @@ MonoBehaviour:
     level: 2
   - form: 1
     stat: 0
-    level: 5
+    level: 0
   - form: 1
     stat: 1
     level: 5
@@ -78673,6 +78678,7 @@ MonoBehaviour:
   iconImage: {fileID: 1612644041}
   cooldownOverlay: {fileID: 753859062}
   cooldownText: {fileID: 238215639}
+  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
 --- !u!114 &1612644041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79227,6 +79233,7 @@ MonoBehaviour:
   iconImage: {fileID: 1680599534}
   cooldownOverlay: {fileID: 1209699568}
   cooldownText: {fileID: 1878712602}
+  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
 --- !u!114 &1680599534
 MonoBehaviour:
   m_ObjectHideFlags: 0

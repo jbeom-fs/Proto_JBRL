@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: SwordRecast 1
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "\uC7AC\uC0AC\uC6A9\uC2A4\uD0AC"
+  skillName: "\uC7AC\uC0AC\uC6A9\uC2A4\uD0AC2"
   icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
   description: 
   executionType: 0

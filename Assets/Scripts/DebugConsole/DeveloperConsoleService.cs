@@ -13,6 +13,7 @@ public sealed class DeveloperConsoleService
     private const string GivePositiveCountUsage = "Usage: /give <category> <code> [positiveCount]";
     private const string EnhanceUsage = "Usage: /enhance <form> <stat> [count]";
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
+    private const string EnhanceCommonUsage = "Usage: /enhancecommon <stat> <form=count> [form=count ...]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
@@ -102,6 +103,7 @@ public sealed class DeveloperConsoleService
         _commands["form"] = ExecuteForm;
         _commands["give"] = ExecuteGive;
         _commands["enhance"] = ExecuteEnhance;
+        _commands["enhancecommon"] = ExecuteEnhanceCommon;
         _commands["engraving"] = ExecuteEngraving;
         _commands["combo"] = ExecuteCombo;
         _commands["ailment"] = ExecuteAilment;
@@ -219,6 +221,7 @@ public sealed class DeveloperConsoleService
             "\nUsage: /form set [id]" +
             "\n" + GiveUsage +
             "\n" + EnhanceUsage +
+            "\n" + EnhanceCommonUsage +
             "\n" + EngravingUsage +
             "\n" + ComboUsage +
             "\n" + AilmentUsage +
@@ -374,6 +377,39 @@ public sealed class DeveloperConsoleService
             return DeveloperConsoleCommandResult.Error(EnhancePositiveCountUsage);
 
         return _executor.ExecuteEnhance(form, stat, count);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteEnhanceCommon(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error(EnhanceCommonUsage);
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || !DeveloperConsoleSoulStatResolver.TryResolve(parts[0], out SoulStatType stat))
+            return DeveloperConsoleCommandResult.Error("Unknown soul stat. " + EnhanceCommonUsage);
+
+        var allocations = new List<SoulCommonEnhancement.ShardAllocation>(parts.Length - 1);
+        for (int i = 1; i < parts.Length; i++)
+        {
+            int equalsIndex = parts[i].IndexOf('=');
+            if (equalsIndex <= 0 || equalsIndex != parts[i].LastIndexOf('=') || equalsIndex == parts[i].Length - 1)
+                return DeveloperConsoleCommandResult.Error(EnhanceCommonUsage);
+
+            string formToken = parts[i].Substring(0, equalsIndex);
+            string amountToken = parts[i].Substring(equalsIndex + 1);
+            if (!Enum.TryParse(formToken, true, out PlayerFormId form) ||
+                !int.TryParse(amountToken, out int amount))
+            {
+                return DeveloperConsoleCommandResult.Error(EnhanceCommonUsage);
+            }
+
+            allocations.Add(new SoulCommonEnhancement.ShardAllocation(form, amount));
+        }
+
+        return _executor.ExecuteEnhanceCommon(stat, allocations);
     }
 
     private DeveloperConsoleCommandResult ExecuteEngraving(string arguments)

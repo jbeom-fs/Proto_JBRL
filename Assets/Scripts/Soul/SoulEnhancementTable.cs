@@ -12,6 +12,7 @@ public sealed class SoulEnhancementTable : ScriptableObject
 
     public bool TryGetPerLevel(PlayerFormId form, SoulStatType stat, out float perLevel)
     {
+        form = SoulStatTypeUtility.ResolveKeyForm(form, stat);
         EnsureCache();
         if (_growthsByKey.TryGetValue(MakeKey(form, stat), out SoulStatGrowth growth))
         {
@@ -25,6 +26,7 @@ public sealed class SoulEnhancementTable : ScriptableObject
 
     public bool TryGetMaxLevel(PlayerFormId form, SoulStatType stat, out int maxLevel)
     {
+        form = SoulStatTypeUtility.ResolveKeyForm(form, stat);
         EnsureCache();
         if (_growthsByKey.TryGetValue(MakeKey(form, stat), out SoulStatGrowth growth))
         {
@@ -38,6 +40,7 @@ public sealed class SoulEnhancementTable : ScriptableObject
 
     public bool TryGetGrowth(PlayerFormId form, SoulStatType stat, out SoulStatGrowth growth)
     {
+        form = SoulStatTypeUtility.ResolveKeyForm(form, stat);
         EnsureCache();
         return _growthsByKey.TryGetValue(MakeKey(form, stat), out growth);
     }

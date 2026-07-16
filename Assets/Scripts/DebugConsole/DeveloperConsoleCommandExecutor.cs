@@ -22,6 +22,8 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
     private readonly List<string> _itemCodeFilterBuffer = new List<string>(32);
+    private SoulEnhancementTable _soulEnhancementTable;
+    private ItemDatabase _itemDatabase;
 
     public bool HasTeleportDestinationDatabase => teleportDestinationDatabase != null;
 
@@ -206,6 +208,40 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         int level = enhancements.GetLevel(form, stat);
         return DeveloperConsoleCommandResult.Success(
             "Enhanced " + form + "/" + stat + " by " + count + " (now level " + level + ").");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteEnhanceCommon(
+        SoulStatType stat,
+        IReadOnlyList<SoulCommonEnhancement.ShardAllocation> allocations)
+    {
+        PlayerSoulEnhancements enhancements = ResolvePlayerSoulEnhancements();
+        PlayerInventory inventory = ResolvePlayerInventory();
+        SoulEnhancementTable table = ResolveSoulEnhancementTable();
+        ItemDatabase itemDatabase = ResolveItemDatabase();
+
+        if (enhancements == null)
+            return DeveloperConsoleCommandResult.Error("PlayerSoulEnhancements is not active.");
+        if (inventory == null)
+            return DeveloperConsoleCommandResult.Error("PlayerInventory is not active.");
+        if (table == null)
+            return DeveloperConsoleCommandResult.Error("SoulEnhancementTable is not loaded.");
+
+        int currentLevel = enhancements.GetLevel(PlayerFormId.Normal, stat);
+        int cost = table.TryGetGrowth(PlayerFormId.Normal, stat, out SoulStatGrowth growth)
+            ? SoulEnhancementCost.GetMaterialCost(growth, currentLevel)
+            : 0;
+        SoulCommonEnhancement.Result result = SoulCommonEnhancement.TryEnhance(
+            table, enhancements, inventory, itemDatabase, stat, allocations);
+
+        if (result == SoulCommonEnhancement.Result.Success)
+        {
+            int level = enhancements.GetLevel(PlayerFormId.Normal, stat);
+            return DeveloperConsoleCommandResult.Success(
+                "Enhanced common/" + stat + " (now level " + level + ", cost=" + cost + ").");
+        }
+
+        return DeveloperConsoleCommandResult.Error(
+            "Common enhancement failed: " + result + " (cost=" + cost + ").");
     }
 
     public DeveloperConsoleCommandResult ExecuteEngravingGive(string formToken, string itemCode)
@@ -496,6 +532,30 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         playerCombatController = UnityEngine.Object.FindAnyObjectByType<PlayerCombatController>();
         return playerCombatController;
+    }
+
+    private SoulEnhancementTable ResolveSoulEnhancementTable()
+    {
+        if (_soulEnhancementTable != null)
+            return _soulEnhancementTable;
+
+        SoulEnhancementTable[] tables = Resources.FindObjectsOfTypeAll<SoulEnhancementTable>();
+        if (tables.Length > 0)
+            _soulEnhancementTable = tables[0];
+
+        return _soulEnhancementTable;
+    }
+
+    private ItemDatabase ResolveItemDatabase()
+    {
+        if (_itemDatabase != null)
+            return _itemDatabase;
+
+        ItemDatabase[] databases = Resources.FindObjectsOfTypeAll<ItemDatabase>();
+        if (databases.Length > 0)
+            _itemDatabase = databases[0];
+
+        return _itemDatabase;
     }
 
     private EngravingLoadout ResolveEngravingLoadout()

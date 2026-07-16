@@ -187,6 +187,7 @@
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
     <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
+    <Compile Include="Assets\Scripts\Soul\SoulCommonEnhancement.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\UI\ItemTooltipUI.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillTargetResolver.cs" />
@@ -219,6 +220,7 @@
     <Compile Include="Assets\Scripts\UI\MinimapController.cs" />
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\LocationTransitionManager.cs" />
+    <Compile Include="Assets\Scripts\Soul\SoulShardResolver.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
     <Compile Include="Assets\Scripts\Data\BossEncounterTable.cs" />

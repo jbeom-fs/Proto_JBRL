@@ -13,6 +13,20 @@ MonoBehaviour:
   m_Name: SoulEnhancementTable
   m_EditorClassIdentifier: Assembly-CSharp::SoulEnhancementTable
   forms:
+  - form: 0
+    growths:
+    - stat: 0
+      perLevel: 10
+      maxLevel: 10
+      baseMaterialCost: 2
+    - stat: 1
+      perLevel: 10
+      maxLevel: 3
+      baseMaterialCost: 4
+    - stat: 2
+      perLevel: 0.05
+      maxLevel: 10
+      baseMaterialCost: 3
   - form: 3
     growths:
     - stat: 4
@@ -35,18 +49,6 @@ MonoBehaviour:
       baseMaterialCost: 2
   - form: 1
     growths:
-    - stat: 0
-      perLevel: 10
-      maxLevel: 10
-      baseMaterialCost: 2
-    - stat: 1
-      perLevel: 10
-      maxLevel: 3
-      baseMaterialCost: 4
-    - stat: 2
-      perLevel: 0.05
-      maxLevel: 10
-      baseMaterialCost: 3
     - stat: 3
       perLevel: 0.05
       maxLevel: 10
@@ -57,6 +59,10 @@ MonoBehaviour:
       baseMaterialCost: 3
   - form: 2
     growths:
+    - stat: 3
+      perLevel: 0.05
+      maxLevel: 10
+      baseMaterialCost: 3
     - stat: 9
       perLevel: 10
       maxLevel: 10

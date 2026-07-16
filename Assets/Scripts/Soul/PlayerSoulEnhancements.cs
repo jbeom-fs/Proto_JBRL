@@ -14,6 +14,7 @@ public sealed class PlayerSoulEnhancements : MonoBehaviour
 
     public int GetLevel(PlayerFormId form, SoulStatType stat)
     {
+        form = SoulStatTypeUtility.ResolveKeyForm(form, stat);
         EnsureCache();
         return _levelsByKey.TryGetValue(MakeKey(form, stat), out SoulEnhancementLevel entry)
             ? Mathf.Max(0, entry.level)
@@ -46,6 +47,7 @@ public sealed class PlayerSoulEnhancements : MonoBehaviour
 
     public void AddLevel(PlayerFormId form, SoulStatType stat, int delta)
     {
+        form = SoulStatTypeUtility.ResolveKeyForm(form, stat);
         if (delta == 0)
             return;
 
@@ -54,6 +56,7 @@ public sealed class PlayerSoulEnhancements : MonoBehaviour
 
     public void SetLevel(PlayerFormId form, SoulStatType stat, int level)
     {
+        form = SoulStatTypeUtility.ResolveKeyForm(form, stat);
         EnsureCache();
 
         int clampedLevel = Mathf.Max(0, level);

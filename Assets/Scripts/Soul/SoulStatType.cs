@@ -30,3 +30,18 @@ public enum SoulStatType
     /// <summary>Dagger, percent ailment damage bonus.</summary>
     AilmentDamage = 9
 }
+
+public static class SoulStatTypeUtility
+{
+    public static bool IsShared(SoulStatType stat)
+    {
+        return stat == SoulStatType.AttackSpeed ||
+               stat == SoulStatType.CooldownReduction ||
+               stat == SoulStatType.Crit;
+    }
+
+    public static PlayerFormId ResolveKeyForm(PlayerFormId form, SoulStatType stat)
+    {
+        return IsShared(stat) ? PlayerFormId.Normal : form;
+    }
+}
