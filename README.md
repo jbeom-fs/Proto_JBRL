@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-15
-> 기준 커밋: master HEAD `9b2fff5e` — **Sword 콤보 축 완성(§7-10): 멀티히트 연타 + cancelable 캔슬 + 재시전 체인 + 히트 플래시**: 멀티히트 S1(`77cf1458`)·S2 저작(`ddb96e9d`) → cancelable+히트 플래시(`6a201b2e`) → 재시전 체인(`9b2fff5e`). 이전: 세이브 소실 예방 3종+콤보 단계제·HUD(`06e60d4e`)
+> 작성 기준일: 2026-07-16
+> 기준 커밋: master HEAD `41e117ce` — **Soul Altar 개편 S1~S4(§11b-8·§11b-9) + 폼 해금 S1·S2(§11a-4)**: 공통 스탯 공유 투자+혼합 조각 지불(`1202ada2`) → Altar 단일 스크롤 UI(`e1f834fd`) → 조각 배분 창(`ca3a8e7a`) → 시작 Sword Soul+Normal 복귀(`dbf0ea90`) → 던전 입장 폼 선택 화면(`59a86a90`) → UiMessages 통합(`9a13c0aa`/`41e117ce`). 이전: Sword 콤보 축 완성(`9b2fff5e`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1943,6 +1943,18 @@ SetTilemapSource(locationId):
 - **플레이어 마커 색상**: `playerMarkerGraphic` (선택) 에 `playerColor` 를 1회 주입
 - **마커 크기 스냅**: `SnapPlayerMarkerSize` 가 Canvas scaleFactor 에 맞춰 sizeDelta 를 정수 픽셀로 라운드 → 안티앨리어싱 흐림 방지
 
+### 11a-4. 던전 입장 폼 선택 화면 (FormSelectScreen, 2026-07-16)
+
+**폼 진행 구조 확정(A안)**: 폼 = **런 단위 선택**(런 중 전환은 게임 메커니즘 아님 — `TrySwitchForm` 호출처는 콘솔뿐). 해금 = "Soul 아이템 보유"(`OwnsSoulForm`, 기존 축 재사용 — 별도 해금 시스템 없음). 시작 폼 = Sword(세이브 로드 완료 후 Sword Soul 미보유 시 1개 멱등 지급, `GamePersistenceCoordinator.GrantStartingSwordSoulIfNeeded`). **Normal 비전투화**: 마을=슬라임 원형 — 던전 이탈 시 `CleanupDungeonRuntime`에서 `PlayerFormController.SetCurrentForm(Normal)`(무가드 오버로드 — 대시 포탈 진입 엣지도 강제 복귀), 사망 씬 리로드도 defaultForm=Normal.
+
+| 구성 | 역할 |
+|------|------|
+| `DungeonEntryStation` | 마을 던전 입구 상호작용물(TownSoulAltar 미러 — 트리거+Z키). 기존 즉발 `TeleportService` 대체(비활성 보존). `sceneUI.Open(player)` |
+| `FormSelectScreenUI` | **풀스크린** — 배경=선택 폼 일러스트 풀필+폼 이름·설명, 하단 카드 4, 입장/나가기. 기본 선택=마지막 입장 폼(앱 세션 static)→Sword 폴백. 입장=`TrySwitchForm`(Switched/AlreadyActive만)→`TeleportPlayer(dungeonDestinationId)`→`StartNewDungeonRun`. Esc/콘솔=닫힘 |
+| `FormSelectCardUI` + `FormSelectCard.prefab` | **카드=데이터 캐리어** — 인스턴스별 스프라이트 3종(카드 원본/실루엣/배경 일러스트) 저작. 보유=원본·클릭=선택, **미보유=실루엣·클릭 무반응**(버튼은 살아있음). 빈 스프라이트=Image off(흰 네모 방지). 폼명·설명은 `UiMessages` 상수(switch 헬퍼) |
+
+던전 진입이 항상 이 화면을 경유하므로 "던전=폼 착용, 마을=Normal" 이 구조적으로 보장됩니다. 후속(S3, 미착수): 보스 Soul 흡수 해금 연출 / Soul 드랍 랜덤 폼 재정의(미보유 가중/천장 보정) / 마지막 입장 폼 영속.
+
 ---
 
 ## 11b. 시스템 10 — 아이템 / 드랍 / Elite Key / Soul
@@ -2076,6 +2088,8 @@ Elite Key 가 "스폰 로직이 홀더를 지정하는" 맥락 드랍이라면, 
 
 `PlayerFormId.Normal` 은 항상 보유로 처리합니다. `PlayerFormController.inventory` 가 미결선된 경우에는 기존 전환 테스트 흐름을 깨지 않기 위해 소유 게이팅을 통과시키는 안전 폴백을 둡니다. 콘솔 `/form set <id>` 도 동일한 `TrySwitchForm` 을 사용하므로 Soul 미보유 폼은 `Form locked: soul not owned for <id>` 로 거부됩니다.
 
+**이 축이 곧 폼 해금 시스템입니다(2026-07-16 확정)** — Soul 은 영구 영속(§11b-10)이라 "첫 Soul 획득=폼 영구 해금"이 별도 코드 없이 성립. 시작 Sword Soul 자동 지급·런 단위 폼 선택·Normal 비전투화는 §11a-4 참조.
+
 ### 11b-5. 플레이어 인벤토리 (PlayerInventory)
 
 `PlayerInventory` MonoBehaviour 가 모든 보유 아이템을 `InventoryItemStack`(ItemData + count) 리스트로 관리합니다 — 과거의 `PlayerEliteKeyInventory`(bool + EliteKeyChanged 이벤트) 는 제거되었고, Elite Key 도 `itemCode = "elite_key"` 인 일반 ItemData 한 항목으로 통합되었습니다.
@@ -2143,9 +2157,14 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | 구성 | 역할 |
 |------|------|
 | `SoulStatType` (enum, 10종) | AttackSpeed / CooldownReduction / Crit / Lifesteal / MagazineSize / ReloadSpeed / ParryStackMax / ParryGrace / ComboDamage / AilmentDamage |
-| `PlayerSoulEnhancements` (MonoBehaviour) | `(PlayerFormId, SoulStatType)` 별 레벨 side-store. GetLevel/AddLevel/SetLevel/OnChanged. **스탯별 개별 투자**(폼 단일 레벨 아님), 직렬화 대비 List + Dictionary 캐시 |
-| `SoulEnhancementTable` (SO) | 폼별 `SoulStatGrowth{stat, perLevel, maxLevel}` 정의 (레벨당 증가치·최대 레벨) |
-| `SoulStatBonus` | 활성 폼 기준 보너스 집계 = Σ(레벨 × perLevel). float[] 인덱스, alloc 없음 |
+| `SoulStatTypeUtility` (static, 2026-07-16) | **공유 스탯 판별 단일 진실** — `IsShared`(공속/쿨감/크리 3종) + `ResolveKeyForm`(공유 스탯이면 키를 `PlayerFormId.Normal`로 정규화) |
+| `PlayerSoulEnhancements` (MonoBehaviour) | `(PlayerFormId, SoulStatType)` 별 레벨 side-store. GetLevel/AddLevel/SetLevel/OnChanged. **스탯별 개별 투자**(폼 단일 레벨 아님), 직렬화 대비 List + Dictionary 캐시. **공유 스탯은 진입점 리맵으로 Normal 키에 수렴**(호출자는 어떤 폼을 넘겨도 됨 — 구세이브의 (Sword,공속) 레벨도 로드 `SetLevel` 경유로 자연 이관) |
+| `SoulEnhancementTable` (SO) | 폼별 `SoulStatGrowth{stat, perLevel, maxLevel}` 정의 (레벨당 증가치·최대 레벨). **공통 블록=form 0(Normal)**: 공속/쿨감/크리 3종. 조회(`TryGetPerLevel`/`TryGetGrowth`/`TryGetMaxLevel`)도 동일 리맵. `GetGrowths`는 리맵 안 함(그 폼 블록의 목록이라는 의미 유지 — Altar 섹션 렌더 소비자) |
+| `SoulStatBonus` | 활성 폼 기준 보너스 집계 = Σ(레벨 × perLevel). float[] 인덱스, alloc 없음. 공유 스탯은 리맵 덕에 활성 폼 무관 동일 값 |
+| `SoulCommonEnhancement` (static, 2026-07-16) | **공통 스탯 혼합 지불 강화** — `TryEnhance(table, enhancements, inventory, db, stat, allocations)`: 검증 전부 선행(공유 스탯/growth/만렙/배분 합계==비용/폼별 조각 해석·보유) 후 차감+`AddLevel(Normal)`. Result enum 7종으로 실패 사유 반환(UI 재사용) |
+| `SoulShardResolver` (static) | 폼→Soul 아이템→`SalvageItemCode`→조각 ItemData 해석 공용 유틸(DB 우선, 인벤 폴백) — Altar UI·배분 창·혼합 지불이 공유 |
+
+**공유 투자 모델(2026-07-16 전환)**: 공통 스탯(공속·쿨감·크리)은 폼별 독립 투자를 폐기하고 **1회 투자=전 폼 적용**. 키=Normal 슬롯 재활용이라 세이브 포맷 무변경. **재료 규칙 분화**: 공통 스탯=아무 폼 조각이나 혼합 지불(배분 창, §11b-9) / 폼 고유 스탯=해당 폼 조각만. 흡혈은 Sword·Dagger 폼별 독립 유지.
 
 `PlayerCombatController` 가 폼 전환(`EquipWeapon`)·강화 변경(`OnChanged`) 시 `RecalculateSoulBonus()` 로 **활성 폼 보너스만** 재계산합니다(폼 전환 시 출렁임 의도, Normal 폴백). 적용 훅:
 
@@ -2164,9 +2183,10 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 
 **Soul 강화 스탯 10종 전부 적용 훅 실작동(2026-07-06 AilmentDamage 로 완성).** `Crit`/`Lifesteal`/`ComboDamage`/`AilmentDamage` 의 폼 게이팅은 `_soulBonus.Get`(활성 폼 스코프)이 0이면 무효과로 자동 처리되어 코드에 `PlayerFormId` 분기가 없습니다(비-Sword 폼은 ComboDamage 테이블 엔트리 없어 배율 1.0, 비-Dagger 폼은 AilmentDamage 배율 1.0). 검증 가시성을 위해 `LogDamageDealt` 데미지 로그에 `[combo xN]` 접미사를 표기합니다.
 
-레벨 부여 입력은 둘:
-- **Town Soul Altar** (§11b-9): 마을 거점에서 폼별 조각(`Mat_*`) 소비 → `PlayerSoulEnhancements.AddLevel`. 닫힌 경제 루프(보스→소울/분해→조각→Altar 강화).
-- 콘솔 `/enhance <form> <stat> [count]`: 2층 자동완성 form→stat, `DeveloperConsoleSoulStatResolver` 로 stat 토큰 격리, count 기본 1 가산.
+레벨 부여 입력은 셋:
+- **Town Soul Altar** (§11b-9): 마을 거점에서 폼별 조각(`Mat_*`) 소비 → `PlayerSoulEnhancements.AddLevel`. 닫힌 경제 루프(보스→소울/분해→조각→Altar 강화). 공통 스탯은 조각 배분 창 경유.
+- 콘솔 `/enhance <form> <stat> [count]`: 2층 자동완성 form→stat, `DeveloperConsoleSoulStatResolver` 로 stat 토큰 격리, count 기본 1 가산. 조각 무료 치트 경로(공유 스탯도 리맵으로 동작).
+- 콘솔 `/enhancecommon <stat> <form=count> [form=count ...]`: 혼합 지불 실경로 검증용 — `SoulCommonEnhancement.TryEnhance` 그대로 호출, 실패 시 Result+cost 표기.
 
 ### 11b-9. Town Soul Altar (조각 소비 강화 입력)
 
@@ -2175,12 +2195,17 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 | 구성 | 역할 |
 |------|------|
 | `TownSoulAltar` (MonoBehaviour) | Collider2D 트리거 근접 + `PlayerInputReader.InteractConfirmPressedThisFrame`(현재 Z) 로 AltarUI 오픈. 입력리더는 트리거 충돌에서 취득(신규 Find 없음). 마을에만 물리 배치 |
-| `SoulAltarUIController` | 보유 소울 폼(`PlayerInventory.OwnsSoulForm` && 테이블 성장 존재) 선택 + 스탯행 표시. `OnInventoryChanged`/`OnChanged` 구독으로 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘. 강화 성공 후 명시 `RefreshAll()` 없이 `RemoveItem`/`AddLevel` 이벤트 경로로 갱신 |
+| `SoulAltarUIController` | **단일 ScrollRect + 섹션 5개 구조(2026-07-16 개편 — 폼 탭 폐기)**: ㅡ공통ㅡ(항상 노출) → 폼 4섹션 순. 미보유 폼=헤더 "ㅡㅡ ???? ㅡㅡ" 마스킹+행 비표시(티저), 헤더 원문은 씬 저작값을 Awake 1회 캐시 후 복원. 섹션=`AltarSection{form, headerRoot, headerText, rows[]}` SerializeField 결선(행=SoulAltarStatRow 프리팹 사전배치, 런타임 Instantiate 0). `OnInventoryChanged`/`OnChanged` 구독 라이브 갱신, Esc·닫기·콘솔열림 시 닫힘(배분 창 열림 시 Esc/콘솔은 배분 창만 닫고 Altar 보호). 공통 스탯 행 강화 버튼 → 조각 배분 창 오픈 |
+| `ShardPaymentModalUI` + `ShardAllocationRowUI` (2026-07-16) | **공통 스탯 조각 배분 창**(Altar 서브 모달) — 행=`폼 아이콘·이름 \| 보유 n \| [−][입력][+] \| Max`(프리팹 4 사전배치, 해금 폼만 표시·조각 0개도 표시). 모든 변경 경로가 클램프 한 함수로 수렴: 값=Clamp(요청, 0, min(보유, cost−타행합)), **Max=min(보유, 잔여 필요량)**. 상단 "배분 x / 필요 N" 요약, 합==비용일 때만 확정 → `SoulCommonEnhancement.TryEnhance`. 자동 채움 없음(유저 확정), 초기화/취소 |
+| `SoulStatLabelTable` (SO) | 스탯 한글명·설명 단일 소스(`GetStatName`/`GetDescription`, 공백=enum 폴백으로 미작성 감지). 폼명은 `UiMessages`로 이관(2026-07-16, formNames 죽은 코드 삭제) |
+| `UiMessages` (static, 2026-07-16) | **유저 노출 코드 소유 문구 단일 파일** — 포맷("배분 {0} / 필요 {1}" 등)·마스킹("????")·다이얼로그·툴팁 라벨·폼명/폼설명(+switch 헬퍼). 씬/프리팹 저작 문구·데이터·콘솔·로그는 제외. 다국어 전환 시 교체 지점 단일화 |
 | `EngravingLoadoutUIController` | 영혼각인 교체 UI(§7-8 Slice E1, **모달+스테이징**). Open 시 폼 캡처 + `GamePauseController.Pause(EngravingLoadout)` → timeScale 0/입력차단, loadout 상태를 로컬 사본으로 복사. 슬롯선택→풀클릭 equip/Unequip 은 사본에서만, 확인 시 `ApplyArrangement` 일괄 커밋(dirty 시 이중확인 다이얼로그, 커밋 성공 시 각인대 소멸 통지). Esc·취소=폐기, 콘솔열림=무조건 폐기. 던전 Stair방에서는 `EngravingStation`/`EngravingStationPlacer` 가 Open 진입점을 제공 |
 | `SoulAltarStatRowUI` | 스탯별 행 — summary 한 줄(레벨/최대/비용/보유 조각) + 강화 버튼(만렙·조각부족 시 비활성). 미사용 개별 TMP 필드는 제거 |
 | `SoulEnhancementCost` (static) | `GetMaterialCost(growth, currentLevel) = baseMaterialCost × (currentLevel + 1)` — **비용 공식 단일 격리점**(향후 곡선 교체는 이 함수만 수정). 수치는 `SoulStatGrowth.baseMaterialCost` 데이터 |
 
-강화: `TryGetGrowth` → 만렙·비용·`HasItem` 확인 → `RemoveItem(조각, 비용)` + `AddLevel`. 폼→조각은 그 폼 Soul 의 `SalvageItemCode` 역참조(`ItemDatabase.TryGetSoulByForm`, 데이터 추가 0). `AddLevel`/`RemoveItem` 이 기존 전투 재계산·세이브 훅과 UI 갱신 이벤트를 자동 발화하므로 성공 피드백 뒤 별도 전체 Refresh는 하지 않습니다.
+강화(폼 고유): `TryGetGrowth` → 만렙·비용·`HasItem` 확인 → `RemoveItem(조각, 비용)` + `AddLevel`. 폼→조각은 `SoulShardResolver`(그 폼 Soul 의 `SalvageItemCode` 역참조, 데이터 추가 0). 강화(공통): 배분 창에서 혼합 지불 → `SoulCommonEnhancement.TryEnhance`(검증 선행 원자성). `AddLevel`/`RemoveItem` 이 기존 전투 재계산·세이브 훅과 UI 갱신 이벤트를 자동 발화하므로 별도 전체 Refresh는 하지 않습니다. 텍스트 피드백 라벨은 개편 때 제거 — 버튼 게이팅(만렙·조각부족=비활성)+행 숫자 갱신이 피드백을 대체합니다.
+
+> **UI 저작 규약(2026-07-16 확립, 전 UI 공통)**: ①정적 문구(버튼 라벨·타이틀·헤더)는 씬/프리팹에 한글 저작 — 코드 주입 금지, 코드 텍스트=동적 값만 ②GameObject 이름/자식 순서 기반 탐색 금지 — SerializeField 결선·프리팹 참조·타입 검색만 ③반복 요소는 프리팹화(SoulAltarStatRow/ShardAllocationRow/FormSelectCard). 씬 구성은 일회성 EditorWindow 빌더(드래그 결선, 실행 후 삭제).
 
 ### 11b-10. 영구 성장 JSON 세이브 (GamePersistenceCoordinator)
 
@@ -2255,7 +2280,8 @@ Play 4시나리오(손상 파일/version 999/가짜 itemCode 왕복/tmp 잔재) 
 | `/floor set [floor]` | 지정 층으로 이동 | |
 | `/form set [id]` | 플레이어 폼 즉시 전환 | `set` → `PlayerFormId` 목록 |
 | `/give <category> <code> [count]` | PlayerInventory 에 ItemDatabase 아이템 지급. category 는 `ItemType` 토큰(`soul`/`relic`/`consumable`/`currency`/`material`/`key`/`equipment`) | category → 해당 ItemType itemCode 목록 |
-| `/enhance <form> <stat> [count]` | Soul 강화 레벨 부여 (§11b-8) | form → `PlayerFormId` / stat → `SoulStatType` 토큰 (2층) |
+| `/enhance <form> <stat> [count]` | Soul 강화 레벨 부여 (§11b-8, 조각 무료 치트 — 공유 스탯은 폼 인자 무관 Normal 키 수렴) | form → `PlayerFormId` / stat → `SoulStatType` 토큰 (2층) |
+| `/enhancecommon <stat> <form=count> ...` | 공통 스탯 혼합 조각 지불 강화 — `SoulCommonEnhancement.TryEnhance` 실경로 (§11b-8·9 검증용), 실패 시 Result+cost 표기 | 없음 |
 | `/engraving give/equip/unequip/show` | 영혼각인 풀 적재·슬롯 교체·조회 (§7-8, 인자 0-based) | 서브커맨드 토큰 |
 | `/ailment <poison\|bleed> [tickDamage=2] [duration=5]` | 최근접 생존 적에게 DoT 부여 (§7-9 검증용) | `poison` `bleed` |
 | `/stun [duration=2]` | 최근접 생존 적에게 스턴 부여 (§8-7 검증용) | 없음 |
@@ -2853,8 +2879,9 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 아이템 기반 | `ItemDatabase`/`ItemData`(itemCode·효과·salvage·정리 플래그) + `PlayerInventory`(스택 정책·`OwnsSoulForm`·층/던전 이탈 자동 정리) + 인벤토리 UI(5탭·슬롯 클릭 사용·드래그 패널). 상세 §11b |
 | 드랍 파이프라인 | `EnemyDropDatabase`(독립+가중치 pick-one, 결정적 롤) + `EnemyInventory`→`DropItemSpawner`→`DroppedItem`(타입 무분기 픽업) + Elite Key 결정론 드랍·Elite Door 개방 + 소울 분해(`SoulDropResolver`) |
 | 아이템 효과 | `ItemEffect`(useEffects/passiveEffects) — Consumable 사용(HealHp) + Relic 평면 패시브(`PlayerItemStats` 스택 비례 합산) |
-| Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage(단계제, `ComboTierConfig` SO)/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. 상세 §11b-8 |
-| 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속) + **소실 예방 3종**(.bak 백업·unknown itemCode 보존·원자적 쓰기, 2026-07-14). 상세 §11b-9~10 |
+| Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage(단계제, `ComboTierConfig` SO)/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. **공통 스탯(공속/쿨감/크리) 공유 투자 전환**(Normal 키 리맵, 2026-07-16). 상세 §11b-8 |
+| 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + **Altar UI 개편(2026-07-16)** — 단일 스크롤+섹션 헤더+"????" 마스킹+한글화+행 프리팹, 공통 스탯=조각 배분 창(혼합 지불, Max=잔여 클램프) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속) + **소실 예방 3종**(.bak 백업·unknown itemCode 보존·원자적 쓰기, 2026-07-14). 상세 §11b-9~10 |
+| 폼 진행·선택 (2026-07-16) | **A안 확정** — 폼=런 단위 선택, 해금=Soul 보유(기존 축), 시작 Sword Soul 자동 지급 + 던전 이탈 Normal 복귀(마을=슬라임) + **던전 입장 폼 선택 화면**(풀스크린, 카드 프리팹=데이터 캐리어, 실루엣 잠금 표시). 남은 S3: 흡수 해금 연출·Soul 드랍 랜덤 폼 보정·last-form 영속. 상세 §11a-4 |
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
 | 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
 
@@ -2875,11 +2902,11 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 | 묶음 | 핵심 구성 |
 |------|-----------|
-| 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 14개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /engraving /ailment /stun /combo). 상세 §11c |
+| 개발자 콘솔 | UI(토글·Tab 자동완성)/Service(파싱·제안)/Executor(상태 변경) 3분리 + 15개 명령(/help /clear /echo /tp /dooropen /kill /floor /form /give /enhance /enhancecommon /engraving /ailment /stun /combo). 상세 §11c |
 | CustomEditor·검증 툴 | `SkillDataEditor`(조건부 섹션+Engraving+그리드 페인팅) / `EnemyDataEditor`(행동타입별 섹션 분기+층 범위 경고) / `EngravingValidatorWindow`(정합성 스캔+고아 Fix) / **`EnemyDashboardWindow`**(적 통합 조망·인라인 편집·신규 생성·삭제 — 결선 4곳 원자 처리+경고 6종) / **`ItemDashboardWindow`**(아이템 통합 조망·foldout 편집·itemCode rename 참조 추적·드랍 양방향 편집·생성/삭제 — 역참조 분석+코드상수 차단(`elite_key`=itemCode 겸용 확인), 전부 Undo 가능, 2026-07-10). 양 대시보드 공통: **Undo/Redo 자동 Rescan + 행/경고 패널 드래그 스플리터**(EditorPrefs 영속) + **스코프 Save Assets**(스캔 범위만 `SaveAssetIfDirty`, 전역 SaveAssets 금지 유지 — Enemy는 씬 dirty 경고+`Save Scene` 확인 다이얼로그) + **숫자 필드 즉시 커밋**(Delayed 편집 버퍼 유실 해소 — 텍스트 itemCode류만 Delayed 유지, Save 진입 시 포커스 플러시→delayCall, 2026-07-13) |
 | 이벤트·공통 인프라 | `DungeonEventChannel`/`CombatEventChannel` 이벤트 버스 + `CombatLayers` 정적 캐시(WallMask 폴백 포함) + 던전 서비스 분리(Query/Spawn/FloorTransition) |
 | 성능 | NonAlloc 물리·A* 버퍼 재사용·오브젝트 풀·청크 로딩·미시 최적화(분리 벡터 throttle, LateUpdate 좌표 skip, 슬로우 재계산 만료 시점만, 픽셀 스프라이트 공유) + `PerfStage`/`RuntimePerfTraceLogger` 계측. 상세 §12 |
-| 리팩터·정리 | behavior-preserving 추출(`PlayerStatusEffects`/`ParryStackResource` 순수 C#) + 미사용 코드 삭제(Projectile/DoorController/DungeonPortal/NormalEnemyAI 등) + ExtendPack 데모 정리 + GameOver 자동 빌드 제거 + `PlayerEliteKeyInventory` 통합 제거 |
+| 리팩터·정리 | behavior-preserving 추출(`PlayerStatusEffects`/`ParryStackResource` 순수 C#) + 미사용 코드 삭제(Projectile/DoorController/DungeonPortal/NormalEnemyAI 등) + ExtendPack 데모 정리 + GameOver 자동 빌드 제거 + `PlayerEliteKeyInventory` 통합 제거 + **`UiMessages` 유저 노출 문구 단일 파일 통합**(바이트 동일 이동, 다국어 교체 지점 단일화, 2026-07-16) |
 
 ### 미구현 (다음 단계)
 
@@ -2887,7 +2914,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 |------|----------|------|
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
 | 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
-| 폼 전환 게임플레이 진입점 | 중간 | `TrySwitchForm` + `/form set` + Soul 보유 게이팅 + **Soul 강화(SoulStatType/PlayerSoulEnhancements/SoulEnhancementTable/SoulStatBonus, `/enhance`)** 구현 완료. 남은 범위는 인게임 해금 UX(보상/드랍으로 Soul 지급)·Form 선택 UI |
+| 폼 전환 게임플레이 진입점 | — | **완료(2026-07-16, §11a-4)** — 던전 입장 폼 선택 화면 + 시작 Sword Soul 지급 + Normal 비전투화. 남은 S3: 보스 흡수 해금 연출·Soul 드랍 랜덤 폼 보정(미보유 가중/천장)·last-form 영속 + 카드 저작물(스프라이트 3종×4폼, 유저) |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. **표시 고도화도 완료(2026-07-10)** — 압축 정렬·스택 숫자·슬로우/스턴 아이콘·틱 flash. **ComboDamage는 단계제 전환+HUD 정식화 완료(2026-07-14, §11b-8)**. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행) |
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
