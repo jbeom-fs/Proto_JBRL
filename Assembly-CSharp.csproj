@@ -163,6 +163,7 @@
     <Compile Include="Assets\Scripts\Combat\ProjectileController.cs" />
     <Compile Include="Assets\Scripts\UI\FreischutzMagazineUI.cs" />
     <Compile Include="Assets\Scripts\UI\RestAreaShopUIController.cs" />
+    <Compile Include="Assets\Scripts\Soul\SoulStatLabelTable.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulEnhancementCost.cs" />
     <Compile Include="Assets\Scripts\Items\DroppedItem.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />

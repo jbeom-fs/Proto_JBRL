@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -6,38 +7,33 @@ using UnityEngine.UI;
 
 public sealed class SoulAltarUIController : MonoBehaviour
 {
+    [Serializable]
+    public sealed class AltarSection
+    {
+        public PlayerFormId form;
+        public GameObject headerRoot;
+        public TMP_Text headerText;
+        public SoulAltarStatRowUI[] rows;
+    }
+
     [SerializeField] private GameObject panel;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements soulEnhancements;
     [SerializeField] private SoulEnhancementTable enhancementTable;
     [SerializeField] private ItemDatabase itemDatabase;
-    [SerializeField] private Transform formButtonContainer;
-    [SerializeField] private Button formButtonTemplate;
-    [SerializeField] private TMP_Text selectedFormText;
-    [SerializeField] private Transform statRowContainer;
-    [SerializeField] private SoulAltarStatRowUI statRowTemplate;
-    [SerializeField] private TMP_Text emptyText;
-    [SerializeField] private TMP_Text feedbackText;
+    [SerializeField] private AltarSection[] sections;
     [SerializeField] private Button closeButton;
-    [SerializeField] private Color formSelectedColor = Color.white;
-    [SerializeField] private Color formNormalColor = new Color(0.65f, 0.65f, 0.65f, 1f);
 
     private static readonly PlayerFormId[] s_FormScanOrder =
     {
         PlayerFormId.Sword,
         PlayerFormId.Dagger,
         PlayerFormId.Freischutz,
-        PlayerFormId.Parry,
-        PlayerFormId.Normal
+        PlayerFormId.Parry
     };
 
-    private readonly List<PlayerFormId> _ownedForms = new List<PlayerFormId>(8);
     private readonly List<SoulStatGrowth> _growthBuffer = new List<SoulStatGrowth>(8);
-    private readonly List<Button> _formButtons = new List<Button>(8);
-    private readonly List<TMP_Text> _formButtonTexts = new List<TMP_Text>(8);
-    private readonly List<SoulAltarStatRowUI> _statRows = new List<SoulAltarStatRowUI>(8);
-
-    private PlayerFormId _selectedForm;
+    private string[] _sectionHeaderTexts;
     private bool _subscribed;
     private bool _warnedMissingReferences;
 
@@ -48,11 +44,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
         if (closeButton != null)
             closeButton.onClick.AddListener(Close);
 
-        if (formButtonTemplate != null)
-            formButtonTemplate.gameObject.SetActive(false);
-
-        if (statRowTemplate != null)
-            statRowTemplate.gameObject.SetActive(false);
+        InitializeRows();
 
         if (panel != null)
             panel.SetActive(false);
@@ -87,12 +79,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
         Subscribe();
         IsOpen = true;
         panel.SetActive(true);
-
-        RebuildOwnedForms();
-        if (_ownedForms.Count > 0)
-            SelectForm(_ownedForms[0]);
-        else
-            RefreshSelectedForm();
+        RefreshAll();
     }
 
     public void Close()
@@ -111,6 +98,9 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
     private void TryEnhance(PlayerFormId form, SoulStatType stat)
     {
+        if (SoulStatTypeUtility.IsShared(stat))
+            return;
+
         if (!HasRequiredReferences())
             return;
 
@@ -119,32 +109,22 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         int currentLevel = soulEnhancements.GetLevel(form, stat);
         if (currentLevel >= Mathf.Max(0, growth.maxLevel))
-        {
-            SetFeedback("Max level");
             return;
-        }
 
         int cost = SoulEnhancementCost.GetMaterialCost(growth, currentLevel);
         if (cost > 0)
         {
-            if (!TryResolveShardItem(form, out ItemData shardItem))
-            {
-                SetFeedback("Shard item missing");
+            if (!SoulShardResolver.TryResolveShardItem(itemDatabase, playerInventory, form, out ItemData shardItem))
                 return;
-            }
 
             if (!playerInventory.HasItem(shardItem, cost))
-            {
-                SetFeedback("Not enough shards");
                 return;
-            }
 
             if (!playerInventory.RemoveItem(shardItem, cost))
                 return;
         }
 
         soulEnhancements.AddLevel(form, stat, 1);
-        SetFeedback("Enhanced");
     }
 
     private void RefreshAll()
@@ -152,197 +132,119 @@ public sealed class SoulAltarUIController : MonoBehaviour
         if (!IsOpen)
             return;
 
-        RebuildOwnedForms();
-
-        if (_ownedForms.Count == 0)
-        {
-            RefreshSelectedForm();
-            return;
-        }
-
-        if (!ContainsOwnedForm(_selectedForm))
-            _selectedForm = _ownedForms[0];
-
-        RefreshSelectedForm();
-    }
-
-    private void RebuildOwnedForms()
-    {
-        _ownedForms.Clear();
-
+        RefreshSection(PlayerFormId.Normal, true);
         for (int i = 0; i < s_FormScanOrder.Length; i++)
-        {
-            PlayerFormId form = s_FormScanOrder[i];
-            if (!playerInventory.OwnsSoulForm(form))
-                continue;
-
-            _growthBuffer.Clear();
-            enhancementTable.GetGrowths(form, _growthBuffer);
-            if (_growthBuffer.Count > 0)
-                _ownedForms.Add(form);
-        }
-
-        EnsureFormButtonCount(_ownedForms.Count);
-        for (int i = 0; i < _formButtons.Count; i++)
-        {
-            if (i < _ownedForms.Count)
-            {
-                PlayerFormId form = _ownedForms[i];
-                _formButtons[i].gameObject.SetActive(true);
-
-                if (_formButtonTexts[i] != null)
-                    _formButtonTexts[i].text = form.ToString();
-            }
-            else
-            {
-                _formButtons[i].gameObject.SetActive(false);
-            }
-        }
-
-        RefreshFormButtonVisuals();
+            RefreshSection(s_FormScanOrder[i], false);
     }
 
-    private void SelectForm(PlayerFormId form)
+    private void RefreshSection(PlayerFormId form, bool shared)
     {
-        _selectedForm = form;
-        RefreshSelectedForm();
-    }
+        int sectionIndex = FindSectionIndex(form);
+        if (sectionIndex < 0)
+            return;
 
-    private void RefreshSelectedForm()
-    {
-        if (_ownedForms.Count == 0)
+        AltarSection section = sections[sectionIndex];
+        if (section.headerRoot != null)
+            section.headerRoot.SetActive(true);
+
+        bool unlocked = shared || playerInventory.OwnsSoulForm(section.form);
+        if (section.headerText != null)
+            section.headerText.text = unlocked ? _sectionHeaderTexts[sectionIndex] : "ㅡㅡ ???? ㅡㅡ";
+
+        if (!unlocked)
         {
-            HideStatRows();
-            if (selectedFormText != null)
-                selectedFormText.text = string.Empty;
-            if (emptyText != null)
-            {
-                emptyText.gameObject.SetActive(true);
-                emptyText.text = "No owned soul forms";
-            }
-            RefreshFormButtonVisuals();
+            HideRows(section.rows);
             return;
         }
-
-        if (selectedFormText != null)
-            selectedFormText.text = _selectedForm.ToString();
 
         _growthBuffer.Clear();
-        enhancementTable.GetGrowths(_selectedForm, _growthBuffer);
-        EnsureStatRowCount(_growthBuffer.Count);
+        enhancementTable.GetGrowths(section.form, _growthBuffer);
 
-        TryResolveShardItem(_selectedForm, out ItemData shardItem);
-        int shardCount = shardItem != null ? playerInventory.GetItemCount(shardItem) : 0;
-
-        for (int i = 0; i < _statRows.Count; i++)
+        int rowCount = section.rows?.Length ?? 0;
+        if (_growthBuffer.Count > rowCount)
         {
+            Debug.LogWarning(
+                "[SoulAltarUIController] " + section.form + " 섹션 행 부족: 테이블 " +
+                _growthBuffer.Count + "개, 씬 " + rowCount + "개. 씬 행 추가와 sections 재결선 필요.",
+                this);
+        }
+
+        ItemData shardItem = null;
+        int shardCount = 0;
+        if (!shared && SoulShardResolver.TryResolveShardItem(itemDatabase, playerInventory, section.form, out shardItem))
+            shardCount = playerInventory.GetItemCount(shardItem);
+
+        for (int i = 0; i < rowCount; i++)
+        {
+            SoulAltarStatRowUI row = section.rows[i];
+            if (row == null)
+                continue;
+
             if (i >= _growthBuffer.Count)
             {
-                _statRows[i].Hide();
+                row.Hide();
                 continue;
             }
 
             SoulStatGrowth growth = _growthBuffer[i];
-            int currentLevel = soulEnhancements.GetLevel(_selectedForm, growth.stat);
+            int currentLevel = soulEnhancements.GetLevel(section.form, growth.stat);
             int cost = SoulEnhancementCost.GetMaterialCost(growth, currentLevel);
-            _statRows[i].Bind(_selectedForm, growth, currentLevel, cost, shardItem, shardCount);
+            row.Bind(section.form, growth, currentLevel, cost, shardItem, shardCount);
+            if (shared)
+                row.SetInteractable(false);
         }
-
-        if (emptyText != null)
-            emptyText.gameObject.SetActive(_growthBuffer.Count == 0);
-
-        RefreshFormButtonVisuals();
     }
 
-    private void EnsureFormButtonCount(int count)
+    private int FindSectionIndex(PlayerFormId form)
     {
-        if (formButtonTemplate == null || formButtonContainer == null)
+        if (sections == null)
+            return -1;
+
+        for (int i = 0; i < sections.Length; i++)
+        {
+            if (sections[i] != null && sections[i].form == form)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private void InitializeRows()
+    {
+        if (sections == null)
             return;
 
-        while (_formButtons.Count < count)
+        _sectionHeaderTexts = new string[sections.Length];
+        for (int i = 0; i < sections.Length; i++)
         {
-            int index = _formButtons.Count;
-            Button button = Instantiate(formButtonTemplate, formButtonContainer);
-            button.onClick.AddListener(() => HandleFormButtonClicked(index));
-            button.gameObject.SetActive(false);
-            _formButtons.Add(button);
-            _formButtonTexts.Add(button.GetComponentInChildren<TMP_Text>(true));
+            if (sections[i]?.headerText != null)
+                _sectionHeaderTexts[i] = sections[i].headerText.text;
+
+            if (sections[i]?.rows == null)
+                continue;
+
+            for (int j = 0; j < sections[i].rows.Length; j++)
+            {
+                SoulAltarStatRowUI row = sections[i].rows[j];
+                if (row == null)
+                    continue;
+
+                row.Initialize(this);
+                row.Hide();
+            }
         }
     }
 
-    private void EnsureStatRowCount(int count)
+    private static void HideRows(SoulAltarStatRowUI[] rows)
     {
-        if (statRowTemplate == null || statRowContainer == null)
+        if (rows == null)
             return;
 
-        while (_statRows.Count < count)
+        for (int i = 0; i < rows.Length; i++)
         {
-            SoulAltarStatRowUI row = Instantiate(statRowTemplate, statRowContainer);
-            row.Initialize(this);
-            row.Hide();
-            _statRows.Add(row);
+            if (rows[i] != null)
+                rows[i].Hide();
         }
-    }
-
-    private void HandleFormButtonClicked(int index)
-    {
-        if (index < 0 || index >= _ownedForms.Count)
-            return;
-
-        SelectForm(_ownedForms[index]);
-    }
-
-    private void RefreshFormButtonVisuals()
-    {
-        for (int i = 0; i < _formButtons.Count; i++)
-        {
-            Image image = _formButtons[i].GetComponent<Image>();
-            if (image != null)
-                image.color = i < _ownedForms.Count && _ownedForms[i] == _selectedForm ? formSelectedColor : formNormalColor;
-        }
-    }
-
-    private void HideStatRows()
-    {
-        for (int i = 0; i < _statRows.Count; i++)
-            _statRows[i].Hide();
-    }
-
-    private bool TryResolveShardItem(PlayerFormId form, out ItemData shardItem)
-    {
-        shardItem = null;
-
-        if (!TryResolveSoulItem(form, out ItemData soulItem))
-            return false;
-
-        if (string.IsNullOrWhiteSpace(soulItem.SalvageItemCode))
-            return false;
-
-        if (playerInventory != null && playerInventory.TryGetDatabaseItem(soulItem.SalvageItemCode, out shardItem))
-            return true;
-
-        return itemDatabase != null && itemDatabase.TryGetItem(soulItem.SalvageItemCode, out shardItem);
-    }
-
-    private bool TryResolveSoulItem(PlayerFormId form, out ItemData soulItem)
-    {
-        soulItem = null;
-
-        if (itemDatabase != null && itemDatabase.TryGetSoulByForm(form, out soulItem))
-            return true;
-
-        return playerInventory != null && playerInventory.TryGetSoulByForm(form, out soulItem);
-    }
-
-    private bool ContainsOwnedForm(PlayerFormId form)
-    {
-        for (int i = 0; i < _ownedForms.Count; i++)
-        {
-            if (_ownedForms[i] == form)
-                return true;
-        }
-
-        return false;
     }
 
     private bool HasRequiredReferences()
@@ -351,10 +253,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
                      playerInventory != null &&
                      soulEnhancements != null &&
                      enhancementTable != null &&
-                     formButtonContainer != null &&
-                     formButtonTemplate != null &&
-                     statRowContainer != null &&
-                     statRowTemplate != null;
+                     sections != null &&
+                     sections.Length == 5;
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (!valid && !_warnedMissingReferences)
@@ -391,9 +291,4 @@ public sealed class SoulAltarUIController : MonoBehaviour
         _subscribed = false;
     }
 
-    private void SetFeedback(string message)
-    {
-        if (feedbackText != null)
-            feedbackText.text = message;
-    }
 }

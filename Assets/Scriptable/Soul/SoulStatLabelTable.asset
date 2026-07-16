@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c73e3549df44b64aa260983b927f3bc, type: 3}
+  m_Name: SoulStatLabelTable
+  m_EditorClassIdentifier: Assembly-CSharp::SoulStatLabelTable
+  entries:
+  - stat: 0
+    koreanName: 공격 속도
+    description: 
+  - stat: 1
+    koreanName: 쿨타임 감소
+    description: 
+  - stat: 2
+    koreanName: 치명타
+    description: 
+  - stat: 3
+    koreanName: 흡혈
+    description: 
+  - stat: 4
+    koreanName: 탄창 크기
+    description: 
+  - stat: 5
+    koreanName: 재장전 속도
+    description: 
+  - stat: 6
+    koreanName: 패리 스택
+    description: 
+  - stat: 7
+    koreanName: 스택 유지 시간
+    description: 
+  - stat: 8
+    koreanName: 콤보 데미지 증폭
+    description: 
+  - stat: 9
+    koreanName: 상태이상 데미지 증폭
+    description: 
+  formNames:
+  - form: 0
+    koreanName: 공통
+  - form: 1
+    koreanName: 검 폼
+  - form: 2
+    koreanName: 단검 폼
+  - form: 3
+    koreanName: 마탄 폼
+  - form: 4
+    koreanName: 패리 폼

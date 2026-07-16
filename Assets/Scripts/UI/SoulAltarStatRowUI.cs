@@ -6,6 +6,7 @@ public sealed class SoulAltarStatRowUI : MonoBehaviour
 {
     [SerializeField] private TMP_Text summaryText;
     [SerializeField] private Button enhanceButton;
+    [SerializeField] private SoulStatLabelTable labelTable;
 
     private SoulAltarUIController _owner;
     private PlayerFormId _form;
@@ -31,21 +32,26 @@ public sealed class SoulAltarStatRowUI : MonoBehaviour
         int maxLevel = Mathf.Max(0, growth.maxLevel);
         bool maxed = currentLevel >= maxLevel;
         bool hasEnoughMaterial = materialCost <= 0 || (shardItem != null && shardCount >= materialCost);
-        string shardName = shardItem != null ? shardItem.DisplayName : "Shard missing";
 
         if (summaryText != null)
         {
-            string costLabel = materialCost > 0 ? materialCost.ToString() : "Free";
-            summaryText.text = growth.stat + "  " +
-                               currentLevel.ToString() + " / " + maxLevel.ToString() +
-                               "  Cost " + costLabel +
-                               "  " + shardName + " x" + shardCount.ToString();
+            string statName = labelTable != null ? labelTable.GetStatName(growth.stat) : growth.stat.ToString();
+            string costLabel = materialCost > 0 ? materialCost.ToString() : "무료";
+            string ownedLabel = shardItem != null ? shardCount.ToString() : "-";
+            summaryText.text = statName + " Lv." + currentLevel + "/" + maxLevel +
+                               "  비용 " + costLabel + "  (보유 " + ownedLabel + ")";
         }
 
         if (enhanceButton != null)
             enhanceButton.interactable = !maxed && hasEnoughMaterial;
 
         gameObject.SetActive(true);
+    }
+
+    public void SetInteractable(bool interactable)
+    {
+        if (enhanceButton != null)
+            enhanceButton.interactable = interactable;
     }
 
     public void Hide()
