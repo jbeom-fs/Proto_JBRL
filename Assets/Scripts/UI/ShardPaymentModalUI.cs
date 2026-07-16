@@ -202,7 +202,7 @@ public sealed class ShardPaymentModalUI : MonoBehaviour
         int total = GetAllocatedTotal();
         if (summaryText != null && (total != _lastDisplayedTotal || _cost != _lastDisplayedCost))
         {
-            summaryText.SetText("배분 {0} / 필요 {1}", total, _cost);
+            summaryText.SetText(UiMessages.AllocationSummaryFormat, total, _cost);
             _lastDisplayedTotal = total;
             _lastDisplayedCost = _cost;
         }

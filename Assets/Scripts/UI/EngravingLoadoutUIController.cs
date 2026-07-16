@@ -345,7 +345,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             return;
 
         if (IsDirty())
-            ShowDialog("변경사항을 저장하지 않고 닫으시겠습니까?", CloseWithoutSave);
+            ShowDialog(UiMessages.DiscardEngravingChangesConfirmation, CloseWithoutSave);
         else
             CloseWithoutSave();
     }
@@ -356,7 +356,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             return;
 
         if (IsDirty())
-            ShowDialog("변경사항을 저장하시겠습니까?\n이 층의 각인대는 소멸합니다.", CommitAndClose);
+            ShowDialog(UiMessages.SaveEngravingChangesConfirmation, CommitAndClose);
         else
             CloseWithoutSave();
     }

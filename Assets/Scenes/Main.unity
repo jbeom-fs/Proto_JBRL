@@ -409,11 +409,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 389.7
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 280.80002
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -445,11 +445,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1010.25
+      value: 502.25
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -140.40001
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -470,7 +470,7 @@ PrefabInstance:
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: normalSprite
       value: 
-      objectReference: {fileID: 21300000, guid: 77a9d7a809a49c648b05e8889c18bdfd, type: 3}
+      objectReference: {fileID: 21300000, guid: 01439881f2b7b4942991709d6e0683a4, type: 3}
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: formDescription
       value: "\uB9C8\uD0C4 \uBA54\uC138\uC9C0"
@@ -483,6 +483,10 @@ PrefabInstance:
       propertyPath: backgroundIllust
       value: 
       objectReference: {fileID: 21300000, guid: 77a9d7a809a49c648b05e8889c18bdfd, type: 3}
+    - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
+      propertyPath: silhouetteSprite
+      value: 
+      objectReference: {fileID: 4413437175635231673, guid: b94c83571e4f3184dbcbb8d4b64c97a0, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6223,11 +6227,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 389.7
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 280.80002
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -6259,11 +6263,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1417.9501
+      value: 706.75
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -140.40001
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -6284,7 +6288,7 @@ PrefabInstance:
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: normalSprite
       value: 
-      objectReference: {fileID: 21300000, guid: e3ae5069c9e8a4149b7dd10ff6ba5ef3, type: 3}
+      objectReference: {fileID: 21300000, guid: 30a7588dd0ab98f4689d972f34e32e76, type: 3}
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: formDescription
       value: "\uD328\uB9AC \uBA54\uC138"
@@ -6297,6 +6301,10 @@ PrefabInstance:
       propertyPath: backgroundIllust
       value: 
       objectReference: {fileID: 21300000, guid: e3ae5069c9e8a4149b7dd10ff6ba5ef3, type: 3}
+    - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
+      propertyPath: silhouetteSprite
+      value: 
+      objectReference: {fileID: -7668269710277174441, guid: 4c27bd6798e3372439e8e4c5f1676d4f, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -20324,10 +20332,10 @@ RectTransform:
   - {fileID: 411328816}
   m_Father: {fileID: 1509903238}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.08, y: 0.12}
-  m_AnchorMax: {x: 0.92, y: 0.38}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 270}
+  m_SizeDelta: {x: 800, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1134892650
 MonoBehaviour:
@@ -20350,8 +20358,8 @@ MonoBehaviour:
   m_Spacing: 18
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 1
-  m_ChildControlHeight: 1
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
@@ -40017,7 +40025,7 @@ GameObject:
   - component: {fileID: 1378029360}
   - component: {fileID: 1378029359}
   m_Layer: 0
-  m_Name: DungeonEntrancePortal (1)
+  m_Name: DungeonEntryStation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -83204,11 +83212,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 389.7
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 280.80002
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -83240,11 +83248,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 602.55005
+      value: 297.75
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -140.40001
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -83269,7 +83277,7 @@ PrefabInstance:
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: normalSprite
       value: 
-      objectReference: {fileID: 21300000, guid: d69be31aaf9fbf7488375997e55c1a11, type: 3}
+      objectReference: {fileID: -4666124340245890649, guid: ef39b2c3136c2f14e85caca285c0009f, type: 3}
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: formDescription
       value: "\uB300\uAC70 \uBA54\uC138\uC9C0"
@@ -83281,7 +83289,11 @@ PrefabInstance:
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: backgroundIllust
       value: 
-      objectReference: {fileID: 21300000, guid: d69be31aaf9fbf7488375997e55c1a11, type: 3}
+      objectReference: {fileID: 21300000, guid: 6367e74a231fde24f9de94c1486ff596, type: 3}
+    - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
+      propertyPath: silhouetteSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 455410846491744418e85ce80963f77f, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -93538,11 +93550,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 389.7
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 280.80002
+      value: 200
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -93574,11 +93586,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 194.85
+      value: 93.25
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -140.40001
+      value: -100
       objectReference: {fileID: 0}
     - target: {fileID: 7195381253817425461, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -93607,7 +93619,7 @@ PrefabInstance:
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: normalSprite
       value: 
-      objectReference: {fileID: 21300000, guid: 0a1d5cdcbf377e049a3051ea9a34aab3, type: 3}
+      objectReference: {fileID: 21300000, guid: 1b9bcf83931fcdf479971ac61650f72c, type: 3}
     - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: formDescription
       value: "\uAC80 \uBA54\uC138\uC9C0"
@@ -93620,13 +93632,17 @@ PrefabInstance:
       propertyPath: backgroundIllust
       value: 
       objectReference: {fileID: 21300000, guid: 0a1d5cdcbf377e049a3051ea9a34aab3, type: 3}
+    - target: {fileID: 7759242856850032742, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
+      propertyPath: silhouetteSprite
+      value: 
+      objectReference: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
     - target: {fileID: 8686811067573093256, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 21300000, guid: 0a1d5cdcbf377e049a3051ea9a34aab3, type: 3}
     - target: {fileID: 8686811067573093256, guid: 6e5302ab21fde4a469d503bcd9635a8a, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

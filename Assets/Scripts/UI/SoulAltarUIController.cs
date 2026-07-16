@@ -191,7 +191,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         bool unlocked = shared || playerInventory.OwnsSoulForm(section.form);
         if (section.headerText != null)
-            section.headerText.text = unlocked ? _sectionHeaderTexts[sectionIndex] : "ㅡㅡ ???? ㅡㅡ";
+            section.headerText.text = unlocked ? _sectionHeaderTexts[sectionIndex] : UiMessages.LockedSectionHeader;
 
         if (!unlocked)
         {

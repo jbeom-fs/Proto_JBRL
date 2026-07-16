@@ -43,10 +43,14 @@ public sealed class SoulAltarStatRowUI : MonoBehaviour
         if (summaryText != null)
         {
             string statName = labelTable != null ? labelTable.GetStatName(growth.stat) : growth.stat.ToString();
-            string costLabel = materialCost > 0 ? materialCost.ToString() : "무료";
-            summaryText.text = statName + " Lv." + currentLevel + "/" + maxLevel +
-                               "  비용 " + costLabel +
-                               (shared ? string.Empty : "  (보유 " + shardCount + ")");
+            string costLabel = materialCost > 0 ? materialCost.ToString() : UiMessages.CostFree;
+            summaryText.text = string.Format(
+                UiMessages.SoulStatSummaryFormat,
+                statName,
+                currentLevel,
+                maxLevel,
+                costLabel) +
+                (shared ? string.Empty : string.Format(UiMessages.SoulStatOwnedSuffixFormat, shardCount));
         }
 
         if (enhanceButton != null)

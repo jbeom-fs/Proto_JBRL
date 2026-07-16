@@ -7,8 +7,6 @@ using UnityEngine.UI;
 [DisallowMultipleComponent]
 public sealed class ItemTooltipUI : MonoBehaviour
 {
-    private const string EmptyDescriptionText = "내용없음";
-    private const string EmptyCoreEffectText = "효과 없음";
     private const float EdgePadding = 12f;
     private const float SlotOffset = 12f;
 
@@ -85,7 +83,7 @@ public sealed class ItemTooltipUI : MonoBehaviour
         if (item.ItemCode == ItemCodes.RunCore)
             return BuildCoreBodyText(item);
 
-        return string.IsNullOrWhiteSpace(item.Description) ? EmptyDescriptionText : item.Description;
+        return string.IsNullOrWhiteSpace(item.Description) ? UiMessages.EmptyDescription : item.Description;
     }
 
     private string BuildCoreBodyText(ItemData item)
@@ -103,7 +101,7 @@ public sealed class ItemTooltipUI : MonoBehaviour
         }
 
         if (_effectTotals.Count == 0)
-            return EmptyCoreEffectText;
+            return UiMessages.EmptyCoreEffect;
 
         _bodyBuilder.Clear();
         AppendEffectLine(ItemEffectType.AttackBonus);
@@ -157,13 +155,13 @@ public sealed class ItemTooltipUI : MonoBehaviour
         switch (type)
         {
             case ItemEffectType.AttackBonus:
-                return "공격";
+                return UiMessages.AttackEffect;
             case ItemEffectType.DefenseBonus:
-                return "방어";
+                return UiMessages.DefenseEffect;
             case ItemEffectType.MaxHpBonus:
-                return "최대체력";
+                return UiMessages.MaxHpEffect;
             case ItemEffectType.MoveSpeedBonus:
-                return "이동속도";
+                return UiMessages.MoveSpeedEffect;
             default:
                 return type.ToString();
         }
