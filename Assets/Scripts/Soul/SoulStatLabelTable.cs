@@ -6,7 +6,6 @@ using UnityEngine;
 public sealed class SoulStatLabelTable : ScriptableObject
 {
     [SerializeField] private List<SoulStatLabelEntry> entries = new List<SoulStatLabelEntry>();
-    [SerializeField] private List<SoulFormLabelEntry> formNames = new List<SoulFormLabelEntry>();
 
     public string GetStatName(SoulStatType stat)
     {
@@ -30,16 +29,6 @@ public sealed class SoulStatLabelTable : ScriptableObject
         return string.Empty;
     }
 
-    public string GetFormName(PlayerFormId form)
-    {
-        for (int i = 0; i < formNames.Count; i++)
-        {
-            if (formNames[i].form == form && !string.IsNullOrWhiteSpace(formNames[i].koreanName))
-                return formNames[i].koreanName;
-        }
-
-        return form.ToString();
-    }
 }
 
 [Serializable]
@@ -48,11 +37,4 @@ public struct SoulStatLabelEntry
     public SoulStatType stat;
     public string koreanName;
     [TextArea] public string description;
-}
-
-[Serializable]
-public struct SoulFormLabelEntry
-{
-    public PlayerFormId form;
-    public string koreanName;
 }

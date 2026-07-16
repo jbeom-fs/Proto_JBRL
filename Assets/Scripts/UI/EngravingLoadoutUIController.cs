@@ -163,7 +163,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     {
         if (_selectedSlot < 0)
         {
-            SetFeedback("Select a slot first");
+            SetFeedback(UiMessages.SelectEngravingSlotFirst);
             return;
         }
 
@@ -178,7 +178,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
         if (displaced != null)
             _stagedPool.Add(displaced);
 
-        SetFeedback("Equipped (unsaved)");
+        SetFeedback(UiMessages.EngravingEquippedUnsaved);
         RefreshAll();
     }
 
@@ -186,7 +186,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     {
         if (_selectedSlot < 0)
         {
-            SetFeedback("Select a slot first");
+            SetFeedback(UiMessages.SelectEngravingSlotFirst);
             return;
         }
 
@@ -196,13 +196,13 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
         SkillData token = _stagedSlots[_selectedSlot];
         if (token == null)
         {
-            SetFeedback("Slot empty");
+            SetFeedback(UiMessages.EngravingSlotEmpty);
             return;
         }
 
         _stagedSlots[_selectedSlot] = null;
         _stagedPool.Add(token);
-        SetFeedback("Unequipped (unsaved)");
+        SetFeedback(UiMessages.EngravingUnequippedUnsaved);
         RefreshAll();
     }
 
@@ -212,7 +212,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             return;
 
         if (selectedFormText != null)
-            selectedFormText.text = _form.ToString();
+            selectedFormText.text = UiMessages.GetFormName(_form);
 
         RefreshSlots();
         RefreshPool();
@@ -227,7 +227,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             bool active = i < EngravingLoadout.SlotCount;
             _slotButtons[i].gameObject.SetActive(active);
             if (active && _slotTexts[i] != null)
-                _slotTexts[i].text = "[" + i + "] " + DisplayName(_stagedSlots[i]);
+                _slotTexts[i].text = string.Format(UiMessages.EngravingSlotFormat, i, DisplayName(_stagedSlots[i]));
         }
     }
 
@@ -295,10 +295,12 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     private static string DisplayName(SkillData skill)
     {
         if (skill == null)
-            return "(empty)";
+            return UiMessages.EmptyEngravingSlot;
 
         string skillName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName;
-        return skill is EngravingData engraving ? skillName + " [" + engraving.grade + "]" : skillName;
+        return skill is EngravingData engraving
+            ? string.Format(UiMessages.EngravingGradeFormat, skillName, engraving.grade)
+            : skillName;
     }
 
     private bool HasRequiredReferences()
@@ -365,7 +367,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     {
         if (!loadout.ApplyArrangement(_form, _stagedSlots))
         {
-            SetFeedback("Apply failed");
+            SetFeedback(UiMessages.EngravingApplyFailed);
             return;
         }
 

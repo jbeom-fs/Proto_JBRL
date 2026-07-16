@@ -125,9 +125,9 @@ public sealed class FreischutzMagazineUI : MonoBehaviour
             return;
 
         if (reloading)
-            magazineText.SetText("Reloading... {0}/{1}", current, max);
+            magazineText.SetText(UiMessages.MagazineReloadingFormat, current, max);
         else
-            magazineText.SetText("{0}/{1}", current, max);
+            magazineText.SetText(UiMessages.MagazineCountFormat, current, max);
     }
 
     private void SetVisible(bool visible)

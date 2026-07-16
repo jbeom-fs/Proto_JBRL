@@ -20,10 +20,10 @@ public sealed class OfferRowUI : MonoBehaviour
             nameText.text = offer.DisplayName;
 
         if (levelText != null)
-            levelText.text = "Lv " + level.ToString() + "  Total +" + totalValue.ToString();
+            levelText.text = string.Format(UiMessages.RestAreaOfferLevelFormat, level, totalValue);
 
         if (costText != null)
-            costText.text = "Cost " + cost.ToString();
+            costText.text = string.Format(UiMessages.RestAreaOfferCostFormat, cost);
 
         if (buyButton != null)
             buyButton.interactable = canBuy;

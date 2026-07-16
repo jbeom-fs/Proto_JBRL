@@ -119,7 +119,7 @@ public sealed class RestAreaShopUIController : MonoBehaviour
         if (!TryFindCore(out ItemData core))
         {
             WarnMissingCore();
-            SetFeedback("Core missing");
+            SetFeedback(UiMessages.RestAreaCoreMissing);
             RefreshAll();
             return;
         }
@@ -127,7 +127,7 @@ public sealed class RestAreaShopUIController : MonoBehaviour
         if (!TryResolveCurrency(out ItemData currency))
         {
             WarnMissingCurrency();
-            SetFeedback("Currency missing");
+            SetFeedback(UiMessages.RestAreaCurrencyMissing);
             RefreshAll();
             return;
         }
@@ -137,7 +137,7 @@ public sealed class RestAreaShopUIController : MonoBehaviour
         int balance = playerInventory.GetItemCount(currency);
         if (balance < cost)
         {
-            SetFeedback("Not enough currency");
+            SetFeedback(UiMessages.RestAreaNotEnoughCurrency);
             RefreshAll();
             return;
         }
@@ -148,21 +148,21 @@ public sealed class RestAreaShopUIController : MonoBehaviour
                 value = offer.PerLevelValue
             }))
         {
-            SetFeedback("Core update blocked");
+            SetFeedback(UiMessages.RestAreaCoreUpdateBlocked);
             RefreshAll();
             return;
         }
 
         if (cost > 0 && !playerInventory.RemoveItem(currency, cost))
         {
-            SetFeedback("Purchase failed");
+            SetFeedback(UiMessages.RestAreaPurchaseFailed);
             playerInventory.NotifyExternalChange();
             RefreshAll();
             return;
         }
 
         playerInventory.NotifyExternalChange();
-        SetFeedback("Purchased " + offer.DisplayName);
+        SetFeedback(string.Format(UiMessages.RestAreaPurchasedFormat, offer.DisplayName));
         RefreshAll();
     }
 
@@ -174,7 +174,7 @@ public sealed class RestAreaShopUIController : MonoBehaviour
         TryResolveCurrency(out ItemData currency);
         int balance = currency != null ? playerInventory.GetItemCount(currency) : 0;
         if (currencyText != null)
-            currencyText.text = "Currency " + balance.ToString();
+            currencyText.text = string.Format(UiMessages.RestAreaCurrencyFormat, balance);
 
         bool hasCore = TryFindCore(out ItemData core);
         if (!hasCore)
@@ -209,7 +209,7 @@ public sealed class RestAreaShopUIController : MonoBehaviour
         {
             bool showEmpty = entries.Count == 0 || !hasCore;
             emptyText.gameObject.SetActive(showEmpty);
-            emptyText.text = !hasCore ? "Core missing" : "No offers";
+            emptyText.text = !hasCore ? UiMessages.RestAreaCoreMissing : UiMessages.RestAreaNoOffers;
         }
     }
 

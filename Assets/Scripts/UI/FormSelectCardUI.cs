@@ -8,8 +8,6 @@ public sealed class FormSelectCardUI : MonoBehaviour
     [SerializeField] private Sprite normalSprite;
     [SerializeField] private Sprite silhouetteSprite;
     [SerializeField] private Sprite backgroundIllust;
-    [SerializeField] private string formDisplayName;
-    [SerializeField] private string formDescription;
     [SerializeField] private GameObject selectedHighlight;
     [SerializeField] private Button selectButton;
 
@@ -19,8 +17,8 @@ public sealed class FormSelectCardUI : MonoBehaviour
     public PlayerFormId Form => form;
     public bool IsOwned { get; private set; }
     public Sprite BackgroundIllust => backgroundIllust;
-    public string DisplayName => string.IsNullOrWhiteSpace(formDisplayName) ? form.ToString() : formDisplayName;
-    public string Description => formDescription ?? string.Empty;
+    public string DisplayName => UiMessages.GetFormName(form);
+    public string Description => UiMessages.GetFormDescription(form);
 
     public void Initialize(FormSelectScreenUI owner)
     {
