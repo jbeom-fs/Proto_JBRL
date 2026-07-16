@@ -155,6 +155,15 @@ public sealed class PlayerFormController : MonoBehaviour
         ApplyForm(formData);
     }
 
+    public bool SetCurrentForm(PlayerFormId id)
+    {
+        if (formDatabase == null || !formDatabase.TryGet(id, out PlayerFormData formData) || formData == null)
+            return false;
+
+        ApplyForm(formData);
+        return true;
+    }
+
     public FormSwitchResult TrySwitchForm(PlayerFormId id)
     {
         if (formDatabase == null)

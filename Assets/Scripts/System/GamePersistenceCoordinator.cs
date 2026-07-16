@@ -36,6 +36,8 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
 
         if (_service.TryLoad(out SaveData data))
             ApplyFromSave(data);
+
+        GrantStartingSwordSoulIfNeeded();
     }
 
     private void LateUpdate()
@@ -170,6 +172,22 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
             return;
 
         _dirty = true;
+    }
+
+    private void GrantStartingSwordSoulIfNeeded()
+    {
+        if (inventory == null || inventory.OwnsSoulForm(PlayerFormId.Sword))
+            return;
+
+        if (!inventory.TryGetSoulByForm(PlayerFormId.Sword, out ItemData swordSoul) || swordSoul == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[GamePersistenceCoordinator] Sword Soul is missing from ItemDatabase.", this);
+#endif
+            return;
+        }
+
+        inventory.AddItem(swordSoul, 1);
     }
 
     private void RemovePersistentInventoryItems()

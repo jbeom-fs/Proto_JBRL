@@ -289,6 +289,10 @@ public class LocationTransitionManager : MonoBehaviour
             PlayerCombatController combat = player.GetComponent<PlayerCombatController>();
             if (combat != null)
                 combat.ResetCombo();
+
+            PlayerFormController forms = player.GetComponent<PlayerFormController>();
+            if (forms != null)
+                forms.SetCurrentForm(PlayerFormId.Normal);
         }
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
