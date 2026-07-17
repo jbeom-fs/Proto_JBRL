@@ -134,7 +134,11 @@ public sealed class ItemData
                 action = behavior.action,
                 skillTypeFilter = behavior.skillTypeFilter,
                 value = behavior.value,
-                duration = behavior.duration
+                duration = behavior.duration,
+                procSkill = behavior.procSkill,
+                procOrigin = behavior.procOrigin,
+                procDirection = behavior.procDirection,
+                procSpawnRadius = behavior.procSpawnRadius
             };
         }
 

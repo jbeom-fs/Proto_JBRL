@@ -65,9 +65,13 @@ MonoBehaviour:
     behaviorEffects:
     - trigger: 1
       action: 0
-      skillTypeFilter: 4
+      skillTypeFilter: -1
       value: 3
       duration: 0
+      procSkill: {fileID: 0}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -362,11 +366,71 @@ MonoBehaviour:
       skillTypeFilter: 0
       value: 3
       duration: 3
-    - trigger: 1
+      procSkill: {fileID: 0}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
+    - trigger: 2
       action: 2
       skillTypeFilter: 4
       value: 3
       duration: 3
+      procSkill: {fileID: 0}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
+    soulFormId: 0
+    engraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: AreaTest
+    displayName: "\uC7A5\uD310\uD14C\uC2A4\uD2B8"
+    icon: {fileID: 0}
+    description: "\uC7A5\uD310\uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 4
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects:
+    - trigger: 0
+      action: 3
+      skillTypeFilter: 0
+      value: 0
+      duration: 0
+      procSkill: {fileID: 11400000, guid: e34bd2de6ac2c9442a23e7fdf8d05887, type: 2}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
+    soulFormId: 0
+    engraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: DashTest
+    displayName: "\uB300\uC26C\uD14C\uC2A4\uD2B8"
+    icon: {fileID: 0}
+    description: 
+    itemType: 4
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects:
+    - trigger: 1
+      action: 3
+      skillTypeFilter: 4
+      value: 0
+      duration: 0
+      procSkill: {fileID: 11400000, guid: ad364fb893314c01a2e20ae06bbd2d09, type: 2}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 

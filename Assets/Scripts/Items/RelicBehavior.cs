@@ -11,7 +11,22 @@ public enum RelicAction
 {
     Heal,
     AttackPoison,
-    AttackBleed
+    AttackBleed,
+    CastSkill
+}
+
+public enum ProcOriginMode
+{
+    CasterPosition,
+    HitPosition,
+    RandomInRadius
+}
+
+public enum ProcDirectionMode
+{
+    Aim,
+    Context,
+    Random
 }
 
 [Serializable]
@@ -22,4 +37,8 @@ public sealed class RelicBehavior
     public int skillTypeFilter;
     public int value;
     public float duration;
+    public SkillData procSkill;
+    public ProcOriginMode procOrigin;
+    public ProcDirectionMode procDirection;
+    public float procSpawnRadius;
 }

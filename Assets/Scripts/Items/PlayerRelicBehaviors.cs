@@ -17,7 +17,7 @@ public sealed class PlayerRelicBehaviors : MonoBehaviour
     {
         _inventory = GetComponent<PlayerInventory>();
         _combat = GetComponent<PlayerCombatController>();
-        _runtime = new RelicBehaviorRuntime(Heal);
+        _runtime = new RelicBehaviorRuntime(Heal, ExecuteProc);
     }
 
     private void OnEnable()
@@ -53,12 +53,29 @@ public sealed class PlayerRelicBehaviors : MonoBehaviour
 
     private void HandleEnemyKilled(EnemyController enemy)
     {
-        _runtime.HandleKill();
+        Vector3 playerPosition = transform.position;
+        Vector3 enemyPosition = enemy != null ? enemy.transform.position : playerPosition;
+        _runtime.HandleKill(enemyPosition, playerPosition);
     }
 
     private void HandleSkillUsed(SkillData skill)
     {
-        _runtime.HandleSkillUsed(skill);
+        _runtime.HandleSkillUsed(skill, transform.position, ResolveAimDirection());
+    }
+
+    private void LateUpdate()
+    {
+        _runtime?.FlushKillProcs(transform.position, ResolveAimDirection());
+    }
+
+    private void ExecuteProc(SkillData skill, Vector3 origin, Vector2 direction)
+    {
+        _combat?.ExecuteSkillProc(skill, origin, direction);
+    }
+
+    private Vector2 ResolveAimDirection()
+    {
+        return _combat != null ? _combat.CurrentAimDirection : Vector2.down;
     }
 
     private void Heal(int amount)
