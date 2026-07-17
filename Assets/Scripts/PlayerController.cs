@@ -53,6 +53,7 @@ public class PlayerController : MonoBehaviour
 
     /// <summary>마지막 이동 입력 방향 (그리드 단위). PlayerCombatController가 공격 방향으로 사용.</summary>
     public Vector2Int FacingDirection { get; private set; } = Vector2Int.down;
+    public float MoveCollisionRadius => _tileSize * collisionRadius;
 
     private RoomInfo? _currentRoom;
 

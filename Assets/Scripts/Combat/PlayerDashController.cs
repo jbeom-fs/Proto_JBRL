@@ -18,6 +18,7 @@ public sealed class PlayerDashController : MonoBehaviour
     private readonly HashSet<EnemyController> _hitEnemiesThisDash = new();
     private Coroutine _dashRoutine;
     private CircleCollider2D _circleCollider;
+    private PlayerController _playerController;
     private DungeonManager _dungeonManager;
     private PlayerFormController _formController;
     private PlayerCombatController _activeInvincibilityOwner;
@@ -29,6 +30,7 @@ public sealed class PlayerDashController : MonoBehaviour
     private void Awake()
     {
         _circleCollider = GetComponent<CircleCollider2D>();
+        _playerController = GetComponent<PlayerController>();
         _dungeonManager = DungeonManager.Instance;
         _formController = GetComponent<PlayerFormController>();
     }
@@ -77,7 +79,8 @@ public sealed class PlayerDashController : MonoBehaviour
         if (!TryResolveDestination(start, direction, distance, stopOnWall, out Vector3 destination))
             return false;
 
-        if ((destination - start).sqrMagnitude < MinDashMoveDistance * MinDashMoveDistance)
+        if (!stopOnWall &&
+            (destination - start).sqrMagnitude < MinDashMoveDistance * MinDashMoveDistance)
             return false;
 
         if (invincibleDuringDash)
@@ -187,6 +190,9 @@ public sealed class PlayerDashController : MonoBehaviour
 
     private float ResolveFootprintRadius()
     {
+        if (_playerController != null)
+            return _playerController.MoveCollisionRadius;
+
         if (_circleCollider == null)
             _circleCollider = GetComponent<CircleCollider2D>();
 
