@@ -22,6 +22,19 @@ public sealed class ItemDatabase : ScriptableObject
         return _soulsByForm.TryGetValue(formId, out soul);
     }
 
+    public void GetSoulItems(List<ItemData> output)
+    {
+        if (output == null || items == null)
+            return;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemData item = items[i];
+            if (item != null && item.ItemType == ItemType.Soul)
+                output.Add(item);
+        }
+    }
+
     public void GetItemCodes(List<string> output)
     {
         if (output == null)

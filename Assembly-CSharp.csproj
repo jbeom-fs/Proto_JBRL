@@ -189,12 +189,14 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityQuery.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternRuntime.cs" />
+    <Compile Include="Assets\Scripts\UI\FormUnlockToastUI.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
     <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulCommonEnhancement.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
+    <Compile Include="Assets\Scripts\Items\FormUnlockEvents.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\UI\ItemTooltipUI.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillTargetResolver.cs" />

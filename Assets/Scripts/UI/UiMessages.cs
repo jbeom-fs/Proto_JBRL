@@ -1,5 +1,6 @@
 public static class UiMessages
 {
+    public const string FormUnlockedFormat = "새로운 폼 해금: {0}";
     public const string FormNameSword = "검";
     public const string FormNameDagger = "단검";
     public const string FormNameFreischutz = "마탄";

@@ -1,7 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public static class SoulDropResolver
 {
+    private static readonly List<ItemData> SoulCandidates = new List<ItemData>();
+
     public static (ItemData item, int amount) ResolveDrop(
         ItemData item,
         int amount,
@@ -14,6 +17,28 @@ public static class SoulDropResolver
 
         if (inventory == null || !inventory.OwnsSoulForm(item.SoulFormId))
             return (item, amount);
+
+        if (database != null)
+        {
+            SoulCandidates.Clear();
+            database.GetSoulItems(SoulCandidates);
+
+            int writeIndex = 0;
+            for (int i = 0; i < SoulCandidates.Count; i++)
+            {
+                ItemData candidate = SoulCandidates[i];
+                if (inventory.OwnsSoulForm(candidate.SoulFormId))
+                    continue;
+
+                SoulCandidates[writeIndex++] = candidate;
+            }
+
+            if (writeIndex > 0)
+            {
+                int index = salvageRng != null ? salvageRng.Next(writeIndex) : 0;
+                return (SoulCandidates[index], amount);
+            }
+        }
 
         if (string.IsNullOrWhiteSpace(item.SalvageItemCode) ||
             database == null ||

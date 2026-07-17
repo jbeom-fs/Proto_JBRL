@@ -88,8 +88,14 @@ public sealed class DroppedItem : MonoBehaviour
             return;
         }
 
+        bool wasUnownedSoul = _itemData.ItemType == ItemType.Soul &&
+                              !inventory.OwnsSoulForm(_itemData.SoulFormId);
+
         if (!inventory.AddItem(_itemData, _amount))
             return;
+
+        if (wasUnownedSoul)
+            FormUnlockEvents.RaiseFormUnlocked(_itemData.SoulFormId);
 
         DropItemSpawner.Instance?.Unregister(this);
         Destroy(gameObject);
