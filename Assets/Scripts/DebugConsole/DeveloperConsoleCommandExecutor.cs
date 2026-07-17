@@ -406,6 +406,67 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Applied stun to " + GetEnemyDisplayName(target) + " (" + duration + "s).");
     }
 
+    public DeveloperConsoleCommandResult ExecuteZone(
+        int tickDamage,
+        float duration,
+        float slowPercentage,
+        float slowDuration)
+    {
+        PlayerCombatController combat = ResolvePlayerCombatController();
+        if (combat == null)
+            return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+        if (DamageZoneSpawner.Instance == null)
+            return DeveloperConsoleCommandResult.Error("DamageZoneSpawner is not active.");
+
+        IReadOnlyList<AilmentApplication> bonuses = combat.BonusAttackAilments;
+        AilmentApplication[] ailments = null;
+        if (bonuses != null && bonuses.Count > 0)
+        {
+            ailments = new AilmentApplication[bonuses.Count];
+            for (int i = 0; i < bonuses.Count; i++)
+                ailments[i] = bonuses[i];
+        }
+
+        ZonePayload payload = new ZonePayload(
+            tickDamage,
+            duration,
+            slowPercentage,
+            slowDuration,
+            ailments,
+            combat.AilmentDamageMultiplier,
+            1f,
+            0.5f);
+        DamageZoneSpawner.Instance.SpawnZone(
+            combat.transform.position,
+            null,
+            in payload);
+        return DeveloperConsoleCommandResult.Success(
+            "Spawned damage zone (damage " + tickDamage + ", duration " + duration + "s).");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteProc(int slotIndex)
+    {
+        PlayerCombatController combat = ResolvePlayerCombatController();
+        if (combat == null)
+            return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+
+        SkillData skill = combat.GetSkillData(slotIndex);
+        if (skill == null)
+            return DeveloperConsoleCommandResult.Error("Skill slot " + slotIndex + " is empty.");
+
+        if (!combat.ExecuteSkillProc(
+                skill,
+                combat.transform.position,
+                combat.CurrentAimDirection))
+        {
+            return DeveloperConsoleCommandResult.Error(
+                "Proc rejected or failed for " + GetSkillName(skill) + ".");
+        }
+
+        return DeveloperConsoleCommandResult.Success(
+            "Proc executed: " + GetSkillName(skill) + ".");
+    }
+
     public void GetFormIds(List<string> output)
     {
         if (output == null)

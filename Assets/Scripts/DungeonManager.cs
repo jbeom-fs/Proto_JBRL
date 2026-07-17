@@ -616,6 +616,8 @@ public class DungeonManager : MonoBehaviour
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.FloorTransition);
         if (DropItemSpawner.Instance != null)
             DropItemSpawner.Instance.ClearAllActiveDrops();
+        DamageZoneSpawner.Instance?.ClearAllActiveZones();
+        PlayerController.Active?.GetComponent<PlayerCombatController>()?.ClearAllProcSkillSequences();
     }
 
     private void ResetRoomEncounterState()

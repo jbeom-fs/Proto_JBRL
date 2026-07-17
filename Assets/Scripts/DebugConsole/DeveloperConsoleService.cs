@@ -19,6 +19,8 @@ public sealed class DeveloperConsoleService
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
     private const string ToastUsage = "Usage: /toast <duration> <message...>";
+    private const string ZoneUsage = "Usage: /zone <tickDamage> [duration=5] [slowPct=0] [slowDur=duration]";
+    private const string ProcUsage = "Usage: /proc <slot 0-3>";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
@@ -110,6 +112,8 @@ public sealed class DeveloperConsoleService
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
         _commands["toast"] = ExecuteToast;
+        _commands["zone"] = ExecuteZone;
+        _commands["proc"] = ExecuteProc;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
@@ -513,6 +517,45 @@ public sealed class DeveloperConsoleService
             return DeveloperConsoleCommandResult.Error(StunUsage);
 
         return _executor.ExecuteStun(duration);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteZone(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        string[] parts = string.IsNullOrWhiteSpace(arguments)
+            ? Array.Empty<string>()
+            : arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || parts.Length > 4 ||
+            !int.TryParse(parts[0], out int tickDamage) || tickDamage < 0)
+            return DeveloperConsoleCommandResult.Error(ZoneUsage);
+
+        string durationText = parts.Length >= 2 ? parts[1] : string.Empty;
+        if (!TryParsePositiveOptionalFloat(durationText, 5f, out float duration))
+            return DeveloperConsoleCommandResult.Error(ZoneUsage);
+
+        float slowPercentage = 0f;
+        if (parts.Length >= 3 &&
+            (!float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out slowPercentage) ||
+             slowPercentage < 0f))
+            return DeveloperConsoleCommandResult.Error(ZoneUsage);
+
+        string slowDurationText = parts.Length >= 4 ? parts[3] : string.Empty;
+        if (!TryParsePositiveOptionalFloat(slowDurationText, duration, out float slowDuration))
+            return DeveloperConsoleCommandResult.Error(ZoneUsage);
+
+        return _executor.ExecuteZone(tickDamage, duration, slowPercentage / 100f, slowDuration);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteProc(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+        if (!int.TryParse(arguments, out int slot) || slot < 0 || slot > 3)
+            return DeveloperConsoleCommandResult.Error(ProcUsage);
+
+        return _executor.ExecuteProc(slot);
     }
 
     private static DeveloperConsoleCommandResult ExecuteToast(string arguments)

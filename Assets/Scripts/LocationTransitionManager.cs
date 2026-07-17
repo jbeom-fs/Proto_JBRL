@@ -288,7 +288,10 @@ public class LocationTransitionManager : MonoBehaviour
 
             PlayerCombatController combat = player.GetComponent<PlayerCombatController>();
             if (combat != null)
+            {
                 combat.ResetCombo();
+                combat.ClearAllProcSkillSequences();
+            }
 
             PlayerFormController forms = player.GetComponent<PlayerFormController>();
             if (forms != null)
@@ -297,6 +300,7 @@ public class LocationTransitionManager : MonoBehaviour
         ProjectilePool.ReleaseAllActiveProjectiles(ProjectileReleaseReason.Manual);
         EnemyPoolManager.ReleaseAllActiveEnemiesForLocationChange();
         DropItemSpawner.Instance?.ClearAllActiveDrops();
+        DamageZoneSpawner.Instance?.ClearAllActiveZones();
         roomSpawner?.ClearRuntimeEncounterState();
         engravingStationPlacer?.ClearRuntimeState();
     }

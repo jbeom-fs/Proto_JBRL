@@ -578,6 +578,11 @@ public class EnemyController : MonoBehaviour, IDamageable
         RecalculateStrongestSlow();
     }
 
+    public void ApplySlowEffect(float percentage, float duration)
+    {
+        ApplySlow(percentage, duration);
+    }
+
     private void TickSlowEffects(float deltaTime)
     {
         if (_activeSlows.Count == 0) return;

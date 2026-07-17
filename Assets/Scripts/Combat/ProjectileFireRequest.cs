@@ -5,6 +5,7 @@ public sealed class ProjectileFireRequest
 {
     public GameObject ProjectilePrefab;
     public Transform OriginTransform;
+    public Vector3? OriginPositionOverride;
     public MonoBehaviour CoroutineRunner;
     public IDamageable Caster;
     public UnityEngine.Object Owner;

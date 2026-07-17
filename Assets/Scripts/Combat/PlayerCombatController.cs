@@ -151,6 +151,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
     private bool _isInventorySubscribed;
     private bool _isSoulEnhancementsSubscribed;
+    private readonly HashSet<SkillExecutionType> _warnedRejectedProcTypes = new HashSet<SkillExecutionType>();
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -1003,6 +1004,66 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ExecuteSkillIfReady(slotIndex, skill);
     }
 
+    /// <summary>
+    /// Executes a skill outside the normal cast pipeline without cost, cooldown,
+    /// recovery, animation, recast, cancellation, or skill-used events.
+    /// </summary>
+    public bool ExecuteSkillProc(SkillData skill, Vector3 origin, Vector2 direction)
+    {
+        if (skill == null || IsDead)
+            return false;
+
+        switch (skill.executionType)
+        {
+            case SkillExecutionType.AreaOverTime:
+            case SkillExecutionType.InstantArea:
+            case SkillExecutionType.Projectile:
+            case SkillExecutionType.Buff:
+                break;
+            default:
+                WarnRejectedProcTypeOnce(skill.executionType);
+                return false;
+        }
+
+        if (direction.sqrMagnitude <= 0.0001f)
+            direction = CurrentAimDirection;
+        direction.Normalize();
+
+        Vector2Int rawDirection = AimDirectionUtility.ResolveEightWayRaw(
+            direction,
+            playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down);
+        Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(
+            AimDirectionUtility.ToCardinalDirection(rawDirection));
+        SkillExecutionContext context = new SkillExecutionContext(
+            this,
+            _dashController,
+            _formController,
+            transform,
+            skill,
+            -1,
+            direction,
+            gridFacing,
+            TotalAttack,
+            hitRadius,
+            true,
+            origin);
+
+        return _skillExecutor.Execute(context).Success;
+    }
+
+    public void ClearAllProcSkillSequences()
+    {
+        _skillExecutor?.ClearAllProcSequences();
+    }
+
+    private void WarnRejectedProcTypeOnce(SkillExecutionType executionType)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedRejectedProcTypes.Add(executionType))
+            Debug.LogWarning("[PlayerCombatController] Proc rejected execution type: " + executionType + ".", this);
+#endif
+    }
+
     private bool CanCancelActiveMultiHit()
     {
         if (_skillExecutor == null || !_skillExecutor.IsMultiHitActive)
@@ -1610,6 +1671,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _externalInvincibilityCount = 0;
         ResetCombo();
         ClearSkillTimingState();
+        ClearAllProcSkillSequences();
         ClearParryState();
         ClearReloadState();
         _status?.ClearAll();

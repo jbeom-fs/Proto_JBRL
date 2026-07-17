@@ -42,6 +42,7 @@ public sealed class SkillExecutor
     private readonly HashSet<SkillData> _reportedMissingProjectilePrefabs = new();
     private readonly HashSet<PlayerCombatController> _reportedMissingDashControllers = new();
     private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
+    private bool _reportedProcSequenceLimit;
 
     public SkillExecutor(AttackExecutor attackExecutor)
         : this(attackExecutor, null, null)
@@ -80,6 +81,11 @@ public sealed class SkillExecutor
         _multiHitRunner.Cancel();
     }
 
+    public void ClearAllProcSequences()
+    {
+        _multiHitRunner.ClearAllProcSequences();
+    }
+
     public SkillExecutionResult Execute(SkillExecutionContext context)
     {
         if (context == null) return SkillExecutionResult.Failure;
@@ -105,6 +111,8 @@ public sealed class SkillExecutor
                 return ExecuteBuff(context);
 
             case SkillExecutionType.AreaOverTime:
+                return ExecuteAreaOverTime(context);
+
             default:
                 ReportUnsupportedExecutionType(context.Skill.executionType);
                 return SkillExecutionResult.Failure;
@@ -158,7 +166,17 @@ public sealed class SkillExecutor
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
         if (context.Skill.hitSteps != null && context.Skill.hitSteps.Count > 0)
-            _multiHitRunner.Start(context);
+        {
+            if (context.IsProcCast)
+            {
+                if (!_multiHitRunner.TryStartProcSequence(context))
+                    ReportProcSequenceLimitOnce();
+            }
+            else
+            {
+                _multiHitRunner.Start(context);
+            }
+        }
 
         return SkillExecutionResult.SuccessWithCost(context.Skill.consumeAmount);
     }
@@ -167,7 +185,9 @@ public sealed class SkillExecutor
     {
         _attackExecutor.BeginAttackActivation();
 
-        Vector3 origin = context.CasterTransform.position;
+        Vector3 origin = context.IsProcCast
+            ? context.CasterPosition
+            : context.CasterTransform.position;
         IReadOnlyList<Vector2Int> overrideCells = hitStep.overrideCells;
         bool usesOverride = overrideCells != null && overrideCells.Count > 0;
         List<Vector3> targets = _targetResolver.ResolveWorldTargets(context, origin, overrideCells);
@@ -219,6 +239,19 @@ public sealed class SkillExecutor
         }
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
+    }
+
+    private void ReportProcSequenceLimitOnce()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_reportedProcSequenceLimit)
+            return;
+
+        _reportedProcSequenceLimit = true;
+        Debug.LogWarning(
+            "[SkillExecutor] Proc multi-hit sequence rejected: concurrent limit " +
+            MultiHitSkillRunner.MaxConcurrentProcSequences + " reached.");
+#endif
     }
 
     private void NotifyInstantAreaHit(
@@ -304,6 +337,32 @@ public sealed class SkillExecutor
             CreateDashDamageRequest(context),
             skill);
         return success ? SkillExecutionResult.SuccessWithCost(skill.consumeAmount) : SkillExecutionResult.Failure;
+    }
+
+    private SkillExecutionResult ExecuteAreaOverTime(SkillExecutionContext context)
+    {
+        if (DamageZoneSpawner.Instance == null)
+            return SkillExecutionResult.Failure;
+
+        SkillData skill = context.Skill;
+        int tickDamage = skill.damage > 0 ? context.TotalAttack + skill.damage : 0;
+        ZonePayload payload = new ZonePayload(
+            tickDamage,
+            skill.zoneDuration,
+            skill.slowPercentage,
+            skill.slowDuration,
+            ResolveAttackAilments(context),
+            ResolveAilmentMultiplier(context),
+            skill.zoneRadius,
+            skill.zoneTickInterval);
+        if (!DamageZoneSpawner.Instance.SpawnZone(
+                context.CasterPosition,
+                skill.zoneSprite,
+                in payload))
+            return SkillExecutionResult.Failure;
+
+        PlayConfiguredAnimation(context, skill, ResolveExecutionDirection(context));
+        return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
     }
 
     private SkillExecutionResult ExecuteBlink(SkillExecutionContext context)
@@ -398,6 +457,9 @@ public sealed class SkillExecutor
 
     private static void PlayConfiguredAnimation(SkillExecutionContext context, SkillData skill, Vector2 direction)
     {
+        if (context.IsProcCast)
+            return;
+
         if (context.CasterForm == null || skill == null)
             return;
 
@@ -448,6 +510,7 @@ public sealed class SkillExecutor
         {
             ProjectilePrefab = skill.projectilePrefab,
             OriginTransform = context.CasterTransform,
+            OriginPositionOverride = context.IsProcCast ? context.CasterPosition : (Vector3?)null,
             CoroutineRunner = context.CasterCombat,
             Caster = context.CasterCombat,
             Owner = context.CasterCombat,

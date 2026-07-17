@@ -125,9 +125,11 @@
     <Compile Include="Assets\Scripts\Items\ItemCodes.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnRegion.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectilePool.cs" />
+    <Compile Include="Assets\Scripts\Combat\DamageZoneSpawner.cs" />
     <Compile Include="Assets\Scripts\UI\OfferRowUI.cs" />
     <Compile Include="Assets\Scripts\Data\PlayerFormId.cs" />
     <Compile Include="Assets\Scripts\Enemy\NormalEnemyBrain.cs" />
+    <Compile Include="Assets\Scripts\Combat\DamageZone.cs" />
     <Compile Include="Assets\Scripts\PlayerInputReader.cs" />
     <Compile Include="Assets\Scripts\UI\TilemapMinimapSource.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillProjectileUtility.cs" />
@@ -159,6 +161,7 @@
     <Compile Include="Assets\Scripts\Combat\SkillExecutionContext.cs" />
     <Compile Include="Assets\Scripts\UI\ShardPaymentModalUI.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityArea.cs" />
+    <Compile Include="Assets\Scripts\Combat\ZonePayload.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\ComboCounterUI.cs" />
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleCommandExecutor.cs" />

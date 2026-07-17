@@ -19,6 +19,7 @@ public sealed class SkillExecutionContext
     public Vector3 CasterPosition { get; }
     public int TotalAttack { get; }
     public float HitRadius { get; }
+    public bool IsProcCast { get; }
 
     public SkillExecutionContext(
         PlayerCombatController casterCombat,
@@ -30,7 +31,9 @@ public sealed class SkillExecutionContext
         Vector2 aimDirection,
         Vector2Int gridAimDirection,
         int totalAttack,
-        float hitRadius)
+        float hitRadius,
+        bool isProcCast = false,
+        Vector3? casterPositionOverride = null)
     {
         CasterCombat = casterCombat;
         CasterDash = casterDash;
@@ -41,8 +44,10 @@ public sealed class SkillExecutionContext
         SlotIndex = slotIndex;
         AimDirection = aimDirection;
         GridAimDirection = gridAimDirection;
-        CasterPosition = casterTransform != null ? casterTransform.position : Vector3.zero;
+        CasterPosition = casterPositionOverride ??
+                         (casterTransform != null ? casterTransform.position : Vector3.zero);
         TotalAttack = totalAttack;
         HitRadius = hitRadius;
+        IsProcCast = isProcCast;
     }
 }

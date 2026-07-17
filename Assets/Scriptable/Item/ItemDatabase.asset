@@ -63,10 +63,11 @@ MonoBehaviour:
     - type: 2
       value: 30
     behaviorEffects:
-    - trigger: 0
+    - trigger: 1
       action: 0
       skillTypeFilter: 4
       value: 3
+      duration: 0
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -339,6 +340,33 @@ MonoBehaviour:
     useEffects: []
     passiveEffects: []
     behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Test_Position_Relic
+    displayName: "\uD14C\uC2A4\uD2B8_\uB3C5\uC131\uC720\uBB3C"
+    icon: {fileID: 0}
+    description: "\uB3C5\uC131 \uD14C\uC2A4\uD2B8\uC6A9"
+    itemType: 4
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects:
+    - trigger: 2
+      action: 1
+      skillTypeFilter: 0
+      value: 3
+      duration: 3
+    - trigger: 1
+      action: 2
+      skillTypeFilter: 4
+      value: 3
+      duration: 3
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 

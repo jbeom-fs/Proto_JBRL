@@ -50,7 +50,7 @@ public class SkillData : ScriptableObject
     [TextArea(2, 4)]
     public string description;
 
-    [Tooltip("Execution route for this skill. AreaOverTime and Buff are reserved and not implemented yet.")]
+    [Tooltip("Execution route used by SkillExecutor.")]
     public SkillExecutionType executionType = SkillExecutionType.InstantArea;
 
     [Header("Resource")]
@@ -98,7 +98,7 @@ public class SkillData : ScriptableObject
     [SerializeField] private bool rotateAnimationByDirection;
     [SerializeField] private float animationBaseAngle;
 
-    [Tooltip("Base damage shared by InstantArea, Projectile, and Dash damage checks where applicable.")]
+    [Tooltip("Base damage shared by InstantArea, Projectile, Dash, and AreaOverTime where applicable.")]
     [Min(0)]
     public int damage = 10;
 
@@ -148,6 +148,23 @@ public class SkillData : ScriptableObject
 
     [Tooltip("DoT applications applied on hit. Empty means no ailment.")]
     public AilmentApplication[] ailments;
+
+    [Space(8)]
+    [Header("Zone")]
+    [Tooltip("Sprite displayed by AreaOverTime zones. Null creates an invisible logical zone.")]
+    public Sprite zoneSprite;
+
+    [Tooltip("World-space radius used by AreaOverTime zone detection and visual sizing.")]
+    [Min(0f)]
+    public float zoneRadius = 1f;
+
+    [Tooltip("Seconds between AreaOverTime zone ticks.")]
+    [Min(0.01f)]
+    public float zoneTickInterval = 0.5f;
+
+    [Tooltip("AreaOverTime zone lifetime in seconds.")]
+    [Min(0f)]
+    public float zoneDuration = 3f;
 
     [Space(8)]
     [Header("Projectile")]

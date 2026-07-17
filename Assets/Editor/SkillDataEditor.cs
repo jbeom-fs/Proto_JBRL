@@ -44,6 +44,10 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _slowPercentage;
     private SerializedProperty _slowDuration;
     private SerializedProperty _ailments;
+    private SerializedProperty _zoneSprite;
+    private SerializedProperty _zoneRadius;
+    private SerializedProperty _zoneTickInterval;
+    private SerializedProperty _zoneDuration;
 
     private SerializedProperty _projectilePrefab;
     private SerializedProperty _projectileSpeed;
@@ -122,6 +126,10 @@ public sealed class SkillDataEditor : Editor
         _slowPercentage = serializedObject.FindProperty("slowPercentage");
         _slowDuration = serializedObject.FindProperty("slowDuration");
         _ailments = serializedObject.FindProperty("ailments");
+        _zoneSprite = serializedObject.FindProperty("zoneSprite");
+        _zoneRadius = serializedObject.FindProperty("zoneRadius");
+        _zoneTickInterval = serializedObject.FindProperty("zoneTickInterval");
+        _zoneDuration = serializedObject.FindProperty("zoneDuration");
 
         _projectilePrefab = serializedObject.FindProperty("projectilePrefab");
         _projectileSpeed = serializedObject.FindProperty("projectileSpeed");
@@ -204,7 +212,8 @@ public sealed class SkillDataEditor : Editor
                     break;
 
                 case SkillExecutionType.AreaOverTime:
-                    DrawReservedExecutionType(executionType);
+                    DrawZoneSection();
+                    DrawCombatImpactSection("Zone Combat Impact");
                     break;
             }
         }
@@ -757,6 +766,15 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_ailments);
     }
 
+    private void DrawZoneSection()
+    {
+        DrawSectionHeader("Zone");
+        DrawProperty(_zoneSprite);
+        DrawProperty(_zoneRadius);
+        DrawProperty(_zoneTickInterval);
+        DrawProperty(_zoneDuration);
+    }
+
     private void DrawAilmentsOnlySection(string title)
     {
         DrawSectionHeader(title);
@@ -827,6 +845,13 @@ public sealed class SkillDataEditor : Editor
         {
             DrawNonPositiveWarning(_dashDistance, "Dash Distance");
             DrawNonPositiveWarning(_dashDuration, "Dash Duration");
+        }
+
+        if (executionType == SkillExecutionType.AreaOverTime)
+        {
+            DrawNonPositiveWarning(_zoneRadius, "Zone Radius");
+            DrawNonPositiveWarning(_zoneTickInterval, "Zone Tick Interval");
+            DrawNonPositiveWarning(_zoneDuration, "Zone Duration");
         }
     }
 

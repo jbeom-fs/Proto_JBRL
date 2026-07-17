@@ -125,7 +125,7 @@ public sealed class ProjectileFireService
             return false;
 
         direction = NormalizeDirection(direction);
-        Vector3 spawnPosition = request.OriginTransform.position
+        Vector3 spawnPosition = (request.OriginPositionOverride ?? request.OriginTransform.position)
             + (Vector3)(direction * Mathf.Max(0f, request.SpawnOffset));
         ProjectilePool pool = ProjectilePool.Instance;
         if (pool == null)
