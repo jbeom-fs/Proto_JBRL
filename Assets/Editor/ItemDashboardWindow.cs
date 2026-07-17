@@ -34,6 +34,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private const float WarningsPanelMaxPadding = 220f;
 
     private static readonly string[] s_TypeFilterOptions = BuildTypeFilterOptions();
+    private static readonly string[] s_SkillExecutionTypeNames = Enum.GetNames(typeof(SkillExecutionType));
 
     private readonly List<ItemRow> _rows = new List<ItemRow>(64);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
@@ -824,6 +825,7 @@ public sealed class ItemDashboardWindow : EditorWindow
 
             case ItemType.Relic:
                 DrawEffectArray(row, serializedObject, item.FindPropertyRelative("passiveEffects"), "passiveEffects[]");
+                DrawRelicBehaviorArray(row, serializedObject, item.FindPropertyRelative("behaviorEffects"));
                 break;
         }
     }
@@ -981,6 +983,88 @@ public sealed class ItemDashboardWindow : EditorWindow
             SerializedProperty effect = effects.GetArrayElementAtIndex(index);
             SetEnum(effect.FindPropertyRelative("type"), 0);
             SetInt(effect.FindPropertyRelative("value"), 0);
+            added = ApplyItemPropertyChange(row, serializedObject);
+        }
+        EditorGUILayout.EndHorizontal();
+
+        if (added)
+            GUIUtility.ExitGUI();
+    }
+
+    private void DrawRelicBehaviorArray(
+        ItemRow row,
+        SerializedObject serializedObject,
+        SerializedProperty behaviors)
+    {
+        EditorGUILayout.Space(4f);
+        EditorGUILayout.LabelField("behaviorEffects[]", EditorStyles.miniBoldLabel);
+
+        if (behaviors == null || !behaviors.isArray)
+        {
+            EditorGUILayout.HelpBox("behaviorEffects[] missing.", MessageType.Error);
+            return;
+        }
+
+        for (int i = 0; i < behaviors.arraySize; i++)
+        {
+            SerializedProperty behavior = behaviors.GetArrayElementAtIndex(i);
+            SerializedProperty trigger = behavior.FindPropertyRelative("trigger");
+            SerializedProperty action = behavior.FindPropertyRelative("action");
+            SerializedProperty skillTypeFilter = behavior.FindPropertyRelative("skillTypeFilter");
+            SerializedProperty value = behavior.FindPropertyRelative("value");
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Behavior " + i, EditorStyles.miniBoldLabel);
+            bool delete = GUILayout.Button("-", GUILayout.Width(24f));
+            EditorGUILayout.EndHorizontal();
+
+            if (delete)
+            {
+                DeleteArrayElement(behaviors, i);
+                bool deleted = ApplyItemPropertyChange(row, serializedObject);
+                EditorGUILayout.EndVertical();
+                if (deleted)
+                    GUIUtility.ExitGUI();
+                continue;
+            }
+
+            EditorGUI.BeginChangeCheck();
+            int nextTrigger = trigger != null
+                ? EditorGUILayout.Popup("trigger", trigger.enumValueIndex, trigger.enumDisplayNames)
+                : 0;
+            int nextAction = action != null
+                ? EditorGUILayout.Popup("action", action.enumValueIndex, action.enumDisplayNames)
+                : 0;
+            int nextFilter = skillTypeFilter != null ? skillTypeFilter.intValue : 0;
+            if ((RelicTrigger)nextTrigger == RelicTrigger.OnSkillUsed)
+                nextFilter = EditorGUILayout.MaskField("skillTypeFilter", nextFilter, s_SkillExecutionTypeNames);
+            int nextValue = value != null ? EditorGUILayout.IntField("value", value.intValue) : 0;
+            bool changed = EditorGUI.EndChangeCheck();
+            EditorGUILayout.EndVertical();
+
+            if (!changed)
+                continue;
+
+            SetEnum(trigger, nextTrigger);
+            SetEnum(action, nextAction);
+            SetInt(skillTypeFilter, nextFilter);
+            SetInt(value, nextValue);
+            ApplyItemPropertyChange(row, serializedObject);
+        }
+
+        bool added = false;
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(16f);
+        if (GUILayout.Button("+ behavior", GUILayout.Width(100f)))
+        {
+            int index = behaviors.arraySize;
+            behaviors.InsertArrayElementAtIndex(index);
+            SerializedProperty behavior = behaviors.GetArrayElementAtIndex(index);
+            SetEnum(behavior.FindPropertyRelative("trigger"), (int)RelicTrigger.OnKill);
+            SetEnum(behavior.FindPropertyRelative("action"), (int)RelicAction.Heal);
+            SetInt(behavior.FindPropertyRelative("skillTypeFilter"), 0);
+            SetInt(behavior.FindPropertyRelative("value"), 0);
             added = ApplyItemPropertyChange(row, serializedObject);
         }
         EditorGUILayout.EndHorizontal();
@@ -1490,7 +1574,28 @@ public sealed class ItemDashboardWindow : EditorWindow
         row.SalvageItemCode = GetString(item.FindPropertyRelative("salvageItemCode"));
         row.SalvageMinAmount = GetInt(item.FindPropertyRelative("salvageMinAmount"));
         row.SalvageMaxAmount = GetInt(item.FindPropertyRelative("salvageMaxAmount"));
+        RefreshBehaviorWarningState(row, item.FindPropertyRelative("behaviorEffects"));
         row.TypeSummary = BuildTypeSummary(row, item);
+    }
+
+    private static void RefreshBehaviorWarningState(ItemRow row, SerializedProperty behaviors)
+    {
+        row.BehaviorEffectCount = behaviors != null && behaviors.isArray ? behaviors.arraySize : 0;
+        row.HasUnfilteredOnSkillUsedBehavior = false;
+        row.HasNonPositiveBehaviorValue = false;
+
+        for (int i = 0; i < row.BehaviorEffectCount; i++)
+        {
+            SerializedProperty behavior = behaviors.GetArrayElementAtIndex(i);
+            RelicTrigger trigger = (RelicTrigger)GetInt(behavior.FindPropertyRelative("trigger"));
+            int skillTypeFilter = GetInt(behavior.FindPropertyRelative("skillTypeFilter"));
+            int value = GetInt(behavior.FindPropertyRelative("value"));
+
+            if (trigger == RelicTrigger.OnSkillUsed && skillTypeFilter == 0)
+                row.HasUnfilteredOnSkillUsedBehavior = true;
+            if (value <= 0)
+                row.HasNonPositiveBehaviorValue = true;
+        }
     }
 
     private void RefreshRowDropSources(ItemRow row, Dictionary<string, List<DropSourceRecord>> dropSourcesByCode)
@@ -1541,6 +1646,15 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (row.ItemType == ItemType.Equipment)
             AddWarning(row, WarningSeverity.Warning, "[Warn] Equipment 타입 사용: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
+
+        if (row.HasUnfilteredOnSkillUsedBehavior)
+            AddWarning(row, WarningSeverity.Error, "[Error] OnSkillUsed behavior의 skillTypeFilter가 0: " + location, row.Database);
+
+        if (row.HasNonPositiveBehaviorValue)
+            AddWarning(row, WarningSeverity.Warning, "[Warn] behaviorEffects value가 0 이하: " + location, row.Database);
+
+        if (row.BehaviorEffectCount > 0 && row.ItemType != ItemType.Relic)
+            AddWarning(row, WarningSeverity.Warning, "[Warn] Relic이 아닌 아이템의 behaviorEffects는 런타임에서 미소비: " + location, row.Database);
 
         if (string.IsNullOrWhiteSpace(row.Description))
             AddWarning(row, WarningSeverity.Info, "[Info] description 공백: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
@@ -2409,6 +2523,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         SetBool(item.FindPropertyRelative("removeOnDungeonExit"), false);
         SetArraySize(item.FindPropertyRelative("useEffects"), 0);
         SetArraySize(item.FindPropertyRelative("passiveEffects"), 0);
+        SetArraySize(item.FindPropertyRelative("behaviorEffects"), 0);
         SetEnum(item.FindPropertyRelative("soulFormId"), 0);
         SetObject(item.FindPropertyRelative("engraving"), null);
         SetString(item.FindPropertyRelative("salvageItemCode"), string.Empty);
@@ -2592,6 +2707,9 @@ public sealed class ItemDashboardWindow : EditorWindow
         public string SalvageItemCode;
         public int SalvageMinAmount;
         public int SalvageMaxAmount;
+        public int BehaviorEffectCount;
+        public bool HasUnfilteredOnSkillUsedBehavior;
+        public bool HasNonPositiveBehaviorValue;
         public string TypeSummary;
         public string DropSummary;
 

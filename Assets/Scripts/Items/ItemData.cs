@@ -18,6 +18,7 @@ public sealed class ItemData
     [SerializeField] private bool removeOnDungeonExit;
     [SerializeField] private ItemEffect[] useEffects = Array.Empty<ItemEffect>();
     [SerializeField] private ItemEffect[] passiveEffects = Array.Empty<ItemEffect>();
+    [SerializeField] private RelicBehavior[] behaviorEffects = Array.Empty<RelicBehavior>();
     [SerializeField] private PlayerFormId soulFormId;
     [SerializeField] private EngravingData engraving;
     [SerializeField] private string salvageItemCode;
@@ -36,6 +37,7 @@ public sealed class ItemData
     public bool RemoveOnDungeonExit => removeOnDungeonExit;
     public IReadOnlyList<ItemEffect> UseEffects => useEffects ?? Array.Empty<ItemEffect>();
     public IReadOnlyList<ItemEffect> PassiveEffects => passiveEffects ?? Array.Empty<ItemEffect>();
+    public IReadOnlyList<RelicBehavior> BehaviorEffects => behaviorEffects ?? Array.Empty<RelicBehavior>();
     public PlayerFormId SoulFormId => soulFormId;
     public EngravingData Engraving => engraving;
     public string SalvageItemCode => salvageItemCode;
@@ -57,6 +59,7 @@ public sealed class ItemData
             removeOnDungeonExit = removeOnDungeonExit,
             useEffects = CloneEffects(useEffects),
             passiveEffects = CloneEffects(passiveEffects),
+            behaviorEffects = CloneBehaviors(behaviorEffects),
             soulFormId = soulFormId,
             engraving = engraving,
             salvageItemCode = salvageItemCode,
@@ -107,6 +110,30 @@ public sealed class ItemData
             {
                 type = source[i].type,
                 value = source[i].value
+            };
+        }
+
+        return clone;
+    }
+
+    private static RelicBehavior[] CloneBehaviors(RelicBehavior[] source)
+    {
+        if (source == null || source.Length == 0)
+            return Array.Empty<RelicBehavior>();
+
+        RelicBehavior[] clone = new RelicBehavior[source.Length];
+        for (int i = 0; i < source.Length; i++)
+        {
+            RelicBehavior behavior = source[i];
+            if (behavior == null)
+                continue;
+
+            clone[i] = new RelicBehavior
+            {
+                trigger = behavior.trigger,
+                action = behavior.action,
+                skillTypeFilter = behavior.skillTypeFilter,
+                value = behavior.value
             };
         }
 

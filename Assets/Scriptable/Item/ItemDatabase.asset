@@ -24,6 +24,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -42,6 +43,7 @@ MonoBehaviour:
     - type: 1
       value: 30
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -60,6 +62,11 @@ MonoBehaviour:
     passiveEffects:
     - type: 2
       value: 30
+    behaviorEffects:
+    - trigger: 0
+      action: 0
+      skillTypeFilter: 4
+      value: 3
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -76,6 +83,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -92,6 +100,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 1
     engraving: {fileID: 0}
     salvageItemCode: Mat_Sword
@@ -108,6 +117,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 2
     engraving: {fileID: 0}
     salvageItemCode: Mat_Dagger
@@ -124,6 +134,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 3
     engraving: {fileID: 0}
     salvageItemCode: Mat_Freichutz
@@ -140,6 +151,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 4
     engraving: {fileID: 0}
     salvageItemCode: Mat_Parry
@@ -156,6 +168,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -172,6 +185,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -188,6 +202,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -204,6 +219,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -220,6 +236,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 1
     engraving: {fileID: 11400000, guid: 69a14588d2b718b49b2fbf49e558d375, type: 2}
     salvageItemCode: Eng_Sword_Faint
@@ -236,6 +253,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 1
     engraving: {fileID: 11400000, guid: e67d0a675f42c684ca8ce1dac57a2e5f, type: 2}
     salvageItemCode: Eng_Sword_Faint
@@ -252,6 +270,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 1
     engraving: {fileID: 11400000, guid: 4b1c613495792564ca00fd5aec6b7c30, type: 2}
     salvageItemCode: Eng_Sword_Primordial
@@ -268,6 +287,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 1
     engraving: {fileID: 11400000, guid: aef1c3b8daa8ff64a824c9bc805cfb47, type: 2}
     salvageItemCode: 
@@ -284,6 +304,7 @@ MonoBehaviour:
     removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 2
     engraving: {fileID: 11400000, guid: 6d6a5bc122cbd6043ac24fa423be1a08, type: 2}
     salvageItemCode: 
@@ -300,6 +321,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
@@ -316,6 +338,7 @@ MonoBehaviour:
     removeOnDungeonExit: 1
     useEffects: []
     passiveEffects: []
+    behaviorEffects: []
     soulFormId: 0
     engraving: {fileID: 0}
     salvageItemCode: 
