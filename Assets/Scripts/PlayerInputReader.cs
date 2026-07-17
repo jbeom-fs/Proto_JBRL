@@ -16,6 +16,7 @@ public class PlayerInputReader : MonoBehaviour
     public bool InventoryPressedThisFrame { get; private set; }
     public bool WasBasicAttackPressed { get; private set; }
     public bool WasReloadPressed { get; private set; }
+    public bool WasDodgePressed { get; private set; }
 
     public bool WasStairPressed => InteractConfirmPressedThisFrame;
     public bool IsGamePaused => GamePauseController.IsPaused;
@@ -75,9 +76,12 @@ public class PlayerInputReader : MonoBehaviour
 
         InteractConfirmPressedThisFrame = WasPressedThisFrame(keyboard, settings != null ? settings.interactConfirm : Key.Z);
         WasBasicAttackPressed = WasBindingPressedThisFrame(
-            settings != null ? settings.GetBasicAttackBinding() : new InputBinding(Key.Space),
+            settings != null ? settings.GetBasicAttackBinding() : new InputBinding(Key.X),
             blockMouseOverUi: true);
         WasReloadPressed = WasPressedThisFrame(keyboard, settings != null ? settings.GetReloadKey() : Key.A);
+        WasDodgePressed = WasBindingPressedThisFrame(
+            settings != null ? settings.GetDodgeBinding() : new InputBinding(Key.Space),
+            blockMouseOverUi: true);
 
         for (int i = 0; i < _wasSkillPressed.Length; i++)
         {
@@ -153,7 +157,7 @@ public class PlayerInputReader : MonoBehaviour
     }
 
     private InputBinding GetBasicAttackBinding()
-        => keySettings != null ? keySettings.GetBasicAttackBinding() : new InputBinding(Key.Space);
+        => keySettings != null ? keySettings.GetBasicAttackBinding() : new InputBinding(Key.X);
 
     private InputBinding GetSkillSlotBinding(int slot)
         => keySettings != null ? keySettings.GetSkillSlotBinding(slot) : new InputBinding(GetDefaultSkillSlotKey(slot));
@@ -228,6 +232,7 @@ public class PlayerInputReader : MonoBehaviour
         InteractConfirmPressedThisFrame = false;
         WasBasicAttackPressed = false;
         WasReloadPressed = false;
+        WasDodgePressed = false;
         _wasSkillPressed[0] = _wasSkillPressed[1] = _wasSkillPressed[2] = _wasSkillPressed[3] = false;
     }
 }

@@ -46,8 +46,9 @@ public sealed class PlayerInputKeySettings : ScriptableObject
     [Header("Actions")]
     public Key interactConfirm = Key.Z;
     public Key inventory = Key.I;
-    public Key basicAttack = Key.Space;
+    public Key basicAttack = Key.X;
     public Key reload = Key.A;
+    public Key dodge = Key.Space;
 
     [Header("Skills")]
     public Key skillSlot1 = Key.Q;
@@ -63,7 +64,8 @@ public sealed class PlayerInputKeySettings : ScriptableObject
 
     [Header("Action Mouse Aim Actions")]
     public InputBinding actionMouseBasicAttack = new InputBinding(Key.None, PointerButton.Left);
-    public Key actionMouseReload = Key.Space;
+    public Key actionMouseReload = Key.Tab;
+    public InputBinding actionMouseDodge = new InputBinding(Key.Space);
 
     [Header("Action Mouse Aim Skills")]
     public InputBinding actionMouseSkillSlot1 = new InputBinding(Key.None, PointerButton.Right);
@@ -97,6 +99,11 @@ public sealed class PlayerInputKeySettings : ScriptableObject
         => controlScheme == PlayerControlScheme.ActionMouseAim
             ? actionMouseBasicAttack
             : new InputBinding(basicAttack);
+
+    public InputBinding GetDodgeBinding()
+        => controlScheme == PlayerControlScheme.ActionMouseAim
+            ? actionMouseDodge
+            : new InputBinding(dodge);
 
     public InputBinding GetSkillSlotBinding(int slotIndex)
     {
@@ -138,13 +145,13 @@ public sealed class PlayerInputKeySettings : ScriptableObject
         Key[] keys =
         {
             up, down, left, right,
-            interactConfirm, inventory, basicAttack, reload,
+            interactConfirm, inventory, basicAttack, reload, dodge,
             skillSlot1, skillSlot2, skillSlot3, skillSlot4,
         };
         string[] names =
         {
             nameof(up), nameof(down), nameof(left), nameof(right),
-            nameof(interactConfirm), nameof(inventory), nameof(basicAttack), nameof(reload),
+            nameof(interactConfirm), nameof(inventory), nameof(basicAttack), nameof(reload), nameof(dodge),
             nameof(skillSlot1), nameof(skillSlot2), nameof(skillSlot3), nameof(skillSlot4),
         };
 
@@ -175,6 +182,7 @@ public sealed class PlayerInputKeySettings : ScriptableObject
         InputBinding[] bindings =
         {
             actionMouseBasicAttack,
+            actionMouseDodge,
             actionMouseSkillSlot1,
             actionMouseSkillSlot2,
             actionMouseSkillSlot3,
@@ -183,6 +191,7 @@ public sealed class PlayerInputKeySettings : ScriptableObject
         string[] bindingNames =
         {
             nameof(actionMouseBasicAttack),
+            nameof(actionMouseDodge),
             nameof(actionMouseSkillSlot1),
             nameof(actionMouseSkillSlot2),
             nameof(actionMouseSkillSlot3),

@@ -58,6 +58,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [Header("Animation")]
     [SerializeField] private SkillData basicAttackSkillData;
 
+    [Header("Dodge")]
+    [SerializeField] private SkillData dodgeSkill;
+
     [Header("Skill Hit Flash")]
     [SerializeField] private bool enableSkillHitFlash = true;
     [SerializeField] private Color skillHitFlashColor = new Color(0.9f, 0.1f, 0.1f, 0.55f);
@@ -122,6 +125,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Vector2 _aimDirectionContinuous = Vector2.down;
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
+    private float _dodgeCooldownTimer;
     private Coroutine _skillCastRoutine;
     private readonly RecastChainEntry[] _recastChains = new RecastChainEntry[SkillSlotCount];
     private Coroutine _parryRoutine;
@@ -655,6 +659,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
         TickSkillSlots(Time.deltaTime);
+        TickDodgeCooldown(Time.deltaTime);
         TickSkillRecovery(Time.deltaTime);
         TickDaggerState(Time.deltaTime);
         _skillExecutor?.TickMultiHit(Time.deltaTime);
@@ -672,6 +677,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             TryStartReload();
         if (IsSkillBusy && !CanCancelActiveMultiHit()) return;
 
+        if (_inputReader.WasDodgePressed) TryUseDodge();
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
         if (_inputReader.WasSkillPressed(0)) TryUseSkill(0);
         if (_inputReader.WasSkillPressed(1)) TryUseSkill(1);
@@ -907,6 +913,45 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     // ══════════════════════════════════════════════════════════════
     //  스킬 사용
     // ══════════════════════════════════════════════════════════════
+
+    private void TryUseDodge()
+    {
+        if (dodgeSkill == null) return;
+        if (_dodgeCooldownTimer > 0f) return;
+        if (IsDead) return;
+        if (IsDashing) return;
+        if (IsStunned) return;
+        if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
+        if (IsCombatBlockedByLocation()) return;
+
+        bool cancelsActiveMultiHit = CanCancelActiveMultiHit();
+        if (IsSkillBusy && !cancelsActiveMultiHit) return;
+
+        if (cancelsActiveMultiHit)
+            CancelActiveMultiHitFor(dodgeSkill);
+
+        Vector2 dodgeDirection = ResolveDodgeDirection();
+        SkillExecutionContext context = CreateSkillExecutionContext(dodgeSkill, -1, dodgeDirection);
+        SkillExecutionResult result = _skillExecutor.Execute(context);
+        if (!result.Success) return;
+
+        _dodgeCooldownTimer = Mathf.Max(0f, dodgeSkill.cooldown) * EffectiveSkillCooldownMultiplier();
+        StartSkillRecovery(dodgeSkill.recoveryDelay);
+        combatChannel?.RaiseSkillUsed(dodgeSkill);
+    }
+
+    private Vector2 ResolveDodgeDirection()
+    {
+        if (_inputReader != null && _inputReader.HasMouseAim)
+            return RefreshAimDirection();
+
+        Vector2 moveDirection = _inputReader != null ? _inputReader.MoveInput : Vector2.zero;
+        if (moveDirection.sqrMagnitude > 0.0001f)
+            return moveDirection.normalized;
+
+        Vector2Int facing = playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down;
+        return AimDirectionUtility.ToNormalizedDirection(facing);
+    }
 
     private void TryUseSkill(int slotIndex)
     {
@@ -1202,6 +1247,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             _skillRecoveryTimer -= deltaTime;
     }
 
+    private void TickDodgeCooldown(float deltaTime)
+    {
+        if (_dodgeCooldownTimer > 0f)
+            _dodgeCooldownTimer = Mathf.Max(0f, _dodgeCooldownTimer - deltaTime);
+    }
+
     private void StartSkillRecovery(float recoveryDelay)
     {
         _skillRecoveryTimer = Mathf.Max(_skillRecoveryTimer, Mathf.Max(0f, recoveryDelay));
@@ -1386,6 +1437,30 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         Vector2 aimDirection = RefreshAimDirection();
         Vector2Int gridFacing = GetGridAimDirection();
+
+        return CreateSkillExecutionContext(skill, slotIndex, aimDirection, gridFacing);
+    }
+
+    private SkillExecutionContext CreateSkillExecutionContext(
+        SkillData skill,
+        int slotIndex,
+        Vector2 aimDirection)
+    {
+        Vector2Int rawDirection = AimDirectionUtility.ResolveEightWayRaw(
+            aimDirection,
+            playerMovement != null ? playerMovement.FacingDirection : Vector2Int.down);
+        Vector2Int gridFacing = SkillTargetResolver.ToGridAimDirection(
+            AimDirectionUtility.ToCardinalDirection(rawDirection));
+
+        return CreateSkillExecutionContext(skill, slotIndex, aimDirection, gridFacing);
+    }
+
+    private SkillExecutionContext CreateSkillExecutionContext(
+        SkillData skill,
+        int slotIndex,
+        Vector2 aimDirection,
+        Vector2Int gridFacing)
+    {
 
         return new SkillExecutionContext(
             this,

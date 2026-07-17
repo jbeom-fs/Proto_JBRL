@@ -19,8 +19,9 @@ MonoBehaviour:
   right: 62
   interactConfirm: 40
   inventory: 23
-  basicAttack: 1
+  basicAttack: 38
   reload: 15
+  dodge: 1
   skillSlot1: 31
   skillSlot2: 37
   skillSlot3: 19
@@ -32,7 +33,10 @@ MonoBehaviour:
   actionMouseBasicAttack:
     key: 0
     mouseButton: 1
-  actionMouseReload: 1
+  actionMouseReload: 3
+  actionMouseDodge:
+    key: 1
+    mouseButton: 0
   actionMouseSkillSlot1:
     key: 0
     mouseButton: 2
