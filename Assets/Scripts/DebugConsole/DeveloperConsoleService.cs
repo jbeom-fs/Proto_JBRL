@@ -18,6 +18,7 @@ public sealed class DeveloperConsoleService
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
+    private const string ToastUsage = "Usage: /toast <duration> <message...>";
 
     private static readonly string[] s_FloorArgs = { "add", "sub", "set" };
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
@@ -108,6 +109,7 @@ public sealed class DeveloperConsoleService
         _commands["combo"] = ExecuteCombo;
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
+        _commands["toast"] = ExecuteToast;
 
         _argumentProviders["floor"] = ProvideFloorSuggestions;
         _argumentProviders["form"] = ProvideFormSuggestions;
@@ -511,6 +513,29 @@ public sealed class DeveloperConsoleService
             return DeveloperConsoleCommandResult.Error(StunUsage);
 
         return _executor.ExecuteStun(duration);
+    }
+
+    private static DeveloperConsoleCommandResult ExecuteToast(string arguments)
+    {
+        if (string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error(ToastUsage);
+
+        string trimmed = arguments.Trim();
+        int separatorIndex = trimmed.IndexOf(' ');
+        if (separatorIndex <= 0)
+            return DeveloperConsoleCommandResult.Error(ToastUsage);
+
+        string durationText = trimmed.Substring(0, separatorIndex);
+        string message = trimmed.Substring(separatorIndex + 1).Trim();
+        if (string.IsNullOrWhiteSpace(message) ||
+            !float.TryParse(durationText, NumberStyles.Float, CultureInfo.InvariantCulture, out float duration))
+            return DeveloperConsoleCommandResult.Error(ToastUsage);
+
+        if (ToastUI.Instance == null)
+            return DeveloperConsoleCommandResult.Error("ToastUI is not active.");
+
+        ToastUI.Instance.Show(message, duration);
+        return DeveloperConsoleCommandResult.Success("Toast shown.");
     }
 
     private static bool TryReadFloorArguments(string arguments, out string subCommand, out string valueText)

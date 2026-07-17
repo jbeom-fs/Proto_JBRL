@@ -87,6 +87,7 @@
     <Compile Include="Assets\Scripts\Visual\FogVisibilityRenderer.cs" />
     <Compile Include="Assets\Scripts\Enemy\AilmentStatusSlotView.cs" />
     <Compile Include="Assets\Scripts\UI\InventorySlotUI.cs" />
+    <Compile Include="Assets\Scripts\UI\FormUnlockToastBridge.cs" />
     <Compile Include="Assets\Scripts\PlayerController.cs" />
     <Compile Include="Assets\Scripts\Enemy\AStarPathfinder.cs" />
     <Compile Include="Assets\Scripts\Combat\CustomShapeMatcher.cs" />
@@ -104,6 +105,7 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyAilmentIndicator.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonEventChannel.cs" />
     <Compile Include="Assets\Scripts\UI\SoulAltarUIController.cs" />
+    <Compile Include="Assets\Scripts\UI\ToastUI.cs" />
     <Compile Include="Assets\Scripts\UI\ShardAllocationRowUI.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
@@ -189,7 +191,6 @@
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityQuery.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternRuntime.cs" />
-    <Compile Include="Assets\Scripts\UI\FormUnlockToastUI.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
