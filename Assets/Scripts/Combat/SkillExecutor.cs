@@ -144,7 +144,7 @@ public sealed class SkillExecutor
             context.Skill.knockbackDuration,
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
-            context.Skill.ailments,
+            ResolveAttackAilments(context),
             ResolveAilmentMultiplier(context),
             context.HitRadius,
             customShape);
@@ -206,7 +206,7 @@ public sealed class SkillExecutor
             context.Skill.knockbackDuration,
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
-            context.Skill.ailments,
+            ResolveAttackAilments(context),
             ResolveAilmentMultiplier(context),
             context.HitRadius,
             customShape);
@@ -429,7 +429,7 @@ public sealed class SkillExecutor
             KnockbackDuration = skill.knockbackDuration,
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
-            Ailments = skill.ailments,
+            Ailments = hasDashDamage ? ResolveAttackAilments(context) : skill.ailments,
             AilmentDamageMultiplier = ResolveAilmentMultiplier(context),
             OnEnemyHit = skill.detonatesDaggerMarker && context.CasterCombat != null
                 ? context.CasterCombat.PrepareDaggerDashHitCallback(skill, context.SlotIndex)
@@ -469,7 +469,7 @@ public sealed class SkillExecutor
             KnockbackDuration = skill.knockbackDuration,
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
-            Ailments = skill.ailments,
+            Ailments = ResolveAttackAilments(context),
             AilmentDamageMultiplier = ResolveAilmentMultiplier(context),
             OnEnemyHit = skill.appliesDaggerMarker && context.CasterCombat != null
                 ? context.CasterCombat.DaggerProjectileEnemyHitCallback
@@ -481,6 +481,26 @@ public sealed class SkillExecutor
     private static float ResolveAilmentMultiplier(SkillExecutionContext context)
     {
         return context.CasterCombat != null ? context.CasterCombat.AilmentDamageMultiplier : 1f;
+    }
+
+    private static AilmentApplication[] ResolveAttackAilments(SkillExecutionContext context)
+    {
+        AilmentApplication[] authored = context.Skill.ailments;
+        IReadOnlyList<AilmentApplication> bonuses = context.CasterCombat != null
+            ? context.CasterCombat.BonusAttackAilments
+            : null;
+        if (bonuses == null || bonuses.Count == 0)
+            return authored;
+
+        int authoredCount = authored != null ? authored.Length : 0;
+        AilmentApplication[] merged = new AilmentApplication[authoredCount + bonuses.Count];
+        if (authoredCount > 0)
+            Array.Copy(authored, merged, authoredCount);
+
+        for (int i = 0; i < bonuses.Count; i++)
+            merged[authoredCount + i] = bonuses[i];
+
+        return merged;
     }
 
     private bool TryFindNearestEnemy(SkillExecutionContext context, out EnemyController nearest)

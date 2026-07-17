@@ -1012,6 +1012,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             SerializedProperty action = behavior.FindPropertyRelative("action");
             SerializedProperty skillTypeFilter = behavior.FindPropertyRelative("skillTypeFilter");
             SerializedProperty value = behavior.FindPropertyRelative("value");
+            SerializedProperty duration = behavior.FindPropertyRelative("duration");
 
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
@@ -1040,6 +1041,9 @@ public sealed class ItemDashboardWindow : EditorWindow
             if ((RelicTrigger)nextTrigger == RelicTrigger.OnSkillUsed)
                 nextFilter = EditorGUILayout.MaskField("skillTypeFilter", nextFilter, s_SkillExecutionTypeNames);
             int nextValue = value != null ? EditorGUILayout.IntField("value", value.intValue) : 0;
+            float nextDuration = duration != null ? duration.floatValue : 0f;
+            if (IsAttackAilmentAction((RelicAction)nextAction))
+                nextDuration = EditorGUILayout.FloatField("duration", nextDuration);
             bool changed = EditorGUI.EndChangeCheck();
             EditorGUILayout.EndVertical();
 
@@ -1050,6 +1054,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             SetEnum(action, nextAction);
             SetInt(skillTypeFilter, nextFilter);
             SetInt(value, nextValue);
+            SetFloat(duration, nextDuration);
             ApplyItemPropertyChange(row, serializedObject);
         }
 
@@ -1065,6 +1070,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             SetEnum(behavior.FindPropertyRelative("action"), (int)RelicAction.Heal);
             SetInt(behavior.FindPropertyRelative("skillTypeFilter"), 0);
             SetInt(behavior.FindPropertyRelative("value"), 0);
+            SetFloat(behavior.FindPropertyRelative("duration"), 0f);
             added = ApplyItemPropertyChange(row, serializedObject);
         }
         EditorGUILayout.EndHorizontal();
@@ -1583,19 +1589,41 @@ public sealed class ItemDashboardWindow : EditorWindow
         row.BehaviorEffectCount = behaviors != null && behaviors.isArray ? behaviors.arraySize : 0;
         row.HasUnfilteredOnSkillUsedBehavior = false;
         row.HasNonPositiveBehaviorValue = false;
+        row.HasInvalidBehaviorCombination = false;
+        row.HasNonPositiveAttackAilmentDuration = false;
 
         for (int i = 0; i < row.BehaviorEffectCount; i++)
         {
             SerializedProperty behavior = behaviors.GetArrayElementAtIndex(i);
             RelicTrigger trigger = (RelicTrigger)GetInt(behavior.FindPropertyRelative("trigger"));
+            RelicAction action = (RelicAction)GetInt(behavior.FindPropertyRelative("action"));
             int skillTypeFilter = GetInt(behavior.FindPropertyRelative("skillTypeFilter"));
             int value = GetInt(behavior.FindPropertyRelative("value"));
+            float duration = GetFloat(behavior.FindPropertyRelative("duration"));
 
             if (trigger == RelicTrigger.OnSkillUsed && skillTypeFilter == 0)
                 row.HasUnfilteredOnSkillUsedBehavior = true;
             if (value <= 0)
                 row.HasNonPositiveBehaviorValue = true;
+            if (!IsValidBehaviorCombination(trigger, action))
+                row.HasInvalidBehaviorCombination = true;
+            if (IsAttackAilmentAction(action) && duration <= 0f)
+                row.HasNonPositiveAttackAilmentDuration = true;
         }
+    }
+
+    private static bool IsAttackAilmentAction(RelicAction action)
+    {
+        return action == RelicAction.AttackPoison || action == RelicAction.AttackBleed;
+    }
+
+    private static bool IsValidBehaviorCombination(RelicTrigger trigger, RelicAction action)
+    {
+        if (trigger == RelicTrigger.Passive)
+            return IsAttackAilmentAction(action);
+
+        return (trigger == RelicTrigger.OnKill || trigger == RelicTrigger.OnSkillUsed) &&
+               action == RelicAction.Heal;
     }
 
     private void RefreshRowDropSources(ItemRow row, Dictionary<string, List<DropSourceRecord>> dropSourcesByCode)
@@ -1652,6 +1680,12 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (row.HasNonPositiveBehaviorValue)
             AddWarning(row, WarningSeverity.Warning, "[Warn] behaviorEffects value가 0 이하: " + location, row.Database);
+
+        if (row.HasInvalidBehaviorCombination)
+            AddWarning(row, WarningSeverity.Error, "[Error] behaviorEffects trigger/action 조합이 유효하지 않음: " + location, row.Database);
+
+        if (row.HasNonPositiveAttackAilmentDuration)
+            AddWarning(row, WarningSeverity.Warning, "[Warn] 공격 ailment behavior의 duration이 0 이하: " + location, row.Database);
 
         if (row.BehaviorEffectCount > 0 && row.ItemType != ItemType.Relic)
             AddWarning(row, WarningSeverity.Warning, "[Warn] Relic이 아닌 아이템의 behaviorEffects는 런타임에서 미소비: " + location, row.Database);
@@ -2710,6 +2744,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         public int BehaviorEffectCount;
         public bool HasUnfilteredOnSkillUsedBehavior;
         public bool HasNonPositiveBehaviorValue;
+        public bool HasInvalidBehaviorCombination;
+        public bool HasNonPositiveAttackAilmentDuration;
         public string TypeSummary;
         public string DropSummary;
 

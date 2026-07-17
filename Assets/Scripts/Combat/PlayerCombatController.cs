@@ -110,6 +110,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
     private PlayerFormController _formController;
+    private PlayerRelicBehaviors _relicBehaviors;
     private HitFlashFeedback _hitFlash;
     [SerializeField] private PlayerInvincibilityFlashFeedback invincibilityFlashFeedback;
     private WeaponData _boundSkillWeapon;
@@ -268,6 +269,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
+        _relicBehaviors = GetComponent<PlayerRelicBehaviors>();
         if (engravingLoadout == null)
             engravingLoadout = GetComponent<EngravingLoadout>();
         if (engravingLoadout != null)
@@ -536,6 +538,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public float AilmentDamageMultiplier =>
         1f + Mathf.Max(0f, _soulBonus.Get(SoulStatType.AilmentDamage)) / 100f;
 
+    public IReadOnlyList<AilmentApplication> BonusAttackAilments =>
+        _relicBehaviors != null
+            ? _relicBehaviors.AttackAilments
+            : Array.Empty<AilmentApplication>();
+
     private float EffectiveReloadTime()
     {
         if (currentWeapon == null)
@@ -782,8 +789,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             currentWeapon.knockbackDuration,
             currentWeapon.slowPercentage,
             currentWeapon.slowDuration,
-            null,
-            1f,
+            ResolveBasicAttackAilments(),
+            AilmentDamageMultiplier,
             hitRadius);
 
         ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
@@ -793,6 +800,19 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
         }
         ApplyDaggerMarkersFromBasicAttack();
+    }
+
+    private AilmentApplication[] ResolveBasicAttackAilments()
+    {
+        IReadOnlyList<AilmentApplication> bonuses = BonusAttackAilments;
+        if (bonuses == null || bonuses.Count == 0)
+            return null;
+
+        AilmentApplication[] merged = new AilmentApplication[bonuses.Count];
+        for (int i = 0; i < bonuses.Count; i++)
+            merged[i] = bonuses[i];
+
+        return merged;
     }
 
     private bool IsCurrentFormParryMode()

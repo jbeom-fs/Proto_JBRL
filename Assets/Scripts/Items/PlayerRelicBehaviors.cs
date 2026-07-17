@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class PlayerRelicBehaviors : MonoBehaviour
@@ -7,6 +9,9 @@ public sealed class PlayerRelicBehaviors : MonoBehaviour
     private PlayerInventory _inventory;
     private PlayerCombatController _combat;
     private RelicBehaviorRuntime _runtime;
+
+    public IReadOnlyList<AilmentApplication> AttackAilments =>
+        _runtime != null ? _runtime.AttackAilments : Array.Empty<AilmentApplication>();
 
     private void Awake()
     {

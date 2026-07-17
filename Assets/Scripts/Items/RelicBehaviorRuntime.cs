@@ -20,16 +20,20 @@ public sealed class RelicBehaviorRuntime
     private readonly Action<int> _healCallback;
     private readonly List<RuntimeEntry> _onKill = new List<RuntimeEntry>();
     private readonly List<RuntimeEntry> _onSkillUsed = new List<RuntimeEntry>();
+    private readonly List<AilmentApplication> _attackAilments = new List<AilmentApplication>();
 
     public RelicBehaviorRuntime(Action<int> healCallback)
     {
         _healCallback = healCallback;
     }
 
+    public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
+
     public void Rescan(IReadOnlyList<InventoryItemStack> items)
     {
         _onKill.Clear();
         _onSkillUsed.Clear();
+        _attackAilments.Clear();
 
         if (items == null)
             return;
@@ -92,8 +96,34 @@ public sealed class RelicBehaviorRuntime
                 case RelicTrigger.OnSkillUsed:
                     _onSkillUsed.Add(entry);
                     break;
+                case RelicTrigger.Passive:
+                    AddPassiveAttackAilment(behavior, stackCount);
+                    break;
             }
         }
+    }
+
+    private void AddPassiveAttackAilment(RelicBehavior behavior, int stackCount)
+    {
+        AilmentType type;
+        switch (behavior.action)
+        {
+            case RelicAction.AttackPoison:
+                type = AilmentType.Poison;
+                break;
+            case RelicAction.AttackBleed:
+                type = AilmentType.Bleed;
+                break;
+            default:
+                return;
+        }
+
+        _attackAilments.Add(new AilmentApplication
+        {
+            type = type,
+            tickDamage = behavior.value * stackCount,
+            duration = behavior.duration
+        });
     }
 
     private void Execute(RuntimeEntry entry)

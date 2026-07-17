@@ -3,12 +3,15 @@ using System;
 public enum RelicTrigger
 {
     OnKill,
-    OnSkillUsed
+    OnSkillUsed,
+    Passive
 }
 
 public enum RelicAction
 {
-    Heal
+    Heal,
+    AttackPoison,
+    AttackBleed
 }
 
 [Serializable]
@@ -18,4 +21,5 @@ public sealed class RelicBehavior
     public RelicAction action;
     public int skillTypeFilter;
     public int value;
+    public float duration;
 }

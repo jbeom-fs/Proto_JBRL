@@ -133,7 +133,8 @@ public sealed class ItemData
                 trigger = behavior.trigger,
                 action = behavior.action,
                 skillTypeFilter = behavior.skillTypeFilter,
-                value = behavior.value
+                value = behavior.value,
+                duration = behavior.duration
             };
         }
 
