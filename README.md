@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-16
-> 기준 커밋: master HEAD `41e117ce` — **Soul Altar 개편 S1~S4(§11b-8·§11b-9) + 폼 해금 S1·S2(§11a-4)**: 공통 스탯 공유 투자+혼합 조각 지불(`1202ada2`) → Altar 단일 스크롤 UI(`e1f834fd`) → 조각 배분 창(`ca3a8e7a`) → 시작 Sword Soul+Normal 복귀(`dbf0ea90`) → 던전 입장 폼 선택 화면(`59a86a90`) → UiMessages 통합(`9a13c0aa`/`41e117ce`). 이전: Sword 콤보 축 완성(`9b2fff5e`)
+> 작성 기준일: 2026-07-17
+> 기준 커밋: master HEAD `679a1e0e` — **폼 해금 S3+범용 토스트(§11b-4·§10) + 회피·벽 대시 픽스(§7-11) + 행동형 Relic 축 완결(§11b-12) + 장판·Proc 인프라(§7-12·§7-13)**: 미보유 확정 Soul 드랍+해금 토스트(`fee7defb`) → ToastUI 범용화(`50edec45`) → 스페이스바 회피(`16e95567`) → 벽 대시 픽스(`654ed33f`) → Relic S1 트리거(`8592aa7e`) → S2 공격 독/출혈(`75068004`) → 장판 AreaOverTime 스킬화+Proc 진입점(`e387ad3a`) → CastSkill(`679a1e0e`). 이전: Soul Altar 개편+폼 해금 S1·S2(`41e117ce`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -45,7 +45,7 @@
 | 거점 구조 | 마을(Town) ↔ 던전(Dungeon) ↔ Elite Arena ↔ Boss Area 전환 (`LocationTransitionManager`, 구 `TownDungeonTransitionManager`) — 마을·Arena·Boss Area는 Tilemap 고정 맵, 던전은 절차적 생성. Boss Area = N층마다 진입(§11e) |
 | 이동 방식 | 실시간 8방향 이동(Classic=방향키 / ActionMouseAim=WASD) + 그리드 충돌 + 대시 스킬 |
 | 조준 방식 | **2가지 프리셋**(`PlayerControlScheme`): Classic = 8방향 입력 기반(`AimDirectionUtility`) / ActionMouseAim = 마우스 커서 기반 **360° 자유조준** — 기본공격 / 스킬 / 투사체 / 대시 공통 |
-| 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
+| 전투 방식 | 실시간, 패턴 기반 범위 공격 + 스킬 4슬롯 (InstantArea / Projectile / Dash / Blink / Buff / AreaOverTime 장판 §7-12) + 슬롯 밖 공통 회피(Space, §7-11) + 스킬 castDelay·recoveryDelay 중 이동 잠금 |
 | 플레이어 상태이상 | 적 공격에서 받는 넉백·슬로우·스턴 (`ApplyEnemyCombatImpact` 단일 진입점, `EnemyAttackImpactData`) |
 | 방 타입 | Normal · MonsterDen · Spawn · Stair · Elite (5의 배수+5 층 자동) |
 | 적 AI | FSM (Idle → Chase → Attack), A* 경로탐색, Contact/Ranged 행동 분기, Contact Special Attack(Rush/Jump), Elite Pattern Set(Projectile/Dash/Jump), `isStationary`/`immuneToKnockback` 플래그 |
@@ -1192,6 +1192,44 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **저작 유의점**: ⓐ체인 단계·루트의 `recoveryDelay ≥ recastWindow`면 busy에 막혀 재입력 불가 = 체인 사망(튜닝 규칙: recovery < window) ⓑmaxTier식 함정 없음 — 스텝·단계 수 자유 ⓒ색 튜닝 위치: 미리보기=`SkillRangePreviewer.previewColor`, 플래시=PCC "Skill Hit Flash", 유예 게이지=SkillSlotUI(전부 Play 정지 상태에서). **보류**: Composite 혼합 시퀀스(dash→area→projectile 체인)는 태초 각인 실수요 시 별도 executionType — hitSteps/recastStages와 충돌 없음.
 
+### 7-11. 회피(Dodge) — 슬롯 밖 공통 대시 스킬 + 벽 대시 픽스 (2026-07-17)
+
+**회피 = "새 시스템"이 아니라 기존 대시 스킬 시스템에 슬롯 밖 고정 키로 쏘는 스킬 하나를 꽂은 것**(`16e95567`).
+
+| 조각 | 구현 |
+|------|------|
+| 데이터 | 공통 SkillData 1개(전 폼 동일, `executionType: Dash` 재사용) — 거리/시간/무적/쿨다운 전부 기존 필드, 자원 None. PCC `dodgeSkill` SerializeField 직결(WeaponData 무접촉). **데이터 계약: `detonatesDaggerMarker` 비활성 + `castDelay` 0**(회피 디스패치는 즉발 — castDelay 무시, SlotIndex=-1 안전조건) |
+| 키 | 양 프리셋 **Space=회피** 통일. 리바인드: Classic 평타→X / ActionMouseAim 재장전→**Tab**(R은 스킬4 점유). `PlayerInputKeySettings` dodge 필드+중복 검증 합류, 코드 기본값·에셋 실값 양쪽 반영 |
+| 방향 | Classic=이동 입력 벡터(무입력 시 FacingDirection 폴백) / ActionMouseAim=마우스 조준 — 방향 주입용 `CreateSkillExecutionContext(skill, slotIndex, aimDirection)` 오버로드 신설(gridFacing=`ResolveEightWayRaw` 파생) |
+| 쿨다운 | 4슬롯 배열 밖이라 **PCC 전용 타이머 1개**(`cooldown × EffectiveSkillCooldownMultiplier` — 쿨감 스탯 적용). V1 쿨 UI 없음 |
+| 정합 | 게이트=TryUseSkill 동등+전환/location 선행. 성공한 시전 = cancelable 멀티히트 캔슬 트리거·`RaiseSkillUsed` 발행(행동형 Relic OnSkillUsed×Dash 필터 자동 포섭). recast 체인 미개설·각인 무접촉 |
+
+**벽 근처 대시 픽스(`654ed33f`)** — 회피 도입으로 표면화된 기존 버그:
+- 근인 ①검증 반경 불일치: 대시 경로 검증이 콜라이더 실반경(0.5)을 쓰는데 이동 판정(`CanMoveTo`)은 tileSize×0.2 — 벽에 0.2까지 붙을 수 있는데 대시는 0.5 클리어런스 요구 → 벽 0.3 이내에선 **벽 반대 방향 대시조차 첫 샘플 실패로 전면 거부**(Blink §0-0s와 동일 부류). ②`stopOnWall` 대시도 이동량 최소치 미만이면 `TryStartDash` false = 무발동.
+- 픽스: `PlayerController.MoveCollisionRadius` 노출(CanMoveTo 동일 식)로 대시 검증 반경 통일(비플레이어 폴백=콜라이더) + **stopOnWall 대시는 destination==start여도 발동** — 벽 대시 = "제자리 돌진"(duration 동안 대시 상태·무적·애니 유지, 이동만 클램프, 쿨·자원 정상 소모 = 확정 설계).
+
+### 7-12. 장판 — AreaOverTime 스킬 (DamageZone, 2026-07-17)
+
+`SkillExecutionType.AreaOverTime`(선언만 있던 예약 타입) 구현(`e387ad3a`). **장판 = 스킬** — 수치·비주얼 전부 SkillData 저작, 등록 체인 = 빈 프리팹→스포너 1회. (초기 ZoneDefinition/RelicBehaviorConfig SO 경유안은 등록 체인 비대로 폐기)
+
+| 조각 | 구현 |
+|------|------|
+| 데이터 | SkillData `zoneSprite/zoneRadius/zoneTickInterval/zoneDuration` + **slow·ailments·damage는 기존 필드 재사용**(슬로우 장판 = 추가 필드 0). SkillDataEditor Zone 섹션+CombatImpact 섹션 재사용(AreaOverTime 조건 합류). EngravingData=파생 자동 상속 |
+| 실행 | `ExecuteAreaOverTime`: 틱뎀 = `damage>0 ? TotalAttack+damage : 0`(damage 0 저작 = 무데미지 장판), 캐스터 위치 스폰(V1), `ResolveAttackAilments`(relic 보너스 병합 스냅샷). 스폰 실패 = Failure(자원·쿨 미소모) |
+| 오브젝트 | `DamageZone`(스프라이트 없는 범용 프리팹 1개) + `DamageZoneSpawner`(싱글톤, 프리팹별 풀) — 스폰 시 sprite 주입+판정 지름(2×radius) 긴변 정규화(전제: 여백 없는 원 아트·루트 스케일 1), null sprite=투명 논리 장판 |
+| 틱 규칙 | **방어 적용 일반 데미지·크리X·흡혈X·콤보X**(DoT의 방어무시 min1과 다른 규칙 — 장판=상태이상 아닌 데미지 오브젝트). `damage==0` = 상태 전용 경로(`ApplySlowEffect`+`ApplyAilments` — ApplyCombatImpact min1 함정 회피). scaled 시간(모달 중 정지), 히치 다단 while |
+| 정리 | 층전환(`DungeonManager`)·던전 이탈(`LocationTransitionManager`) seam에서 `ClearAllActiveZones` |
+| 콘솔 | `/zone <tickDamage> [duration] [slowPct] [slowDur]` — 0데미지 슬로우 장판 검증 가능 |
+
+### 7-13. Proc 시전 — 파이프 밖 조용한 스킬 발동 (ExecuteSkillProc, 2026-07-17)
+
+행동형 Relic CastSkill(§11b-12)과 **캔슬 패시브 각인(기획, `RaiseSkillCanceled` seam 대기)의 공용 인프라**(`e387ad3a`).
+
+- **`PCC.ExecuteSkillProc(skill, origin, direction)`**: 자원·쿨·recovery·recast·캔슬 게이트 전부 미경유(PCC 몫이라 자연 생략) + 애니 억제(`PlayConfiguredAnimation` 초입 `IsProcCast` 게이트) + **`RaiseSkillUsed` 미발행 = proc은 proc을 못 낳음**(재귀·연쇄 원천 차단). 데미지 규칙은 스킬 실행 그대로(크리/흡혈/콤보 적용 — proc도 공격, zone만 자체 규칙).
+- **화이트리스트**: AreaOverTime/InstantArea/Projectile/Buff — **Dash·Blink 거부**(강제이동). 원점 주입=`SkillExecutionContext.casterPositionOverride`(CasterPosition 수렴 — `ResolveWorldTargets`가 소비라 InstantArea 타겟에 전파, Projectile은 `OriginPositionOverride`), 방향 주입=회피 오버로드 재사용.
+- **proc 멀티히트**: hitSteps 스킬도 **경직 없이 완주** — 러너에 proc 시퀀스 리스트 분리(동시 16 상한·풀 재사용·swap-remove), `IsMultiHitActive`/busy는 플레이어 시퀀스만 대변, **proc 원점 스냅샷 고정**(플레이어 시퀀스의 라이브 원점과 별개), 중단=사망·층전환/던전이탈만(대시·스턴·폼변경 무관 완주).
+- 콘솔 `/proc <slot 0-3>` — 슬롯 장착 스킬을 proc 발동(에셋 결선 없이 검증).
+
 ---
 
 ## 8. 시스템 5 — 적 AI
@@ -1709,6 +1747,11 @@ GameOverFlowController.HandlePlayerDied()
 
 ---
 
+### 10-5. 범용 토스트 (ToastUI, 2026-07-17)
+
+- **ToastUI = 순수 표출기 싱글톤**(`50edec45`): `Show(string message, float duration)` 단일 API — 자체 기본시간 없음(**duration 소유=호출자**), 표시 중 재호출=덮어쓰기+타이머 리셋, unscaled 타이머, duration≤0=표출 안 함(현재 토스트도 끔=clear 겸용). 씬 사전 배치+SetActive 규약(드라이버 GO 활성+root 자식만 off — 구독 생존 조건).
+- 소비자 예시: `FormUnlockToastBridge`(§11b-4) — 이벤트 구독→UiMessages 포맷→Show 호출만. 새 시스템이 토스트 쓸 땐 각자 duration 들고 와서 호출.
+
 ## 11. 시스템 8 — 렌더링·로딩·시야
 
 ### 11-0. Fog of War (FogOfWarController)
@@ -2090,6 +2133,11 @@ Elite Key 가 "스폰 로직이 홀더를 지정하는" 맥락 드랍이라면, 
 
 **이 축이 곧 폼 해금 시스템입니다(2026-07-16 확정)** — Soul 은 영구 영속(§11b-10)이라 "첫 Soul 획득=폼 영구 해금"이 별도 코드 없이 성립. 시작 Sword Soul 자동 지급·런 단위 폼 선택·Normal 비전투화는 §11a-4 참조.
 
+**폼 해금 S3 — 미보유 확정 Soul 드랍 + 해금 토스트 (2026-07-17, `fee7defb`)**
+- **미보유 redirect**: `SoulDropResolver.ResolveDrop`에 규칙 추가 — 롤린 Soul이 보유 폼이고 미보유 폼이 남아있으면 **미보유 폼 Soul 중 랜덤 1개로 치환**(DB items 리스트 순서 순회=결정적, salvageRng 재사용). 전 폼 보유 시 기존 salvage(조각) 경로 그대로. 보스 드랍=choiceGroup Soul 4종 동일 weight — redirect가 최종 보정하므로 쿠폰수집 보정(가중/천장) 불필요. 시작 Sword 지급이므로 **보스 1·2·3킬 = 나머지 3폼 순차 해금**("빠른 순차" 설계 충족).
+- **해금 감지·알림**: `DroppedItem` 픽업이 AddItem 전 미보유→보유 전이를 캡처, 성공 후 `FormUnlockEvents.RaiseFormUnlocked` 발행(정적 이벤트 seam — 시작 지급·콘솔 미발행). 소비자=`FormUnlockToastBridge`(표시시간 2.5s SerializeField)→범용 `ToastUI.Show`(§10) — 전용 연출로 교체 시 소비자만 갈면 됨.
+- 제외 결정: last-form 영속(폼 선택 화면 기본 선택은 세션 static 유지).
+
 ### 11b-5. 플레이어 인벤토리 (PlayerInventory)
 
 `PlayerInventory` MonoBehaviour 가 모든 보유 아이템을 `InventoryItemStack`(ItemData + count) 리스트로 관리합니다 — 과거의 `PlayerEliteKeyInventory`(bool + EliteKeyChanged 이벤트) 는 제거되었고, Elite Key 도 `itemCode = "elite_key"` 인 일반 ItemData 한 항목으로 통합되었습니다.
@@ -2252,6 +2300,30 @@ Play 4시나리오(손상 파일/version 999/가짜 itemCode 왕복/tmp 잔재) 
 
 ---
 
+### 11b-12. 행동형 Relic — behaviorEffects (trigger×action, 2026-07-17 축 완결)
+
+Relic이 평면 스탯(§11b-6)을 넘어 **이벤트 발동형 효과**를 갖는 축. 새 relic = 스크립트 0, ItemDatabase 엔트리만(Item Dashboard 저작).
+
+**데이터 모델** — `ItemData.behaviorEffects: RelicBehavior[]`(인라인, CreateRuntimeClone 딥카피 포함):
+```
+RelicBehavior { trigger, skillTypeFilter(비트마스크), action, value, duration,
+                procSkill(SkillData 참조), procOrigin, procDirection, procSpawnRadius }
+트리거: OnKill / OnSkillUsed(+필터) / Passive(수식형 — 이벤트 아닌 항시 조회)
+액션:   Heal / AttackPoison / AttackBleed / CastSkill
+유효 조합: {OnKill,OnSkillUsed}×{Heal,CastSkill} / Passive×{AttackPoison,AttackBleed}
+          — 검증=Dashboard 경고 소유(런타임은 조용히 무시)
+```
+- 필터 = `(mask & (1 << (int)executionType)) != 0` — 복수 타입(Dash|Blink)·전체(-1) 표현. ⚠️MaskField↔비트 정합은 SkillExecutionType 연속값(0~5) 전제.
+
+**구조** — `RelicBehaviorRuntime`(순수 C#: 인벤 스캔→트리거별 버킷, value×stack 합산) + `PlayerRelicBehaviors`(어댑터: CombatEventChannel+OnInventoryChanged 구독, 콜백 주입). 수명주기=기존 Relic 아이템 파이프 승계(런소멸/영속제외), 런타임 상태 비영속.
+
+**액션별 요점**:
+- **Heal**: OnKill=킬당 즉시, `PCC.RestoreHp`(MaxHp 클램프).
+- **AttackPoison/Bleed(Passive 수식형)**: **평타 포함 전 공격**에 독/출혈 동승 — `SkillExecutor.ResolveAttackAilments`가 authored+relic 보너스 병합(무보너스=할당 0), 멜리 평타는 PCC 직접 호출부 별도 배선. 합류 규칙="데미지 실리는 공격만"(무데미지 대시·Blink·패리 제외 — 회피가 독 살포기 되는 것 방지). `PCC.BonusAttackAilments` = 각인 Passive 합류 대비 기여자 seam.
+- **CastSkill(트리거드 스킬)**: procSkill을 `ExecuteSkillProc`(§7-13)로 발동 — 수치 단일 진실=SkillData(relic value 미사용). **procOrigin 3종**(CasterPosition/HitPosition/RandomInRadius-캐스터중심) × **procDirection 3종**(Aim/Context-OnKill=죽은 적 방향/Random) 자유 조합. **OnKill = 프레임 버퍼→LateUpdate flush 1회, 동시 다중 킬=플레이어 최근접 위치**(Heal의 킬당 즉시와 대비). 장판 relic = CastSkill×AreaOverTime 스킬 참조의 한 사례.
+
+**인지 사항**: ①킬 경유 연쇄 허용(proc 장판 킬→다음 프레임 재발동 — 적 수 바운드라 무한 아님, 같은 프레임 proc 킬은 미발동) ②CastSkill은 스택 수 무시 ③멀티히트 타마다 Passive 독 부여=스택 가속(밸런스 유의).
+
 ## 11c. 시스템 11 — 개발자 콘솔
 
 인게임 개발자 콘솔 (`` ` `` 키 토글)로 명령어 입력·자동완성·결과 출력을 제공합니다.
@@ -2286,6 +2358,9 @@ Play 4시나리오(손상 파일/version 999/가짜 itemCode 왕복/tmp 잔재) 
 | `/ailment <poison\|bleed> [tickDamage=2] [duration=5]` | 최근접 생존 적에게 DoT 부여 (§7-9 검증용) | `poison` `bleed` |
 | `/stun [duration=2]` | 최근접 생존 적에게 스턴 부여 (§8-7 검증용) | 없음 |
 | `/combo <show \| add <n>>` | 콤보 상태 조회(단계/진행/총스택/윈도우/배율) / 스택 강제 적립 (§11b-8 검증용, add는 raw 스택) | `show` `add` |
+| `/toast <duration> <message...>` | 범용 토스트 표출 (§10-5 검증용 — 덮어쓰기·타이머 리셋 확인) | 없음 |
+| `/zone <tickDamage> [duration=5] [slowPct=0] [slowDur=duration]` | 플레이어 위치에 장판 스폰 (§7-12 검증용 — tickDamage 0=슬로우 전용 장판, 현재 BonusAttackAilments 동승) | 없음 |
+| `/proc <slot 0-3>` | 슬롯 장착 스킬을 proc 발동 (§7-13 검증용 — 자원·쿨·애니 없음, 화이트리스트 거부 확인) | 없음 |
 
 ### 11c-3. 자동완성 구조
 
@@ -2761,7 +2836,15 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 4. Consumable 즉시 효과는 `useEffects` + `ItemEffectApplier` 경로를 사용. 현재 `HealHp` 지원
 5. Relic 평면 패시브는 `passiveEffects` + `PlayerItemStats` 경로를 사용. 현재 MaxHp/Attack/Defense/MoveSpeed 지원
 6. Soul 아이템은 `itemType=Soul` + `soulFormId` 지정만으로 `PlayerInventory.OwnsSoulForm` / `PlayerFormController.TrySwitchForm` 게이팅에 반영
-7. Equipment 장착, Currency 소비처, 행동형 Relic 특수 효과는 별도 시스템으로 확장
+7. Equipment 장착, Currency 소비처는 별도 시스템으로 확장
+
+### 새 행동형 Relic 추가 (§11b-12)
+
+1. **기존 트리거·액션 조합/수치만 다른 relic** = 코드 0 — Item Dashboard에서 Relic 엔트리 생성 후 `behaviorEffects` 편집(경고가 무효 조합·필터 0·null 참조 검출)
+2. **장판·투사체 발동 relic** = CastSkill + 스킬 에셋 저작 — SkillData(AreaOverTime 등) 만들고 procSkill 참조(화이트리스트: AreaOverTime/InstantArea/Projectile/Buff)
+3. **새 액션** = `RelicAction` enum 케이스 + `RelicBehaviorRuntime` switch 1케이스(+콜백 주입) + Dashboard 매트릭스 갱신
+4. **새 트리거** = `CombatEventChannel` 이벤트 1개 + 어댑터 구독 1줄 + 버킷 추가 — 이후 그 트리거 쓰는 모든 relic 공짜
+5. 캔슬 패시브 각인 등 타 시스템의 스킬 발동은 `PCC.ExecuteSkillProc` 재사용(§7-13)
 
 ### 새 Elite 패턴 추가
 
