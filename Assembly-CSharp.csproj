@@ -193,8 +193,8 @@
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
     <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
-    <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulCommonEnhancement.cs" />
+    <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />
     <Compile Include="Assets\Scripts\Combat\HitFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\UI\ItemTooltipUI.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillTargetResolver.cs" />

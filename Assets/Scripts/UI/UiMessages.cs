@@ -1,9 +1,9 @@
 public static class UiMessages
 {
-    public const string FormNameSword = "검 폼";
-    public const string FormNameDagger = "단검 폼";
-    public const string FormNameFreischutz = "마탄 폼";
-    public const string FormNameParry = "패리 폼";
+    public const string FormNameSword = "검";
+    public const string FormNameDagger = "단검";
+    public const string FormNameFreischutz = "마탄";
+    public const string FormNameParry = "패리";
     public const string FormDescriptionSword = "검 메시지";
     public const string FormDescriptionDagger = "대거 메시지";
     public const string FormDescriptionFreischutz = "마탄 메시지";
@@ -34,8 +34,8 @@ public static class UiMessages
     public const string RestAreaCurrencyMissing = "재화 없음";
     public const string RestAreaNotEnoughCurrency = "재화 부족";
     public const string RestAreaCoreUpdateBlocked = "코어 갱신 불가";
-    public const string RestAreaPurchaseFailed = "구매 실패";
-    public const string RestAreaPurchasedFormat = "{0} 구매 완료";
+    public const string RestAreaPurchaseFailed = "강화 실패";
+    public const string RestAreaPurchasedFormat = "{0} 강화 완료";
     public const string RestAreaCurrencyFormat = "재화 {0}";
     public const string RestAreaNoOffers = "상품 없음";
     public const string RestAreaOfferLevelFormat = "Lv {0}  합계 +{1}";
