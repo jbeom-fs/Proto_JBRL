@@ -12,7 +12,7 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
     [SerializeField] private Sprite markerSprite;
     [SerializeField] private Vector3 markerOffset = Vector3.zero;
     [SerializeField, Min(0.01f)] private float burstLifetime = 0.5f;
-    [SerializeField] private string markerSortingLayerName = "Default";
+    [SerializeField] private string markerSortingLayerName = "Actor";
     [SerializeField] private int markerSortingOrder = 50;
 
     private readonly Dictionary<EnemyController, GameObject> _activeMarkers = new();

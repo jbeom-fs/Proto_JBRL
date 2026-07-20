@@ -42,9 +42,6 @@ public class SkillRangePreviewer : MonoBehaviour
     [Header("LineRenderer 시각")]
     [SerializeField] private float lineWidth    = 0.06f;
     [SerializeField] private Color previewColor = new Color(1f, 0.9f, 0.1f, 0.75f);
-    [Tooltip("Custom 셀 채움의 sorting order 오프셋. 바닥 위, 유닛 아래가 목표.")]
-    [SerializeField] private int customFillSortingOffset = 10;
-
     [Header("타일 크기 (월드 단위)")]
     [Tooltip("Unity Tilemap 기본값 1. Tilemap의 Cell Size 와 일치시키세요.")]
     [SerializeField] private float tileSize = 1f;
@@ -915,9 +912,8 @@ public class SkillRangePreviewer : MonoBehaviour
             _customFillRenderer.sharedMaterial = _customFillMaterial;
         }
 
-        _customFillRenderer.sortingLayerID = _lr != null ? _lr.sortingLayerID : 0;
-        _customFillRenderer.sortingOrder =
-            (_lr != null ? _lr.sortingOrder : 0) + customFillSortingOffset;
+        _customFillRenderer.sortingLayerName = "FloorFX";
+        _customFillRenderer.sortingOrder = 21;
 
         SetCustomFillVisible(false);
     }

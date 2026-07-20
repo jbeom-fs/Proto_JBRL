@@ -9,8 +9,6 @@ using UnityEngine;
 public sealed class SkillHitFlashRenderer : IDisposable
 {
     public const int PoolCapacity = 8;
-    public const int PreviewFillSortingOffset = 10;
-    public const int FlashSortingOffset = PreviewFillSortingOffset + 1;
 
     private const float CellFillScale = 0.95f;
     private static readonly int s_ColorPropertyId = Shader.PropertyToID("_Color");

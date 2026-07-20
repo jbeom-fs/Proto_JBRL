@@ -6,8 +6,8 @@ public sealed class EliteArenaPortal : MonoBehaviour
 {
     [Header("Visual")]
     [SerializeField] private Sprite portalSprite;
-    [SerializeField] private string sortingLayerName = "Default";
-    [SerializeField] private int sortingOrder = 20;
+    [SerializeField] private string sortingLayerName = "FloorFX";
+    [SerializeField] private int sortingOrder = 0;
     [SerializeField] private Color portalColor = new Color(0.25f, 0.9f, 1f, 1f);
     [SerializeField] private bool hideVisualWhenCompleted = true;
 

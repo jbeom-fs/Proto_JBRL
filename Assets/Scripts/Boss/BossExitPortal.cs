@@ -6,8 +6,8 @@ public sealed class BossExitPortal : MonoBehaviour
 {
     [Header("Visual")]
     [SerializeField] private Sprite portalSprite;
-    [SerializeField] private string sortingLayerName = "Default";
-    [SerializeField] private int sortingOrder = 20;
+    [SerializeField] private string sortingLayerName = "FloorFX";
+    [SerializeField] private int sortingOrder = 0;
     [SerializeField] private Color portalColor = new Color(0.95f, 0.75f, 0.25f, 1f);
 
     private BossEncounterController _controller;

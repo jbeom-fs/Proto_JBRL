@@ -31,8 +31,8 @@ public class EnemyHealthBar : MonoBehaviour
     [SerializeField] private Color bgColor       = new Color(0.12f, 0.12f, 0.12f, 0.85f);
 
     [Header("렌더링 순서")]
-    [SerializeField] private string sortingLayerName = "Default";
-    [SerializeField] private int    sortingOrder     = 10;
+    [SerializeField] private string sortingLayerName = "Overhead";
+    [SerializeField] private int    sortingOrder     = 0;
 
     [Header("표시 조건")]
     [Tooltip("체력이 가득 찼을 때 숨김")]

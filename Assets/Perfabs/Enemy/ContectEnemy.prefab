@@ -78,9 +78,9 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 2
+  m_SortingLayerID: 1004
+  m_SortingLayer: 3
+  m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 6290771979527031043, guid: 07e947c41f8d9b441a3da5b123c333e1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -202,9 +202,9 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 1
+  m_SortingLayerID: 1004
+  m_SortingLayer: 3
+  m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 6290771979527031043, guid: 07e947c41f8d9b441a3da5b123c333e1, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -255,8 +255,8 @@ MonoBehaviour:
   fillColorFull: {r: 0.2, g: 0.85, b: 0.2, a: 1}
   fillColorEmpty: {r: 1, g: 0, b: 0, a: 1}
   bgColor: {r: 0.12, g: 0.12, b: 0.12, a: 0.85}
-  sortingLayerName: Default
-  sortingOrder: 10
+  sortingLayerName: Overhead
+  sortingOrder: 0
   hideWhenFull: 1
   autoHideDelay: 2.5
 --- !u!114 &7514426345712735301

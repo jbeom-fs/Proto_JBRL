@@ -5,8 +5,8 @@ public sealed class DroppedItem : MonoBehaviour
     [SerializeField] private SpriteRenderer spriteRenderer;
     [SerializeField] private Collider2D pickupCollider;
     [SerializeField] private float iconWorldSize = 0.5f;
-    [SerializeField] private string sortingLayerName = "Default";
-    [SerializeField] private int sortingOrder = 5;
+    [SerializeField] private string sortingLayerName = "Loot";
+    [SerializeField] private int sortingOrder = 0;
 
     private ItemData _itemData;
     private string _itemCode;

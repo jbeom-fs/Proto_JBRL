@@ -239,12 +239,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         CachePlayerHitInfo();
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
-        LineRenderer previewLineRenderer = GetComponent<LineRenderer>();
-        int flashSortingLayerId = previewLineRenderer != null ? previewLineRenderer.sortingLayerID : 0;
-        int flashSortingOrder =
-            (previewLineRenderer != null ? previewLineRenderer.sortingOrder : 0) +
-            SkillHitFlashRenderer.FlashSortingOffset;
-        _skillHitFlashRenderer = new SkillHitFlashRenderer(flashSortingLayerId, flashSortingOrder);
+        _skillHitFlashRenderer = new SkillHitFlashRenderer(
+            SortingLayer.NameToID("FloorFX"),
+            30);
         _skillExecutor = new SkillExecutor(
             _attackExecutor,
             CanContinueMultiHit,

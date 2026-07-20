@@ -2,9 +2,10 @@
 //  DungeonTilemapRenderer.cs
 //  Presentation Layer — Tilemap 시각화 전담
 //
-//  문 레이어 구조:
-//    [Layer 0] tilemap (메인)   — 바닥/통로/계단/벽 항상 표시
-//    [Layer 1] doorTilemap (상위) — 닫힐 때만 문 타일 배치, 열리면 제거
+//  타일맵 레이어 구조:
+//    [Ground] tilemap (메인)    — 바닥/통로/계단 항상 표시
+//    [Wall] wallTilemap         — 벽 표시
+//    [Wall/10] doorTilemap      — 닫힐 때만 문 타일 배치, 열리면 제거
 //
 //  성능 설계:
 //    SetTiles(TileChangeData[], ignoreLockFlags: true) 를 배치 호출로 사용
@@ -767,11 +768,6 @@ public class DungeonTilemapRenderer : MonoBehaviour
             var mainRenderer = tilemap.GetComponent<TilemapRenderer>();
             if (mainRenderer != null)
             {
-                if (_doorTilemapRenderer.sortingLayerID != mainRenderer.sortingLayerID)
-                    _doorTilemapRenderer.sortingLayerID = mainRenderer.sortingLayerID;
-                if (_doorTilemapRenderer.sortingOrder <= mainRenderer.sortingOrder)
-                    _doorTilemapRenderer.sortingOrder = mainRenderer.sortingOrder + 1;
-
                 if (_doorTilemapRenderer.sharedMaterial != mainRenderer.sharedMaterial)
                     _doorTilemapRenderer.sharedMaterial = mainRenderer.sharedMaterial;
 
