@@ -42,8 +42,6 @@ public static class EliteMagmaAnimationRebindUtility
         RebuildClip("Elite_Magma_01_Death", sprites, 5, false);
         UpdatePrefabDefaultSprite(sprites[0]);
 
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
     }
 
     private static void RebindSafely()
@@ -70,6 +68,7 @@ public static class EliteMagmaAnimationRebindUtility
         importer.mipmapEnabled = false;
         importer.textureCompression = TextureImporterCompression.Uncompressed;
         importer.spritePixelsPerUnit = 100f;
+        importer.spritePivot = new Vector2(0.5f, 0f);
 
         importer.SaveAndReimport();
         WriteSpriteRects(importer);
@@ -116,8 +115,8 @@ public static class EliteMagmaAnimationRebindUtility
                         texture.height - ((row + 1) * cellHeight),
                         cellWidth,
                         cellHeight),
-                    alignment = SpriteAlignment.Center,
-                    pivot = new Vector2(0.5f, 0.5f)
+                    alignment = SpriteAlignment.BottomCenter,
+                    pivot = new Vector2(0.5f, 0f)
                 };
             }
         }
@@ -190,6 +189,7 @@ public static class EliteMagmaAnimationRebindUtility
         AnimationUtility.SetAnimationClipSettings(clip, settings);
         clip.frameRate = FrameRate;
         EditorUtility.SetDirty(clip);
+        AssetDatabase.SaveAssetIfDirty(clip);
     }
 
     private static void UpdatePrefabDefaultSprite(Sprite sprite)
