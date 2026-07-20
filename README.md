@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-17
-> 기준 커밋: master HEAD `679a1e0e` — **폼 해금 S3+범용 토스트(§11b-4·§10) + 회피·벽 대시 픽스(§7-11) + 행동형 Relic 축 완결(§11b-12) + 장판·Proc 인프라(§7-12·§7-13)**: 미보유 확정 Soul 드랍+해금 토스트(`fee7defb`) → ToastUI 범용화(`50edec45`) → 스페이스바 회피(`16e95567`) → 벽 대시 픽스(`654ed33f`) → Relic S1 트리거(`8592aa7e`) → S2 공격 독/출혈(`75068004`) → 장판 AreaOverTime 스킬화+Proc 진입점(`e387ad3a`) → CastSkill(`679a1e0e`). 이전: Soul Altar 개편+폼 해금 S1·S2(`41e117ce`)
+> 작성 기준일: 2026-07-20
+> 기준 커밋: master HEAD `be23763f` — **Sprite Sorting Layer 시각 정리 축 완결(§11-4)**: Sorting Layer 8단 체계(`131097a7`) → Actor 내 Y-sort(`70d52d21`) → 벽 뒤 숨기 원근·접지선 발 정렬+벽/문 Actor/Individual(`be23763f`). 상호작용물 정렬은 보류(아트 방향 결정 대기). 이전: 폼 해금 S3+범용 토스트(§11b-4·§10) + 회피·벽 대시 픽스(§7-11) + 행동형 Relic 축 완결(§11b-12) + 장판·Proc 인프라(§7-12·§7-13) — `679a1e0e`
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1817,11 +1817,13 @@ FogVisibilityRenderer:
 던전 타일맵을 목적에 따라 3개 레이어로 분리합니다.
 
 ```
-[Layer 0] tilemap (메인)     — 바닥(ROOM) · 통로(CORRIDOR) · 계단(STAIR_UP)
-[Layer 1] wallTilemap         — 벽/빈 공간(EMPTY) 전용
+[버퍼 0] tilemap (메인)     — 바닥(ROOM) · 통로(CORRIDOR) · 계단(STAIR_UP)   [Sorting: Ground]
+[버퍼 1] wallTilemap         — 벽/빈 공간(EMPTY) 전용                           [Sorting: Actor/Individual]
                                 + TilemapCollider2D 부착 (물리 충돌)
-[Layer 2] doorTilemap (상위)  — 닫힌 문만 배치, 열리면 TilemapRenderer 비활성화
+[버퍼 2] doorTilemap         — 닫힌 문만 배치, 열리면 TilemapRenderer 비활성화   [Sorting: Actor/Individual]
 ```
+
+> Sorting Layer 배치는 §11-4 참조. 벽·문은 액터와 같은 `Actor` 레이어 + Individual 모드로 발 기준 y-sort에 참여합니다(벽 뒤 숨기). 과거 doorTilemap을 mainRenderer보다 order +1로 런타임 덮어쓰던 로직은 레이어 분리로 무의미해져 제거되었습니다(씬 저작값이 진실).
 
 | 타일 타입 | tilemap | wallTilemap |
 |---------|---------|-------------|
@@ -1884,6 +1886,42 @@ FloorTransition(targetFloor):
   6. EventChannel.RaiseFloorChanged()  ← 플레이어 스폰 트리거
   7. LoadingScreen.Hide()          ← 페이드 아웃
 ```
+
+### 11-4. Sprite Sorting Layer 체계 + Y-sort + 벽 뒤 숨기 (2026-07-20)
+
+월드 스프라이트의 렌더 앞뒤 순서를 명명 Sorting Layer 8단으로 체계화했습니다. **GameObject Layer(물리·충돌, "Player"/"Wall" 등)와는 완전히 별개 시스템** — 이름만 겹치며 이 축은 렌더 순서만 다룹니다.
+
+```
+아래(먼저 그림) → 위(나중/전면)
+Ground < Default < FloorFX < Loot < Wall < Actor < Overhead < Fog
+```
+
+| 레이어 | 대상 | order 대역 |
+|--------|------|-----------|
+| Ground | walk/바닥 타일맵 | 0 |
+| Default | (누락 탐지 완충 — 재배정 누락 스프라이트가 맵 위·이펙트 아래로 보임) | — |
+| FloorFX | 포탈 4종(0) · 장판 DamageZone(10) · 스킬 미리보기 LR·CustomCellFill(20/21) · 히트 플래시(30) | 0~30 |
+| Loot | DroppedItem | 0 |
+| Wall | (비어 있음 — 항목만 존치. 벽은 아래 Actor로 이동) | — |
+| Actor | 플레이어 · 적 8종 · 상호작용물 · **벽/문 타일맵** (0) · 투사체(20) · Dagger 마커(50) | 0~50 |
+| Overhead | 적 월드 HP바(0/1) · 상태이상 슬롯(10) | 0~10 |
+| Fog | fogTilemap (미탐사 은폐가 목적이라 월드 최상위) | 0 |
+
+**설계 원칙**: 상대 오프셋 금지(전부 절대 대역). 스크린 UI(overlay 캔버스)는 이 축과 무관 — 캔버스 hierarchy 순서로 결정.
+
+**Actor 내 Y-sort (탑다운 겹침 앞뒤)**: 같은 레이어 + 같은 order끼리는 카메라 Transparency Sort Axis `(0,1,0)`로 y 낮은(화면 아래) 쪽을 전면에 그립니다. 세 곳에 동일 설정:
+- `CameraYSortSetup`(런타임 Main Camera Awake 1회) — SortingGroup 금지(액터당 렌더러 1개, 루트 부착 시 자식 HP바가 Overhead 전역성 잃고 그룹에 갇히는 함정).
+- `ProjectSettings/GraphicsSettings` (Scene 뷰 미리보기 일치).
+- **URP `Renderer2D.asset` Transparency Sort — URP 2D에서 Tilemap Individual 정렬의 실제 권위 설정**(누락 시 벽 타일이 y-sort 미참여).
+
+**벽 뒤 숨기 (원근 occlusion)**: 벽·문 타일맵을 `Actor/0` + TilemapRenderer **Individual 모드**로 두어 타일 하나하나가 액터와 같은 정렬판에서 위치별 앞뒤 판정에 참여합니다(플레이어가 벽 북쪽=가려짐, 남쪽=전면). 이를 위해 액터 스프라이트는 **발(접지선) 기준 정렬**이 필수:
+- 피벗을 접지선(스프라이트 하단에서 고정 px)으로 두고 SpriteRenderer **Sort Point = Pivot**.
+- 프레임 높이별로 정규화 피벗값을 달리해 절대 접지 위치를 통일 + Sprite 자식 localPosition offset으로 비주얼 원위치 보존(Player offset ≈ -0.5).
+- ⚠️ **함정**: 피벗을 스프라이트 "절대 맨 밑"으로 내리면 정렬 기준점이 논리(충돌) 위치보다 ~0.9칸 처져, 벽 밀착 시 기준점이 벽 셀 중심 아래로 떨어져 occlusion 실패. 반드시 **접지선 높이**로 튜닝(캐릭터가 바닥에 닿는 지점 ≈ 서 있는 칸 하단).
+
+**⚠️ Light2D 함정 (검은 화면 재발 포인트)**: URP Light2D의 Target Sorting Layers는 "현재 레이어 전부 나열"로 직렬화됩니다 — **sorting layer를 새로 추가하면 Main 씬 Global Light 2D의 타겟에 반드시 다시 추가**해야 하며, 빠지면 그 레이어 전체가 무광=검은색으로 렌더됩니다.
+
+**상호작용물 정렬 = 보류(2026-07-20)**: 각인대/제단/상점은 `Actor/0` + Sort Point=Center 유지라 벽·액터에 가려질 수 있습니다. 발 기준 편입(A) / Overhead·상위 order로 항상 위(B) 둘 다 미채택 — 이들 스프라이트가 "항상 발밑에 깔리는" 전제로 저작돼 A·B 어느 쪽도 딱 맞지 않으며, 정렬 방식이 아니라 아트 저작 이슈로 판단. 상호작용물 아트 방향 결정 시 재논의(던전 EngravingStation은 런타임 스폰이라 편입 시 프리팹도 동반 수정 필요).
 
 ---
 
