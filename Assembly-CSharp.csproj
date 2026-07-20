@@ -191,6 +191,7 @@
     <Compile Include="Assets\Scripts\Combat\PlayerStatusEffectType.cs" />
     <Compile Include="Assets\Scripts\Data\SkillData.cs" />
     <Compile Include="Assets\Scripts\Debug\RuntimePerfTraceLogger.cs" />
+    <Compile Include="Assets\Scripts\Visual\CameraYSortSetup.cs" />
     <Compile Include="Assets\Scripts\Boss\BossEntryPortal.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityQuery.cs" />
