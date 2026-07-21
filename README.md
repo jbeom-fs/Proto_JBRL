@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-20
-> 기준 커밋: master HEAD `be23763f` — **Sprite Sorting Layer 시각 정리 축 완결(§11-4)**: Sorting Layer 8단 체계(`131097a7`) → Actor 내 Y-sort(`70d52d21`) → 벽 뒤 숨기 원근·접지선 발 정렬+벽/문 Actor/Individual(`be23763f`). 상호작용물 정렬은 보류(아트 방향 결정 대기). 이전: 폼 해금 S3+범용 토스트(§11b-4·§10) + 회피·벽 대시 픽스(§7-11) + 행동형 Relic 축 완결(§11b-12) + 장판·Proc 인프라(§7-12·§7-13) — `679a1e0e`
+> 작성 기준일: 2026-07-21
+> 기준 커밋: master HEAD `896ac3d6` — **Sword 캔슬 축(§7-10·§11b-12)**: 후딜 캔슬(cancelable=recovery+멀티히트, `d1f95c23`) + behavior 시스템 rename(RelicBehavior→BehaviorEffect, `0bbaa407`) + OnSkillCanceled 트리거(캔슬 시 회복/추가타, `2a73260b`) + recast B 재설계(스테이지 후딜 게이트·window 후딜 후 시작, `2a73260b`) + recast 후딜 UI(`896ac3d6`). 다음=패시브 각인 슬롯/타입. 이전: Sprite Sorting Layer 축 완결(§11-4, `be23763f`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -608,7 +608,7 @@ ScriptableObject를 이벤트 버스로 사용합니다. 발행자와 구독자�
 | `OnPlayerHpChanged(cur, max)` | PlayerCombatController | PlayerStatusBarUI |
 | `OnPlayerDied(PlayerCombatController)` | PlayerCombatController | GameOverFlowController |
 | `OnSkillUsed(SkillData)` | PlayerCombatController | SkillSlotUI (쿨다운 표시) |
-| `OnSkillCanceled(canceled, canceling)` | PlayerCombatController | (없음 — 캔슬 패시브 각인 대비 seam, 2026-07-15. **자발적 캔슬만** 발행: cancelable 멀티히트를 스킬로 끊은 경우. 사망·스턴 등 강제 중단은 미발행) |
+| `OnSkillCanceled(canceled, canceling)` | PlayerCombatController | **PlayerBehaviors**(캔슬 behavior — 회복/추가타, §11b-12). **자발적 캔슬만** 발행: cancelable 스킬의 recovery·멀티히트를 다른 스킬/닷지로 끊은 경우(recast 자기진행·강제중단은 미발행) |
 
 > 플레이어 상태이상(슬로우/스턴) 알림은 채널이 아닌 `PlayerCombatController` 직접 이벤트로 발행됩니다.
 >
@@ -1170,9 +1170,10 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **② cancelable 피캔슬 + 캔슬 이벤트 (`6a201b2e`)**
 
-- `SkillData.cancelable`(기본 false) = **피캔슬 1플래그**: 멀티히트 후속타 진행 중 **다른 스킬의 "성공한 시전"**(자원·쿨 통과)으로 끊김 — 잔여 타 폐기, 비용·쿨 환불 없음, 기발동 타는 유효. 가캔슬(canCancel) 비채택 — 실수요 시 기본 true로 역호환 추가 가능.
-- 게이트: `IsSkillBusy` 정의 무변경, Update·TryUseSkill에서 "busy 사유가 멀티히트뿐 + cancelable"일 때만 통과. **recovery는 시퀀스 활성 중 캔슬을 막지 않음**(끊긴 스킬의 recovery 동승분). 평타는 캔슬 수단 아님.
-- `RaiseSkillCanceled(canceled, canceling)` 발행(§5) — **캔슬 시 발동 패시브 각인**(기획) 대비 seam. 소비자 아직 없음.
+- `SkillData.cancelable`(기본 false) = **피캔슬 1플래그**: cancelable 스킬의 **후속타 멀티히트 OR recovery(후딜)**를 **다른 스킬의 "성공한 시전"·닷지**로 끊음(**2026-07-21 확장** — 기존 멀티히트 전용 → 후딜까지, `d1f95c23`). 잔여 타 폐기, 비용·쿨 환불 없음, 기발동 타 유효. 윈드업·재장전·패리는 캔슬 대상 아님, 평타는 캔슬 수단 아님.
+- 게이트: `CanCancelActiveSkill` = (멀티히트 활성 ∨ 후딜 활성) ∧ cancelable. 후딜 소유 스킬 `_recoveryCancelableSkill` 추적(만료·리셋 정리). 실행 = `CancelActiveSkillFor`(멀티히트 중단 + recovery 클리어 + `RaiseSkillCanceled`).
+- 에디터: `cancelable`을 hitSteps/InstantArea 게이팅에서 빼서 **전 실행타입 노출**(후딜 캔슬로 모든 타입서 유의미).
+- `RaiseSkillCanceled(canceled, canceling)` 발행(§5) — **캔슬 시 발동 behavior**(캔슬 패시브 각인 기반)가 소비(§11b-12). **recast 자기진행은 미발행**(같은 스킬 연타≠보상).
 
 **③ 재시전 체인 — `SkillData.recastStages` (B안, `9b2fff5e`)**
 
@@ -1182,8 +1183,8 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 | 상태 | PlayerCombatController **슬롯별 독립 4칸**(`RecastChainEntry{root, stageIndex, windowTimer}`) — Q·W 체인 동시 활성 가능. 시전 레벨 상태머신(러너 무관) |
 | 흐름 | 루트 시전 성공 → 체인 오픈(루트 쿨은 현행대로 이 시점 시작). 같은 슬롯 재입력 = 슬롯 쿨 우회 + 단계 실행(단계 자원 각자 소모·recovery·RaiseSkillUsed, **단계 쿨 없음**) → 인덱스++·윈도우 리셋. 단계 castDelay V1 미지원(에디터 경고) |
 | **종료 = 딱 둘** | **유예 만료 / 전 단계 소진**. 사망·스턴·층전환·폼변경·다른 슬롯 스킬은 체인 무접촉(행동 불능 동안 윈도우 자연 만료가 정리). 무결성 불일치(무기·각인 교체 등) = 폐기 아닌 **실행 거부**만 |
-| 캔슬 연계 | cancelable 연타 진행 중 같은 슬롯 재입력 → 캔슬 게이트가 시퀀스 끊고(`RaiseSkillCanceled`) 체인 분기가 다음 단계 실행 — "연타 끊고 다음 단 잇기"가 조합으로 성립 |
-| UI | SkillSlotUI 3단(§10-2): 평시 쿨다운 / 체인 중 **유예 게이지**(색=`recastWindowFillColor` 인스펙터)+다음 단계 아이콘 / 종료 시 원복+쿨 잔량 복귀. 미리보기도 체인 중 **다음 단계 형태** 표시(§10-3) |
+| 진행 규칙(2026-07-21 B안, `2a73260b`) | recast 스테이지끼리는 **캔슬 안 함** — 이전 스테이지 **후딜 완료 후** 같은 슬롯 재입력으로 다음 단계(같은 스킬 연타≠캔슬 보상). 진행 중(후딜/멀티히트) 재입력은 소비·무시(`TryHandleRecastInput`의 `IsSkillBusy` 가드). window=**후딜 종료 후 시작**(per-chain `RecoveryHold` — 후딜 동안 window 정지) → `recovery<window` 제약 없음. 크로스 스킬/닷지 캔슬만 `RaiseSkillCanceled`(보상). ~~기존 "연타 끊고 잇기 via 자기캔슬"은 폐지~~ |
+| UI | SkillSlotUI 우선순위 후딜→window→쿨다운: 체인 중 **후딜 단계**(쿨다운 비주얼=normal 색·루트 아이콘, `RecoveryTotal`로 정규화) → **유예 게이지**(orange `recastWindowFillColor`+다음 단계 아이콘) / 종료 시 원복+쿨 잔량. `TryGetRecastRecoveryState`. 미리보기도 체인 중 **다음 단계 형태**(§10-3) |
 
 **④ 스킬 발동 히트 플래시 (`6a201b2e`)**
 
@@ -2342,18 +2343,18 @@ Play 4시나리오(손상 파일/version 999/가짜 itemCode 왕복/tmp 잔재) 
 
 Relic이 평면 스탯(§11b-6)을 넘어 **이벤트 발동형 효과**를 갖는 축. 새 relic = 스크립트 0, ItemDatabase 엔트리만(Item Dashboard 저작).
 
-**데이터 모델** — `ItemData.behaviorEffects: RelicBehavior[]`(인라인, CreateRuntimeClone 딥카피 포함):
+**데이터 모델** — `ItemData.behaviorEffects: BehaviorEffect[]`(인라인, CreateRuntimeClone 딥카피 포함). ⚠️타입 rename(2026-07-21 `0bbaa407`, relic+패시브 각인 공용화 대비): `RelicBehavior→BehaviorEffect` / `RelicTrigger·Action→BehaviorTrigger·Action` / `RelicBehaviorRuntime→BehaviorRuntime` / `PlayerRelicBehaviors→PlayerBehaviors`(필드명 `behaviorEffects`·enum 값·`ItemType.Relic`·`Proc*Mode`는 유지):
 ```
-RelicBehavior { trigger, skillTypeFilter(비트마스크), action, value, duration,
-                procSkill(SkillData 참조), procOrigin, procDirection, procSpawnRadius }
-트리거: OnKill / OnSkillUsed(+필터) / Passive(수식형 — 이벤트 아닌 항시 조회)
+BehaviorEffect { trigger, skillTypeFilter(비트마스크), action, value, duration,
+                 procSkill(SkillData 참조), procOrigin, procDirection, procSpawnRadius }
+트리거: OnKill / OnSkillUsed(+필터) / OnSkillCanceled(필터 무시) / Passive(수식형 — 항시 조회)
 액션:   Heal / AttackPoison / AttackBleed / CastSkill
-유효 조합: {OnKill,OnSkillUsed}×{Heal,CastSkill} / Passive×{AttackPoison,AttackBleed}
+유효 조합: {OnKill,OnSkillUsed,OnSkillCanceled}×{Heal,CastSkill} / Passive×{AttackPoison,AttackBleed}
           — 검증=Dashboard 경고 소유(런타임은 조용히 무시)
 ```
-- 필터 = `(mask & (1 << (int)executionType)) != 0` — 복수 타입(Dash|Blink)·전체(-1) 표현. ⚠️MaskField↔비트 정합은 SkillExecutionType 연속값(0~5) 전제.
+- 필터 = `(mask & (1 << (int)executionType)) != 0` — 복수 타입(Dash|Blink)·전체(-1) 표현. ⚠️MaskField↔비트 정합은 SkillExecutionType 연속값(0~5) 전제. **OnSkillCanceled는 필터 무시**(아무 캔슬 발동).
 
-**구조** — `RelicBehaviorRuntime`(순수 C#: 인벤 스캔→트리거별 버킷, value×stack 합산) + `PlayerRelicBehaviors`(어댑터: CombatEventChannel+OnInventoryChanged 구독, 콜백 주입). 수명주기=기존 Relic 아이템 파이프 승계(런소멸/영속제외), 런타임 상태 비영속.
+**구조** — `BehaviorRuntime`(순수 C#: 인벤 스캔→트리거별 버킷, value×stack 합산) + `PlayerBehaviors`(어댑터: CombatEventChannel `OnEnemyKilled`/`OnSkillUsed`/`OnSkillCanceled`+OnInventoryChanged 구독, 콜백 주입). **캔슬 트리거(2026-07-21 `2a73260b`)**: `HandleCancel`+`_onCancel` 버킷, `PlayerBehaviors`가 `EnemyPoolManager.HasActiveEnemies` 게이트(적 없으면 미발동=안전방 파밍 차단). 수명주기=기존 Relic 아이템 파이프 승계(런소멸/영속제외), 비영속. **추후 패시브 각인이 두 번째 behavior 소스로 병합 예정**(Rescan 소스 확장).
 
 **액션별 요점**:
 - **Heal**: OnKill=킬당 즉시, `PCC.RestoreHp`(MaxHp 클램프).
@@ -2880,7 +2881,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 1. **기존 트리거·액션 조합/수치만 다른 relic** = 코드 0 — Item Dashboard에서 Relic 엔트리 생성 후 `behaviorEffects` 편집(경고가 무효 조합·필터 0·null 참조 검출)
 2. **장판·투사체 발동 relic** = CastSkill + 스킬 에셋 저작 — SkillData(AreaOverTime 등) 만들고 procSkill 참조(화이트리스트: AreaOverTime/InstantArea/Projectile/Buff)
-3. **새 액션** = `RelicAction` enum 케이스 + `RelicBehaviorRuntime` switch 1케이스(+콜백 주입) + Dashboard 매트릭스 갱신
+3. **새 액션** = `BehaviorAction` enum 케이스 + `BehaviorRuntime` switch 1케이스(+콜백 주입) + Dashboard 매트릭스 갱신
 4. **새 트리거** = `CombatEventChannel` 이벤트 1개 + 어댑터 구독 1줄 + 버킷 추가 — 이후 그 트리거 쓰는 모든 relic 공짜
 5. 캔슬 패시브 각인 등 타 시스템의 스킬 발동은 `PCC.ExecuteSkillProc` 재사용(§7-13)
 
