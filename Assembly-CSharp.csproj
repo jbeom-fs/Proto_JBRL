@@ -64,7 +64,6 @@
     <Compile Include="Assets\Scripts\Soul\PlayerSoulEnhancements.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
     <Compile Include="Assets\Scripts\Items\ItemType.cs" />
-    <Compile Include="Assets\Scripts\Items\RelicBehavior.cs" />
     <Compile Include="Assets\Scripts\UI\TeleportFadeOverlay.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulEnhancementTable.cs" />
@@ -82,6 +81,7 @@
     <Compile Include="Assets\Scripts\Boss\BossEncounterController.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationIdAttribute.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteProjectilePatternRuntime.cs" />
+    <Compile Include="Assets\Scripts\Items\PlayerBehaviors.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternRuntime.cs" />
     <Compile Include="Assets\Scripts\Items\SoulDropResolver.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverUIController.cs" />
@@ -94,6 +94,7 @@
     <Compile Include="Assets\Scripts\Combat\CustomShapeMatcher.cs" />
     <Compile Include="Assets\Scripts\UI\EngravingLoadoutUIController.cs" />
     <Compile Include="Assets\Scripts\Combat\EngravingStation.cs" />
+    <Compile Include="Assets\Scripts\Items\BehaviorEffect.cs" />
     <Compile Include="Assets\Scripts\System\GamePauseController.cs" />
     <Compile Include="Assets\Scripts\Combat\MovementBlockerQuery.cs" />
     <Compile Include="Assets\Scripts\Generate\FloorTransitionService.cs" />
@@ -195,9 +196,9 @@
     <Compile Include="Assets\Scripts\Boss\BossEntryPortal.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyStates.cs" />
     <Compile Include="Assets\Scripts\World\WalkabilityQuery.cs" />
+    <Compile Include="Assets\Scripts\Items\BehaviorRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternRuntime.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
-    <Compile Include="Assets\Scripts\Items\RelicBehaviorRuntime.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
     <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
@@ -237,7 +238,6 @@
     <Compile Include="Assets\Scripts\Combat\IDamageable.cs" />
     <Compile Include="Assets\Scripts\LocationTransitionManager.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulShardResolver.cs" />
-    <Compile Include="Assets\Scripts\Items\PlayerRelicBehaviors.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerInvincibilityFlashFeedback.cs" />
     <Compile Include="Assets\Scripts\Combat\CombatLayers.cs" />
     <Compile Include="Assets\Scripts\Data\BossEncounterTable.cs" />

@@ -2,25 +2,25 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class RelicBehaviorRuntime
+public sealed class BehaviorRuntime
 {
     private readonly struct TriggerEntry
     {
-        public TriggerEntry(RelicAction action, int skillTypeFilter, int value)
+        public TriggerEntry(BehaviorAction action, int skillTypeFilter, int value)
         {
             Action = action;
             SkillTypeFilter = skillTypeFilter;
             Value = value;
         }
 
-        public RelicAction Action { get; }
+        public BehaviorAction Action { get; }
         public int SkillTypeFilter { get; }
         public int Value { get; }
     }
 
     private readonly struct ProcEntry
     {
-        public ProcEntry(RelicBehavior behavior)
+        public ProcEntry(BehaviorEffect behavior)
         {
             SkillTypeFilter = behavior.skillTypeFilter;
             Skill = behavior.procSkill;
@@ -45,7 +45,7 @@ public sealed class RelicBehaviorRuntime
     private readonly List<Vector3> _pendingKillPositions = new List<Vector3>(8);
     private readonly List<AilmentApplication> _attackAilments = new List<AilmentApplication>();
 
-    public RelicBehaviorRuntime(
+    public BehaviorRuntime(
         Action<int> healCallback,
         Action<SkillData, Vector3, Vector2> procCallback = null)
     {
@@ -126,26 +126,26 @@ public sealed class RelicBehaviorRuntime
         }
     }
 
-    private void AddBehaviors(IReadOnlyList<RelicBehavior> behaviors, int stackCount)
+    private void AddBehaviors(IReadOnlyList<BehaviorEffect> behaviors, int stackCount)
     {
         if (behaviors == null)
             return;
 
         for (int i = 0; i < behaviors.Count; i++)
         {
-            RelicBehavior behavior = behaviors[i];
+            BehaviorEffect behavior = behaviors[i];
             if (behavior == null)
                 continue;
 
             switch (behavior.trigger)
             {
-                case RelicTrigger.OnKill:
+                case BehaviorTrigger.OnKill:
                     AddTriggeredBehavior(behavior, stackCount, _onKill, _onKillProcs);
                     break;
-                case RelicTrigger.OnSkillUsed:
+                case BehaviorTrigger.OnSkillUsed:
                     AddTriggeredBehavior(behavior, stackCount, _onSkillUsed, _onSkillUsedProcs);
                     break;
-                case RelicTrigger.Passive:
+                case BehaviorTrigger.Passive:
                     AddPassiveAttackAilment(behavior, stackCount);
                     break;
             }
@@ -153,35 +153,35 @@ public sealed class RelicBehaviorRuntime
     }
 
     private static void AddTriggeredBehavior(
-        RelicBehavior behavior,
+        BehaviorEffect behavior,
         int stackCount,
         List<TriggerEntry> triggerEntries,
         List<ProcEntry> procEntries)
     {
         switch (behavior.action)
         {
-            case RelicAction.Heal:
+            case BehaviorAction.Heal:
                 triggerEntries.Add(new TriggerEntry(
                     behavior.action,
                     behavior.skillTypeFilter,
                     behavior.value * stackCount));
                 break;
-            case RelicAction.CastSkill:
+            case BehaviorAction.CastSkill:
                 if (behavior.procSkill != null)
                     procEntries.Add(new ProcEntry(behavior));
                 break;
         }
     }
 
-    private void AddPassiveAttackAilment(RelicBehavior behavior, int stackCount)
+    private void AddPassiveAttackAilment(BehaviorEffect behavior, int stackCount)
     {
         AilmentType type;
         switch (behavior.action)
         {
-            case RelicAction.AttackPoison:
+            case BehaviorAction.AttackPoison:
                 type = AilmentType.Poison;
                 break;
-            case RelicAction.AttackBleed:
+            case BehaviorAction.AttackBleed:
                 type = AilmentType.Bleed;
                 break;
             default:
@@ -198,7 +198,7 @@ public sealed class RelicBehaviorRuntime
 
     private void Execute(TriggerEntry entry)
     {
-        if (entry.Action == RelicAction.Heal)
+        if (entry.Action == BehaviorAction.Heal)
             _healCallback?.Invoke(entry.Value);
     }
 

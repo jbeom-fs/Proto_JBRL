@@ -18,7 +18,7 @@ public sealed class ItemData
     [SerializeField] private bool removeOnDungeonExit;
     [SerializeField] private ItemEffect[] useEffects = Array.Empty<ItemEffect>();
     [SerializeField] private ItemEffect[] passiveEffects = Array.Empty<ItemEffect>();
-    [SerializeField] private RelicBehavior[] behaviorEffects = Array.Empty<RelicBehavior>();
+    [SerializeField] private BehaviorEffect[] behaviorEffects = Array.Empty<BehaviorEffect>();
     [SerializeField] private PlayerFormId soulFormId;
     [SerializeField] private EngravingData engraving;
     [SerializeField] private string salvageItemCode;
@@ -37,7 +37,7 @@ public sealed class ItemData
     public bool RemoveOnDungeonExit => removeOnDungeonExit;
     public IReadOnlyList<ItemEffect> UseEffects => useEffects ?? Array.Empty<ItemEffect>();
     public IReadOnlyList<ItemEffect> PassiveEffects => passiveEffects ?? Array.Empty<ItemEffect>();
-    public IReadOnlyList<RelicBehavior> BehaviorEffects => behaviorEffects ?? Array.Empty<RelicBehavior>();
+    public IReadOnlyList<BehaviorEffect> BehaviorEffects => behaviorEffects ?? Array.Empty<BehaviorEffect>();
     public PlayerFormId SoulFormId => soulFormId;
     public EngravingData Engraving => engraving;
     public string SalvageItemCode => salvageItemCode;
@@ -116,19 +116,19 @@ public sealed class ItemData
         return clone;
     }
 
-    private static RelicBehavior[] CloneBehaviors(RelicBehavior[] source)
+    private static BehaviorEffect[] CloneBehaviors(BehaviorEffect[] source)
     {
         if (source == null || source.Length == 0)
-            return Array.Empty<RelicBehavior>();
+            return Array.Empty<BehaviorEffect>();
 
-        RelicBehavior[] clone = new RelicBehavior[source.Length];
+        BehaviorEffect[] clone = new BehaviorEffect[source.Length];
         for (int i = 0; i < source.Length; i++)
         {
-            RelicBehavior behavior = source[i];
+            BehaviorEffect behavior = source[i];
             if (behavior == null)
                 continue;
 
-            clone[i] = new RelicBehavior
+            clone[i] = new BehaviorEffect
             {
                 trigger = behavior.trigger,
                 action = behavior.action,

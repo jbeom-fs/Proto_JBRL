@@ -1,13 +1,13 @@
 using System;
 
-public enum RelicTrigger
+public enum BehaviorTrigger
 {
     OnKill,
     OnSkillUsed,
     Passive
 }
 
-public enum RelicAction
+public enum BehaviorAction
 {
     Heal,
     AttackPoison,
@@ -30,10 +30,10 @@ public enum ProcDirectionMode
 }
 
 [Serializable]
-public sealed class RelicBehavior
+public sealed class BehaviorEffect
 {
-    public RelicTrigger trigger;
-    public RelicAction action;
+    public BehaviorTrigger trigger;
+    public BehaviorAction action;
     public int skillTypeFilter;
     public int value;
     public float duration;

@@ -110,7 +110,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
     private PlayerFormController _formController;
-    private PlayerRelicBehaviors _relicBehaviors;
+    private PlayerBehaviors _relicBehaviors;
     private HitFlashFeedback _hitFlash;
     [SerializeField] private PlayerInvincibilityFlashFeedback invincibilityFlashFeedback;
     private WeaponData _boundSkillWeapon;
@@ -268,7 +268,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
-        _relicBehaviors = GetComponent<PlayerRelicBehaviors>();
+        _relicBehaviors = GetComponent<PlayerBehaviors>();
         if (engravingLoadout == null)
             engravingLoadout = GetComponent<EngravingLoadout>();
         if (engravingLoadout != null)

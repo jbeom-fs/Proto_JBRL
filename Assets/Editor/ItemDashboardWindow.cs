@@ -825,7 +825,7 @@ public sealed class ItemDashboardWindow : EditorWindow
 
             case ItemType.Relic:
                 DrawEffectArray(row, serializedObject, item.FindPropertyRelative("passiveEffects"), "passiveEffects[]");
-                DrawRelicBehaviorArray(row, serializedObject, item.FindPropertyRelative("behaviorEffects"));
+                DrawBehaviorEffectArray(row, serializedObject, item.FindPropertyRelative("behaviorEffects"));
                 break;
         }
     }
@@ -991,7 +991,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             GUIUtility.ExitGUI();
     }
 
-    private void DrawRelicBehaviorArray(
+    private void DrawBehaviorEffectArray(
         ItemRow row,
         SerializedObject serializedObject,
         SerializedProperty behaviors)
@@ -1042,17 +1042,17 @@ public sealed class ItemDashboardWindow : EditorWindow
                 ? EditorGUILayout.Popup("action", action.enumValueIndex, action.enumDisplayNames)
                 : 0;
             int nextFilter = skillTypeFilter != null ? skillTypeFilter.intValue : 0;
-            if ((RelicTrigger)nextTrigger == RelicTrigger.OnSkillUsed)
+            if ((BehaviorTrigger)nextTrigger == BehaviorTrigger.OnSkillUsed)
                 nextFilter = EditorGUILayout.MaskField("skillTypeFilter", nextFilter, s_SkillExecutionTypeNames);
-            RelicAction selectedAction = (RelicAction)nextAction;
+            BehaviorAction selectedAction = (BehaviorAction)nextAction;
             int nextValue = value != null ? value.intValue : 0;
-            if (selectedAction != RelicAction.CastSkill)
+            if (selectedAction != BehaviorAction.CastSkill)
                 nextValue = EditorGUILayout.IntField("value", nextValue);
             SkillData nextProcSkill = procSkill != null ? procSkill.objectReferenceValue as SkillData : null;
             int nextProcOrigin = procOrigin != null ? procOrigin.enumValueIndex : 0;
             int nextProcDirection = procDirection != null ? procDirection.enumValueIndex : 0;
             float nextProcSpawnRadius = procSpawnRadius != null ? procSpawnRadius.floatValue : 0f;
-            if (selectedAction == RelicAction.CastSkill)
+            if (selectedAction == BehaviorAction.CastSkill)
             {
                 nextProcSkill = (SkillData)EditorGUILayout.ObjectField(
                     "procSkill", nextProcSkill, typeof(SkillData), false);
@@ -1075,7 +1075,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             SetEnum(trigger, nextTrigger);
             SetEnum(action, nextAction);
             SetInt(skillTypeFilter, nextFilter);
-            if (selectedAction != RelicAction.CastSkill)
+            if (selectedAction != BehaviorAction.CastSkill)
                 SetInt(value, nextValue);
             SetFloat(duration, nextDuration);
             SetObject(procSkill, nextProcSkill);
@@ -1093,8 +1093,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             int index = behaviors.arraySize;
             behaviors.InsertArrayElementAtIndex(index);
             SerializedProperty behavior = behaviors.GetArrayElementAtIndex(index);
-            SetEnum(behavior.FindPropertyRelative("trigger"), (int)RelicTrigger.OnKill);
-            SetEnum(behavior.FindPropertyRelative("action"), (int)RelicAction.Heal);
+            SetEnum(behavior.FindPropertyRelative("trigger"), (int)BehaviorTrigger.OnKill);
+            SetEnum(behavior.FindPropertyRelative("action"), (int)BehaviorAction.Heal);
             SetInt(behavior.FindPropertyRelative("skillTypeFilter"), 0);
             SetInt(behavior.FindPropertyRelative("value"), 0);
             SetFloat(behavior.FindPropertyRelative("duration"), 0f);
@@ -1631,8 +1631,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         for (int i = 0; i < row.BehaviorEffectCount; i++)
         {
             SerializedProperty behavior = behaviors.GetArrayElementAtIndex(i);
-            RelicTrigger trigger = (RelicTrigger)GetInt(behavior.FindPropertyRelative("trigger"));
-            RelicAction action = (RelicAction)GetInt(behavior.FindPropertyRelative("action"));
+            BehaviorTrigger trigger = (BehaviorTrigger)GetInt(behavior.FindPropertyRelative("trigger"));
+            BehaviorAction action = (BehaviorAction)GetInt(behavior.FindPropertyRelative("action"));
             int skillTypeFilter = GetInt(behavior.FindPropertyRelative("skillTypeFilter"));
             int value = GetInt(behavior.FindPropertyRelative("value"));
             float duration = GetFloat(behavior.FindPropertyRelative("duration"));
@@ -1641,42 +1641,42 @@ public sealed class ItemDashboardWindow : EditorWindow
             ProcDirectionMode procDirection = (ProcDirectionMode)GetInt(behavior.FindPropertyRelative("procDirection"));
             float procSpawnRadius = GetFloat(behavior.FindPropertyRelative("procSpawnRadius"));
 
-            if (trigger == RelicTrigger.OnSkillUsed && skillTypeFilter == 0)
+            if (trigger == BehaviorTrigger.OnSkillUsed && skillTypeFilter == 0)
                 row.HasUnfilteredOnSkillUsedBehavior = true;
-            if (action != RelicAction.CastSkill && value <= 0)
+            if (action != BehaviorAction.CastSkill && value <= 0)
                 row.HasNonPositiveBehaviorValue = true;
             if (!IsValidBehaviorCombination(trigger, action))
                 row.HasInvalidBehaviorCombination = true;
             if (IsAttackAilmentAction(action) && duration <= 0f)
                 row.HasNonPositiveAttackAilmentDuration = true;
-            if (action == RelicAction.CastSkill)
+            if (action == BehaviorAction.CastSkill)
             {
                 if (procSkill == null)
                     row.HasMissingProcSkill = true;
                 else if (!IsProcExecutionTypeSupported(procSkill.executionType))
                     row.HasUnsupportedProcSkill = true;
-                if (trigger == RelicTrigger.OnSkillUsed && procOrigin == ProcOriginMode.HitPosition)
+                if (trigger == BehaviorTrigger.OnSkillUsed && procOrigin == ProcOriginMode.HitPosition)
                     row.HasOnSkillUsedHitPosition = true;
                 if (procOrigin == ProcOriginMode.RandomInRadius && procSpawnRadius <= 0f)
                     row.HasNonPositiveProcSpawnRadius = true;
-                if (trigger == RelicTrigger.OnSkillUsed && procDirection == ProcDirectionMode.Context)
+                if (trigger == BehaviorTrigger.OnSkillUsed && procDirection == ProcDirectionMode.Context)
                     row.HasOnSkillUsedContextDirection = true;
             }
         }
     }
 
-    private static bool IsAttackAilmentAction(RelicAction action)
+    private static bool IsAttackAilmentAction(BehaviorAction action)
     {
-        return action == RelicAction.AttackPoison || action == RelicAction.AttackBleed;
+        return action == BehaviorAction.AttackPoison || action == BehaviorAction.AttackBleed;
     }
 
-    private static bool IsValidBehaviorCombination(RelicTrigger trigger, RelicAction action)
+    private static bool IsValidBehaviorCombination(BehaviorTrigger trigger, BehaviorAction action)
     {
-        if (trigger == RelicTrigger.Passive)
+        if (trigger == BehaviorTrigger.Passive)
             return IsAttackAilmentAction(action);
 
-        return (trigger == RelicTrigger.OnKill || trigger == RelicTrigger.OnSkillUsed) &&
-               (action == RelicAction.Heal || action == RelicAction.CastSkill);
+        return (trigger == BehaviorTrigger.OnKill || trigger == BehaviorTrigger.OnSkillUsed) &&
+               (action == BehaviorAction.Heal || action == BehaviorAction.CastSkill);
     }
 
     private static bool IsProcExecutionTypeSupported(SkillExecutionType executionType)

@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public sealed class PlayerRelicBehaviors : MonoBehaviour
+public sealed class PlayerBehaviors : MonoBehaviour
 {
     [SerializeField] private CombatEventChannel combatChannel;
 
     private PlayerInventory _inventory;
     private PlayerCombatController _combat;
-    private RelicBehaviorRuntime _runtime;
+    private BehaviorRuntime _runtime;
 
     public IReadOnlyList<AilmentApplication> AttackAilments =>
         _runtime != null ? _runtime.AttackAilments : Array.Empty<AilmentApplication>();
@@ -17,7 +17,7 @@ public sealed class PlayerRelicBehaviors : MonoBehaviour
     {
         _inventory = GetComponent<PlayerInventory>();
         _combat = GetComponent<PlayerCombatController>();
-        _runtime = new RelicBehaviorRuntime(Heal, ExecuteProc);
+        _runtime = new BehaviorRuntime(Heal, ExecuteProc);
     }
 
     private void OnEnable()
