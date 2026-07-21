@@ -121,7 +121,7 @@ public class SkillData : ScriptableObject
     [Tooltip("Follow-up hits after the base hit. Empty means a single base hit. Each step delay is measured from the previous hit.")]
     public List<HitStep> hitSteps = new();
 
-    [Tooltip("Allows another skill cast to cancel active multi-hit follow-up hits. Remaining hits are discarded; cost and cooldown are not refunded.")]
+    [Tooltip("이 스킬의 후딜(recovery) 및 진행 중 멀티히트 후속타를 다른 스킬의 성공 시전이 끊을 수 있게 함. 남은 후속타는 폐기되며 코스트·쿨다운은 환불되지 않음. false면 후딜 커밋(끊기 불가).")]
     public bool cancelable = false;
 
     [Tooltip("Allows InstantArea targeting to affect multiple resolved targets.")]

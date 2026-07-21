@@ -2033,7 +2033,7 @@ GameObject:
   - component: {fileID: 175907016}
   - component: {fileID: 175907018}
   m_Layer: 5
-  m_Name: Skill_Q
+  m_Name: Skill_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2056,10 +2056,10 @@ RectTransform:
   - {fileID: 1677351292}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 115, y: -30}
-  m_SizeDelta: {x: 55, y: 55}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &175907016
 MonoBehaviour:
@@ -2114,7 +2114,7 @@ MonoBehaviour:
   iconImage: {fileID: 175907016}
   cooldownOverlay: {fileID: 2065925711}
   cooldownText: {fileID: 718781529}
-  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
+  recastWindowFillColor: {r: 0, g: 0.29902434, b: 1, a: 0.27058825}
 --- !u!1 &183917848
 GameObject:
   m_ObjectHideFlags: 0
@@ -4565,10 +4565,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1183860885}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 120, y: -11.5199995}
-  m_SizeDelta: {x: 200, y: 23.039999}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &295573998
 MonoBehaviour:
@@ -5894,9 +5894,9 @@ RectTransform:
   - {fileID: 705904406}
   m_Father: {fileID: 583430455}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 36, y: -25}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &324915185
@@ -7940,9 +7940,9 @@ RectTransform:
   - {fileID: 794868333}
   m_Father: {fileID: 583430455}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 92, y: -25}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &410969188
@@ -8924,7 +8924,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 24b7bc9c9dee43ac8c73b38a6b0ff838, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraYSortSetup
 --- !u!1 &526732944
 GameObject:
@@ -9776,10 +9776,10 @@ RectTransform:
   - {fileID: 1029482519}
   m_Father: {fileID: 1183860885}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 120, y: -52.04}
-  m_SizeDelta: {x: 240, y: 50}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 240, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &583430456
 MonoBehaviour:
@@ -16901,10 +16901,10 @@ RectTransform:
   - {fileID: 2058291805}
   m_Father: {fileID: 1183860885}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 120, y: -85.520004}
-  m_SizeDelta: {x: 180, y: 8.96}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 180, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &864232203
 MonoBehaviour:
@@ -17634,7 +17634,7 @@ GameObject:
   - component: {fileID: 896344613}
   - component: {fileID: 896344612}
   m_Layer: 5
-  m_Name: Skill_E
+  m_Name: Skill_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -17657,10 +17657,10 @@ RectTransform:
   - {fileID: 1016457320}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 295, y: -30}
-  m_SizeDelta: {x: 55, y: 55}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &896344612
 MonoBehaviour:
@@ -17677,7 +17677,7 @@ MonoBehaviour:
   iconImage: {fileID: 896344613}
   cooldownOverlay: {fileID: 697083395}
   cooldownText: {fileID: 289830674}
-  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
+  recastWindowFillColor: {r: 0, g: 0.29902434, b: 1, a: 0.27058825}
 --- !u!114 &896344613
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19713,9 +19713,9 @@ RectTransform:
   - {fileID: 1068656052}
   m_Father: {fileID: 583430455}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 204, y: -25}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1029482520
@@ -83322,25 +83322,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e05a600ffa3cab499dae5bf54904f75, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerSoulEnhancements
-  levels:
-  - form: 3
-    stat: 4
-    level: 3
-  - form: 4
-    stat: 6
-    level: 2
-  - form: 1
-    stat: 0
-    level: 0
-  - form: 1
-    stat: 1
-    level: 5
-  - form: 3
-    stat: 5
-    level: 5
-  - form: 4
-    stat: 7
-    level: 4
+  levels: []
 --- !u!114 &1562452776
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -83608,7 +83590,7 @@ GameObject:
   - component: {fileID: 1612644041}
   - component: {fileID: 1612644040}
   m_Layer: 5
-  m_Name: Skill_W
+  m_Name: Skill_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -83631,10 +83613,10 @@ RectTransform:
   - {fileID: 1641664690}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 205, y: -30}
-  m_SizeDelta: {x: 55, y: 55}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1612644040
 MonoBehaviour:
@@ -83651,7 +83633,7 @@ MonoBehaviour:
   iconImage: {fileID: 1612644041}
   cooldownOverlay: {fileID: 753859062}
   cooldownText: {fileID: 238215639}
-  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
+  recastWindowFillColor: {r: 0, g: 0.29902434, b: 1, a: 0.27058825}
 --- !u!114 &1612644041
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84890,7 +84872,7 @@ GameObject:
   - component: {fileID: 1680599534}
   - component: {fileID: 1680599533}
   m_Layer: 5
-  m_Name: Skill_R
+  m_Name: Skill_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -84913,10 +84895,10 @@ RectTransform:
   - {fileID: 611757576}
   m_Father: {fileID: 1600274170}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 385, y: -30}
-  m_SizeDelta: {x: 55, y: 55}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1680599533
 MonoBehaviour:
@@ -84933,7 +84915,7 @@ MonoBehaviour:
   iconImage: {fileID: 1680599534}
   cooldownOverlay: {fileID: 1209699568}
   cooldownText: {fileID: 1878712602}
-  recastWindowFillColor: {r: 1, g: 0.55, b: 0.1, a: 0.9}
+  recastWindowFillColor: {r: 0, g: 0.29902434, b: 1, a: 0.27058825}
 --- !u!114 &1680599534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -93722,9 +93704,9 @@ RectTransform:
   - {fileID: 149272451}
   m_Father: {fileID: 583430455}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 148, y: -25}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2007277720

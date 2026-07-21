@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da2e6558fddd658418a7f92243a3f20e, type: 3}
+  m_Name: SwordWeapon
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponData
+  weaponName: SwordWeapon
+  damage: 10
+  attackCooldown: 0.3
+  attackPattern: 5
+  basicAttackSkillData: {fileID: 0}
+  patternRange: 3
+  basicAttackMultiTarget: 1
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
+  bonusAttack: 0
+  bonusDefense: 0
+  canPenetrateWalls: 0
+  usesMagazine: 0
+  magazineSize: 0
+  reloadTime: 1
+  reloadAmount: 0
+  skills:
+  - {fileID: 11400000, guid: 80b15211f73ed1a41b8f6096f7fe20d9, type: 2}
+  - {fileID: 11400000, guid: 62c009b48d2824148a35020edffa0346, type: 2}
+  - {fileID: 11400000, guid: e643993fc1a8ca242819d67107c79a93, type: 2}
+  - {fileID: 11400000, guid: e67d0a675f42c684ca8ce1dac57a2e5f, type: 2}

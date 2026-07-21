@@ -126,6 +126,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Vector2 _aimDirectionContinuous = Vector2.down;
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
+    private SkillData _recoveryCancelableSkill;
     private float _dodgeCooldownTimer;
     private Coroutine _skillCastRoutine;
     private readonly RecastChainEntry[] _recastChains = new RecastChainEntry[SkillSlotCount];
@@ -680,7 +681,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         if (_inputReader.WasReloadPressed && IsCurrentFormBulletMode())
             TryStartReload();
-        if (IsSkillBusy && !CanCancelActiveMultiHit()) return;
+        if (IsSkillBusy && !CanCancelActiveSkill()) return;
 
         if (_inputReader.WasDodgePressed) TryUseDodge();
         if (_inputReader.WasBasicAttackPressed)  TryBasicAttack();
@@ -942,11 +943,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
         if (IsCombatBlockedByLocation()) return;
 
-        bool cancelsActiveMultiHit = CanCancelActiveMultiHit();
-        if (IsSkillBusy && !cancelsActiveMultiHit) return;
+        bool cancelsActiveSkill = CanCancelActiveSkill();
+        if (IsSkillBusy && !cancelsActiveSkill) return;
 
-        if (cancelsActiveMultiHit)
-            CancelActiveMultiHitFor(dodgeSkill);
+        if (cancelsActiveSkill)
+            CancelActiveSkillFor(dodgeSkill);
 
         Vector2 dodgeDirection = ResolveDodgeDirection();
         SkillExecutionContext context = CreateSkillExecutionContext(dodgeSkill, -1, dodgeDirection);
@@ -954,7 +955,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (!result.Success) return;
 
         _dodgeCooldownTimer = Mathf.Max(0f, dodgeSkill.cooldown) * EffectiveSkillCooldownMultiplier();
-        StartSkillRecovery(dodgeSkill.recoveryDelay);
+        StartSkillRecovery(dodgeSkill, dodgeSkill.recoveryDelay);
         combatChannel?.RaiseSkillUsed(dodgeSkill);
     }
 
@@ -976,20 +977,20 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsDead) return;
         if (IsDashing) return;
         if (IsStunned) return;
-        bool cancelsActiveMultiHit = CanCancelActiveMultiHit();
-        if (IsSkillBusy && !cancelsActiveMultiHit) return;
+        bool cancelsActiveSkill = CanCancelActiveSkill();
+        if (IsSkillBusy && !cancelsActiveSkill) return;
         EnsureSkillSlotsBound();
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
 
-        if (TryHandleRecastInput(slotIndex, slot, cancelsActiveMultiHit))
+        if (TryHandleRecastInput(slotIndex, slot, cancelsActiveSkill))
             return;
 
         if (!slot.CanUse(this)) return;
 
         SkillData skill = slot.Data;
-        if (cancelsActiveMultiHit)
-            CancelActiveMultiHitFor(skill);
+        if (cancelsActiveSkill)
+            CancelActiveSkillFor(skill);
 
         float castDelay = Mathf.Max(0f, skill.castDelay);
         if (castDelay > 0f)
@@ -1061,23 +1062,28 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 #endif
     }
 
-    private bool CanCancelActiveMultiHit()
+    private bool CanCancelActiveSkill()
     {
-        if (_skillExecutor == null || !_skillExecutor.IsMultiHitActive)
+        if (_isSkillCasting || _isParrySequenceActive || _isReloading)
             return false;
 
-        SkillData activeSkill = _skillExecutor.ActiveMultiHitSkill;
-        return activeSkill != null &&
-               activeSkill.cancelable &&
-               !_isSkillCasting &&
-               !_isParrySequenceActive &&
-               !_isReloading;
+        if (_skillExecutor != null && _skillExecutor.IsMultiHitActive)
+        {
+            SkillData activeSkill = _skillExecutor.ActiveMultiHitSkill;
+            if (activeSkill != null && activeSkill.cancelable)
+                return true;
+        }
+
+        if (_skillRecoveryTimer > 0f && _recoveryCancelableSkill != null)
+            return true;
+
+        return false;
     }
 
     private bool TryHandleRecastInput(
         int slotIndex,
         SkillSlotRuntime slot,
-        bool cancelsActiveMultiHit)
+        bool cancelsActiveSkill)
     {
         if ((uint)slotIndex >= (uint)_recastChains.Length)
             return false;
@@ -1103,8 +1109,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (!Has(stage.resourceType, requiredAmount))
             return true;
 
-        if (cancelsActiveMultiHit)
-            CancelActiveMultiHitFor(stage);
+        if (cancelsActiveSkill)
+            CancelActiveSkillFor(stage);
 
         if (!IsPendingRecastStage(slotIndex, stage))
             return true;
@@ -1120,7 +1126,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         Spend(stage.resourceType, result.ResourceConsumed);
         ApplySkillReload(stage);
-        StartSkillRecovery(stage.recoveryDelay);
+        StartSkillRecovery(stage, stage.recoveryDelay);
         AdvanceRecastChain(slotIndex);
         combatChannel?.RaiseSkillUsed(stage);
         return true;
@@ -1144,11 +1150,24 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                ReferenceEquals(GetSkillSlot(slotIndex)?.Data, chain.RootSkill);
     }
 
-    private void CancelActiveMultiHitFor(SkillData cancelingSkill)
+    private void CancelActiveSkillFor(SkillData cancelingSkill)
     {
-        SkillData canceledSkill = _skillExecutor.ActiveMultiHitSkill;
-        _skillExecutor.CancelMultiHit();
-        combatChannel?.RaiseSkillCanceled(canceledSkill, cancelingSkill);
+        SkillData canceledSkill = null;
+        if (_skillExecutor != null && _skillExecutor.IsMultiHitActive)
+        {
+            canceledSkill = _skillExecutor.ActiveMultiHitSkill;
+            _skillExecutor.CancelMultiHit();
+        }
+        else if (_skillRecoveryTimer > 0f && _recoveryCancelableSkill != null)
+        {
+            canceledSkill = _recoveryCancelableSkill;
+        }
+
+        _skillRecoveryTimer = 0f;
+        _recoveryCancelableSkill = null;
+
+        if (canceledSkill != null)
+            combatChannel?.RaiseSkillCanceled(canceledSkill, cancelingSkill);
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -1209,7 +1228,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         TryStartAutoReloadIfEmpty();
         slot.StartCooldown(EffectiveSkillCooldownMultiplier());
         ConsumePendingDaggerCooldownReset(slotIndex);
-        StartSkillRecovery(skill.recoveryDelay);
+        StartSkillRecovery(skill, skill.recoveryDelay);
         OpenRecastChain(slotIndex, skill);
         combatChannel?.RaiseSkillUsed(skill);
 
@@ -1322,7 +1341,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void TickSkillRecovery(float deltaTime)
     {
         if (_skillRecoveryTimer > 0f)
+        {
             _skillRecoveryTimer -= deltaTime;
+            if (_skillRecoveryTimer <= 0f)
+                _recoveryCancelableSkill = null;
+        }
     }
 
     private void TickDodgeCooldown(float deltaTime)
@@ -1331,9 +1354,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             _dodgeCooldownTimer = Mathf.Max(0f, _dodgeCooldownTimer - deltaTime);
     }
 
-    private void StartSkillRecovery(float recoveryDelay)
+    private void StartSkillRecovery(SkillData skill, float recoveryDelay)
     {
         _skillRecoveryTimer = Mathf.Max(_skillRecoveryTimer, Mathf.Max(0f, recoveryDelay));
+        _recoveryCancelableSkill = recoveryDelay > 0f && skill != null && skill.cancelable
+            ? skill
+            : null;
     }
 
     private void TickRecastChain(float deltaTime)
@@ -1404,6 +1430,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _isSkillCasting = false;
         _skillRecoveryTimer = 0f;
+        _recoveryCancelableSkill = null;
         _skillExecutor?.CancelMultiHit();
     }
 

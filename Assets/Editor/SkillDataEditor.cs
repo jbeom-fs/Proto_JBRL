@@ -246,6 +246,7 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_cooldown);
         DrawProperty(_castDelay);
         DrawProperty(_recoveryDelay);
+        DrawProperty(_cancelable);
         DrawProperty(_damage);
     }
 
@@ -359,8 +360,6 @@ public sealed class SkillDataEditor : Editor
         {
             DrawBaseHitEditor();
             DrawProperty(_hitSteps);
-            if (!_hitSteps.hasMultipleDifferentValues && _hitSteps.arraySize > 0)
-                DrawProperty(_cancelable);
             return;
         }
 
@@ -388,7 +387,6 @@ public sealed class SkillDataEditor : Editor
 
         if (_hitSteps.arraySize > 0)
         {
-            DrawProperty(_cancelable);
             EditorGUILayout.HelpBox(
                 "Steps are follow-up hits after the base hit (1 step = 2 hits total).",
                 MessageType.Info);
