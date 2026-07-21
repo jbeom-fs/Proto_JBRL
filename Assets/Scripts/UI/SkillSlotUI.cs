@@ -209,6 +209,16 @@ public class SkillSlotUI : MonoBehaviour
         if (!ReferenceEquals(currentRootSkill, _skill))
             RefreshIcon();
 
+        if (_combat.TryGetRecastRecoveryState(
+                _slotIndex,
+                out float recoveryRemaining,
+                out float recoveryTotal,
+                out SkillData _))
+        {
+            UpdateRecastRecoveryVisuals(recoveryRemaining, recoveryTotal);
+            return;
+        }
+
         if (_combat.TryGetRecastState(
                 _slotIndex,
                 out float recastRemaining,
@@ -254,6 +264,18 @@ public class SkillSlotUI : MonoBehaviour
     }
 
     // ── 헬퍼 ────────────────────────────────────────────────────────
+
+    private void UpdateRecastRecoveryVisuals(float remaining, float total)
+    {
+        if (_showingRecast)
+            ExitRecastVisuals();
+
+        ApplyIcon(_rootIconSprite, _rootIconEnabled);
+        ApplyFillColor(_normalFillColor);
+        ApplyFillAmount(total > 0f ? remaining / total : 0f);
+        UpdateRemainingText(remaining);
+        SetCooldownVisible(true);
+    }
 
     private void UpdateRecastVisuals(float remaining, float total, SkillData nextStage)
     {

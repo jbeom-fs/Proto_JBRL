@@ -32,6 +32,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         public int StageIndex;
         public float WindowTimer;
         public float RecoveryHold;
+        public float RecoveryTotal;
     }
 
     public static PlayerCombatController Active { get; private set; }
@@ -1397,7 +1398,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             RootSkill = rootSkill,
             StageIndex = 0,
             WindowTimer = Mathf.Max(0f, rootSkill.recastWindow),
-            RecoveryHold = Mathf.Max(0f, rootSkill.recoveryDelay)
+            RecoveryHold = Mathf.Max(0f, rootSkill.recoveryDelay),
+            RecoveryTotal = Mathf.Max(0f, rootSkill.recoveryDelay)
         };
     }
 
@@ -1424,6 +1426,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         chain.WindowTimer = Mathf.Max(0f, chain.RootSkill.recastWindow);
         chain.RecoveryHold = justExecuted != null ? Mathf.Max(0f, justExecuted.recoveryDelay) : 0f;
+        chain.RecoveryTotal = chain.RecoveryHold;
         _recastChains[slotIndex] = chain;
     }
 
@@ -1833,6 +1836,40 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     }
 
     // ── 스킬 쿨다운 조회 (UI 표시용) ────────────────────────────────
+    public bool TryGetRecastRecoveryState(
+        int slotIndex,
+        out float remaining,
+        out float total,
+        out SkillData nextStage)
+    {
+        remaining = 0f;
+        total = 0f;
+        nextStage = null;
+        EnsureSkillSlotsBound();
+
+        if ((uint)slotIndex >= (uint)_recastChains.Length)
+            return false;
+
+        RecastChainEntry chain = _recastChains[slotIndex];
+        List<SkillData> stages = chain.RootSkill != null ? chain.RootSkill.recastStages : null;
+        if (chain.RootSkill == null ||
+            chain.RecoveryHold <= 0f ||
+            stages == null ||
+            (uint)chain.StageIndex >= (uint)stages.Count ||
+            !ReferenceEquals(GetSkillSlot(slotIndex)?.Data, chain.RootSkill))
+        {
+            return false;
+        }
+
+        nextStage = stages[chain.StageIndex];
+        if (nextStage == null)
+            return false;
+
+        total = Mathf.Max(0f, chain.RecoveryTotal);
+        remaining = total > 0f ? Mathf.Clamp(chain.RecoveryHold, 0f, total) : 0f;
+        return true;
+    }
+
     public bool TryGetRecastState(
         int slotIndex,
         out float remaining,

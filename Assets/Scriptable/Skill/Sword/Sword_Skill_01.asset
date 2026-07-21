@@ -23,7 +23,7 @@ MonoBehaviour:
   reloadAmount: 0
   cooldown: 15
   castDelay: 0
-  recoveryDelay: 1
+  recoveryDelay: 0.2
   recastStages:
   - {fileID: 11400000, guid: b6d35f55adff3054baffdd55903b8f87, type: 2}
   recastWindow: 3

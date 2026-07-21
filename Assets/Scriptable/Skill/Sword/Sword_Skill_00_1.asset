@@ -23,7 +23,7 @@ MonoBehaviour:
   reloadAmount: 0
   cooldown: 2
   castDelay: 0
-  recoveryDelay: 0.2
+  recoveryDelay: 1
   recastStages: []
   recastWindow: 1.5
   animationType: 1
