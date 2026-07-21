@@ -40,8 +40,10 @@ public sealed class BehaviorRuntime
     private readonly Action<SkillData, Vector3, Vector2> _procCallback;
     private readonly List<TriggerEntry> _onKill = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onSkillUsed = new List<TriggerEntry>();
+    private readonly List<TriggerEntry> _onCancel = new List<TriggerEntry>();
     private readonly List<ProcEntry> _onKillProcs = new List<ProcEntry>();
     private readonly List<ProcEntry> _onSkillUsedProcs = new List<ProcEntry>();
+    private readonly List<ProcEntry> _onCancelProcs = new List<ProcEntry>();
     private readonly List<Vector3> _pendingKillPositions = new List<Vector3>(8);
     private readonly List<AilmentApplication> _attackAilments = new List<AilmentApplication>();
 
@@ -59,8 +61,10 @@ public sealed class BehaviorRuntime
     {
         _onKill.Clear();
         _onSkillUsed.Clear();
+        _onCancel.Clear();
         _onKillProcs.Clear();
         _onSkillUsedProcs.Clear();
+        _onCancelProcs.Clear();
         _pendingKillPositions.Clear();
         _attackAilments.Clear();
 
@@ -126,6 +130,15 @@ public sealed class BehaviorRuntime
         }
     }
 
+    public void HandleCancel(Vector3 playerPosition, Vector2 aimDirection)
+    {
+        for (int i = 0; i < _onCancel.Count; i++)
+            Execute(_onCancel[i]);
+
+        for (int i = 0; i < _onCancelProcs.Count; i++)
+            ExecuteProc(_onCancelProcs[i], playerPosition, playerPosition, aimDirection, false);
+    }
+
     private void AddBehaviors(IReadOnlyList<BehaviorEffect> behaviors, int stackCount)
     {
         if (behaviors == null)
@@ -144,6 +157,9 @@ public sealed class BehaviorRuntime
                     break;
                 case BehaviorTrigger.OnSkillUsed:
                     AddTriggeredBehavior(behavior, stackCount, _onSkillUsed, _onSkillUsedProcs);
+                    break;
+                case BehaviorTrigger.OnSkillCanceled:
+                    AddTriggeredBehavior(behavior, stackCount, _onCancel, _onCancelProcs);
                     break;
                 case BehaviorTrigger.Passive:
                     AddPassiveAttackAilment(behavior, stackCount);

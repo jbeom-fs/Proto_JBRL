@@ -31,6 +31,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         public SkillData RootSkill;
         public int StageIndex;
         public float WindowTimer;
+        public float RecoveryHold;
     }
 
     public static PlayerCombatController Active { get; private set; }
@@ -983,7 +984,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         SkillSlotRuntime slot = GetSkillSlot(slotIndex);
         if (slot == null) return;
 
-        if (TryHandleRecastInput(slotIndex, slot, cancelsActiveSkill))
+        if (TryHandleRecastInput(slotIndex, slot))
             return;
 
         if (!slot.CanUse(this)) return;
@@ -1082,8 +1083,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private bool TryHandleRecastInput(
         int slotIndex,
-        SkillSlotRuntime slot,
-        bool cancelsActiveSkill)
+        SkillSlotRuntime slot)
     {
         if ((uint)slotIndex >= (uint)_recastChains.Length)
             return false;
@@ -1101,6 +1101,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return true;
         }
 
+        if (IsSkillBusy)
+            return true;
+
         SkillData stage = stages[chain.StageIndex];
         if (stage == null)
             return true;
@@ -1108,9 +1111,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         int requiredAmount = SkillSlotRuntime.ResolveRequiredAmount(stage);
         if (!Has(stage.resourceType, requiredAmount))
             return true;
-
-        if (cancelsActiveSkill)
-            CancelActiveSkillFor(stage);
 
         if (!IsPendingRecastStage(slotIndex, stage))
             return true;
@@ -1370,6 +1370,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             if (_recastChains[slotIndex].RootSkill == null)
                 continue;
 
+            if (_recastChains[slotIndex].RecoveryHold > 0f)
+            {
+                _recastChains[slotIndex].RecoveryHold -= elapsed;
+                continue;
+            }
+
             _recastChains[slotIndex].WindowTimer -= elapsed;
             if (_recastChains[slotIndex].WindowTimer <= 0f)
                 ResetRecastChain(slotIndex);
@@ -1390,7 +1396,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         {
             RootSkill = rootSkill,
             StageIndex = 0,
-            WindowTimer = Mathf.Max(0f, rootSkill.recastWindow)
+            WindowTimer = Mathf.Max(0f, rootSkill.recastWindow),
+            RecoveryHold = Mathf.Max(0f, rootSkill.recoveryDelay)
         };
     }
 
@@ -1403,6 +1410,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (chain.RootSkill == null || chain.RootSkill.recastStages == null)
             return;
 
+        SkillData justExecuted =
+            chain.StageIndex >= 0 && chain.StageIndex < chain.RootSkill.recastStages.Count
+                ? chain.RootSkill.recastStages[chain.StageIndex]
+                : null;
+
         chain.StageIndex++;
         if (chain.StageIndex >= chain.RootSkill.recastStages.Count)
         {
@@ -1411,6 +1423,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         }
 
         chain.WindowTimer = Mathf.Max(0f, chain.RootSkill.recastWindow);
+        chain.RecoveryHold = justExecuted != null ? Mathf.Max(0f, justExecuted.recoveryDelay) : 0f;
         _recastChains[slotIndex] = chain;
     }
 

@@ -23,7 +23,7 @@ MonoBehaviour:
   reloadAmount: 0
   cooldown: 7
   castDelay: 0
-  recoveryDelay: 0
+  recoveryDelay: 0.2
   recastStages:
   - {fileID: 11400000, guid: 8f51eb9ef328e004ca236fc02fbc1655, type: 2}
   - {fileID: 11400000, guid: 6697d5114daf1b846b844c9dcb2669d3, type: 2}
@@ -47,7 +47,7 @@ MonoBehaviour:
   - {x: 0, y: 3}
   - {x: 1, y: 3}
   hitSteps: []
-  cancelable: 0
+  cancelable: 1
   isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 0

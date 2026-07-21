@@ -1655,11 +1655,13 @@ public sealed class ItemDashboardWindow : EditorWindow
                     row.HasMissingProcSkill = true;
                 else if (!IsProcExecutionTypeSupported(procSkill.executionType))
                     row.HasUnsupportedProcSkill = true;
-                if (trigger == BehaviorTrigger.OnSkillUsed && procOrigin == ProcOriginMode.HitPosition)
+                if ((trigger == BehaviorTrigger.OnSkillUsed || trigger == BehaviorTrigger.OnSkillCanceled) &&
+                    procOrigin == ProcOriginMode.HitPosition)
                     row.HasOnSkillUsedHitPosition = true;
                 if (procOrigin == ProcOriginMode.RandomInRadius && procSpawnRadius <= 0f)
                     row.HasNonPositiveProcSpawnRadius = true;
-                if (trigger == BehaviorTrigger.OnSkillUsed && procDirection == ProcDirectionMode.Context)
+                if ((trigger == BehaviorTrigger.OnSkillUsed || trigger == BehaviorTrigger.OnSkillCanceled) &&
+                    procDirection == ProcDirectionMode.Context)
                     row.HasOnSkillUsedContextDirection = true;
             }
         }
@@ -1675,7 +1677,9 @@ public sealed class ItemDashboardWindow : EditorWindow
         if (trigger == BehaviorTrigger.Passive)
             return IsAttackAilmentAction(action);
 
-        return (trigger == BehaviorTrigger.OnKill || trigger == BehaviorTrigger.OnSkillUsed) &&
+        return (trigger == BehaviorTrigger.OnKill ||
+                trigger == BehaviorTrigger.OnSkillUsed ||
+                trigger == BehaviorTrigger.OnSkillCanceled) &&
                (action == BehaviorAction.Heal || action == BehaviorAction.CastSkill);
     }
 
@@ -1755,13 +1759,13 @@ public sealed class ItemDashboardWindow : EditorWindow
             AddWarning(row, WarningSeverity.Error, "[Error] CastSkill behavior의 procSkill 실행 타입이 proc 화이트리스트 밖: " + location, row.Database);
 
         if (row.HasOnSkillUsedHitPosition)
-            AddWarning(row, WarningSeverity.Error, "[Error] OnSkillUsed×CastSkill은 HitPosition 문맥을 사용할 수 없음: " + location, row.Database);
+            AddWarning(row, WarningSeverity.Error, "[Error] OnSkillUsed/OnSkillCanceled×CastSkill은 HitPosition 문맥을 사용할 수 없음: " + location, row.Database);
 
         if (row.HasNonPositiveProcSpawnRadius)
             AddWarning(row, WarningSeverity.Warning, "[Warn] RandomInRadius behavior의 procSpawnRadius가 0 이하: " + location, row.Database);
 
         if (row.HasOnSkillUsedContextDirection)
-            AddWarning(row, WarningSeverity.Info, "[Info] OnSkillUsed×Context 방향은 Aim과 동일하게 동작: " + location, row.Database);
+            AddWarning(row, WarningSeverity.Info, "[Info] OnSkillUsed/OnSkillCanceled×Context 방향은 Aim과 동일하게 동작: " + location, row.Database);
 
         if (row.BehaviorEffectCount > 0 && row.ItemType != ItemType.Relic)
             AddWarning(row, WarningSeverity.Warning, "[Warn] Relic이 아닌 아이템의 behaviorEffects는 런타임에서 미소비: " + location, row.Database);

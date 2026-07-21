@@ -26,6 +26,7 @@ public sealed class PlayerBehaviors : MonoBehaviour
         {
             combatChannel.OnEnemyKilled += HandleEnemyKilled;
             combatChannel.OnSkillUsed += HandleSkillUsed;
+            combatChannel.OnSkillCanceled += HandleSkillCanceled;
         }
 
         if (_inventory != null)
@@ -40,6 +41,7 @@ public sealed class PlayerBehaviors : MonoBehaviour
         {
             combatChannel.OnEnemyKilled -= HandleEnemyKilled;
             combatChannel.OnSkillUsed -= HandleSkillUsed;
+            combatChannel.OnSkillCanceled -= HandleSkillCanceled;
         }
 
         if (_inventory != null)
@@ -61,6 +63,14 @@ public sealed class PlayerBehaviors : MonoBehaviour
     private void HandleSkillUsed(SkillData skill)
     {
         _runtime.HandleSkillUsed(skill, transform.position, ResolveAimDirection());
+    }
+
+    private void HandleSkillCanceled(SkillData canceled, SkillData canceling)
+    {
+        if (EnemyPoolManager.Instance == null || !EnemyPoolManager.Instance.HasActiveEnemies)
+            return;
+
+        _runtime.HandleCancel(transform.position, ResolveAimDirection());
     }
 
     private void LateUpdate()

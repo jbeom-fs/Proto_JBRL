@@ -23,7 +23,7 @@ MonoBehaviour:
   reloadAmount: 0
   cooldown: 2
   castDelay: 0
-  recoveryDelay: 0
+  recoveryDelay: 0.2
   recastStages: []
   recastWindow: 1.5
   animationType: 1
@@ -45,7 +45,7 @@ MonoBehaviour:
   - {x: 0, y: 3}
   - {x: 1, y: 3}
   hitSteps: []
-  cancelable: 0
+  cancelable: 1
   isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 0

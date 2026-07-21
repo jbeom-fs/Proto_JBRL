@@ -4,7 +4,8 @@ public enum BehaviorTrigger
 {
     OnKill,
     OnSkillUsed,
-    Passive
+    Passive,
+    OnSkillCanceled
 }
 
 public enum BehaviorAction

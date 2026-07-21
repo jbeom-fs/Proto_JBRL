@@ -436,3 +436,29 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Test_Cancel_Relic
+    displayName: "\uD14C\uC2A4\uD2B8\uCE94\uC2AC\uB810\uB9AD"
+    icon: {fileID: 0}
+    description: 
+    itemType: 4
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 1
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects:
+    - trigger: 3
+      action: 0
+      skillTypeFilter: 0
+      value: 10
+      duration: 0
+      procSkill: {fileID: 0}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
+    soulFormId: 0
+    engraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
