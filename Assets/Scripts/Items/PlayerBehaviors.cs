@@ -8,7 +8,10 @@ public sealed class PlayerBehaviors : MonoBehaviour
 
     private PlayerInventory _inventory;
     private PlayerCombatController _combat;
+    private EngravingLoadout _engravingLoadout;
     private BehaviorRuntime _runtime;
+    private readonly PassiveEngravingData[] _equippedPassives =
+        new PassiveEngravingData[EngravingLoadout.PassiveSlotCount];
 
     public IReadOnlyList<AilmentApplication> AttackAilments =>
         _runtime != null ? _runtime.AttackAilments : Array.Empty<AilmentApplication>();
@@ -17,6 +20,7 @@ public sealed class PlayerBehaviors : MonoBehaviour
     {
         _inventory = GetComponent<PlayerInventory>();
         _combat = GetComponent<PlayerCombatController>();
+        _engravingLoadout = GetComponent<EngravingLoadout>();
         _runtime = new BehaviorRuntime(Heal, ExecuteProc);
     }
 
@@ -27,12 +31,15 @@ public sealed class PlayerBehaviors : MonoBehaviour
             combatChannel.OnEnemyKilled += HandleEnemyKilled;
             combatChannel.OnSkillUsed += HandleSkillUsed;
             combatChannel.OnSkillCanceled += HandleSkillCanceled;
+            combatChannel.OnLoadoutChanged += HandleLoadoutChanged;
         }
 
         if (_inventory != null)
             _inventory.OnInventoryChanged += HandleInventoryChanged;
+        if (_engravingLoadout != null)
+            _engravingLoadout.OnPassiveChanged += HandlePassiveChanged;
 
-        _runtime?.Rescan(_inventory != null ? _inventory.Items : null);
+        RescanBehaviors();
     }
 
     private void OnDisable()
@@ -42,15 +49,44 @@ public sealed class PlayerBehaviors : MonoBehaviour
             combatChannel.OnEnemyKilled -= HandleEnemyKilled;
             combatChannel.OnSkillUsed -= HandleSkillUsed;
             combatChannel.OnSkillCanceled -= HandleSkillCanceled;
+            combatChannel.OnLoadoutChanged -= HandleLoadoutChanged;
         }
 
         if (_inventory != null)
             _inventory.OnInventoryChanged -= HandleInventoryChanged;
+        if (_engravingLoadout != null)
+            _engravingLoadout.OnPassiveChanged -= HandlePassiveChanged;
     }
 
     private void HandleInventoryChanged()
     {
-        _runtime.Rescan(_inventory.Items);
+        RescanBehaviors();
+    }
+
+    private void HandlePassiveChanged()
+    {
+        RescanBehaviors();
+    }
+
+    private void HandleLoadoutChanged()
+    {
+        RescanBehaviors();
+    }
+
+    private void RescanBehaviors()
+    {
+        if (_runtime == null)
+            return;
+
+        PlayerFormId form = _combat != null ? _combat.CurrentFormId : PlayerFormId.Normal;
+        for (int i = 0; i < _equippedPassives.Length; i++)
+        {
+            _equippedPassives[i] = _engravingLoadout != null
+                ? _engravingLoadout.GetPassiveSlot(form, i)
+                : null;
+        }
+
+        _runtime.Rescan(_inventory != null ? _inventory.Items : null, _equippedPassives);
     }
 
     private void HandleEnemyKilled(EnemyController enemy)

@@ -15,6 +15,7 @@ public sealed class DeveloperConsoleService
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
     private const string EnhanceCommonUsage = "Usage: /enhancecommon <stat> <form=count> [form=count ...]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
+    private const string PassiveUsage = "Usage: /passive <give <catalogIndex> | equip <slot> <poolIndex> | unequip <slot> | show>";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
@@ -26,6 +27,7 @@ public sealed class DeveloperConsoleService
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
     private static readonly string[] s_EngravingArgs = { "give", "equip", "unequip", "show" };
+    private static readonly string[] s_PassiveArgs = { "give", "equip", "unequip", "show" };
     private static readonly string[] s_ComboArgs = { "show", "add" };
     private static readonly string[] s_AilmentArgs = { "poison", "bleed" };
 
@@ -108,6 +110,7 @@ public sealed class DeveloperConsoleService
         _commands["enhance"] = ExecuteEnhance;
         _commands["enhancecommon"] = ExecuteEnhanceCommon;
         _commands["engraving"] = ExecuteEngraving;
+        _commands["passive"] = ExecutePassive;
         _commands["combo"] = ExecuteCombo;
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
@@ -120,6 +123,7 @@ public sealed class DeveloperConsoleService
         _argumentProviders["give"] = ProvideGiveCategorySuggestions;
         _argumentProviders["enhance"] = ProvideEnhanceFormSuggestions;
         _argumentProviders["engraving"] = ProvideEngravingSuggestions;
+        _argumentProviders["passive"] = ProvidePassiveSuggestions;
         _argumentProviders["combo"] = ProvideComboSuggestions;
         _argumentProviders["ailment"] = ProvideAilmentSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
@@ -151,6 +155,9 @@ public sealed class DeveloperConsoleService
 
     private static void ProvideEngravingSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_EngravingArgs, currentArg, output, maxCount);
+
+    private static void ProvidePassiveSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_PassiveArgs, currentArg, output, maxCount);
 
     private static void ProvideComboSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_ComboArgs, currentArg, output, maxCount);
@@ -229,6 +236,7 @@ public sealed class DeveloperConsoleService
             "\n" + EnhanceUsage +
             "\n" + EnhanceCommonUsage +
             "\n" + EngravingUsage +
+            "\n" + PassiveUsage +
             "\n" + ComboUsage +
             "\n" + AilmentUsage +
             "\n" + StunUsage +
@@ -453,6 +461,48 @@ public sealed class DeveloperConsoleService
         }
 
         return DeveloperConsoleCommandResult.Error(EngravingUsage);
+    }
+
+    private DeveloperConsoleCommandResult ExecutePassive(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error(PassiveUsage);
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1 && string.Equals(parts[0], "show", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecutePassiveShow();
+
+        if (parts.Length == 2 && string.Equals(parts[0], "give", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParseZeroBasedInt(parts[1], out int catalogIndex))
+                return DeveloperConsoleCommandResult.Error(PassiveUsage);
+
+            return _executor.ExecutePassiveGive(catalogIndex);
+        }
+
+        if (parts.Length == 3 && string.Equals(parts[0], "equip", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParseZeroBasedInt(parts[1], out int slot) ||
+                !TryParseZeroBasedInt(parts[2], out int poolIndex))
+            {
+                return DeveloperConsoleCommandResult.Error(PassiveUsage);
+            }
+
+            return _executor.ExecutePassiveEquip(slot, poolIndex);
+        }
+
+        if (parts.Length == 2 && string.Equals(parts[0], "unequip", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParseZeroBasedInt(parts[1], out int slot))
+                return DeveloperConsoleCommandResult.Error(PassiveUsage);
+
+            return _executor.ExecutePassiveUnequip(slot);
+        }
+
+        return DeveloperConsoleCommandResult.Error(PassiveUsage);
     }
 
     private DeveloperConsoleCommandResult ExecuteCombo(string arguments)

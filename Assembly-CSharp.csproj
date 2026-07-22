@@ -121,6 +121,7 @@
     <Compile Include="Assets\Scripts\DebugConsole\DeveloperConsoleCommandResult.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyPoolManager.cs" />
     <Compile Include="Assets\Scripts\Generate\RoomFootprintSampler.cs" />
+    <Compile Include="Assets\Scripts\Data\PassiveEngravingData.cs" />
     <Compile Include="Assets\Scripts\Tool\LoadingScreenController.cs" />
     <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />
     <Compile Include="Assets\Scripts\Items\ItemCodes.cs" />

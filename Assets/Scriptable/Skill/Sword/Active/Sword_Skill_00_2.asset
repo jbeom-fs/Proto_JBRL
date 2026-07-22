@@ -9,11 +9,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
-  m_Name: Sword_Skill_00
-  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "\uC5F0\uACA9"
-  icon: {fileID: 21300000, guid: 2d29ef2caa87b6047ab977e1fd41cc59, type: 3}
+  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
+  m_Name: Sword_Skill_00_2
+  m_EditorClassIdentifier: Assembly-CSharp::SkillData
+  skillName: "\uC5F0\uACA9-\uAC15\uD654"
+  icon: {fileID: 21300000, guid: ad39bb5c000fa9f4a868ddc312f31d94, type: 3}
   description: 
   executionType: 0
   resourceType: 0
@@ -23,35 +23,44 @@ MonoBehaviour:
   reloadAmount: 0
   cooldown: 7
   castDelay: 0
-  recoveryDelay: 1
-  recastStages:
-  - {fileID: 11400000, guid: 8f51eb9ef328e004ca236fc02fbc1655, type: 2}
-  - {fileID: 11400000, guid: 6697d5114daf1b846b844c9dcb2669d3, type: 2}
-  recastWindow: 2
+  recoveryDelay: 0.2
+  recastStages: []
+  recastWindow: 1.5
   animationType: 1
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 20
+  damage: 100
   attackPattern: 6
   patternRange: 1
   coneHalfAngle: 45
   customCells:
+  - {x: -2, y: 1}
   - {x: -1, y: 1}
   - {x: 0, y: 1}
   - {x: 1, y: 1}
+  - {x: 2, y: 1}
+  - {x: -2, y: 2}
   - {x: -1, y: 2}
   - {x: 0, y: 2}
   - {x: 1, y: 2}
+  - {x: 2, y: 2}
+  - {x: -2, y: 3}
   - {x: -1, y: 3}
   - {x: 0, y: 3}
   - {x: 1, y: 3}
+  - {x: 2, y: 3}
+  - {x: -2, y: 4}
+  - {x: -1, y: 4}
+  - {x: 0, y: 4}
+  - {x: 1, y: 4}
+  - {x: 2, y: 4}
   hitSteps: []
   cancelable: 1
   isMultiTarget: 1
   canPenetrateWalls: 0
-  knockbackForce: 0
-  knockbackDuration: 0
+  knockbackForce: 10
+  knockbackDuration: 0.1
   slowPercentage: 0
   slowDuration: 0
   ailments: []
@@ -83,5 +92,3 @@ MonoBehaviour:
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
   blinkBehindOffset: 0.75
-  owningForm: 1
-  grade: 0

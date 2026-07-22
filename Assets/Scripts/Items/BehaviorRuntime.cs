@@ -57,7 +57,9 @@ public sealed class BehaviorRuntime
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
 
-    public void Rescan(IReadOnlyList<InventoryItemStack> items)
+    public void Rescan(
+        IReadOnlyList<InventoryItemStack> items,
+        IReadOnlyList<PassiveEngravingData> equippedPassives)
     {
         _onKill.Clear();
         _onSkillUsed.Clear();
@@ -68,20 +70,30 @@ public sealed class BehaviorRuntime
         _pendingKillPositions.Clear();
         _attackAilments.Clear();
 
-        if (items == null)
+        if (items != null)
+        {
+            for (int i = 0; i < items.Count; i++)
+            {
+                InventoryItemStack stack = items[i];
+                if (stack == null || stack.Count <= 0)
+                    continue;
+
+                ItemData item = stack.Item;
+                if (item == null || item.ItemType != ItemType.Relic)
+                    continue;
+
+                AddBehaviors(item.BehaviorEffects, stack.Count);
+            }
+        }
+
+        if (equippedPassives == null)
             return;
 
-        for (int i = 0; i < items.Count; i++)
+        for (int i = 0; i < equippedPassives.Count; i++)
         {
-            InventoryItemStack stack = items[i];
-            if (stack == null || stack.Count <= 0)
-                continue;
-
-            ItemData item = stack.Item;
-            if (item == null || item.ItemType != ItemType.Relic)
-                continue;
-
-            AddBehaviors(item.BehaviorEffects, stack.Count);
+            PassiveEngravingData passive = equippedPassives[i];
+            if (passive != null)
+                AddBehaviors(passive.behaviors, 1);
         }
     }
 

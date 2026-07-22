@@ -9,24 +9,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: Sword_Skill_01_1
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uC804\uC9C4\uBC1C\uB3C42"
-  icon: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Sword_Skill_01
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uC804\uC9C4\uBC1C\uB3C4"
+  icon: {fileID: 21300000, guid: d461da56a0c79934089d5fec22caefbc, type: 3}
   description: 
-  executionType: 0
+  executionType: 2
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
   bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 2
+  cooldown: 15
   castDelay: 0
   recoveryDelay: 0.2
-  recastStages: []
-  recastWindow: 1.5
-  animationType: 2
+  recastStages:
+  - {fileID: 11400000, guid: b6d35f55adff3054baffdd55903b8f87, type: 2}
+  recastWindow: 3
+  animationType: 3
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
@@ -34,34 +35,10 @@ MonoBehaviour:
   attackPattern: 6
   patternRange: 1
   coneHalfAngle: 45
-  customCells:
-  - {x: -2, y: -2}
-  - {x: -1, y: -2}
-  - {x: 0, y: -2}
-  - {x: 1, y: -2}
-  - {x: 2, y: -2}
-  - {x: -2, y: -1}
-  - {x: -1, y: -1}
-  - {x: 0, y: -1}
-  - {x: 1, y: -1}
-  - {x: 2, y: -1}
-  - {x: -2, y: 0}
-  - {x: -1, y: 0}
-  - {x: 1, y: 0}
-  - {x: 2, y: 0}
-  - {x: -2, y: 1}
-  - {x: -1, y: 1}
-  - {x: 0, y: 1}
-  - {x: 1, y: 1}
-  - {x: 2, y: 1}
-  - {x: -2, y: 2}
-  - {x: -1, y: 2}
-  - {x: 0, y: 2}
-  - {x: 1, y: 2}
-  - {x: 2, y: 2}
+  customCells: []
   hitSteps: []
   cancelable: 1
-  isMultiTarget: 1
+  isMultiTarget: 0
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0
@@ -84,10 +61,10 @@ MonoBehaviour:
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
-  dashDistance: 3
-  dashDuration: 0.12
+  dashDistance: 5
+  dashDuration: 0.1
   dashStopOnWall: 1
-  dashDamageOnPath: 0
+  dashDamageOnPath: 1
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
   appliesDaggerMarker: 0
@@ -96,3 +73,5 @@ MonoBehaviour:
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
   blinkBehindOffset: 0.75
+  owningForm: 1
+  grade: 0

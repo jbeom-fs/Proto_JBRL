@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: Sword_Skill_00_2
+  m_Name: Sword_Skill_01_1
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uC5F0\uACA9-\uAC15\uD654"
-  icon: {fileID: 21300000, guid: ad39bb5c000fa9f4a868ddc312f31d94, type: 3}
+  skillName: "\uC804\uC9C4\uBC1C\uB3C42"
+  icon: {fileID: 21300000, guid: ef5ff84e0c74c37458feba7fa731e12c, type: 3}
   description: 
   executionType: 0
   resourceType: 0
@@ -26,15 +26,29 @@ MonoBehaviour:
   recoveryDelay: 0.2
   recastStages: []
   recastWindow: 1.5
-  animationType: 1
+  animationType: 2
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 100
+  damage: 40
   attackPattern: 6
   patternRange: 1
   coneHalfAngle: 45
   customCells:
+  - {x: -2, y: -2}
+  - {x: -1, y: -2}
+  - {x: 0, y: -2}
+  - {x: 1, y: -2}
+  - {x: 2, y: -2}
+  - {x: -2, y: -1}
+  - {x: -1, y: -1}
+  - {x: 0, y: -1}
+  - {x: 1, y: -1}
+  - {x: 2, y: -1}
+  - {x: -2, y: 0}
+  - {x: -1, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
   - {x: -2, y: 1}
   - {x: -1, y: 1}
   - {x: 0, y: 1}
@@ -45,22 +59,12 @@ MonoBehaviour:
   - {x: 0, y: 2}
   - {x: 1, y: 2}
   - {x: 2, y: 2}
-  - {x: -2, y: 3}
-  - {x: -1, y: 3}
-  - {x: 0, y: 3}
-  - {x: 1, y: 3}
-  - {x: 2, y: 3}
-  - {x: -2, y: 4}
-  - {x: -1, y: 4}
-  - {x: 0, y: 4}
-  - {x: 1, y: 4}
-  - {x: 2, y: 4}
   hitSteps: []
   cancelable: 1
   isMultiTarget: 1
   canPenetrateWalls: 0
-  knockbackForce: 10
-  knockbackDuration: 0.1
+  knockbackForce: 0
+  knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
   ailments: []

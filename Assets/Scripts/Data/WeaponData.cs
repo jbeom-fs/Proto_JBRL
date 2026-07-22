@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -45,4 +46,7 @@ public class WeaponData : ScriptableObject
 
     [Header("Skills (Q / W / E / R)")]
     public SkillData[] skills = new SkillData[4];
+
+    [Header("Passive Engravings (기본 패시브 시드)")]
+    public List<PassiveEngravingData> passiveEngravings = new List<PassiveEngravingData>();
 }
