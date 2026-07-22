@@ -29,12 +29,21 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private const string DefaultDropItemCode = "Currency";
     private const string NewEnemyAssetFolder = "Assets/Scriptable/Enemy";
 
+    private static readonly ItemType[] s_ItemTypeValues = (ItemType[])Enum.GetValues(typeof(ItemType));
+    private static readonly string[] s_ItemTypeNames = Array.ConvertAll(s_ItemTypeValues, value => value.ToString());
+    private static readonly DropFormScope[] s_FormScopeValues =
+        (DropFormScope[])Enum.GetValues(typeof(DropFormScope));
+    private static readonly string[] s_FormScopeNames = Array.ConvertAll(s_FormScopeValues, value => value.ToString());
+    private static readonly PlayerFormId[] s_FormValues = (PlayerFormId[])Enum.GetValues(typeof(PlayerFormId));
+    private static readonly string[] s_FormNames = Array.ConvertAll(s_FormValues, value => value.ToString());
+
     private readonly List<EnemyRow> _rows = new List<EnemyRow>(32);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
     private readonly HashSet<string> _itemCodes = new HashSet<string>(StringComparer.Ordinal);
     private readonly List<EnemyDropDatabase> _scannedDropDatabases = new List<EnemyDropDatabase>(4);
     private readonly List<BossEncounterTable> _scannedBossEncounterTables = new List<BossEncounterTable>(2);
     private readonly List<EnemyController> _scannedSpawnPrefabs = new List<EnemyController>(32);
+    private readonly List<ItemData> _queryItems = new List<ItemData>(64);
     private Vector2 _rowScrollPosition;
     private Vector2 _warningScrollPosition;
     private float _warningsPanelHeight = WarningPanelHeight;
@@ -1597,6 +1606,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         bool changed = false;
         changed |= DrawDrops(group.FindPropertyRelative("drops"));
         changed |= DrawChoiceGroups(group.FindPropertyRelative("choiceGroups"));
+        changed |= DrawQueries(group.FindPropertyRelative("queries"));
 
         if (changed)
             ApplyAndMark(databaseObject);
@@ -1762,6 +1772,188 @@ public sealed class EnemyDashboardWindow : EditorWindow
         return changed;
     }
 
+    private bool DrawQueries(SerializedProperty queries)
+    {
+        bool changed = false;
+        EditorGUILayout.Space(3f);
+        EditorGUILayout.LabelField("queries[]", EditorStyles.miniBoldLabel);
+
+        if (queries == null || !queries.isArray)
+        {
+            EditorGUILayout.HelpBox("queries[] missing.", MessageType.Error);
+            return false;
+        }
+
+        for (int queryIndex = 0; queryIndex < queries.arraySize; queryIndex++)
+        {
+            SerializedProperty query = queries.GetArrayElementAtIndex(queryIndex);
+            SerializedProperty chance = query.FindPropertyRelative("chance");
+            SerializedProperty itemType = query.FindPropertyRelative("itemType");
+            SerializedProperty formScope = query.FindPropertyRelative("formScope");
+            SerializedProperty specificForm = query.FindPropertyRelative("specificForm");
+            SerializedProperty tierWeight0 = query.FindPropertyRelative("tierWeight0");
+            SerializedProperty tierWeight1 = query.FindPropertyRelative("tierWeight1");
+            SerializedProperty tierWeight2 = query.FindPropertyRelative("tierWeight2");
+            SerializedProperty rollCountWeights = query.FindPropertyRelative("rollCountWeights");
+
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("query " + queryIndex, GUILayout.Width(58f));
+            GUILayout.Label("chance", GUILayout.Width(45f));
+            changed |= DrawFloatProperty(chance, "chance", 0f, 1f, 58f);
+            changed |= DrawMappedEnumPopup(itemType, "type", s_ItemTypeValues, s_ItemTypeNames, 104f);
+            changed |= DrawMappedEnumPopup(formScope, "scope", s_FormScopeValues, s_FormScopeNames, 92f);
+
+            DropFormScope scope = formScope != null
+                ? (DropFormScope)formScope.intValue
+                : DropFormScope.CurrentForm;
+            if (scope == DropFormScope.Specific)
+                changed |= DrawMappedEnumPopup(specificForm, "form", s_FormValues, s_FormNames, 92f);
+
+            GUILayout.FlexibleSpace();
+            bool removed = GUILayout.Button("-", GUILayout.Width(24f));
+            if (removed)
+            {
+                queries.DeleteArrayElementAtIndex(queryIndex);
+                changed = true;
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (removed)
+            {
+                EditorGUILayout.EndVertical();
+                break;
+            }
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(16f);
+            GUILayout.Label("tier 0", GUILayout.Width(38f));
+            changed |= DrawFloatProperty(tierWeight0, "tier 0", 0f, float.MaxValue, 58f);
+            GUILayout.Label("tier 1", GUILayout.Width(38f));
+            changed |= DrawFloatProperty(tierWeight1, "tier 1", 0f, float.MaxValue, 58f);
+            GUILayout.Label("tier 2", GUILayout.Width(38f));
+            changed |= DrawFloatProperty(tierWeight2, "tier 2", 0f, float.MaxValue, 58f);
+            EditorGUILayout.EndHorizontal();
+
+            changed |= DrawRollCountWeights(rollCountWeights);
+
+            EnemyDropQuery queryValue = ReadQuery(query);
+            if (queryValue.chance <= 0f)
+                EditorGUILayout.HelpBox("이 쿼리는 절대 발동하지 않음", MessageType.Warning);
+
+            bool hasAnyTier = DropQueryEditorMatcher.HasAnyTier(queryValue);
+            if (!hasAnyTier)
+                EditorGUILayout.HelpBox("허용 tier 없음 — 무드랍", MessageType.Warning);
+
+            if (rollCountWeights != null && rollCountWeights.isArray && rollCountWeights.arraySize > 10)
+                EditorGUILayout.HelpBox("뽑기 횟수 상한이 과도함", MessageType.Warning);
+
+            if (hasAnyTier && !DropQueryEditorMatcher.HasAnyMatch(_queryItems, queryValue))
+                EditorGUILayout.HelpBox("이 쿼리에 매칭되는 아이템 없음", MessageType.Warning);
+
+            EditorGUILayout.EndVertical();
+        }
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(16f);
+        if (GUILayout.Button("+ query", GUILayout.Width(88f)))
+        {
+            int index = queries.arraySize;
+            queries.InsertArrayElementAtIndex(index);
+            InitializeQuery(queries.GetArrayElementAtIndex(index));
+            changed = true;
+        }
+        EditorGUILayout.EndHorizontal();
+
+        return changed;
+    }
+
+    private bool DrawRollCountWeights(SerializedProperty weights)
+    {
+        bool changed = false;
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(16f);
+        GUILayout.Label("rolls", GUILayout.Width(36f));
+
+        if (weights == null || !weights.isArray)
+        {
+            GUILayout.Label("<missing>");
+            EditorGUILayout.EndHorizontal();
+            return false;
+        }
+
+        for (int i = 0; i < weights.arraySize; i++)
+        {
+            GUILayout.Label((i + 1).ToString(CultureInfo.InvariantCulture), GUILayout.Width(12f));
+            changed |= DrawFloatProperty(weights.GetArrayElementAtIndex(i), "roll", 0f, float.MaxValue, 44f);
+            if (GUILayout.Button("-", GUILayout.Width(20f)))
+            {
+                weights.DeleteArrayElementAtIndex(i);
+                changed = true;
+                break;
+            }
+        }
+
+        if (GUILayout.Button("+", GUILayout.Width(24f)))
+        {
+            int index = weights.arraySize;
+            weights.InsertArrayElementAtIndex(index);
+            weights.GetArrayElementAtIndex(index).floatValue = 1f;
+            changed = true;
+        }
+
+        EditorGUILayout.EndHorizontal();
+        return changed;
+    }
+
+    private static bool DrawMappedEnumPopup<T>(
+        SerializedProperty property,
+        string label,
+        T[] values,
+        string[] names,
+        float width)
+        where T : Enum
+    {
+        GUILayout.Label(label, GUILayout.Width(34f));
+        if (property == null || values == null || values.Length == 0)
+        {
+            GUILayout.Label("<missing>", GUILayout.Width(width));
+            return false;
+        }
+
+        int currentIndex = 0;
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (Convert.ToInt32(values[i], CultureInfo.InvariantCulture) == property.intValue)
+            {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        EditorGUI.BeginChangeCheck();
+        int nextIndex = EditorGUILayout.Popup(currentIndex, names, GUILayout.Width(width));
+        if (!EditorGUI.EndChangeCheck())
+            return false;
+
+        property.intValue = Convert.ToInt32(values[nextIndex], CultureInfo.InvariantCulture);
+        return true;
+    }
+
+    private static EnemyDropQuery ReadQuery(SerializedProperty query)
+    {
+        return new EnemyDropQuery
+        {
+            chance = GetFloat(query?.FindPropertyRelative("chance")),
+            itemType = (ItemType)GetInt(query?.FindPropertyRelative("itemType")),
+            formScope = (DropFormScope)GetInt(query?.FindPropertyRelative("formScope")),
+            specificForm = (PlayerFormId)GetInt(query?.FindPropertyRelative("specificForm")),
+            tierWeight0 = GetFloat(query?.FindPropertyRelative("tierWeight0")),
+            tierWeight1 = GetFloat(query?.FindPropertyRelative("tierWeight1")),
+            tierWeight2 = GetFloat(query?.FindPropertyRelative("tierWeight2"))
+        };
+    }
+
     private bool DrawDropItemCode(SerializedProperty property, float width)
     {
         if (property == null)
@@ -1908,6 +2100,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         SerializedProperty enemyProperty = group.FindPropertyRelative("enemy");
         SerializedProperty drops = group.FindPropertyRelative("drops");
         SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+        SerializedProperty queries = group.FindPropertyRelative("queries");
 
         if (enemyProperty != null)
             enemyProperty.objectReferenceValue = enemy;
@@ -1915,6 +2108,8 @@ public sealed class EnemyDashboardWindow : EditorWindow
             drops.arraySize = 0;
         if (choiceGroups != null && choiceGroups.isArray)
             choiceGroups.arraySize = 0;
+        if (queries != null && queries.isArray)
+            queries.arraySize = 0;
     }
 
     private static void InitializeDrop(SerializedProperty drop)
@@ -1926,6 +2121,27 @@ public sealed class EnemyDashboardWindow : EditorWindow
         SetInt(drop.FindPropertyRelative("minAmount"), 1);
         SetInt(drop.FindPropertyRelative("maxAmount"), 1);
         SetFloat(drop.FindPropertyRelative("chance"), 1f);
+    }
+
+    private static void InitializeQuery(SerializedProperty query)
+    {
+        if (query == null)
+            return;
+
+        SetFloat(query.FindPropertyRelative("chance"), 1f);
+        SetInt(query.FindPropertyRelative("itemType"), (int)ItemType.Material);
+        SetInt(query.FindPropertyRelative("formScope"), (int)DropFormScope.CurrentForm);
+        SetInt(query.FindPropertyRelative("specificForm"), (int)PlayerFormId.Normal);
+        SetFloat(query.FindPropertyRelative("tierWeight0"), 1f);
+        SetFloat(query.FindPropertyRelative("tierWeight1"), 0f);
+        SetFloat(query.FindPropertyRelative("tierWeight2"), 0f);
+
+        SerializedProperty rollCountWeights = query.FindPropertyRelative("rollCountWeights");
+        if (rollCountWeights != null && rollCountWeights.isArray)
+        {
+            rollCountWeights.arraySize = 1;
+            rollCountWeights.GetArrayElementAtIndex(0).floatValue = 1f;
+        }
     }
 
     private static void InitializeChoiceGroup(SerializedProperty choiceGroup)
@@ -2045,6 +2261,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _scannedDropDatabases.Clear();
         _scannedBossEncounterTables.Clear();
         _scannedSpawnPrefabs.Clear();
+        _queryItems.Clear();
         _hasScanned = true;
         _hasAssetChanges = false;
         _lastScanLabel = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
@@ -2068,6 +2285,8 @@ public sealed class EnemyDashboardWindow : EditorWindow
         Dictionary<EnemyData, List<DropGroupRecord>> dropGroups = BuildDropGroups(dropDatabases);
         HashSet<string> itemCodes = BuildItemCodeSet(itemDatabases);
         _itemCodes.UnionWith(itemCodes);
+        for (int i = 0; i < itemDatabases.Count; i++)
+            itemDatabases[i]?.GetAllItems(_queryItems);
         HashSet<EnemyData> bossEnemies = BuildBossSet(bossTables);
 
         for (int i = 0; i < enemies.Count; i++)

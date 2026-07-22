@@ -276,7 +276,7 @@ public static class DropQueryResolver
     }
 
     // 각인류 = SO의 grade가 단일 진실. 그 외 = ItemData.rarity.
-    private static int GetTier(ItemData item)
+    public static int GetTier(ItemData item)
     {
         if (item == null)
             return -1;

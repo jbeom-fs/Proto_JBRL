@@ -36,12 +36,16 @@ public sealed class ItemDashboardWindow : EditorWindow
     private static readonly ItemType[] s_ItemTypeValues = (ItemType[])Enum.GetValues(typeof(ItemType));
     private static readonly string[] s_TypeFilterOptions = BuildTypeFilterOptions();
     private static readonly string[] s_SkillExecutionTypeNames = Enum.GetNames(typeof(SkillExecutionType));
+    private static readonly FieldInfo s_ItemDatabaseItemsField = typeof(ItemDatabase).GetField(
+        "items",
+        BindingFlags.Instance | BindingFlags.NonPublic);
 
     private readonly List<ItemRow> _rows = new List<ItemRow>(64);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
     private readonly List<ItemDatabase> _itemDatabases = new List<ItemDatabase>(4);
     private readonly List<EnemyDropDatabase> _dropDatabases = new List<EnemyDropDatabase>(4);
     private readonly List<DropEntryRecord> _dropEntries = new List<DropEntryRecord>(64);
+    private readonly List<DropQueryRecord> _dropQueries = new List<DropQueryRecord>(32);
     private readonly List<EnemyOption> _enemyOptions = new List<EnemyOption>(32);
     private readonly HashSet<string> _itemCodes = new HashSet<string>(StringComparer.Ordinal);
     private string[] _enemyOptionLabels = Array.Empty<string>();
@@ -499,14 +503,19 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private void DrawDropSourceCell(ItemRow row)
     {
-        if (row.DropSources.Count == 0)
+        if (row.DropSources.Count == 0 && row.QuerySources.Count == 0)
         {
             Cell("-", DropSourceWidth);
             return;
         }
 
         if (GUILayout.Button(row.DropSummary, GUILayout.Width(DropSourceWidth)))
-            EditorGUIUtility.PingObject(row.DropSources[0].Database);
+        {
+            EnemyDropDatabase database = row.DropSources.Count > 0
+                ? row.DropSources[0].Database
+                : row.QuerySources[0].Database;
+            EditorGUIUtility.PingObject(database);
+        }
     }
 
     private void DrawDeleteCell(ItemRow row)
@@ -1185,6 +1194,7 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         serializedObject.Update();
         RefreshRowFromProperty(row, GetItemProperty(serializedObject, row.Index));
+        RebuildDropCachesForAllRows();
         ClearOperationFeedback();
         return true;
     }
@@ -1206,6 +1216,19 @@ public sealed class ItemDashboardWindow : EditorWindow
         }
 
         DrawAddDropEntry(row);
+
+        if (row.QuerySources.Count > 0)
+        {
+            EditorGUILayout.Space(3f);
+            EditorGUILayout.LabelField("쿼리 매칭", EditorStyles.miniBoldLabel);
+            for (int i = 0; i < row.QuerySources.Count; i++)
+            {
+                QuerySourceRecord source = row.QuerySources[i];
+                if (GUILayout.Button(source.Summary, EditorStyles.miniButton))
+                    EditorGUIUtility.PingObject(source.Database);
+            }
+        }
+
         EditorGUILayout.EndVertical();
     }
 
@@ -1575,6 +1598,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         _itemDatabases.Clear();
         _dropDatabases.Clear();
         _dropEntries.Clear();
+        _dropQueries.Clear();
         _itemCodes.Clear();
         _hasScanned = true;
         _hasAssetChanges = false;
@@ -1591,14 +1615,15 @@ public sealed class ItemDashboardWindow : EditorWindow
         _primaryDropDatabase = dropDatabases.Count > 0 ? dropDatabases[0] : null;
         BuildEnemyOptions(enemies);
 
-        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode = BuildDropSourceIndex(_dropDatabases, _dropEntries);
+        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode =
+            BuildDropSourceIndex(_dropDatabases, _dropEntries, _dropQueries);
 
         HashSet<string> itemCodes = BuildItemCodeSet(itemDatabases);
         _itemCodes.UnionWith(itemCodes);
 
         Dictionary<string, List<ItemRow>> rowsByCode = new Dictionary<string, List<ItemRow>>(StringComparer.Ordinal);
         Dictionary<string, List<ItemRow>> soulRowsByForm = new Dictionary<string, List<ItemRow>>(StringComparer.Ordinal);
-        BuildRows(itemDatabases, dropSourcesByCode, rowsByCode, soulRowsByForm);
+        BuildRows(itemDatabases, dropSourcesByCode, _dropQueries, rowsByCode, soulRowsByForm);
 
         AddDuplicateItemCodeWarnings(rowsByCode);
         AddDuplicateSoulFormWarnings(soulRowsByForm);
@@ -1623,6 +1648,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private void BuildRows(
         List<ItemDatabase> itemDatabases,
         Dictionary<string, List<DropSourceRecord>> dropSourcesByCode,
+        IReadOnlyList<DropQueryRecord> dropQueries,
         Dictionary<string, List<ItemRow>> rowsByCode,
         Dictionary<string, List<ItemRow>> soulRowsByForm)
     {
@@ -1640,7 +1666,7 @@ public sealed class ItemDashboardWindow : EditorWindow
             for (int itemIndex = 0; itemIndex < items.arraySize; itemIndex++)
             {
                 SerializedProperty item = items.GetArrayElementAtIndex(itemIndex);
-                ItemRow row = CreateRow(database, itemIndex, item, dropSourcesByCode);
+                ItemRow row = CreateRow(database, itemIndex, item, dropSourcesByCode, dropQueries);
                 AddRowWarnings(row);
                 AddToCodeMaps(row, rowsByCode, soulRowsByForm);
                 _rows.Add(row);
@@ -1652,11 +1678,12 @@ public sealed class ItemDashboardWindow : EditorWindow
         ItemDatabase database,
         int itemIndex,
         SerializedProperty item,
-        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode)
+        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode,
+        IReadOnlyList<DropQueryRecord> dropQueries)
     {
         ItemRow row = new ItemRow(database, itemIndex);
         RefreshRowFromProperty(row, item);
-        RefreshRowDropSources(row, dropSourcesByCode);
+        RefreshRowDropSources(row, dropSourcesByCode, dropQueries);
         return row;
     }
 
@@ -1665,6 +1692,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         if (row == null || item == null)
             return;
 
+        row.Item = GetItemData(row.Database, row.Index);
         row.ItemCode = GetString(item.FindPropertyRelative("itemCode"));
         row.DisplayName = GetString(item.FindPropertyRelative("displayName"));
         row.Icon = GetObject<Sprite>(item.FindPropertyRelative("icon"));
@@ -1761,21 +1789,37 @@ public sealed class ItemDashboardWindow : EditorWindow
                executionType == SkillExecutionType.Buff;
     }
 
-    private void RefreshRowDropSources(ItemRow row, Dictionary<string, List<DropSourceRecord>> dropSourcesByCode)
+    private void RefreshRowDropSources(
+        ItemRow row,
+        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode,
+        IReadOnlyList<DropQueryRecord> dropQueries)
     {
         row.DropSources.Clear();
         if (!string.IsNullOrWhiteSpace(row.ItemCode) && dropSourcesByCode.TryGetValue(row.ItemCode, out List<DropSourceRecord> sources))
             row.DropSources.AddRange(sources);
 
-        row.DropSummary = BuildDropSummary(row.DropSources);
+        row.QuerySources.Clear();
+        if (row.Item != null && dropQueries != null)
+        {
+            for (int i = 0; i < dropQueries.Count; i++)
+            {
+                DropQueryRecord query = dropQueries[i];
+                if (DropQueryEditorMatcher.Matches(row.Item, query.Query, out bool currentFormDependent))
+                    row.QuerySources.Add(new QuerySourceRecord(query, currentFormDependent));
+            }
+        }
+
+        row.DropSummary = BuildDropSummary(row.DropSources, row.QuerySources);
     }
 
     private void RebuildDropCachesForAllRows()
     {
         _dropEntries.Clear();
-        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode = BuildDropSourceIndex(_dropDatabases, _dropEntries);
+        _dropQueries.Clear();
+        Dictionary<string, List<DropSourceRecord>> dropSourcesByCode =
+            BuildDropSourceIndex(_dropDatabases, _dropEntries, _dropQueries);
         for (int i = 0; i < _rows.Count; i++)
-            RefreshRowDropSources(_rows[i], dropSourcesByCode);
+            RefreshRowDropSources(_rows[i], dropSourcesByCode, _dropQueries);
     }
 
     private void RebuildItemCodeSetFromRows()
@@ -1846,7 +1890,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         if (row.Icon == null)
             AddWarning(row, WarningSeverity.Info, "[Info] icon null: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
 
-        if (row.DropSources.Count == 0 && !ShouldSuppressUnregisteredDrop(row))
+        if (row.DropSources.Count == 0 && row.QuerySources.Count == 0 && !ShouldSuppressUnregisteredDrop(row))
             AddWarning(row, WarningSeverity.Info, "[Info] 드랍 미등록: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
     }
 
@@ -2383,7 +2427,8 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private static Dictionary<string, List<DropSourceRecord>> BuildDropSourceIndex(
         List<EnemyDropDatabase> databases,
-        List<DropEntryRecord> dropEntries)
+        List<DropEntryRecord> dropEntries,
+        List<DropQueryRecord> dropQueries)
     {
         Dictionary<string, List<DropSourceRecord>> sourcesByCode = new Dictionary<string, List<DropSourceRecord>>(StringComparer.Ordinal);
 
@@ -2405,10 +2450,55 @@ public sealed class ItemDashboardWindow : EditorWindow
                 string enemyName = GetGroupEnemyName(group, groupIndex);
                 ReadDropEntries(database, groupIndex, enemy, enemyName, group.FindPropertyRelative("drops"), sourcesByCode, dropEntries);
                 ReadChoiceEntries(database, groupIndex, enemy, enemyName, group.FindPropertyRelative("choiceGroups"), sourcesByCode, dropEntries);
+                ReadQueryEntries(
+                    database,
+                    groupIndex,
+                    enemy,
+                    enemyName,
+                    group.FindPropertyRelative("queries"),
+                    dropQueries);
             }
         }
 
         return sourcesByCode;
+    }
+
+    private static void ReadQueryEntries(
+        EnemyDropDatabase database,
+        int groupIndex,
+        EnemyData enemy,
+        string enemyName,
+        SerializedProperty queries,
+        List<DropQueryRecord> output)
+    {
+        if (queries == null || !queries.isArray || output == null)
+            return;
+
+        for (int queryIndex = 0; queryIndex < queries.arraySize; queryIndex++)
+        {
+            SerializedProperty query = queries.GetArrayElementAtIndex(queryIndex);
+            output.Add(new DropQueryRecord(
+                database,
+                enemy,
+                enemyName,
+                groupIndex,
+                queryIndex,
+                ReadDropQuery(query)));
+        }
+    }
+
+    private static EnemyDropQuery ReadDropQuery(SerializedProperty query)
+    {
+        return new EnemyDropQuery
+        {
+            chance = GetFloat(query?.FindPropertyRelative("chance")),
+            itemType = (ItemType)GetInt(query?.FindPropertyRelative("itemType")),
+            formScope = (DropFormScope)GetInt(query?.FindPropertyRelative("formScope")),
+            specificForm = (PlayerFormId)GetInt(query?.FindPropertyRelative("specificForm")),
+            tierWeight0 = GetFloat(query?.FindPropertyRelative("tierWeight0")),
+            tierWeight1 = GetFloat(query?.FindPropertyRelative("tierWeight1")),
+            tierWeight2 = GetFloat(query?.FindPropertyRelative("tierWeight2"))
+        };
     }
 
     private static void ReadDropEntries(
@@ -2546,11 +2636,16 @@ public sealed class ItemDashboardWindow : EditorWindow
         return codes;
     }
 
-    private static string BuildDropSummary(List<DropSourceRecord> sources)
+    private static string BuildDropSummary(
+        List<DropSourceRecord> sources,
+        List<QuerySourceRecord> querySources)
     {
-        List<string> parts = new List<string>(sources.Count);
+        List<string> parts = new List<string>(sources.Count + querySources.Count);
         for (int i = 0; i < sources.Count; i++)
             parts.Add(sources[i].Summary);
+
+        for (int i = 0; i < querySources.Count; i++)
+            parts.Add(querySources[i].Summary);
 
         return parts.Count > 0 ? string.Join("; ", parts) : "-";
     }
@@ -2573,6 +2668,15 @@ public sealed class ItemDashboardWindow : EditorWindow
         }
 
         return assets;
+    }
+
+    private static ItemData GetItemData(ItemDatabase database, int index)
+    {
+        if (database == null || s_ItemDatabaseItemsField == null)
+            return null;
+
+        List<ItemData> items = s_ItemDatabaseItemsField.GetValue(database) as List<ItemData>;
+        return items != null && (uint)index < (uint)items.Count ? items[index] : null;
     }
 
     private static void AddToLookup<TKey, TValue>(Dictionary<TKey, List<TValue>> lookup, TKey key, TValue value)
@@ -2898,8 +3002,10 @@ public sealed class ItemDashboardWindow : EditorWindow
         public readonly int Index;
         public readonly List<DashboardWarning> Warnings = new List<DashboardWarning>(4);
         public readonly List<DropSourceRecord> DropSources = new List<DropSourceRecord>(2);
+        public readonly List<QuerySourceRecord> QuerySources = new List<QuerySourceRecord>(2);
         public bool Foldout;
         public int AddDropEnemyIndex;
+        public ItemData Item;
         public string ItemCode;
         public string DisplayName;
         public Sprite Icon;
@@ -2997,6 +3103,46 @@ public sealed class ItemDashboardWindow : EditorWindow
             }
 
             return string.Join("\n", messages);
+        }
+    }
+
+    private sealed class DropQueryRecord
+    {
+        public readonly EnemyDropDatabase Database;
+        public readonly EnemyData Enemy;
+        public readonly string EnemyName;
+        public readonly int GroupIndex;
+        public readonly int QueryIndex;
+        public readonly EnemyDropQuery Query;
+
+        public DropQueryRecord(
+            EnemyDropDatabase database,
+            EnemyData enemy,
+            string enemyName,
+            int groupIndex,
+            int queryIndex,
+            EnemyDropQuery query)
+        {
+            Database = database;
+            Enemy = enemy;
+            EnemyName = enemyName;
+            GroupIndex = groupIndex;
+            QueryIndex = queryIndex;
+            Query = query;
+        }
+    }
+
+    private sealed class QuerySourceRecord
+    {
+        public readonly EnemyDropDatabase Database;
+        public readonly string Summary;
+
+        public QuerySourceRecord(DropQueryRecord query, bool currentFormDependent)
+        {
+            Database = query.Database;
+            Summary = "쿼리 매칭: " + query.EnemyName +
+                      "(그룹 " + query.GroupIndex + ", 쿼리 " + query.QueryIndex + ")" +
+                      (currentFormDependent ? " [현재 폼 의존]" : string.Empty);
         }
     }
 

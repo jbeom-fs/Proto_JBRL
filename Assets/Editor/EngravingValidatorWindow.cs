@@ -5,10 +5,7 @@ using UnityEngine;
 
 public sealed class EngravingValidatorWindow : EditorWindow
 {
-    private const string ShowUnplacedInfoKey = "JBRogLike.EngravingValidator.ShowUnplacedInfo";
-
     private readonly List<ValidationResult> _results = new List<ValidationResult>(64);
-    private bool _showUnplacedInfo = true;
     private bool _hasScanned;
     private Vector2 _scrollPosition;
 
@@ -16,11 +13,6 @@ public sealed class EngravingValidatorWindow : EditorWindow
     public static void Open()
     {
         GetWindow<EngravingValidatorWindow>("Engraving Validator");
-    }
-
-    private void OnEnable()
-    {
-        _showUnplacedInfo = EditorPrefs.GetBool(ShowUnplacedInfoKey, true);
     }
 
     private void OnGUI()
@@ -42,21 +34,15 @@ public sealed class EngravingValidatorWindow : EditorWindow
         if (GUILayout.Button("Scan", EditorStyles.toolbarButton, GUILayout.Width(80f)))
             Scan();
 
-        EditorGUI.BeginChangeCheck();
-        _showUnplacedInfo = GUILayout.Toggle(_showUnplacedInfo, "Show unplaced engravings (Info)", EditorStyles.toolbarButton);
-        if (EditorGUI.EndChangeCheck())
-            EditorPrefs.SetBool(ShowUnplacedInfoKey, _showUnplacedInfo);
-
         GUILayout.FlexibleSpace();
         EditorGUILayout.EndHorizontal();
     }
 
     private void DrawResults()
     {
-        int visibleCount = GetVisibleResultCount();
-        EditorGUILayout.LabelField("Results: " + visibleCount, EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Results: " + _results.Count, EditorStyles.boldLabel);
 
-        if (visibleCount == 0)
+        if (_results.Count == 0)
         {
             EditorGUILayout.HelpBox("No issues found for current filters.", MessageType.Info);
             return;
@@ -66,9 +52,6 @@ public sealed class EngravingValidatorWindow : EditorWindow
         for (int i = 0; i < _results.Count; i++)
         {
             ValidationResult result = _results[i];
-            if (!ShouldShow(result))
-                continue;
-
             DrawResult(result);
         }
 
@@ -107,11 +90,9 @@ public sealed class EngravingValidatorWindow : EditorWindow
 
         ScanContext context = BuildItemContext(itemDatabases);
         List<DropRecord> dropRecords = BuildDropRecords(dropDatabases);
-        HashSet<string> dropCodes = BuildDropCodeSet(dropRecords);
 
         AddOrphanEngravingResults(engravings, itemDatabases, context);
         AddItemDatabaseResults(context);
-        AddUnplacedEngravingResults(context, dropCodes);
         AddDropDatabaseResults(dropRecords, context);
     }
 
@@ -287,18 +268,6 @@ public sealed class EngravingValidatorWindow : EditorWindow
         };
     }
 
-    private static HashSet<string> BuildDropCodeSet(List<DropRecord> dropRecords)
-    {
-        HashSet<string> codes = new HashSet<string>(StringComparer.Ordinal);
-        for (int i = 0; i < dropRecords.Count; i++)
-        {
-            if (!string.IsNullOrEmpty(dropRecords[i].Code))
-                codes.Add(dropRecords[i].Code);
-        }
-
-        return codes;
-    }
-
     private void AddOrphanEngravingResults(List<EngravingData> engravings, List<ItemDatabase> itemDatabases, ScanContext context)
     {
         ItemDatabase targetDatabase = itemDatabases.Count > 0 ? itemDatabases[0] : null;
@@ -374,26 +343,6 @@ public sealed class EngravingValidatorWindow : EditorWindow
                     "': " + FormatItemLocations(codePair.Value) + ".",
                     databasePair.Key);
             }
-        }
-    }
-
-    private void AddUnplacedEngravingResults(ScanContext context, HashSet<string> dropCodes)
-    {
-        for (int i = 0; i < context.Items.Count; i++)
-        {
-            ItemRecord item = context.Items[i];
-            if (item.ItemType != ItemType.Engraving || string.IsNullOrEmpty(item.Code))
-                continue;
-
-            if (dropCodes.Contains(item.Code))
-                continue;
-
-            UnityEngine.Object target = item.Engraving != null ? (UnityEngine.Object)item.Engraving : item.Database;
-            AddResult(
-                ResultSeverity.Info,
-                "Engraving itemCode '" + item.Code + "' from ItemDatabase '" + item.Database.name +
-                "' entry " + item.Index + " is not placed in any EnemyDropDatabase.",
-                target);
         }
     }
 
@@ -572,23 +521,6 @@ public sealed class EngravingValidatorWindow : EditorWindow
         }
 
         return false;
-    }
-
-    private bool ShouldShow(ValidationResult result)
-    {
-        return _showUnplacedInfo || result.Severity != ResultSeverity.Info;
-    }
-
-    private int GetVisibleResultCount()
-    {
-        int count = 0;
-        for (int i = 0; i < _results.Count; i++)
-        {
-            if (ShouldShow(_results[i]))
-                count++;
-        }
-
-        return count;
     }
 
     private static GUIContent GetSeverityIcon(ResultSeverity severity)
