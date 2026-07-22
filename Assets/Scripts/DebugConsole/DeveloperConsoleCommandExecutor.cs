@@ -353,26 +353,32 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return DeveloperConsoleCommandResult.Success(builder.ToString());
     }
 
-    public DeveloperConsoleCommandResult ExecutePassiveGive(int catalogIndex)
+    public DeveloperConsoleCommandResult ExecutePassiveGive(string formToken, string itemCode)
     {
-        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
-            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
+        if (!System.Enum.TryParse(formToken, true, out PlayerFormId form))
+            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
 
-        WeaponData weapon = combat.currentWeapon;
-        if (weapon == null ||
-            weapon.passiveEngravings == null ||
-            (uint)catalogIndex >= (uint)weapon.passiveEngravings.Count)
+        PlayerInventory inventory = ResolvePlayerInventory();
+        if (inventory == null)
         {
-            return DeveloperConsoleCommandResult.Error("Invalid passive catalog index.");
+            WarnMissing(nameof(PlayerInventory));
+            return DeveloperConsoleCommandResult.Error("PlayerInventory is not active.");
         }
 
-        PlayerFormId form = combat.CurrentFormId;
-        PassiveEngravingData passive = weapon.passiveEngravings[catalogIndex];
+        if (!inventory.TryGetDatabaseItem(itemCode, out ItemData item))
+            return DeveloperConsoleCommandResult.Error("Unknown itemCode: " + itemCode);
+
+        PassiveEngravingData passive = item.PassiveEngraving;
+        if (passive == null)
+            return DeveloperConsoleCommandResult.Error("Item is not a passive engraving: " + itemCode);
+
+        EngravingLoadout loadout = ResolveEngravingLoadout();
+        if (loadout == null)
+            return DeveloperConsoleCommandResult.Error("EngravingLoadout is not active.");
+
         if (!loadout.AddPassiveToPool(form, passive))
-        {
             return DeveloperConsoleCommandResult.Error(
-                "Passive engraving is missing or locked to another form (cannot add to " + form + " pool).");
-        }
+                "Passive engraving is locked to another form (cannot add to " + form + " pool).");
 
         return DeveloperConsoleCommandResult.Success(
             "Gave " + GetPassiveName(passive) + " to " + form +

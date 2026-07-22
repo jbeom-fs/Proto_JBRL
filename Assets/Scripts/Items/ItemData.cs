@@ -21,6 +21,7 @@ public sealed class ItemData
     [SerializeField] private BehaviorEffect[] behaviorEffects = Array.Empty<BehaviorEffect>();
     [SerializeField] private PlayerFormId soulFormId;
     [SerializeField] private EngravingData engraving;
+    [SerializeField] private PassiveEngravingData passiveEngraving;
     [SerializeField] private string salvageItemCode;
     [SerializeField] private int salvageMinAmount = 1;
     [SerializeField] private int salvageMaxAmount = 1;
@@ -40,6 +41,7 @@ public sealed class ItemData
     public IReadOnlyList<BehaviorEffect> BehaviorEffects => behaviorEffects ?? Array.Empty<BehaviorEffect>();
     public PlayerFormId SoulFormId => soulFormId;
     public EngravingData Engraving => engraving;
+    public PassiveEngravingData PassiveEngraving => passiveEngraving;
     public string SalvageItemCode => salvageItemCode;
     public int SalvageMinAmount => salvageMinAmount;
     public int SalvageMaxAmount => salvageMaxAmount;
@@ -62,6 +64,7 @@ public sealed class ItemData
             behaviorEffects = CloneBehaviors(behaviorEffects),
             soulFormId = soulFormId,
             engraving = engraving,
+            passiveEngraving = passiveEngraving,
             salvageItemCode = salvageItemCode,
             salvageMinAmount = salvageMinAmount,
             salvageMaxAmount = salvageMaxAmount,

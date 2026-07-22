@@ -565,6 +565,8 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (analysis.ItemType == ItemType.Engraving)
             body += "각인 에셋은 유지됨(고아화) — Validator에서 재등록 가능\n";
+        else if (analysis.ItemType == ItemType.PassiveEngraving)
+            body += "패시브 각인 에셋은 유지됨(고아화) — 수동 재등록 필요\n";
 
         body += "\n전부 Undo 가능(Ctrl+Z 1회)";
         return body;
@@ -819,6 +821,10 @@ public sealed class ItemDashboardWindow : EditorWindow
                 DrawEngravingFields(row, serializedObject, item);
                 break;
 
+            case ItemType.PassiveEngraving:
+                DrawPassiveEngravingFields(row, serializedObject, item);
+                break;
+
             case ItemType.Consumable:
                 DrawEffectArray(row, serializedObject, item.FindPropertyRelative("useEffects"), "useEffects[]");
                 break;
@@ -924,6 +930,42 @@ public sealed class ItemDashboardWindow : EditorWindow
         if (GUILayout.Button("상세는 Engraving Validator", GUILayout.Width(170f)))
             EngravingValidatorWindow.Open();
 
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawPassiveEngravingFields(
+        ItemRow row,
+        SerializedObject serializedObject,
+        SerializedProperty item)
+    {
+        EditorGUILayout.Space(4f);
+        EditorGUILayout.LabelField("Passive Engraving", EditorStyles.miniBoldLabel);
+
+        SerializedProperty passiveEngraving = item.FindPropertyRelative("passiveEngraving");
+        EditorGUILayout.BeginHorizontal();
+        if (passiveEngraving != null)
+        {
+            EditorGUI.BeginChangeCheck();
+            PassiveEngravingData next = (PassiveEngravingData)EditorGUILayout.ObjectField(
+                "passiveEngraving",
+                passiveEngraving.objectReferenceValue,
+                typeof(PassiveEngravingData),
+                false);
+            if (EditorGUI.EndChangeCheck())
+            {
+                passiveEngraving.objectReferenceValue = next;
+                ApplyItemPropertyChange(row, serializedObject);
+            }
+        }
+        else
+        {
+            EditorGUILayout.LabelField("passiveEngraving", "<missing>");
+        }
+
+        EditorGUI.BeginDisabledGroup(row.PassiveEngraving == null);
+        if (GUILayout.Button("Ping", GUILayout.Width(48f)))
+            EditorGUIUtility.PingObject(row.PassiveEngraving);
+        EditorGUI.EndDisabledGroup();
         EditorGUILayout.EndHorizontal();
     }
 
@@ -1608,6 +1650,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         row.RemoveOnDungeonExit = GetBool(item.FindPropertyRelative("removeOnDungeonExit"));
         row.SoulFormId = GetEnumName(item.FindPropertyRelative("soulFormId"));
         row.Engraving = GetObject<EngravingData>(item.FindPropertyRelative("engraving"));
+        row.PassiveEngraving = GetObject<PassiveEngravingData>(item.FindPropertyRelative("passiveEngraving"));
         row.SalvageItemCode = GetString(item.FindPropertyRelative("salvageItemCode"));
         row.SalvageMinAmount = GetInt(item.FindPropertyRelative("salvageMinAmount"));
         row.SalvageMaxAmount = GetInt(item.FindPropertyRelative("salvageMaxAmount"));
@@ -1730,6 +1773,9 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (row.ItemType == ItemType.Engraving && row.Engraving == null)
             AddWarning(row, WarningSeverity.Error, "[Error] Engraving 타입인데 engraving 참조 null: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
+
+        if (row.ItemType == ItemType.PassiveEngraving && row.PassiveEngraving == null)
+            AddWarning(row, WarningSeverity.Error, "[Error] PassiveEngraving 타입인데 passiveEngraving 참조 null: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
 
         if (!string.IsNullOrWhiteSpace(row.SalvageItemCode) && !_itemCodes.Contains(row.SalvageItemCode))
             AddWarning(row, WarningSeverity.Error, "[Error] salvageItemCode 죽은 코드: " + location + " -> '" + row.SalvageItemCode + "'", row.Database);
@@ -2202,6 +2248,11 @@ public sealed class ItemDashboardWindow : EditorWindow
             case ItemType.Engraving:
                 return row.Engraving != null ? BuildEngravingSummary(row.Engraving) : "참조 없음";
 
+            case ItemType.PassiveEngraving:
+                return row.PassiveEngraving != null
+                    ? BuildPassiveEngravingSummary(row.PassiveEngraving)
+                    : "참조 없음";
+
             default:
                 return "-";
         }
@@ -2292,6 +2343,11 @@ public sealed class ItemDashboardWindow : EditorWindow
     private static string BuildEngravingSummary(EngravingData engraving)
     {
         return "[" + engraving.grade + "] " + engraving.owningForm;
+    }
+
+    private static string BuildPassiveEngravingSummary(PassiveEngravingData passiveEngraving)
+    {
+        return "[" + passiveEngraving.grade + "] " + passiveEngraving.owningForm;
     }
 
     private static Dictionary<string, List<DropSourceRecord>> BuildDropSourceIndex(
@@ -2640,6 +2696,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         SetArraySize(item.FindPropertyRelative("behaviorEffects"), 0);
         SetEnum(item.FindPropertyRelative("soulFormId"), 0);
         SetObject(item.FindPropertyRelative("engraving"), null);
+        SetObject(item.FindPropertyRelative("passiveEngraving"), null);
         SetString(item.FindPropertyRelative("salvageItemCode"), string.Empty);
         SetInt(item.FindPropertyRelative("salvageMinAmount"), 1);
         SetInt(item.FindPropertyRelative("salvageMaxAmount"), 1);
@@ -2818,6 +2875,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         public bool RemoveOnDungeonExit;
         public string SoulFormId;
         public EngravingData Engraving;
+        public PassiveEngravingData PassiveEngraving;
         public string SalvageItemCode;
         public int SalvageMinAmount;
         public int SalvageMaxAmount;

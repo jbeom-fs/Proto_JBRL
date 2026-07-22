@@ -15,7 +15,7 @@ public sealed class DeveloperConsoleService
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
     private const string EnhanceCommonUsage = "Usage: /enhancecommon <stat> <form=count> [form=count ...]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
-    private const string PassiveUsage = "Usage: /passive <give <catalogIndex> | equip <slot> <poolIndex> | unequip <slot> | show>";
+    private const string PassiveUsage = "Usage: /passive <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
@@ -475,13 +475,8 @@ public sealed class DeveloperConsoleService
         if (parts.Length == 1 && string.Equals(parts[0], "show", StringComparison.OrdinalIgnoreCase))
             return _executor.ExecutePassiveShow();
 
-        if (parts.Length == 2 && string.Equals(parts[0], "give", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!TryParseZeroBasedInt(parts[1], out int catalogIndex))
-                return DeveloperConsoleCommandResult.Error(PassiveUsage);
-
-            return _executor.ExecutePassiveGive(catalogIndex);
-        }
+        if (parts.Length == 3 && string.Equals(parts[0], "give", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecutePassiveGive(parts[1], parts[2]);
 
         if (parts.Length == 3 && string.Equals(parts[0], "equip", StringComparison.OrdinalIgnoreCase))
         {

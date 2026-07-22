@@ -39,7 +39,7 @@ public sealed class EnemyDropGroup
 public sealed class EnemyDropDatabase : ScriptableObject
 {
     [SerializeField] private List<EnemyDropGroup> groups = new List<EnemyDropGroup>();
-    [Tooltip("Editor-only validation: resolves itemCode -> ItemType to flag engraving entries with max>1.")]
+    [Tooltip("Editor-only validation: resolves itemCode -> ItemType to flag engraving-like entries with max>1.")]
     [SerializeField] private ItemDatabase itemDatabaseForValidation;
 
     private readonly Dictionary<EnemyData, EnemyDropGroup> _byEnemy = new Dictionary<EnemyData, EnemyDropGroup>();
@@ -122,7 +122,7 @@ public sealed class EnemyDropDatabase : ScriptableObject
                 for (int dropIndex = 0; dropIndex < group.drops.Count; dropIndex++)
                 {
                     EnemyDropEntry drop = group.drops[dropIndex];
-                    WarnIfEngravingAmountExceedsOne(drop.itemCode, drop.minAmount, drop.maxAmount);
+                    WarnIfEngravingLikeAmountExceedsOne(drop.itemCode, drop.minAmount, drop.maxAmount);
                 }
             }
 
@@ -137,7 +137,7 @@ public sealed class EnemyDropDatabase : ScriptableObject
                     for (int choiceIndex = 0; choiceIndex < choiceGroup.choices.Count; choiceIndex++)
                     {
                         EnemyDropChoice choice = choiceGroup.choices[choiceIndex];
-                        WarnIfEngravingAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
+                        WarnIfEngravingLikeAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
                     }
                 }
             }
@@ -145,7 +145,7 @@ public sealed class EnemyDropDatabase : ScriptableObject
 #endif
     }
 
-    private void WarnIfEngravingAmountExceedsOne(string itemCode, int minAmount, int maxAmount)
+    private void WarnIfEngravingLikeAmountExceedsOne(string itemCode, int minAmount, int maxAmount)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (itemDatabaseForValidation == null || string.IsNullOrWhiteSpace(itemCode))
@@ -156,11 +156,13 @@ public sealed class EnemyDropDatabase : ScriptableObject
 
         // 런타임 roller와 동일하게 실효 최대치 = Max(min, max). min>max 오작성도 잡는다.
         int effectiveMax = Mathf.Max(Mathf.Max(1, minAmount), maxAmount);
-        if (item.ItemType == ItemType.Engraving && effectiveMax > 1)
+        if ((item.ItemType == ItemType.Engraving ||
+             item.ItemType == ItemType.PassiveEngraving) &&
+            effectiveMax > 1)
         {
             Debug.LogWarning(
-                "[EnemyDropDatabase] Engraving drop '" + itemCode +
-                "' rolls up to " + effectiveMax + " (>1). Engravings are always quantity 1; " +
+                "[EnemyDropDatabase] " + item.ItemType + " drop '" + itemCode +
+                "' rolls up to " + effectiveMax + " (>1). Engraving-like items are always quantity 1; " +
                 "extra copies are silently dropped on pickup. Set min=max=1.", this);
         }
 #endif

@@ -35,3 +35,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 62c009b48d2824148a35020edffa0346, type: 2}
   - {fileID: 11400000, guid: e643993fc1a8ca242819d67107c79a93, type: 2}
   - {fileID: 11400000, guid: e67d0a675f42c684ca8ce1dac57a2e5f, type: 2}
+  passiveEngravings:
+  - {fileID: 11400000, guid: 2e7dc8aa085c5dd46904413d3a190e03, type: 2}

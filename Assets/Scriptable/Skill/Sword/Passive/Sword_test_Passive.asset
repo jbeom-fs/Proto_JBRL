@@ -12,9 +12,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad8ad0217784dd1b0ddd3b3219ff063, type: 3}
   m_Name: Sword_test_Passive
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
-  passiveName: 
-  icon: {fileID: 0}
-  description: 
+  passiveName: "\uD14C\uC2A4\uD2B8\uD398\uC2DC\uBE0C"
+  icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
+  description: "\uD14C\uC2A4\uD2B8\uC6A9"
   owningForm: 0
   grade: 0
-  behaviors: []
+  behaviors:
+  - trigger: 3
+    action: 0
+    skillTypeFilter: 0
+    value: 10
+    duration: 0
+    procSkill: {fileID: 0}
+    procOrigin: 0
+    procDirection: 0
+    procSpawnRadius: 0
