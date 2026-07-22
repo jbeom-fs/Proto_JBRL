@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-21
-> 기준 커밋: master HEAD `896ac3d6` — **Sword 캔슬 축(§7-10·§11b-12)**: 후딜 캔슬(cancelable=recovery+멀티히트, `d1f95c23`) + behavior 시스템 rename(RelicBehavior→BehaviorEffect, `0bbaa407`) + OnSkillCanceled 트리거(캔슬 시 회복/추가타, `2a73260b`) + recast B 재설계(스테이지 후딜 게이트·window 후딜 후 시작, `2a73260b`) + recast 후딜 UI(`896ac3d6`). 다음=패시브 각인 슬롯/타입. 이전: Sprite Sorting Layer 축 완결(§11-4, `be23763f`)
+> 작성 기준일: 2026-07-22
+> 기준 커밋: master HEAD `26425023` — **패시브 각인 축(§7-8b·§11b-13)**: `PassiveEngravingData` 신규 + 폼별 슬롯/풀 + `BehaviorRuntime` 2소스 병합(`003f86c4`) + 드랍 라우팅(`30cbdcb5`) + 각인대 액티브/패시브 탭(`5e66c4c7`) + 인벤 각인 조회 탭·툴팁 등급 테두리(`37fd98ca`). **드랍 쿼리 재설계 축(§11b-3c)**: Equipment 결번 폐기 + `ItemRarity` 3단(`477aaaff`) + 쿼리 기반 드랍(`81a5fdff`·`e8aabe80`) + 저작 툴링(`26425023`). 다음=드랍 데이터 저작(S3) / Altar 패시브 슬롯 증설(S4). 이전: Sword 캔슬 축(§7-10, `896ac3d6`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -185,6 +185,7 @@ Assets/Scripts/
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
 │   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의
 │   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. SkillDataEditor child 적용으로 조건부 인스펙터 사용
+│   ├── PassiveEngravingData.cs     # 패시브 각인 ScriptableObject (SkillData 비파생 — 패시브는 스킬이 아님) — passiveName/icon/description + owningForm + grade(EngravingGrade 재사용) + behaviors(BehaviorEffect[]). 장착 중 BehaviorRuntime에 병합 (§7-8b)
 │   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
 │   ├── StatusEffectIconTable.cs    # 상태이상 표시 SO 단일 소스 (StatusEffectIconType: Poison/Bleed/Slow/Stun → Sprite + flashColor + slotPrefab). Resources/UI 폴백, 적 인디케이터·플레이어 HUD·틱 flash 공용 (§7-9)
@@ -213,12 +214,13 @@ Assets/Scripts/
 │   └── RoomSpawner.cs              # 방 진입 시 적 스폰, 방 클리어 감지, PrepareEliteKeyPlan(결정론적 elite_key 드랍 슬롯 선정)
 │
 ├── Items/
-│   ├── ItemType.cs                 # 아이템 분류 enum (Key/Currency/Consumable/Equipment/Relic/Material/Soul/Engraving) — Engraving=7(append, 직렬화 보존). 영혼각인 드랍 래퍼 타입
+│   ├── ItemType.cs                 # 아이템 분류 enum — Key=0/Currency=1/Consumable=2/**3=결번(폐기된 Equipment)**/Relic=4/Material=5/Soul=6/Engraving=7/PassiveEngraving=8. 명시 값 고정(직렬화 보존), 결번 재사용 금지. ⚠️갭 enum이라 에디터에서 enumValueIndex 금지 → intValue 사용
+│   ├── ItemRarity.cs               # 비각인 아이템 등급 3단 enum (Common/Rare/Legendary) — 드랍 쿼리 tier·툴팁 테두리 색 소스. 각인류는 SO의 grade가 단일 진실이라 미사용
 │   ├── ItemEffect.cs               # ItemEffectType + ItemEffect(value) — 사용 효과 / 패시브 평면 스탯 데이터
 │   ├── ItemEffectApplier.cs        # Consumable useEffects 적용 정적 서비스 (HealHp → PlayerCombatController.RestoreHp)
 │   ├── ItemData.cs                 # 직렬화 가능한 단일 아이템 정의 (itemCode·displayName·icon·description·itemType·stackable·maxStack·useEffects·passiveEffects·soulFormId·engraving(EngravingData 참조, 영혼각인 드랍 브릿지)·정리 플래그)
 │   ├── ItemDatabase.cs             # ScriptableObject — itemCode→ItemData Dictionary 캐시 + OnValidate 중복/공백 검사 + itemCode 자동완성 목록 제공
-│   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister). ItemType.Engraving면 인벤 우회 → EngravingLoadout.Active.AddToPool(engraving.owningForm)으로 폼 풀 적재(각인은 수량 1 고정, _amount 무시)
+│   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister). ItemType.Engraving/PassiveEngraving이면 인벤 우회 → EngravingLoadout.Active.AddToPool / AddPassiveToPool(owningForm)으로 폼 풀 적재(각인은 수량 1 고정, _amount 무시 — 현재 폼과 무관하게 소유 폼으로 라우팅)
 │   └── DropItemSpawner.cs          # 사망 위치 기준 EnemyInventory 의 드랍 목록을 Instantiate (Singleton, dropSpacing 으로 다중 아이템 정렬, ClearAllActiveDrops)
 │
 ├── Inventory/
@@ -255,7 +257,7 @@ Assets/Scripts/
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
 │   ├── ComboMeter.cs               # ComboDamage 단계제 콤보 추적 (순수 C#) — tier+progress 모델, 적중 적립(이월·캡), 윈도우 만료 시 단계 -1 계단 하락, 적 0=풀 리필 동결. RegisterHit/AddStacks/Tick(dt, enemiesPresent)/Reset
 │   ├── ComboTierConfig.cs          # 콤보 단계 설정 SO (Scriptable/Soul/) — stacksPerTier/maxTier/window/gainPerHit/tierBonusPct[] 전부 가변, OnValidate 배열 길이 경고
-│   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded} 토큰 모델. EnsureSeeded(weapon.skills 시드)/Equip(풀↔슬롯 교환)/Unequip/AddToPool(폼-락 검증)/ClearAll(런리셋). OnChanged→PlayerCombatController 리바인드. static Active(픽업·UI 결선용, OnEnable/OnDisable). debugEngravingPool은 Slice D에서 제거(실드랍이 대체)
+│   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded / PassiveSlots[4]+PassivePool+PassiveSeeded} 토큰 모델. 액티브: EnsureSeeded/Equip/Unequip/AddToPool/ApplyArrangement → OnChanged→PlayerCombatController 리바인드(=쿨다운 리셋). 패시브: EnsurePassiveSeeded/EquipPassive/UnequipPassive/AddPassiveToPool/ApplyPassiveArrangement → **OnPassiveChanged(반드시 분리 — OnChanged 재사용 시 쿨 리셋 익스플로잇)**. ClearAll=런리셋(양 축). static Active(픽업·UI 결선용)
 │   ├── EngravingStation.cs         # 영혼각인 교체대 (Slice E2, TownSoulAltar 미러) — Collider2D 트리거 + InteractConfirmPressedThisFrame → ui.Open(consumeOnCommit ? this : null). UI는 placer의 Bind(ui) 주입 또는 씬 배치 시 sceneUI 직결. 던전 stair방=런타임 스폰·커밋 시 소멸(NotifyConsumed), 정비실=씬 배치·비소멸
 │   ├── SkillProjectileUtility.cs   # 유효 발사 수 계산 + Bullet AllowPartialUse 판정 헬퍼
 │   ├── SkillExecutionResult        # Execute 결과(Success + 실제 ResourceConsumed) — 동적 소모용, SkillExecutor.cs 내 정의
@@ -282,6 +284,7 @@ Assets/Scripts/
 │   │                               #   + RequireComponent(EnemyInventory), MarkAsEliteKeyHolder/ClearEliteKeyHolder
 │   │                               #   + Die 시 DropItemSpawner.SpawnDrops(_inventory, position) 호출
 │   ├── EnemyInventory.cs           # 적 드랍 목록 (EnemyDropItem readonly struct: ItemCode·Amount)
+│   ├── DropQueryResolver.cs        # 쿼리 기반 드랍 해석 (static, §11b-3c) — ItemDatabase 스캔 후보 인덱스 캐시((ItemType,Form,Tier)→List) + 가중 추첨(TryChooseWeightedIndex 공용) + 단일 조회(등급 하향 폴백 없음) + 후보없음 경고 배치 집계(FlushWarnings). GetTier(각인=SO grade / 그 외=ItemData.rarity)는 public — 에디터 툴 공유
 │   ├── EnemyBrain.cs               # FSM 조율 추상 + MovementHandler/TargetHandler/ActionHandler
 │   │                               #   + EnemySpecialAnimationType(Charge/Rush/Jump/Land) 트리거 라우팅
 │   │                               #   + LockSpecialFacing/UnlockSpecialFacing/HandleDeathStarted
@@ -340,8 +343,9 @@ Assets/Scripts/
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
 │   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드. Custom은 CustomCellFill(셀별 반투명 쿼드 메시, 런타임 생성·localRotation 회전·sortingOrder 오프셋)로 표시
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
-│   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, 5개 카테고리 탭 필터/전체 그룹 정렬, 슬롯 클릭 Consumable 사용, 인벤토리 키·ESC 토글, 콘솔 열림 시 자동 닫힘
-│   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind) + IPointerClickHandler 로 컨트롤러에 클릭 위임
+│   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, 6개 카테고리 탭 필터/전체 그룹 정렬(각인 탭은 EngravingLoadout 현재 폼 미장착 풀을 읽기 전용 표시), 슬롯 클릭 Consumable 사용, 인벤토리 키·ESC 토글, 콘솔 열림 시 자동 닫힘
+│   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind) + IPointerClickHandler 로 컨트롤러에 클릭 위임. ItemData 경로와 각인 경로를 상호 배타로 바인드(각인은 클릭 무시·수량 숨김)
+│   ├── EngravingDisplayInfo.cs     # 각인 표시 정보 통합 struct — EngravingData/PassiveEngravingData/plain SkillData 3종 → Icon·Name·Description·IsPassive·HasGrade·Grade. 인벤 각인 탭·각인대 UI 공용(이름·등급 표시 단일 지점)
 │   ├── UIDraggableWindow.cs        # 드래그 가능한 UI 패널 기반 MonoBehaviour
 │   ├── GameOverUIController.cs     # 게임오버 UI 페이드 인/아웃·확인 버튼 (UI 참조 누락 시 1회 경고 후 표시 skip)
 │   ├── GameOverRestartHandler.cs   # IGameOverRestartHandler 인터페이스
@@ -391,8 +395,9 @@ Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 ├── EngravingValidatorWindow.cs     # JBRogLike/Engraving Validator — EngravingData·ItemDatabase·EnemyDropDatabase 정합성 스캔 + 고아 각인 Add to ItemDatabase Fix
-├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
-├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
+├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + **queries[] 쿼리 편집(유효 기본값 생성·경고 4종·결번 enum 안전 Popup)** + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
+├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집 + **쿼리 역계산(매칭 쿼리 표시·[현재 폼 의존])**·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
+├── DropQueryEditorMatcher.cs       # 드랍 쿼리↔아이템 매칭 판정 (에디터 전용 static) — Enemy/Item Dashboard 공용. 등급은 DropQueryResolver.GetTier 직접 호출(단일 진실), formScope=CurrentForm은 currentFormDependent 플래그로 반환
 └── TeleportDestinationIdDrawer.cs  # `[TeleportDestinationId]` 문자열 필드를 TeleportDestinationDatabase 의 id 드롭다운으로 렌더링
 ```
 
@@ -1112,7 +1117,7 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **에디터/검증툴**: `SkillDataEditor` 를 child class 적용(`CustomEditor(typeof(SkillData), true)`)으로 확장해 `EngravingData` 도 Basic/Resource/InstantArea/Projectile/Dash 조건부 인스펙터를 그대로 사용합니다. 최상단 Engraving 섹션에서 `owningForm`/`grade` 와 등급색 라벨(Faint 회색, Whole 흰색, Primordial 금색)을 표시하고, 연결된 ItemDatabase 인라인 엔트리(`ItemData.engraving`)가 있으면 DB/itemCode/Ping 을 보여줍니다. 연결이 없으면 `EngravingValidatorWindow` 바로가기를 제공하며, 실제 생성은 Validator 의 `Add to ItemDatabase` Fix 가 담당합니다.
 
-**콘텐츠 검증 (`JBRogLike/Engraving Validator`)**: 버튼 클릭 시에만 `EngravingData` / `ItemDatabase` / `EnemyDropDatabase` 를 스캔합니다. 고아 각인, Engraving 엔트리 null 참조, itemType 불일치, 각인 중복 참조, itemCode 중복, 드랍DB 미등록 각인(Info 토글), 드랍DB 죽은 itemCode, 각인 수량 > 1 을 Error/Warning/Info 로 캐시 표시. 1번 고아 각인은 대상 ItemDatabase 에 인라인 `ItemData` 를 추가하는 Fix 를 제공하며, 나머지는 Ping 중심으로 수동 수정합니다.
+**콘텐츠 검증 (`JBRogLike/Engraving Validator`)**: 버튼 클릭 시에만 `EngravingData` / `ItemDatabase` / `EnemyDropDatabase` 를 스캔합니다. 고아 각인, Engraving 엔트리 null 참조, itemType 불일치, 각인 중복 참조, itemCode 중복, 드랍DB 죽은 itemCode, 각인 수량 > 1 을 Error/Warning/Info 로 캐시 표시. (**"드랍DB 미등록 각인" 경고는 2026-07-22 제거** — 쿼리 기반 드랍(§11b-3c) 도입으로 ItemDatabase 등록만 하면 자동 편입되어 항상 오탐이 됩니다. 역할은 Item Dashboard의 쿼리 역계산이 대체합니다.) 1번 고아 각인은 대상 ItemDatabase 에 인라인 `ItemData` 를 추가하는 Fix 를 제공하며, 나머지는 Ping 중심으로 수동 수정합니다.
 
 **콘솔**: `/engraving give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, give는 ItemDatabase itemCode 조회→EngravingData→AddToPool·폼-락 검증, show는 `[Grade]` 태그 표시). Slice D에서 give를 debug 카탈로그→itemCode 조회로 재배선.
 
@@ -1125,7 +1130,34 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **각인대 1회 사용 소멸 (2026-07-07)**: 던전 stair방 각인대는 **변경이 커밋된 채로 닫힌 세션 1회**로 소멸 — `CommitAndClose` 성공 시 UI가 `owner.NotifyConsumed()`(=`SetActive(false)`) 호출. 구경만/취소/무변경 닫기는 소멸 안 함. 희소성을 조작 단위가 아닌 **기회(세션) 단위**에 건 설계(StS 모닥불 패턴) — 세션 안에서는 자유 재배치. 다음 층 재등장은 placer 기존 경로(`OnFloorChanged`→비활성→새 stair 진입 시 재활성) 그대로, 같은 층 재등장 없음은 `IsFirstVisit` 가드가 보장. `consumeOnCommit=false`(정비실 씬 배치 인스턴스, §11e-6)면 커밋해도 비소멸(owner=null 전달). 즉시교체 UI 버튼은 **의도적 비채택** — equip=리바인드=4슬롯 쿨다운 리셋이라 전투 중 교체는 무료 쿨초기화 익스플로잇이 됨.
 
-**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI→스테이징 세션 커밋)·E2(Stair방 각인대+1회 사용 소멸) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋, 폼 컨셉 확정 대기로 보류) + 고유 메커니즘 태초 각인별 실행 로직**.
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI→스테이징 세션 커밋)·E2(Stair방 각인대+1회 사용 소멸) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. 2026-07-22에 각인대 모달이 **액티브/패시브 탭 2단**으로 확장되었습니다(§7-8b). **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋, 폼 컨셉 확정 대기로 보류) + 고유 메커니즘 태초 각인별 실행 로직**.
+
+### 7-8b. 패시브 각인 (PassiveEngravingData, 2026-07-22)
+
+액티브 각인이 **스킬 슬롯을 교체**한다면, 패시브 각인은 **behavior(trigger×action, §11b-12)를 장착**합니다. 어제 추가된 `OnSkillCanceled` 트리거의 콘텐츠 그릇이며, Sword 정체성(콤보+캔슬)의 보상 축입니다.
+
+**타입** — `PassiveEngravingData`(ScriptableObject)는 `EngravingData : SkillData`와 **별개 타입**입니다. 패시브는 스킬이 아니므로 슬롯 바인딩·쿨다운·자원 개념이 없습니다.
+
+| 필드 | 설명 |
+|------|------|
+| `passiveName` / `icon` / `description` | UI 메타데이터(이름 비면 asset 이름) |
+| `owningForm` | 결속 폼. 해당 폼 풀에만 적재 가능(액티브 각인과 동일 규칙) |
+| `grade` | `EngravingGrade` 재사용(희미한/온전한/태초의) |
+| `behaviors` | `BehaviorEffect[]` — 장착 중 `BehaviorRuntime`에 병합 |
+
+**슬롯/풀** — `EngravingLoadout.FormState`에 `PassiveSlots[4]` / `PassivePool` / `PassiveSeeded`를 액티브 미러로 추가했습니다. 폼 첫 진입 시 `WeaponData.passiveEngravings[0]`을 슬롯 0에 시드하며(교체 가능), 런 리셋(`ClearAll`)은 기존 경로가 그대로 커버합니다. API도 `AddPassiveToPool`/`EquipPassive`/`UnequipPassive`/`ApplyPassiveArrangement`로 1:1 미러입니다.
+
+> ⚠️ **`OnPassiveChanged`는 반드시 `OnChanged`와 분리되어야 합니다.** `OnChanged`는 `PlayerCombatController`가 구독해 `BindSkillSlots`를 부르고, 그 안의 `SkillSlotRuntime.Bind`가 **쿨다운을 리셋**합니다. 패시브 변경에 `OnChanged`를 재사용하면 패시브를 끼울 때마다 스킬 쿨다운이 초기화되는 익스플로잇이 됩니다. `AddToPool`/`AddPassiveToPool`이 아무 이벤트도 발행하지 않는 것도 같은 이유입니다(픽업마다 쿨 리셋 방지).
+
+**런타임 병합** — `BehaviorRuntime.Rescan(items, equippedPassives)`가 **소스 2개**를 받습니다: 인벤토리의 Relic 아이템 + **현재 폼에 장착된 패시브 각인**. 내부 `AddBehaviors(behaviors, stackCount)`를 그대로 재사용하므로(패시브는 stackCount 1) 트리거 분기·proc·ailment 집계 엔진은 무수정입니다. `PlayerBehaviors`의 재집계 트리거는 셋 — 인벤 변경 / `OnPassiveChanged` / `combatChannel.OnLoadoutChanged`(폼 전환·무기 교체 경로).
+
+**드랍** — `ItemType.PassiveEngraving`(=8) + `ItemData.passiveEngraving` 브릿지로 액티브 각인과 **동일한 파이프라인**을 씁니다. `DroppedItem` 픽업이 인벤을 우회해 `AddPassiveToPool(passive.owningForm, …)`으로 라우팅하며, **현재 폼과 무관하게 소유 폼 풀로** 들어갑니다(액티브와 동일 규약). 각인 SO 자체에는 itemCode가 없고 **ItemDatabase 엔트리가 이름표** 역할을 한다는 점에 주의하세요 — 엔트리를 만들지 않으면 드랍 테이블에 적을 코드 자체가 존재하지 않습니다.
+
+**장착 UI** — 각인대 모달(`EngravingLoadoutUIController`)에 **액티브/패시브 탭**이 붙었습니다. 하단 슬롯·풀 컨테이너는 **1세트를 공유**하고 탭이 데이터 소스만 전환합니다. 편집은 액티브와 동일한 **스테이징 커밋**(복사본 편집 → 확인 시 일괄 커밋 → 취소 시 폐기)이며, dirty는 **양 축 합산**이라 어느 쪽을 바꿔도 각인대가 소모됩니다. 커밋은 두 축의 유효성을 **먼저 모두 검사한 뒤** 변경된 축만 수행합니다 — 그래서 **패시브만 바꾸면 `ApplyArrangement`가 아예 호출되지 않아 쿨다운 리셋이 없습니다**. 보유분 조회는 인벤토리 각인 탭(§11b-7)에서도 가능합니다(읽기 전용).
+
+**콘솔** — `/passive give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, 액티브 `/engraving` 미러).
+
+**남은 것** — Altar 패시브 슬롯 증설(기본 1칸 + 영구강화로 확장, 영속 저장 1필드) + 미해금 슬롯 잠금 UI. 현재는 **4칸이 전부 열려 있습니다**(해금 수의 영속 저장이 없어 지금 게이팅하면 죽은 코드가 되므로 의도적으로 보류). Sword 캔슬 패시브 3종 중 추가타(`CastSkill`)·회복(`Heal`)은 기존 action으로 즉시 저작 가능하고, **쉴드는 흡수 서브시스템 자체가 미구현**입니다.
 
 ### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축)
 
@@ -2049,7 +2081,8 @@ SetTilemapSource(locationId):
 |------|------|
 | `itemCode` | 고유 키 (예: `elite_key`). DropItemSpawner / DroppedItem 모두 이 문자열로 조회 |
 | `displayName` / `description` / `icon` | UI 메타데이터 |
-| `itemType` | `ItemType` enum — Key / Currency / Consumable / Equipment / Relic / Material / Soul |
+| `itemType` | `ItemType` enum — Key=0 / Currency=1 / Consumable=2 / **3=결번(폐기된 Equipment)** / Relic=4 / Material=5 / Soul=6 / Engraving=7 / PassiveEngraving=8. **명시 값 고정**이며 결번을 재사용하지 말 것 (2026-07-22) |
+| `rarity` | `ItemRarity` 3단(Common/Rare/Legendary). **비각인 아이템 전용** — 각인류의 등급 단일 진실은 각 SO의 `grade`다. 드랍 쿼리 tier(§11b-3c)와 툴팁 테두리 색(§11b-7)이 이 값을 사용 |
 | `stackable` / `maxStack` | `PlayerInventory.AddItem` 이 자동 적용 (스택 불가 항목은 amount 만큼 슬롯 분리) |
 | `useEffects` | Consumable 사용 시 1회 적용되는 `ItemEffect[]` — 현재 `HealHp` 지원 |
 | `passiveEffects` | Relic 소지 중 상시 적용되는 `ItemEffect[]` — MaxHp / Attack / Defense / MoveSpeed 평면 스탯 지원 |
@@ -2067,7 +2100,9 @@ SetTilemapSource(locationId):
 | `DefenseBonus` | `passiveEffects` | Relic 소지 수만큼 `TotalDefense` 가산 |
 | `MoveSpeedBonus` | `passiveEffects` | Relic 소지 수만큼 이동속도 % 가산 |
 
-현재 `ItemDatabase.asset` 에는 `elite_key`, 검증용 `Test_Potion` / `Test_Relic`, Form 해금용 Soul 4종(`Soul_Sword`, `Soul_Dagger`, `Soul_Freichutz`, `Soul_Parry`)이 등록되어 있습니다.
+현재 `ItemDatabase.asset` 에는 24종이 등록되어 있습니다 — Key 1(`elite_key`) / Currency 1 / Consumable 2 / Relic 7(테스트 Relic·정비실 `Core` 포함) / Material 4(폼별 조각) / Soul 4 / **Engraving 6**(Sword 5 = Faint 2·Whole 1·Primordial 2, Dagger 1) / **PassiveEngraving 1**(`Psv_Sword_Faint0`).
+
+> ⚠️ **에디터 코드 주의 — `ItemType`은 프로젝트 유일의 "갭 enum"입니다.** 3번이 결번이라 `SerializedProperty.enumValueIndex`(이름 배열 **인덱스**)와 실제 int **값**이 어긋납니다(Engraving = 값 7 / 인덱스 6). itemType을 읽고 쓸 때는 반드시 **`intValue`** 를 사용하고, Popup은 `Enum.GetValues` 배열로 인덱스↔값을 명시 변환해야 합니다(`ItemDashboardWindow.s_ItemTypeValues`, `EnemyDashboardWindow.DrawMappedEnumPopup` 선례). 다른 enum(PlayerFormId·ItemRarity·EngravingGrade 등)은 갭이 없어 `enumValueIndex` 사용이 안전합니다.
 
 ### 11b-2. 드랍 파이프라인
 
@@ -2147,6 +2182,51 @@ Elite Key 가 "스폰 로직이 홀더를 지정하는" 맥락 드랍이라면, 
 
 **소울 분해 (중복 소울 → 폼별 재료)**: `DropItemSpawner.SpawnDrops`(드롭 생성=사망 시점)에서 `SoulDropResolver.ResolveDrop` 를 거칩니다. 드롭 item 이 `ItemType.Soul` 이고 **플레이어가 그 Form 소울을 이미 보유**(`OwnsSoulForm`)하면, 소울 대신 그 폼의 재료(조각)를 스폰합니다. 조각 종류 = `ItemData.salvageItemCode`(Soul 전용 필드), 수량 = `salvageMin/MaxAmount` 범위를 **salvage 전용 rng**(`DungeonManager.seed` 파생, seed 변경 시 lazy 재시드, `SoulSalvageDomain`)로 롤. 미보유/조각 없음/플레이어 없음은 소울 그대로 폴백. `/give` 는 SpawnDrops 를 우회하므로 분해되지 않음(dev). ownership 은 사망 시점 판정.
 
+### 11b-3c. 쿼리 기반 드랍 (2026-07-22, `81a5fdff`·`e8aabe80`·`26425023`)
+
+§11b-3b의 명시 엔트리는 `itemCode` 문자열로 아이템을 **하나씩 지목**합니다. 그래서 각인을 하나 추가할 때마다 3중 저작(SO 생성 → ItemDatabase 엔트리 → 적별 드랍 테이블 등록)이 필요했습니다. **쿼리 엔트리는 "조건"으로 후보를 지목**해 마지막 단계를 없앱니다 — ItemDatabase에 등록만 하면 조건에 맞는 쿼리에 자동 편입됩니다.
+
+명시 엔트리는 **그대로 병존**합니다. 확정·특수 드랍(Elite Key, Currency, Soul choiceGroup)은 명시가 맞습니다.
+
+| 필드 | 설명 |
+|------|------|
+| `chance` | 0~1. 이 쿼리가 발동할지 |
+| `itemType` | 후보 타입 필터 |
+| `formScope` | `CurrentForm` / `Any` / `Specific` — **각인류에만 의미**. 런 중 폼 전환이 없으므로 CurrentForm이면 타폼 각인은 애초에 나오지 않음 |
+| `specificForm` | `formScope == Specific`일 때의 대상 폼 |
+| `tierWeight0/1/2` | 등급별 가중치. **weight 0 = 미허용**(별도 허용 플래그 없음). 세 값 합이 0이면 무드랍 |
+| `rollCountWeights` | **뽑기 횟수** 가중 배열. index i = (i+1)회의 가중치. 비었거나 합 0이면 **1회** |
+
+**해석 순서** (`DropQueryResolver`)
+
+```
+chance 판정
+→ rollCountWeights 가중 추첨으로 뽑기 횟수 N 결정
+→ N회 독립 반복 {
+      tierWeight 가중 추첨으로 등급 결정
+      → (itemType, form, tier) 후보 인덱스 조회
+      → 후보 있으면 균등 추첨 / 없으면 무드랍 + 경고 누적
+   }
+→ Stackable 기준 적재
+```
+
+- **N회 독립 시행** — 매 시행마다 tier와 후보를 다시 뽑으므로 한 쿼리에서 서로 다른 등급·아이템이 섞여 나옵니다
+- **등급 하향 폴백 없음** — 뽑힌 tier에 후보가 없으면 즉시 무드랍입니다. 각인 중복 획득을 허용하는 구조에서 "후보 0"은 밸런스 상황이 아니라 **저작 누락**뿐이고, 폴백은 그 누락을 조용히 덮기 때문입니다
+- **적재 규칙 = `ItemData.Stackable` 단일 기준** — stackable이면 같은 코드를 합산해 오브젝트 1개(수량 N), 비스택(Relic·각인류)이면 뽑힌 횟수만큼 **개별 오브젝트**. 각인 픽업은 `_amount`를 무시하므로 개별 오브젝트여야 중복 획득이 성립합니다
+- **등급 조회 단일 진실** — `DropQueryResolver.GetTier(item)`: 각인류는 SO의 `grade`, 그 외는 `ItemData.rarity`. 에디터 툴도 이 함수를 직접 호출합니다(`public static`)
+- **경고 집계** — 후보 없음은 즉시 로그하지 않고 `(ItemType, Form, Tier)`별로 누적한 뒤, 스폰 배치 종료 시 `FlushWarnings()`가 **조합당 한 줄 `(N회)`** 로 출력합니다. 호출부 = `RoomSpawner` 스폰 루프 끝 / `ArenaEncounterBase` 스폰 직후 / `/dropquery` 명령 끝
+
+**해석 시점 = 롤 시점(적 스폰 시)**. `EnemyDropRoller.RollQueries`가 쿼리를 구체 itemCode로 환원해 `EnemyInventory`에 싣기 때문에 하류(`DropItemSpawner`/`DroppedItem`)는 완전히 무변경입니다. 사망 시점에 도는 `SoulDropResolver`(§11b-3b)와는 **층이 달라 병합하지 않았습니다**.
+
+> ⚠️ **후보 인덱스 캐시** — `DropQueryResolver`는 `(ItemType, Form, Tier) → List<ItemData>` 인덱스를 static 캐시로 들고, `ItemDatabase` **인스턴스 참조가 바뀔 때만** 재구축합니다. DB는 하나뿐이므로 사실상 Play 진입 시 1회입니다. 따라서 **Play 중에 ItemDatabase를 편집해도 반영되지 않습니다**(Play 재시작 또는 `/dropquery` 1회 실행으로 `Invalidate()`). Enter Play Mode의 Domain Reload를 끄면 Play 간에도 stale이 되므로, 그때는 `ItemDatabase.OnValidate` → `DropQueryResolver.Invalidate()` 한 줄이 필요합니다.
+
+**저작 툴링** (`26425023`)
+- **Enemy Dashboard** — `queries[]` 인라인 편집. `+ query`가 **즉시 유효한 기본값**(chance 1 / Material / CurrentForm / tier 1,0,0 / rolls [1])으로 생성해 "추가했는데 조용히 아무것도 안 나온다"를 구조적으로 차단. 경고 4종(chance 0 / 허용 tier 없음 / rolls 길이 과다 / 매칭 후보 없음)
+- **Item Dashboard** — 드랍 소스 역참조에 **쿼리 역계산** 추가. 쿼리로만 드랍되는 각인이 "드랍 미등록"으로 오탐되던 문제 해소. `formScope=CurrentForm`은 `[현재 폼 의존]`으로 표기. 쿼리는 itemCode를 들지 않으므로 **삭제 분석에는 영향 없음**
+- **`DropQueryEditorMatcher`** — 두 대시보드 공용 매칭 판정(에디터 전용)
+- `EngravingValidatorWindow`의 "드랍 미배치" 경고는 쿼리 방식에서 항상 오탐이므로 **제거**됨
+- 콘솔 `/dropquery <itemType> [count=20]` — 고정 시드로 N회 해석해 아이템별 분포 + `noDrop` 집계 출력(저작 검증용)
+
 ### 11b-4. Soul 아이템 기반 Form 보유 판정
 
 `ItemType.Soul` 은 사용 효과/패시브가 아니라 **Form 해금 토큰**으로 동작합니다. `ItemData.soulFormId` 에 해금 대상 `PlayerFormId` 를 지정하고, `PlayerInventory.OwnsSoulForm(formId)` 가 현재 보유 스택을 순회해 `ItemType.Soul && SoulFormId == formId && Count > 0` 인 항목이 있는지 검사합니다.
@@ -2225,17 +2305,28 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 
 ### 11b-7. 인벤토리 UI 탭 / 슬롯 클릭
 
-`InventoryUIController` 는 5개 고정 탭을 사용합니다. `tabButtons` 가 5개 유효 결선되지 않았으면 경고 1회 후 기존 전체 표시로 폴백합니다.
+`InventoryUIController` 는 6개 고정 탭을 사용합니다. `tabButtons` 가 6개 유효 결선되지 않았으면 경고 1회 후 기존 전체 표시로 폴백합니다(**폴백 시 탭 필터가 전부 무력화**되므로 탭 추가 시 씬 결선을 반드시 같이 할 것).
 
-| 탭 | 포함 ItemType |
+| 탭 | 포함 |
 |----|---------------|
-| 전체 | 모두. 표시 순서는 소모품 → 유물 → 재료 → 기타 그룹 순서, 그룹 내부는 획득 순서 유지 |
+| 전체 | 인벤 아이템 전부. 표시 순서는 소모품 → 유물 → 재료 → 기타 그룹 순서, 그룹 내부는 획득 순서 유지. **각인은 포함하지 않음**(소스가 다름) |
 | 소모품 | Consumable |
 | 유물 | Relic |
 | 재료 | Material |
-| 기타 | Key / Currency / Equipment |
+| 기타 | Key / Currency |
+| **각인** | `EngravingLoadout`의 **현재 폼 미장착 풀**(액티브 → 패시브 순). **읽기 전용** |
 
 필터링은 `_filteredBuffer` 재사용 List 로 처리하며 LINQ / `List.Sort` 를 쓰지 않습니다. 전체 탭은 그룹 순서대로 `playerInventory.Items` 를 반복 스캔해 append 하므로 안정 정렬이 보장됩니다. `InventorySlotUI` 는 `IPointerClickHandler` 로 클릭을 컨트롤러에 위임하며, 필터링은 표시만 바꾸고 실제 `ItemData` 참조와 `PlayerInventory` 저장 구조는 변경하지 않습니다.
+
+**각인 탭 (2026-07-22, `37fd98ca`)** — 각인은 인벤토리에 들어가지 않고 `EngravingLoadout` 폼별 풀에만 존재해서, 그전에는 stair 각인대까지 가야 보유분을 확인할 수 있었습니다.
+
+- 소스가 다르므로 `Refresh()`가 각인 탭에서만 `EngravingLoadout.Active` + `PlayerCombatController.Active.CurrentFormId` 경로로 갈라집니다
+- **읽기 전용** — 클릭은 무시됩니다(장착/해제는 각인대 독점). 장착 중인 슬롯은 표시하지 않습니다(장착 패시브 확인 UI는 별도 예정)
+- `EngravingDisplayInfo`(readonly struct)가 `EngravingData` / `PassiveEngravingData` / plain `SkillData`(폼 기본 스킬 토큰, 등급 없음) 3종을 표시용 정보로 통합합니다. **이름·등급 표시 로직의 단일 지점**이며 각인대 UI도 이걸 재사용합니다
+- `InventorySlotUI`는 `ItemData` 바인드 경로와 각인 바인드 경로를 **상호 배타**로 관리합니다(한쪽 바인드 시 반대쪽 상태를 null로)
+- ⚠️ **알려진 한계** — 인벤을 열어둔 채 각인을 주우면 목록이 갱신되지 않습니다. `AddToPool`/`AddPassiveToPool`이 **쿨다운 리셋 방지를 위해 의도적으로 이벤트를 발행하지 않기 때문**입니다(§7-8b). 탭 전환·재개방 시 갱신되므로 이를 고치려고 이벤트를 발행하지 말 것
+
+**툴팁 등급 테두리** — `ItemTooltipUI`가 `borderImage.color`를 등급별로 바꿉니다. 색 소스는 3단으로 통일되어 있습니다: 일반 아이템 = `ItemData.Rarity`(Common/Rare/Legendary), 각인 = `EngravingGrade`(희미한/온전한/태초의). 등급이 없는 plain 기본 스킬 토큰은 중립색입니다. 색·중립색은 전부 SerializeField(인스펙터 저작)이고, `borderImage` 미결선이나 색 배열 길이 불일치 시 중립색으로 폴백합니다. 각인 툴팁 헤더는 이름 옆에 `<size=70%>`로 `액티브 · 온전한` 형태의 메타를 붙입니다(라벨은 `UiMessages` 상수).
 
 ### 11b-8. Soul 강화 (영구 폼 메커니즘 강화)
 
@@ -2998,14 +3089,15 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 | 묶음 | 핵심 구성 |
 |------|-----------|
-| 아이템 기반 | `ItemDatabase`/`ItemData`(itemCode·효과·salvage·정리 플래그) + `PlayerInventory`(스택 정책·`OwnsSoulForm`·층/던전 이탈 자동 정리) + 인벤토리 UI(5탭·슬롯 클릭 사용·드래그 패널). 상세 §11b |
-| 드랍 파이프라인 | `EnemyDropDatabase`(독립+가중치 pick-one, 결정적 롤) + `EnemyInventory`→`DropItemSpawner`→`DroppedItem`(타입 무분기 픽업) + Elite Key 결정론 드랍·Elite Door 개방 + 소울 분해(`SoulDropResolver`) |
+| 아이템 기반 | `ItemDatabase`/`ItemData`(itemCode·**rarity 3단**·효과·salvage·정리 플래그) + `PlayerInventory`(스택 정책·`OwnsSoulForm`·층/던전 이탈 자동 정리) + 인벤토리 UI(**6탭** — 각인 조회 탭 읽기 전용, 툴팁 등급 테두리·드래그 패널). `ItemType.Equipment`는 폐기·**3 결번**. 상세 §11b |
+| 드랍 파이프라인 | `EnemyDropDatabase`(독립+가중치 pick-one, 결정적 롤) + **쿼리 기반 드랍(2026-07-22 신설)** — 타입·폼·등급 조건으로 후보 지목, N회 독립 추첨, 등급 폴백 없음, 저작 툴링(Enemy Dashboard 편집·Item Dashboard 역계산) + `EnemyInventory`→`DropItemSpawner`→`DroppedItem` + Elite Key 결정론 드랍·Elite Door 개방 + 소울 분해(`SoulDropResolver`). 상세 §11b-3c |
 | 아이템 효과 | `ItemEffect`(useEffects/passiveEffects) — Consumable 사용(HealHp) + Relic 평면 패시브(`PlayerItemStats` 스택 비례 합산) |
 | Soul 강화 (10종 완성) | `SoulStatType`+`PlayerSoulEnhancements`+`SoulEnhancementTable`+`SoulStatBonus` — 필드 스탯 6종 + **Crit/Lifesteal/ComboDamage(단계제, `ComboTierConfig` SO)/AilmentDamage** 신규 메커니즘 4종 전부 훅 작동. 폼 게이팅=데이터 자동. **공통 스탯(공속/쿨감/크리) 공유 투자 전환**(Normal 키 리맵, 2026-07-16). 상세 §11b-8 |
 | 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + **Altar UI 개편(2026-07-16)** — 단일 스크롤+섹션 헤더+"????" 마스킹+한글화+행 프리팹, 공통 스탯=조각 배분 창(혼합 지불, Max=잔여 클램프) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속) + **소실 예방 3종**(.bak 백업·unknown itemCode 보존·원자적 쓰기, 2026-07-14). 상세 §11b-9~10 |
 | 폼 진행·선택 (2026-07-16) | **A안 확정** — 폼=런 단위 선택, 해금=Soul 보유(기존 축), 시작 Sword Soul 자동 지급 + 던전 이탈 Normal 복귀(마을=슬라임) + **던전 입장 폼 선택 화면**(풀스크린, 카드 프리팹=데이터 캐리어, 실루엣 잠금 표시). 남은 S3: 흡수 해금 연출·Soul 드랍 랜덤 폼 보정·last-form 영속. 상세 §11a-4 |
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
 | 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
+| 패시브 각인 (2026-07-22 신설) | `PassiveEngravingData`(SkillData 비파생, `BehaviorEffect[]`) + `EngravingLoadout` 패시브 슬롯4/풀 미러(**`OnPassiveChanged` 이벤트 분리 = 쿨다운 리셋 차단**) + `BehaviorRuntime.Rescan` 2소스 병합(인벤 Relic + 장착 패시브) + 드랍 라우팅(ItemType.PassiveEngraving) + 각인대 **액티브/패시브 탭**(변경된 축만 커밋) + 인벤 조회 탭. **남은 것: Altar 슬롯 증설·영속+잠금 UI, 쉴드 서브시스템**. 상세 §7-8b |
 
 **지역 전환·아레나**
 
