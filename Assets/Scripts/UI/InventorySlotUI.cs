@@ -11,6 +11,8 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPoin
 
     private InventoryUIController _owner;
     private ItemData _item;
+    private EngravingDisplayInfo _engravingInfo;
+    private bool _hasEngraving;
 
     public void Bind(ItemData item, int count)
         => Bind(item, count, null);
@@ -22,6 +24,8 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPoin
         bool hasItem = item != null && count > 0;
         _owner = hasItem ? owner : null;
         _item = hasItem ? item : null;
+        _engravingInfo = default;
+        _hasEngraving = false;
 
         gameObject.SetActive(hasItem);
         if (!hasItem)
@@ -41,6 +45,36 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (nameText != null)
             nameText.text = item.DisplayName;
+    }
+
+    public void Bind(EngravingDisplayInfo info)
+    {
+        ItemTooltipUI.HideActive();
+
+        bool hasEngraving = !string.IsNullOrWhiteSpace(info.Name);
+        _owner = null;
+        _item = null;
+        _engravingInfo = hasEngraving ? info : default;
+        _hasEngraving = hasEngraving;
+
+        gameObject.SetActive(hasEngraving);
+        if (!hasEngraving)
+            return;
+
+        if (iconImage != null)
+        {
+            iconImage.sprite = info.Icon;
+            iconImage.enabled = info.Icon != null;
+        }
+
+        if (countText != null)
+        {
+            countText.gameObject.SetActive(false);
+            countText.text = string.Empty;
+        }
+
+        if (nameText != null)
+            nameText.text = info.Name;
     }
 
     private void OnDisable()
@@ -68,10 +102,14 @@ public sealed class InventorySlotUI : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (_item == null || !isActiveAndEnabled || !gameObject.activeInHierarchy)
+        if (!isActiveAndEnabled || !gameObject.activeInHierarchy)
             return;
 
-        ItemTooltipUI.ShowActive(_item, transform as RectTransform);
+        RectTransform slotRect = transform as RectTransform;
+        if (_item != null)
+            ItemTooltipUI.ShowActive(_item, slotRect);
+        else if (_hasEngraving)
+            ItemTooltipUI.ShowActive(_engravingInfo, slotRect);
     }
 
     public void OnPointerExit(PointerEventData eventData)

@@ -31,6 +31,13 @@ public static class UiMessages
     public const string EmptyEngravingSlot = "(비어 있음)";
     public const string EngravingSlotFormat = "[{0}] {1}";
     public const string EngravingGradeFormat = "{0} [{1}]";
+    public const string EngravingTypeActive = "액티브";
+    public const string EngravingTypePassive = "패시브";
+    public const string EngravingGradeFaint = "희미한";
+    public const string EngravingGradeWhole = "온전한";
+    public const string EngravingGradePrimordial = "태초의";
+    public const string EngravingTooltipMetaFormat = "<size=70%>{0}</size>";
+    public const string EngravingTooltipMetaWithGradeFormat = "<size=70%>{0} · {1}</size>";
     public const string RestAreaCoreMissing = "코어 없음";
     public const string RestAreaCurrencyMissing = "재화 없음";
     public const string RestAreaNotEnoughCurrency = "재화 부족";
@@ -58,6 +65,21 @@ public static class UiMessages
                 return FormNameParry;
             default:
                 return form.ToString();
+        }
+    }
+
+    public static string GetEngravingGradeName(EngravingGrade grade)
+    {
+        switch (grade)
+        {
+            case EngravingGrade.Faint:
+                return EngravingGradeFaint;
+            case EngravingGrade.Whole:
+                return EngravingGradeWhole;
+            case EngravingGrade.Primordial:
+                return EngravingGradePrimordial;
+            default:
+                return grade.ToString();
         }
     }
 

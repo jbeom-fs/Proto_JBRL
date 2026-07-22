@@ -20,16 +20,21 @@ public sealed class InventoryUIController : MonoBehaviour
 
     private readonly List<InventorySlotUI> _slots = new List<InventorySlotUI>(16);
     private readonly List<InventoryItemStack> _filteredBuffer = new List<InventoryItemStack>(16);
+    private readonly List<EngravingDisplayInfo> _engravingDisplayBuffer =
+        new List<EngravingDisplayInfo>(16);
     private const int TabAll = 0;
     private const int TabConsumable = 1;
     private const int TabRelic = 2;
     private const int TabMaterial = 3;
     private const int TabOther = 4;
-    private const int TabCount = 5;
+    private const int TabEngraving = 5;
+    private const int TabCount = 6;
     private int _activeTabIndex;
     private bool _warnedMissingInventory;
     private bool _warnedMissingInputReader;
     private bool _warnedInvalidTabs;
+    private bool _warnedMissingEngravingLoadout;
+    private bool _warnedMissingPlayerCombat;
 
     public static InventoryUIController Active => s_Active;
     public static bool IsOpen => s_Active != null && s_Active.IsInventoryOpen;
@@ -130,6 +135,12 @@ public sealed class InventoryUIController : MonoBehaviour
     {
         ItemTooltipUI.HideActive();
 
+        if (_activeTabIndex == TabEngraving)
+        {
+            RefreshEngravingPool();
+            return;
+        }
+
         if (playerInventory == null)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -155,6 +166,61 @@ public sealed class InventoryUIController : MonoBehaviour
 
         if (emptyText != null)
             emptyText.gameObject.SetActive(items.Count == 0);
+    }
+
+    private void RefreshEngravingPool()
+    {
+        _engravingDisplayBuffer.Clear();
+        EngravingLoadout loadout = EngravingLoadout.Active;
+        PlayerCombatController combat = PlayerCombatController.Active;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (loadout == null && !_warnedMissingEngravingLoadout)
+        {
+            Debug.LogWarning("[InventoryUIController] EngravingLoadout.Active is unavailable.", this);
+            _warnedMissingEngravingLoadout = true;
+        }
+
+        if (combat == null && !_warnedMissingPlayerCombat)
+        {
+            Debug.LogWarning("[InventoryUIController] PlayerCombatController.Active is unavailable.", this);
+            _warnedMissingPlayerCombat = true;
+        }
+#endif
+
+        if (loadout != null && combat != null)
+        {
+            PlayerFormId form = combat.CurrentFormId;
+            int activeCount = loadout.PoolCount(form);
+            for (int i = 0; i < activeCount; i++)
+            {
+                if (EngravingDisplayInfo.TryCreate(loadout.GetPoolAt(form, i), out EngravingDisplayInfo info))
+                    _engravingDisplayBuffer.Add(info);
+            }
+
+            int passiveCount = loadout.PassivePoolCount(form);
+            for (int i = 0; i < passiveCount; i++)
+            {
+                if (EngravingDisplayInfo.TryCreate(
+                        loadout.GetPassivePoolAt(form, i),
+                        out EngravingDisplayInfo info))
+                {
+                    _engravingDisplayBuffer.Add(info);
+                }
+            }
+        }
+
+        EnsureSlotCount(_engravingDisplayBuffer.Count);
+        for (int i = 0; i < _slots.Count; i++)
+        {
+            if (i < _engravingDisplayBuffer.Count)
+                _slots[i].Bind(_engravingDisplayBuffer[i]);
+            else
+                _slots[i].gameObject.SetActive(false);
+        }
+
+        if (emptyText != null)
+            emptyText.gameObject.SetActive(_engravingDisplayBuffer.Count == 0);
     }
 
     private IReadOnlyList<InventoryItemStack> GetDisplayItems(IReadOnlyList<InventoryItemStack> source)
@@ -296,7 +362,7 @@ public sealed class InventoryUIController : MonoBehaviour
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (!valid && !_warnedInvalidTabs)
         {
-            Debug.LogWarning("[InventoryUIController] tabButtons must contain 5 buttons in order: All, Consumable, Relic, Material, Other. Falling back to unfiltered inventory view.", this);
+            Debug.LogWarning("[InventoryUIController] tabButtons must contain 6 buttons in order: All, Consumable, Relic, Material, Other, Engraving. Falling back to unfiltered inventory view.", this);
             _warnedInvalidTabs = true;
         }
 #endif

@@ -15,6 +15,9 @@ public sealed class ItemTooltipUI : MonoBehaviour
     [SerializeField] private RectTransform panelRect;
     [SerializeField] private TMP_Text headerText;
     [SerializeField] private TMP_Text bodyText;
+    [SerializeField] private Image borderImage;
+    [SerializeField] private Color[] tierColors = new Color[3];
+    [SerializeField] private Color neutralBorderColor;
 
     private readonly Dictionary<ItemEffectType, int> _effectTotals = new Dictionary<ItemEffectType, int>();
     private readonly StringBuilder _bodyBuilder = new StringBuilder(128);
@@ -23,6 +26,7 @@ public sealed class ItemTooltipUI : MonoBehaviour
     private Canvas _canvas;
     private RectTransform _canvasRect;
     private bool _warnedMissingReferences;
+    private bool _warnedInvalidTierColors;
 
     public static ItemTooltipUI Active => s_Active;
 
@@ -49,6 +53,12 @@ public sealed class ItemTooltipUI : MonoBehaviour
         tooltip?.Show(item, slotRect);
     }
 
+    public static void ShowActive(EngravingDisplayInfo info, RectTransform slotRect)
+    {
+        ItemTooltipUI tooltip = s_Active != null ? s_Active : FindAnyObjectByType<ItemTooltipUI>();
+        tooltip?.Show(info, slotRect);
+    }
+
     public static void HideActive()
     {
         ItemTooltipUI tooltip = s_Active != null ? s_Active : FindAnyObjectByType<ItemTooltipUI>();
@@ -65,6 +75,36 @@ public sealed class ItemTooltipUI : MonoBehaviour
 
         headerText.text = string.IsNullOrWhiteSpace(item.DisplayName) ? item.ItemCode : item.DisplayName;
         bodyText.text = BuildBodyText(item);
+        ApplyBorderColor((int)item.Rarity, true);
+        panelRect.gameObject.SetActive(true);
+
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(panelRect);
+        PositionNearSlot(slotRect);
+    }
+
+    public void Show(EngravingDisplayInfo info, RectTransform slotRect)
+    {
+        if (string.IsNullOrWhiteSpace(info.Name) || slotRect == null)
+            return;
+
+        if (!HasRequiredReferences())
+            return;
+
+        string typeLabel = info.IsPassive
+            ? UiMessages.EngravingTypePassive
+            : UiMessages.EngravingTypeActive;
+        string meta = info.HasGrade
+            ? string.Format(
+                UiMessages.EngravingTooltipMetaWithGradeFormat,
+                typeLabel,
+                UiMessages.GetEngravingGradeName(info.Grade))
+            : string.Format(UiMessages.EngravingTooltipMetaFormat, typeLabel);
+        headerText.text = info.Name + " " + meta;
+        bodyText.text = string.IsNullOrWhiteSpace(info.Description)
+            ? UiMessages.EmptyDescription
+            : info.Description;
+        ApplyBorderColor((int)info.Grade, info.HasGrade);
         panelRect.gameObject.SetActive(true);
 
         Canvas.ForceUpdateCanvases();
@@ -226,6 +266,33 @@ public sealed class ItemTooltipUI : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void ApplyBorderColor(int tier, bool hasGrade)
+    {
+        if (borderImage == null)
+            return;
+
+        if (!hasGrade)
+        {
+            borderImage.color = neutralBorderColor;
+            return;
+        }
+
+        if (tierColors == null || tierColors.Length != 3)
+        {
+            borderImage.color = neutralBorderColor;
+            if (!_warnedInvalidTierColors)
+            {
+                Debug.LogWarning("[ItemTooltipUI] tierColors must contain exactly 3 colors.", this);
+                _warnedInvalidTierColors = true;
+            }
+            return;
+        }
+
+        borderImage.color = (uint)tier < (uint)tierColors.Length
+            ? tierColors[tier]
+            : neutralBorderColor;
     }
 
     private void ResolveCanvas()
