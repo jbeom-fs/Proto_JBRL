@@ -3,6 +3,15 @@ using UnityEngine;
 
 public static class EnemyDropRoller
 {
+    private struct QueryDropBufferEntry
+    {
+        public ItemData Item;
+        public int Count;
+    }
+
+    private static readonly List<QueryDropBufferEntry> s_QueryDropBuffer =
+        new List<QueryDropBufferEntry>(16);
+
     public static void Roll(
         EnemyDropDatabase database,
         EnemyDropGroup group,
@@ -116,6 +125,7 @@ public static class EnemyDropRoller
             return;
         }
 
+        s_QueryDropBuffer.Clear();
         PlayerFormId currentForm = DropQueryResolver.ResolveCurrentForm();
         for (int i = 0; i < queries.Count; i++)
         {
@@ -123,34 +133,71 @@ public static class EnemyDropRoller
             if (query.chance < 1f && rng.NextDouble() >= query.chance)
                 continue;
 
-            if (!DropQueryResolver.TryResolve(
-                    database.ItemDatabase,
-                    query,
-                    currentForm,
+            // 횟수 가중치가 없거나 전부 0이면 1회다. tier 총합 0의 무드랍 규칙과 의도적으로 다르다.
+            int rollCount = 1;
+            if (DropQueryResolver.TryChooseWeightedIndex(
+                    query.rollCountWeights,
                     rng,
-                    out DropQueryResult result))
+                    out int rollCountIndex))
             {
-                continue;
+                rollCount = rollCountIndex + 1;
             }
 
-            ItemData item = result.Item;
-            if (item == null)
-                continue;
-
-            int amount;
-            if (item.ItemType == ItemType.Engraving ||
-                item.ItemType == ItemType.PassiveEngraving)
+            for (int rollIndex = 0; rollIndex < rollCount; rollIndex++)
             {
-                amount = 1;
-            }
-            else
-            {
-                int minAmount = Mathf.Max(1, query.minAmount);
-                int maxAmount = Mathf.Max(minAmount, query.maxAmount);
-                amount = rng.Next(minAmount, maxAmount + 1);
-            }
+                if (!DropQueryResolver.TryResolve(
+                        database.ItemDatabase,
+                        query,
+                        currentForm,
+                        rng,
+                        out DropQueryResult result))
+                {
+                    continue;
+                }
 
-            inventory.AddDropItem(item.ItemCode, amount);
+                AddQueryDropResult(result.Item);
+            }
         }
+
+        for (int i = 0; i < s_QueryDropBuffer.Count; i++)
+        {
+            QueryDropBufferEntry entry = s_QueryDropBuffer[i];
+            if (entry.Item == null)
+                continue;
+
+            if (entry.Item.Stackable)
+            {
+                inventory.AddDropItem(entry.Item.ItemCode, entry.Count);
+                continue;
+            }
+
+            for (int count = 0; count < entry.Count; count++)
+                inventory.AddDropItem(entry.Item.ItemCode, 1);
+        }
+
+        s_QueryDropBuffer.Clear();
+    }
+
+    private static void AddQueryDropResult(ItemData item)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(item.ItemCode))
+            return;
+
+        for (int i = 0; i < s_QueryDropBuffer.Count; i++)
+        {
+            QueryDropBufferEntry entry = s_QueryDropBuffer[i];
+            if (!string.Equals(entry.Item.ItemCode, item.ItemCode, System.StringComparison.Ordinal))
+                continue;
+
+            entry.Count++;
+            s_QueryDropBuffer[i] = entry;
+            return;
+        }
+
+        s_QueryDropBuffer.Add(new QueryDropBufferEntry
+        {
+            Item = item,
+            Count = 1
+        });
     }
 }

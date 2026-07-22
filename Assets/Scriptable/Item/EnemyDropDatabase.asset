@@ -24,8 +24,10 @@ MonoBehaviour:
       tierWeight0: 0
       tierWeight1: 1
       tierWeight2: 0
-      minAmount: 1
-      maxAmount: 1
+      rollCountWeights:
+      - 1
+      - 1
+      - 1
   - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
     drops:
     - itemCode: Test_Potion

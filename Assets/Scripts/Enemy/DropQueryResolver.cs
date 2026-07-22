@@ -57,6 +57,7 @@ public static class DropQueryResolver
     private static readonly Dictionary<CandidateKey, List<ItemData>> s_Candidates =
         new Dictionary<CandidateKey, List<ItemData>>();
     private static readonly List<ItemData> s_AllItems = new List<ItemData>(64);
+    private static readonly float[] s_TierWeightBuffer = new float[TierCount];
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private static readonly Dictionary<CandidateKey, int> s_MissingCandidateWarnings =
         new Dictionary<CandidateKey, int>();
@@ -189,54 +190,52 @@ public static class DropQueryResolver
         System.Random rng,
         out int selectedTier)
     {
-        selectedTier = -1;
+        s_TierWeightBuffer[0] = query.tierWeight0;
+        s_TierWeightBuffer[1] = query.tierWeight1;
+        s_TierWeightBuffer[2] = query.tierWeight2;
+        return TryChooseWeightedIndex(s_TierWeightBuffer, rng, out selectedTier);
+    }
+
+    internal static bool TryChooseWeightedIndex(
+        float[] weights,
+        System.Random rng,
+        out int selectedIndex)
+    {
+        selectedIndex = -1;
+        if (weights == null || weights.Length == 0 || rng == null)
+            return false;
+
         double totalWeight = 0d;
-        for (int tier = 0; tier < TierCount; tier++)
-            totalWeight += GetUsableWeight(query, tier);
+        for (int i = 0; i < weights.Length; i++)
+            totalWeight += GetUsableWeight(weights[i]);
 
         if (totalWeight <= 0d)
             return false;
 
         double roll = rng.NextDouble() * totalWeight;
         double accumulated = 0d;
-        int lastWeightedTier = -1;
-        for (int tier = 0; tier < TierCount; tier++)
+        int lastWeightedIndex = -1;
+        for (int i = 0; i < weights.Length; i++)
         {
-            double weight = GetUsableWeight(query, tier);
+            double weight = GetUsableWeight(weights[i]);
             if (weight <= 0d)
                 continue;
 
             accumulated += weight;
-            lastWeightedTier = tier;
+            lastWeightedIndex = i;
             if (roll < accumulated)
             {
-                selectedTier = tier;
+                selectedIndex = i;
                 return true;
             }
         }
 
-        selectedTier = lastWeightedTier;
-        return selectedTier >= 0;
+        selectedIndex = lastWeightedIndex;
+        return selectedIndex >= 0;
     }
 
-    private static double GetUsableWeight(EnemyDropQuery query, int tier)
+    private static double GetUsableWeight(float weight)
     {
-        float weight;
-        switch (tier)
-        {
-            case 0:
-                weight = query.tierWeight0;
-                break;
-            case 1:
-                weight = query.tierWeight1;
-                break;
-            case 2:
-                weight = query.tierWeight2;
-                break;
-            default:
-                return 0d;
-        }
-
         if (!(weight > 0f) || float.IsNaN(weight) || float.IsInfinity(weight))
             return 0d;
 

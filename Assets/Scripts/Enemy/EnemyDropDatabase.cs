@@ -45,8 +45,8 @@ public struct EnemyDropQuery
     [Min(0f)] public float tierWeight0;
     [Min(0f)] public float tierWeight1;
     [Min(0f)] public float tierWeight2;
-    [Min(1)] public int minAmount;
-    [Min(1)] public int maxAmount;
+    [Tooltip("드랍 횟수 가중치. index i = (i+1)회 뽑기의 가중치. 비었거나 총합 0이면 1회.")]
+    public float[] rollCountWeights;
 }
 
 [Serializable]
@@ -164,6 +164,21 @@ public sealed class EnemyDropDatabase : ScriptableObject
                     {
                         EnemyDropChoice choice = choiceGroup.choices[choiceIndex];
                         WarnIfEngravingLikeAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
+                    }
+                }
+            }
+
+            if (group.queries != null)
+            {
+                for (int queryIndex = 0; queryIndex < group.queries.Count; queryIndex++)
+                {
+                    EnemyDropQuery query = group.queries[queryIndex];
+                    if (query.rollCountWeights != null && query.rollCountWeights.Length > 10)
+                    {
+                        Debug.LogWarning(
+                            "[EnemyDropDatabase] Query rollCountWeights length is " +
+                            query.rollCountWeights.Length + " (>10): " + group.enemy.name +
+                            " query " + queryIndex + ". Check unintended large drop counts.", this);
                     }
                 }
             }

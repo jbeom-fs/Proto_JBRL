@@ -479,8 +479,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             tierWeight0 = 1f,
             tierWeight1 = 1f,
             tierWeight2 = 1f,
-            minAmount = 1,
-            maxAmount = 1
+            rollCountWeights = new[] { 1f }
         };
 
         PlayerFormId form = DropQueryResolver.ResolveCurrentForm();
