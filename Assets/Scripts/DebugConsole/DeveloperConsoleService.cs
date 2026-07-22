@@ -16,6 +16,7 @@ public sealed class DeveloperConsoleService
     private const string EnhanceCommonUsage = "Usage: /enhancecommon <stat> <form=count> [form=count ...]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
     private const string PassiveUsage = "Usage: /passive <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
+    private const string DropQueryUsage = "Usage: /dropquery <itemType> [count=20]";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
@@ -30,6 +31,7 @@ public sealed class DeveloperConsoleService
     private static readonly string[] s_PassiveArgs = { "give", "equip", "unequip", "show" };
     private static readonly string[] s_ComboArgs = { "show", "add" };
     private static readonly string[] s_AilmentArgs = { "poison", "bleed" };
+    private static readonly string[] s_DropQueryTypes = BuildDropQueryTypes();
 
     private readonly Dictionary<string, CommandHandler> _commands = new Dictionary<string, CommandHandler>(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, ArgumentSuggestionProvider> _argumentProviders = new Dictionary<string, ArgumentSuggestionProvider>(StringComparer.OrdinalIgnoreCase);
@@ -111,6 +113,7 @@ public sealed class DeveloperConsoleService
         _commands["enhancecommon"] = ExecuteEnhanceCommon;
         _commands["engraving"] = ExecuteEngraving;
         _commands["passive"] = ExecutePassive;
+        _commands["dropquery"] = ExecuteDropQuery;
         _commands["combo"] = ExecuteCombo;
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
@@ -124,6 +127,7 @@ public sealed class DeveloperConsoleService
         _argumentProviders["enhance"] = ProvideEnhanceFormSuggestions;
         _argumentProviders["engraving"] = ProvideEngravingSuggestions;
         _argumentProviders["passive"] = ProvidePassiveSuggestions;
+        _argumentProviders["dropquery"] = ProvideDropQuerySuggestions;
         _argumentProviders["combo"] = ProvideComboSuggestions;
         _argumentProviders["ailment"] = ProvideAilmentSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
@@ -158,6 +162,9 @@ public sealed class DeveloperConsoleService
 
     private static void ProvidePassiveSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_PassiveArgs, currentArg, output, maxCount);
+
+    private static void ProvideDropQuerySuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_DropQueryTypes, currentArg, output, maxCount);
 
     private static void ProvideComboSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_ComboArgs, currentArg, output, maxCount);
@@ -213,6 +220,16 @@ public sealed class DeveloperConsoleService
         }
     }
 
+    private static string[] BuildDropQueryTypes()
+    {
+        Array values = Enum.GetValues(typeof(ItemType));
+        string[] tokens = new string[values.Length];
+        for (int i = 0; i < values.Length; i++)
+            tokens[i] = values.GetValue(i).ToString().ToLowerInvariant();
+
+        return tokens;
+    }
+
     private DeveloperConsoleCommandResult ExecuteHelp(string arguments)
     {
         StringBuilder builder = new StringBuilder();
@@ -237,6 +254,7 @@ public sealed class DeveloperConsoleService
             "\n" + EnhanceCommonUsage +
             "\n" + EngravingUsage +
             "\n" + PassiveUsage +
+            "\n" + DropQueryUsage +
             "\n" + ComboUsage +
             "\n" + AilmentUsage +
             "\n" + StunUsage +
@@ -498,6 +516,24 @@ public sealed class DeveloperConsoleService
         }
 
         return DeveloperConsoleCommandResult.Error(PassiveUsage);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteDropQuery(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        string[] parts = string.IsNullOrWhiteSpace(arguments)
+            ? Array.Empty<string>()
+            : arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || parts.Length > 2)
+            return DeveloperConsoleCommandResult.Error(DropQueryUsage);
+
+        int count = 20;
+        if (parts.Length == 2 && !TryParsePositiveInt(parts[1], out count))
+            return DeveloperConsoleCommandResult.Error(DropQueryUsage);
+
+        return _executor.ExecuteDropQuery(parts[0], count);
     }
 
     private DeveloperConsoleCommandResult ExecuteCombo(string arguments)

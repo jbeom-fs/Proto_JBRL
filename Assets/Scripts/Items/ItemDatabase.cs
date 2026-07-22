@@ -35,6 +35,19 @@ public sealed class ItemDatabase : ScriptableObject
         }
     }
 
+    public void GetAllItems(List<ItemData> output)
+    {
+        if (output == null || items == null)
+            return;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            ItemData item = items[i];
+            if (item != null)
+                output.Add(item);
+        }
+    }
+
     public void GetItemCodes(List<string> output)
     {
         if (output == null)

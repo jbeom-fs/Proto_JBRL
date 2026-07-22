@@ -14,24 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDropDatabase
   groups:
   - enemy: {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
-    drops:
-    - itemCode: Test_Potion
-      minAmount: 1
-      maxAmount: 3
-      chance: 1
-    - itemCode: Currency
-      minAmount: 1
-      maxAmount: 1
-      chance: 1
-    - itemCode: Eng_Sword_Faint_2
-      minAmount: 1
-      maxAmount: 1
-      chance: 1
-    - itemCode: Psv_Sword_Faint0
-      minAmount: 1
-      maxAmount: 1
-      chance: 1
+    drops: []
     choiceGroups: []
+    queries:
+    - chance: 0.5
+      itemType: 7
+      formScope: 0
+      specificForm: 0
+      tierWeight0: 0
+      tierWeight1: 1
+      tierWeight2: 0
+      minAmount: 1
+      maxAmount: 1
   - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
     drops:
     - itemCode: Test_Potion
@@ -39,6 +33,7 @@ MonoBehaviour:
       maxAmount: 3
       chance: 1
     choiceGroups: []
+    queries: []
   - enemy: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     drops:
     - itemCode: Test_Potion
@@ -64,6 +59,7 @@ MonoBehaviour:
         minAmount: 1
         maxAmount: 1
         weight: 0.25
+    queries: []
   - enemy: {fileID: 11400000, guid: aa319f7a68854d08ab9a4b1c035e4403, type: 2}
     drops:
     - itemCode: Currency
@@ -71,6 +67,7 @@ MonoBehaviour:
       maxAmount: 1
       chance: 1
     choiceGroups: []
+    queries: []
   - enemy: {fileID: 11400000, guid: 845a446bd7ca4fec9eab4098da48a01e, type: 2}
     drops:
     - itemCode: Test_Potion
@@ -78,6 +75,7 @@ MonoBehaviour:
       maxAmount: 1
       chance: 1
     choiceGroups: []
+    queries: []
   - enemy: {fileID: 11400000, guid: 65c75f48657fab74f84a6900002dcdf0, type: 2}
     drops:
     - itemCode: TestItem
@@ -85,4 +83,5 @@ MonoBehaviour:
       maxAmount: 1
       chance: 1
     choiceGroups: []
-  itemDatabaseForValidation: {fileID: 11400000, guid: 9918c152d2e144009a28b77650e3eb23, type: 2}
+    queries: []
+  itemDatabase: {fileID: 11400000, guid: 9918c152d2e144009a28b77650e3eb23, type: 2}

@@ -22,8 +22,12 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private TeleportDestinationDatabase teleportDestinationDatabase;
 
     private readonly List<string> _itemCodeFilterBuffer = new List<string>(32);
+    private readonly List<ItemData> _dropQueryItemBuffer = new List<ItemData>(64);
+    private readonly Dictionary<string, int> _dropQueryCounts =
+        new Dictionary<string, int>(System.StringComparer.Ordinal);
     private SoulEnhancementTable _soulEnhancementTable;
     private ItemDatabase _itemDatabase;
+    private EnemyDropDatabase _enemyDropDatabase;
 
     public bool HasTeleportDestinationDatabase => teleportDestinationDatabase != null;
 
@@ -453,6 +457,97 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return DeveloperConsoleCommandResult.Success(builder.ToString());
     }
 
+    public DeveloperConsoleCommandResult ExecuteDropQuery(string itemTypeToken, int count)
+    {
+        if (!System.Enum.TryParse(itemTypeToken, true, out ItemType itemType) ||
+            !System.Enum.IsDefined(typeof(ItemType), itemType))
+        {
+            return DeveloperConsoleCommandResult.Error("Unknown item type: " + itemTypeToken);
+        }
+
+        EnemyDropDatabase dropDatabase = ResolveEnemyDropDatabase();
+        if (dropDatabase == null)
+            return DeveloperConsoleCommandResult.Error("EnemyDropDatabase is not loaded.");
+        if (dropDatabase.ItemDatabase == null)
+            return DeveloperConsoleCommandResult.Error("EnemyDropDatabase.ItemDatabase is not assigned.");
+
+        EnemyDropQuery query = new EnemyDropQuery
+        {
+            chance = 1f,
+            itemType = itemType,
+            formScope = DropFormScope.CurrentForm,
+            tierWeight0 = 1f,
+            tierWeight1 = 1f,
+            tierWeight2 = 1f,
+            minAmount = 1,
+            maxAmount = 1
+        };
+
+        PlayerFormId form = DropQueryResolver.ResolveCurrentForm();
+        var rng = new System.Random(0x4A4251);
+        int noDropCount = 0;
+        _dropQueryCounts.Clear();
+        DropQueryResolver.Invalidate();
+
+        for (int i = 0; i < count; i++)
+        {
+            bool resolved = DropQueryResolver.TryResolve(
+                dropDatabase.ItemDatabase,
+                query,
+                form,
+                rng,
+                out DropQueryResult result);
+
+            ItemData item = result.Item;
+            if (!resolved || item == null)
+            {
+                noDropCount++;
+                continue;
+            }
+
+            if (_dropQueryCounts.TryGetValue(item.ItemCode, out int current))
+                _dropQueryCounts[item.ItemCode] = current + 1;
+            else
+                _dropQueryCounts.Add(item.ItemCode, 1);
+        }
+
+        StringBuilder builder = new StringBuilder();
+        builder.Append("DropQuery ");
+        builder.Append(itemType);
+        builder.Append(" form=");
+        builder.Append(form);
+        builder.Append(" count=");
+        builder.Append(count);
+        builder.Append(" | items: ");
+
+        bool hasDistribution = false;
+        _dropQueryItemBuffer.Clear();
+        dropDatabase.ItemDatabase.GetAllItems(_dropQueryItemBuffer);
+        for (int i = 0; i < _dropQueryItemBuffer.Count; i++)
+        {
+            ItemData item = _dropQueryItemBuffer[i];
+            if (item == null || !_dropQueryCounts.TryGetValue(item.ItemCode, out int itemCount))
+                continue;
+
+            if (hasDistribution)
+                builder.Append(", ");
+            builder.Append(item.ItemCode);
+            builder.Append('=');
+            builder.Append(itemCount);
+            hasDistribution = true;
+        }
+
+        if (!hasDistribution)
+            builder.Append("(none)");
+
+        builder.Append(" | noDrop=");
+        builder.Append(noDropCount);
+        DropQueryResolver.FlushWarnings();
+        _dropQueryItemBuffer.Clear();
+        _dropQueryCounts.Clear();
+        return DeveloperConsoleCommandResult.Success(builder.ToString());
+    }
+
     public DeveloperConsoleCommandResult ExecuteComboShow()
     {
         PlayerCombatController combat = ResolvePlayerCombatController();
@@ -717,6 +812,18 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             _itemDatabase = databases[0];
 
         return _itemDatabase;
+    }
+
+    private EnemyDropDatabase ResolveEnemyDropDatabase()
+    {
+        if (_enemyDropDatabase != null)
+            return _enemyDropDatabase;
+
+        EnemyDropDatabase[] databases = Resources.FindObjectsOfTypeAll<EnemyDropDatabase>();
+        if (databases.Length > 0)
+            _enemyDropDatabase = databases[0];
+
+        return _enemyDropDatabase;
     }
 
     private EngravingLoadout ResolveEngravingLoadout()

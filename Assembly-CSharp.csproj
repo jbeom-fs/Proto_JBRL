@@ -249,6 +249,7 @@
     <Compile Include="Assets\Scripts\Items\ItemEffectApplier.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillSlotRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyBrain.cs" />
+    <Compile Include="Assets\Scripts\Enemy\DropQueryResolver.cs" />
     <Compile Include="Assets\Scripts\Boss\RestAreaShop.cs" />
     <Compile Include="Assets\Scripts\PlayerAnimationController.cs" />
   </ItemGroup>

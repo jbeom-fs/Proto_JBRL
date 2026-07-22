@@ -3,13 +3,18 @@ using UnityEngine;
 
 public static class EnemyDropRoller
 {
-    public static void Roll(EnemyDropGroup group, EnemyInventory inventory, System.Random rng)
+    public static void Roll(
+        EnemyDropDatabase database,
+        EnemyDropGroup group,
+        EnemyInventory inventory,
+        System.Random rng)
     {
         if (group == null || inventory == null || rng == null)
             return;
 
         RollIndependent(group.drops, inventory, rng);
         RollChoiceGroups(group.choiceGroups, inventory, rng);
+        RollQueries(database, group.queries, inventory, rng);
     }
 
     private static void RollIndependent(IReadOnlyList<EnemyDropEntry> entries, EnemyInventory inventory, System.Random rng)
@@ -95,5 +100,57 @@ public static class EnemyDropRoller
 
         selected = fallback;
         return hasFallback;
+    }
+
+    private static void RollQueries(
+        EnemyDropDatabase database,
+        IReadOnlyList<EnemyDropQuery> queries,
+        EnemyInventory inventory,
+        System.Random rng)
+    {
+        if (database == null ||
+            database.ItemDatabase == null ||
+            queries == null ||
+            queries.Count == 0)
+        {
+            return;
+        }
+
+        PlayerFormId currentForm = DropQueryResolver.ResolveCurrentForm();
+        for (int i = 0; i < queries.Count; i++)
+        {
+            EnemyDropQuery query = queries[i];
+            if (query.chance < 1f && rng.NextDouble() >= query.chance)
+                continue;
+
+            if (!DropQueryResolver.TryResolve(
+                    database.ItemDatabase,
+                    query,
+                    currentForm,
+                    rng,
+                    out DropQueryResult result))
+            {
+                continue;
+            }
+
+            ItemData item = result.Item;
+            if (item == null)
+                continue;
+
+            int amount;
+            if (item.ItemType == ItemType.Engraving ||
+                item.ItemType == ItemType.PassiveEngraving)
+            {
+                amount = 1;
+            }
+            else
+            {
+                int minAmount = Mathf.Max(1, query.minAmount);
+                int maxAmount = Mathf.Max(minAmount, query.maxAmount);
+                amount = rng.Next(minAmount, maxAmount + 1);
+            }
+
+            inventory.AddDropItem(item.ItemCode, amount);
+        }
     }
 }

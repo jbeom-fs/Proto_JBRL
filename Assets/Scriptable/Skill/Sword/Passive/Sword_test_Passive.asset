@@ -15,7 +15,7 @@ MonoBehaviour:
   passiveName: "\uD14C\uC2A4\uD2B8\uD398\uC2DC\uBE0C"
   icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
   description: "\uD14C\uC2A4\uD2B8\uC6A9"
-  owningForm: 0
+  owningForm: 1
   grade: 0
   behaviors:
   - trigger: 3

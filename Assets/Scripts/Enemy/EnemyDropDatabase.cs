@@ -1,6 +1,14 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
+
+public enum DropFormScope
+{
+    CurrentForm,
+    Any,
+    Specific
+}
 
 [Serializable]
 public struct EnemyDropEntry
@@ -28,22 +36,40 @@ public sealed class EnemyDropChoiceGroup
 }
 
 [Serializable]
+public struct EnemyDropQuery
+{
+    [Range(0f, 1f)] public float chance;
+    public ItemType itemType;
+    public DropFormScope formScope;
+    public PlayerFormId specificForm;
+    [Min(0f)] public float tierWeight0;
+    [Min(0f)] public float tierWeight1;
+    [Min(0f)] public float tierWeight2;
+    [Min(1)] public int minAmount;
+    [Min(1)] public int maxAmount;
+}
+
+[Serializable]
 public sealed class EnemyDropGroup
 {
     public EnemyData enemy;
     public List<EnemyDropEntry> drops = new List<EnemyDropEntry>();
     public List<EnemyDropChoiceGroup> choiceGroups = new List<EnemyDropChoiceGroup>();
+    public List<EnemyDropQuery> queries = new List<EnemyDropQuery>();
 }
 
 [CreateAssetMenu(fileName = "EnemyDropDatabase", menuName = "JBRogLike/Enemy/Enemy Drop Database")]
 public sealed class EnemyDropDatabase : ScriptableObject
 {
     [SerializeField] private List<EnemyDropGroup> groups = new List<EnemyDropGroup>();
-    [Tooltip("Editor-only validation: resolves itemCode -> ItemType to flag engraving-like entries with max>1.")]
-    [SerializeField] private ItemDatabase itemDatabaseForValidation;
+    [Tooltip("Runtime query candidates and editor validation item source.")]
+    [FormerlySerializedAs("itemDatabaseForValidation")]
+    [SerializeField] private ItemDatabase itemDatabase;
 
     private readonly Dictionary<EnemyData, EnemyDropGroup> _byEnemy = new Dictionary<EnemyData, EnemyDropGroup>();
     private bool _cacheBuilt;
+
+    public ItemDatabase ItemDatabase => itemDatabase;
 
     public EnemyDropGroup GetDropGroup(EnemyData enemy)
     {
@@ -148,10 +174,10 @@ public sealed class EnemyDropDatabase : ScriptableObject
     private void WarnIfEngravingLikeAmountExceedsOne(string itemCode, int minAmount, int maxAmount)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (itemDatabaseForValidation == null || string.IsNullOrWhiteSpace(itemCode))
+        if (itemDatabase == null || string.IsNullOrWhiteSpace(itemCode))
             return;
 
-        if (!itemDatabaseForValidation.TryGetItem(itemCode, out ItemData item) || item == null)
+        if (!itemDatabase.TryGetItem(itemCode, out ItemData item) || item == null)
             return;
 
         // 런타임 roller와 동일하게 실효 최대치 = Max(min, max). min>max 오작성도 잡는다.

@@ -269,7 +269,7 @@ public class RoomSpawner : MonoBehaviour
             enemy.transform.SetParent(null);
             enemy.Initialize(selected);
             if (dropDatabase != null)
-                enemy.RollDrops(dropDatabase.GetDropGroup(selected), dropRng);
+                enemy.RollDrops(dropDatabase, dropDatabase.GetDropGroup(selected), dropRng);
             if (ShouldAssignEliteKey(room, spawnedIndex))
                 enemy.MarkAsEliteKeyHolder();
             TrackEnemy(enemy);
@@ -277,6 +277,8 @@ public class RoomSpawner : MonoBehaviour
             budget -= selected.spawnCost;
             spawnedIndex++;
         }
+
+        DropQueryResolver.FlushWarnings();
 
         if (activeEnemies.Count > 0)
         {
