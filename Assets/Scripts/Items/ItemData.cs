@@ -11,6 +11,8 @@ public sealed class ItemData
     [TextArea]
     [SerializeField] private string description;
     [SerializeField] private ItemType itemType;
+    [Tooltip("비각인 아이템 전용 등급. 각인류는 각 SO의 grade가 단일 진실이므로 이 값을 사용하지 않습니다.")]
+    [SerializeField] private ItemRarity rarity;
     [SerializeField] private bool stackable;
     [Min(1)]
     [SerializeField] private int maxStack = 1;
@@ -32,6 +34,10 @@ public sealed class ItemData
     public Sprite Icon => icon;
     public string Description => description;
     public ItemType ItemType => itemType;
+    /// <summary>
+    /// 비각인 아이템 전용 등급. Engraving과 PassiveEngraving의 등급은 각 SO의 grade만 사용합니다.
+    /// </summary>
+    public ItemRarity Rarity => rarity;
     public bool Stackable => stackable;
     public int MaxStack => maxStack;
     public bool RemoveOnFloorTransition => removeOnFloorTransition;
@@ -55,6 +61,7 @@ public sealed class ItemData
             icon = icon,
             description = description,
             itemType = itemType,
+            rarity = rarity,
             stackable = stackable,
             maxStack = maxStack,
             removeOnFloorTransition = removeOnFloorTransition,

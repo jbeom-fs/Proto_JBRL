@@ -217,8 +217,7 @@ public sealed class InventoryUIController : MonoBehaviour
                 return itemType == ItemType.Material;
             case TabOther:
                 return itemType == ItemType.Key ||
-                       itemType == ItemType.Currency ||
-                       itemType == ItemType.Equipment;
+                       itemType == ItemType.Currency;
             default:
                 return true;
         }

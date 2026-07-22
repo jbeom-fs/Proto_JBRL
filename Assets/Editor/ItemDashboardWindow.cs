@@ -33,6 +33,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private const float MinWarningsPanelHeight = 60f;
     private const float WarningsPanelMaxPadding = 220f;
 
+    private static readonly ItemType[] s_ItemTypeValues = (ItemType[])Enum.GetValues(typeof(ItemType));
     private static readonly string[] s_TypeFilterOptions = BuildTypeFilterOptions();
     private static readonly string[] s_SkillExecutionTypeNames = Enum.GetNames(typeof(SkillExecutionType));
 
@@ -355,7 +356,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         ResetItemEntry(item);
         SetString(item.FindPropertyRelative("itemCode"), itemCode);
         SetString(item.FindPropertyRelative("displayName"), _newItemDisplayName ?? string.Empty);
-        SetEnum(item.FindPropertyRelative("itemType"), (int)_newItemType);
+        SetInt(item.FindPropertyRelative("itemType"), (int)_newItemType);
         ApplyNewItemTypeDefaults(item, _newItemType);
 
         if (!ApplyAndMark(databaseObject))
@@ -635,6 +636,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         DrawStringProperty(row, databaseObject, item, "displayName", "displayName");
         DrawSpriteProperty(row, databaseObject, item);
         DrawDescriptionProperty(row, databaseObject, item);
+        DrawRarityProperty(row, databaseObject, item);
         DrawStackProperties(row, databaseObject, item);
         DrawExpireProperties(row, databaseObject, item);
         DrawTypeSpecificFields(row, databaseObject, item);
@@ -760,6 +762,30 @@ public sealed class ItemDashboardWindow : EditorWindow
             return;
 
         property.stringValue = next;
+        ApplyItemPropertyChange(row, serializedObject);
+    }
+
+    private void DrawRarityProperty(
+        ItemRow row,
+        SerializedObject serializedObject,
+        SerializedProperty item)
+    {
+        if (row.ItemType == ItemType.Engraving || row.ItemType == ItemType.PassiveEngraving)
+            return;
+
+        SerializedProperty rarity = item.FindPropertyRelative("rarity");
+        if (rarity == null)
+        {
+            EditorGUILayout.LabelField("rarity", "<missing>");
+            return;
+        }
+
+        EditorGUI.BeginChangeCheck();
+        int next = EditorGUILayout.Popup("rarity", rarity.enumValueIndex, rarity.enumDisplayNames);
+        if (!EditorGUI.EndChangeCheck())
+            return;
+
+        rarity.enumValueIndex = next;
         ApplyItemPropertyChange(row, serializedObject);
     }
 
@@ -1644,6 +1670,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         row.Icon = GetObject<Sprite>(item.FindPropertyRelative("icon"));
         row.Description = GetString(item.FindPropertyRelative("description"));
         row.ItemType = GetItemType(item.FindPropertyRelative("itemType"));
+        row.Rarity = GetItemRarity(item.FindPropertyRelative("rarity"));
         row.Stackable = GetBool(item.FindPropertyRelative("stackable"));
         row.MaxStack = GetInt(item.FindPropertyRelative("maxStack"));
         row.RemoveOnFloorTransition = GetBool(item.FindPropertyRelative("removeOnFloorTransition"));
@@ -1783,9 +1810,6 @@ public sealed class ItemDashboardWindow : EditorWindow
         if (!row.Stackable && row.MaxStack > 1)
             AddWarning(row, WarningSeverity.Warning, "[Warn] stackable=false인데 maxStack>1: " + location + " maxStack=" + row.MaxStack, row.Database);
 
-        if (row.ItemType == ItemType.Equipment)
-            AddWarning(row, WarningSeverity.Warning, "[Warn] Equipment 타입 사용: " + location + " '" + GetDisplayCode(row.ItemCode) + "'", row.Database);
-
         if (row.HasUnfilteredOnSkillUsedBehavior)
             AddWarning(row, WarningSeverity.Error, "[Error] OnSkillUsed behavior의 skillTypeFilter가 0: " + location, row.Database);
 
@@ -1893,8 +1917,15 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private bool ShouldShowRow(ItemRow row)
     {
-        if (_typeFilterIndex > 0 && row.ItemType != (ItemType)(_typeFilterIndex - 1))
-            return false;
+        if (_typeFilterIndex > 0)
+        {
+            int itemTypeIndex = _typeFilterIndex - 1;
+            if ((uint)itemTypeIndex >= (uint)s_ItemTypeValues.Length ||
+                row.ItemType != s_ItemTypeValues[itemTypeIndex])
+            {
+                return false;
+            }
+        }
 
         string search = _searchText ?? string.Empty;
         if (string.IsNullOrEmpty(search))
@@ -2622,11 +2653,10 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private static string[] BuildTypeFilterOptions()
     {
-        string[] names = Enum.GetNames(typeof(ItemType));
-        string[] options = new string[names.Length + 1];
+        string[] options = new string[s_ItemTypeValues.Length + 1];
         options[0] = "All";
-        for (int i = 0; i < names.Length; i++)
-            options[i + 1] = names[i];
+        for (int i = 0; i < s_ItemTypeValues.Length; i++)
+            options[i + 1] = s_ItemTypeValues[i].ToString();
 
         return options;
     }
@@ -2686,7 +2716,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         SetString(item.FindPropertyRelative("displayName"), string.Empty);
         SetObject(item.FindPropertyRelative("icon"), null);
         SetString(item.FindPropertyRelative("description"), string.Empty);
-        SetEnum(item.FindPropertyRelative("itemType"), 0);
+        SetInt(item.FindPropertyRelative("itemType"), (int)ItemType.Key);
+        SetInt(item.FindPropertyRelative("rarity"), (int)ItemRarity.Common);
         SetBool(item.FindPropertyRelative("stackable"), false);
         SetInt(item.FindPropertyRelative("maxStack"), 1);
         SetBool(item.FindPropertyRelative("removeOnFloorTransition"), false);
@@ -2784,7 +2815,12 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private static ItemType GetItemType(SerializedProperty property)
     {
-        return property != null ? (ItemType)property.enumValueIndex : ItemType.Key;
+        return property != null ? (ItemType)property.intValue : ItemType.Key;
+    }
+
+    private static ItemRarity GetItemRarity(SerializedProperty property)
+    {
+        return property != null ? (ItemRarity)property.intValue : ItemRarity.Common;
     }
 
     private static ItemEffectType GetItemEffectType(SerializedProperty property)
@@ -2869,6 +2905,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         public Sprite Icon;
         public string Description;
         public ItemType ItemType;
+        public ItemRarity Rarity;
         public bool Stackable;
         public int MaxStack;
         public bool RemoveOnFloorTransition;

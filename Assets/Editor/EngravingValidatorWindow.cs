@@ -173,7 +173,7 @@ public sealed class EngravingValidatorWindow : EditorWindow
             RawCode = GetString(itemCode),
             Code = NormalizeCode(GetString(itemCode)),
             DisplayName = GetString(displayName),
-            ItemType = itemType != null ? (ItemType)itemType.enumValueIndex : ItemType.Key,
+            ItemType = itemType != null ? (ItemType)itemType.intValue : ItemType.Key,
             Engraving = engraving != null ? engraving.objectReferenceValue as EngravingData : null
         };
     }
@@ -462,7 +462,7 @@ public sealed class EngravingValidatorWindow : EditorWindow
                 existingCodes.Add(code);
 
             SerializedProperty itemType = item.FindPropertyRelative("itemType");
-            if (itemType != null && itemType.enumValueIndex == (int)ItemType.Engraving && !string.IsNullOrEmpty(code))
+            if (itemType != null && itemType.intValue == (int)ItemType.Engraving && !string.IsNullOrEmpty(code))
                 existingEngravingCodes.Add(code);
         }
 
@@ -473,7 +473,7 @@ public sealed class EngravingValidatorWindow : EditorWindow
 
         SetString(newItem, "itemCode", GenerateUniqueItemCode(engraving, existingCodes, existingEngravingCodes));
         SetString(newItem, "displayName", string.IsNullOrWhiteSpace(engraving.skillName) ? engraving.name : engraving.skillName);
-        SetEnum(newItem, "itemType", (int)ItemType.Engraving);
+        SetInt(newItem, "itemType", (int)ItemType.Engraving);
         SetObject(newItem, "engraving", engraving);
         SetBool(newItem, "stackable", false);
         SetInt(newItem, "maxStack", 1);
@@ -488,14 +488,14 @@ public sealed class EngravingValidatorWindow : EditorWindow
         SetString(item, "displayName", string.Empty);
         SetObject(item, "icon", null);
         SetString(item, "description", string.Empty);
-        SetEnum(item, "itemType", 0);
+        SetInt(item, "itemType", (int)ItemType.Key);
+        SetInt(item, "rarity", (int)ItemRarity.Common);
         SetBool(item, "stackable", false);
         SetInt(item, "maxStack", 1);
         SetBool(item, "removeOnFloorTransition", false);
         SetBool(item, "removeOnDungeonExit", false);
         SetArraySize(item, "useEffects", 0);
         SetArraySize(item, "passiveEffects", 0);
-        SetEnum(item, "soulFormId", 0);
         SetObject(item, "engraving", null);
         SetString(item, "salvageItemCode", string.Empty);
         SetInt(item, "salvageMinAmount", 1);
@@ -672,12 +672,7 @@ public sealed class EngravingValidatorWindow : EditorWindow
             property.intValue = value;
     }
 
-    private static void SetEnum(SerializedProperty parent, string propertyName, int value)
-    {
-        SerializedProperty property = parent.FindPropertyRelative(propertyName);
-        if (property != null)
-            property.enumValueIndex = value;
-    }
+
 
     private static void SetObject(SerializedProperty parent, string propertyName, UnityEngine.Object value)
     {

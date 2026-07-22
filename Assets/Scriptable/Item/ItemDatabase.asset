@@ -18,6 +18,7 @@ MonoBehaviour:
     icon: {fileID: -2433734611021356490, guid: c0adb5094e8a7bc41be2e61ffe519254, type: 3}
     description: "Elite Room door\uB97C \uC5F4 \uC218 \uC788\uB294 \uC5F4\uC1E0"
     itemType: 0
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 1
@@ -36,6 +37,7 @@ MonoBehaviour:
     icon: {fileID: 6352683301991889936, guid: f7b37b91088c7d44b98c5e710477bd39, type: 3}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 2
+    rarity: 0
     stackable: 1
     maxStack: 99
     removeOnFloorTransition: 0
@@ -56,6 +58,7 @@ MonoBehaviour:
     icon: {fileID: -7640242614159672242, guid: f7b37b91088c7d44b98c5e710477bd39, type: 3}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 4
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -85,6 +88,7 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: 88f2d9a9effe0ba42bcf67bce42c675d, type: 3}
     description: 
     itemType: 4
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -103,6 +107,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -121,6 +126,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -139,6 +145,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -157,6 +164,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: "\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 6
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -175,6 +183,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 5
+    rarity: 0
     stackable: 1
     maxStack: 99
     removeOnFloorTransition: 0
@@ -193,6 +202,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 5
+    rarity: 0
     stackable: 1
     maxStack: 99
     removeOnFloorTransition: 0
@@ -211,6 +221,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 5
+    rarity: 0
     stackable: 1
     maxStack: 99
     removeOnFloorTransition: 0
@@ -229,6 +240,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 5
+    rarity: 0
     stackable: 1
     maxStack: 99
     removeOnFloorTransition: 0
@@ -247,6 +259,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 7
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -265,6 +278,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 7
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -283,6 +297,7 @@ MonoBehaviour:
     icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
     description: 
     itemType: 7
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -301,6 +316,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     description: 
     itemType: 7
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -319,6 +335,7 @@ MonoBehaviour:
     icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
     description: 
     itemType: 7
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -337,6 +354,7 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: 88f2d9a9effe0ba42bcf67bce42c675d, type: 3}
     description: 
     itemType: 1
+    rarity: 0
     stackable: 1
     maxStack: 9999
     removeOnFloorTransition: 0
@@ -355,6 +373,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     description: 
     itemType: 2
+    rarity: 0
     stackable: 1
     maxStack: 99
     removeOnFloorTransition: 1
@@ -373,6 +392,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     description: "\uB3C5\uC131 \uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 4
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -409,6 +429,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     description: "\uC7A5\uD310\uD14C\uC2A4\uD2B8\uC6A9"
     itemType: 4
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -436,6 +457,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     description: 
     itemType: 4
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -463,6 +485,7 @@ MonoBehaviour:
     icon: {fileID: 0}
     description: 
     itemType: 4
+    rarity: 0
     stackable: 0
     maxStack: 1
     removeOnFloorTransition: 0
@@ -485,15 +508,16 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
-  - itemCode: Sword_Skill_00
-    displayName: "\uD14C\uC2A4\uD2B8\uCE94\uC2AC\uB810\uB9AD"
-    icon: {fileID: 0}
+  - itemCode: Eng_Sword_Faint_2
+    displayName: "\uC5F0\uACA9"
+    icon: {fileID: 21300000, guid: 2d29ef2caa87b6047ab977e1fd41cc59, type: 3}
     description: 
-    itemType: 4
+    itemType: 7
+    rarity: 0
     stackable: 0
-    maxStack: 1
+    maxStack: 99
     removeOnFloorTransition: 0
-    removeOnDungeonExit: 1
+    removeOnDungeonExit: 0
     useEffects: []
     passiveEffects: []
     behaviorEffects:
@@ -507,8 +531,36 @@ MonoBehaviour:
       procDirection: 0
       procSpawnRadius: 0
     soulFormId: 0
-    engraving: {fileID: 0}
+    engraving: {fileID: 11400000, guid: 80b15211f73ed1a41b8f6096f7fe20d9, type: 2}
     passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Psv_Sword_Faint0
+    displayName: "\uD14C\uC2A4\uD2B8\uD398\uC2DC\uBE0C"
+    icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
+    description: 
+    itemType: 8
+    rarity: 0
+    stackable: 0
+    maxStack: 99
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects:
+    - trigger: 3
+      action: 0
+      skillTypeFilter: 0
+      value: 10
+      duration: 0
+      procSkill: {fileID: 0}
+      procOrigin: 0
+      procDirection: 0
+      procSpawnRadius: 0
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 80b15211f73ed1a41b8f6096f7fe20d9, type: 2}
+    passiveEngraving: {fileID: 11400000, guid: 2e7dc8aa085c5dd46904413d3a190e03, type: 2}
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1

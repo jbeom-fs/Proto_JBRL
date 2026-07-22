@@ -23,6 +23,14 @@ MonoBehaviour:
       minAmount: 1
       maxAmount: 1
       chance: 1
+    - itemCode: Eng_Sword_Faint_2
+      minAmount: 1
+      maxAmount: 1
+      chance: 1
+    - itemCode: Psv_Sword_Faint0
+      minAmount: 1
+      maxAmount: 1
+      chance: 1
     choiceGroups: []
   - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}
     drops:

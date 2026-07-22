@@ -796,8 +796,7 @@ internal static class DeveloperConsoleItemCategoryResolver
         ItemType.Consumable,
         ItemType.Currency,
         ItemType.Material,
-        ItemType.Key,
-        ItemType.Equipment
+        ItemType.Key
     };
 
     private static readonly string[] s_Tokens = BuildTokens();
