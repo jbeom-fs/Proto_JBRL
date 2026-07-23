@@ -32,6 +32,7 @@ public static class UiMessages
     public const string EngravingApplyFailed = "각인 적용 실패";
     public const string EmptyEngravingSlot = "(비어 있음)";
     public const string EngravingSlotFormat = "[{0}] {1}";
+    public const string EngravingSlotLockedFormat = "[{0}] 잠김";
     public const string EngravingGradeFormat = "{0} [{1}]";
     public const string EngravingTypeActive = "액티브";
     public const string EngravingTypePassive = "패시브";
