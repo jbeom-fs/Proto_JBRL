@@ -70,6 +70,7 @@
     <Compile Include="Assets\Scripts\Inventory\InventoryItemStack.cs" />
     <Compile Include="Assets\Scripts\TeleportDestinationDatabase.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyController.cs" />
+    <Compile Include="Assets\Scripts\UI\PassiveHudSlotUI.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulStatBonus.cs" />
     <Compile Include="Assets\Scripts\UI\PlayerStatusEffectUI.cs" />
     <Compile Include="Assets\Scripts\Data\EngravingData.cs" />
@@ -182,6 +183,7 @@
     <Compile Include="Assets\Scripts\UI\RestAreaShopUIController.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulStatLabelTable.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulEnhancementCost.cs" />
+    <Compile Include="Assets\Scripts\UI\PassiveHudManager.cs" />
     <Compile Include="Assets\Scripts\Items\DroppedItem.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillExecutor.cs" />
     <Compile Include="Assets\Scripts\System\SaveData.cs" />

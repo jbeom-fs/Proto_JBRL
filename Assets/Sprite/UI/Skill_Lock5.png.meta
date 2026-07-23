@@ -1,0 +1,598 @@
+fileFormatVersion: 2
+guid: 3982b7ebe2705b740afc472c951bec0f
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 7926935571715203346
+    second: Skill_Lock5_0
+  - first:
+      213: -2032406206394972020
+    second: Skill_Lock5_1
+  - first:
+      213: 2810799843037534083
+    second: Skill_Lock5_2
+  - first:
+      213: 2619052820375299197
+    second: Skill_Lock5_3
+  - first:
+      213: 4068103388816538985
+    second: Skill_Lock5_4
+  - first:
+      213: 8355744200471750453
+    second: Skill_Lock5_5
+  - first:
+      213: -8189121864251673590
+    second: Skill_Lock5_6
+  - first:
+      213: -418609179375524365
+    second: Skill_Lock5_7
+  - first:
+      213: 1883615069537805253
+    second: Skill_Lock5_8
+  - first:
+      213: -3814777867696502148
+    second: Skill_Lock5_9
+  - first:
+      213: -8335954071831183408
+    second: Skill_Lock5_10
+  - first:
+      213: -8401990472991898402
+    second: Skill_Lock5_11
+  - first:
+      213: -8717348617850274859
+    second: Skill_Lock5_12
+  - first:
+      213: 305794301365737828
+    second: Skill_Lock5_13
+  - first:
+      213: 4895868153191699391
+    second: Skill_Lock5_14
+  - first:
+      213: -5592308491769514671
+    second: Skill_Lock5_15
+  - first:
+      213: -5077902347423619618
+    second: Skill_Lock5_16
+  - first:
+      213: 7201191578729250055
+    second: Skill_Lock5_17
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Skill_Lock5_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 460
+        width: 160
+        height: 147
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2112e7d57e1220e60800000000000000
+      internalID: 7926935571715203346
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_1
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 390
+        width: 102
+        height: 94
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c88478cc2517bc3e0800000000000000
+      internalID: -2032406206394972020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_2
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 373
+        width: 111
+        height: 161
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 387d9f2a097f10720800000000000000
+      internalID: 2810799843037534083
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_3
+      rect:
+        serializedVersion: 2
+        x: 181
+        y: 233
+        width: 273
+        height: 231
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d74647ee9aeb85420800000000000000
+      internalID: 2619052820375299197
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_4
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 444
+        width: 220
+        height: 163
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96df8f77a7ec47830800000000000000
+      internalID: 4068103388816538985
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_5
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 390
+        width: 94
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5372627641195f370800000000000000
+      internalID: 8355744200471750453
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_6
+      rect:
+        serializedVersion: 2
+        x: 65
+        y: 67
+        width: 111
+        height: 162
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a04f4e26d056a5e80800000000000000
+      internalID: -8189121864251673590
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_7
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 163
+        width: 104
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f5aa935b2dc03af0800000000000000
+      internalID: -418609179375524365
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_8
+      rect:
+        serializedVersion: 2
+        x: 246
+        y: 197
+        width: 80
+        height: 79
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c3af590de1f32a10800000000000000
+      internalID: 1883615069537805253
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_9
+      rect:
+        serializedVersion: 2
+        x: 312
+        y: 224
+        width: 118
+        height: 166
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7a8deaadbf2f0bc0800000000000000
+      internalID: -3814777867696502148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_10
+      rect:
+        serializedVersion: 2
+        x: 317
+        y: 166
+        width: 91
+        height: 79
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0dff78cffedb05c80800000000000000
+      internalID: -8335954071831183408
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_11
+      rect:
+        serializedVersion: 2
+        x: 373
+        y: 217
+        width: 81
+        height: 82
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed40a133e22266b80800000000000000
+      internalID: -8401990472991898402
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_12
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 141
+        width: 89
+        height: 91
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5dbbac95e91c50780800000000000000
+      internalID: -8717348617850274859
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_13
+      rect:
+        serializedVersion: 2
+        x: 135
+        y: 85
+        width: 108
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4695e330c466e3400800000000000000
+      internalID: 305794301365737828
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_14
+      rect:
+        serializedVersion: 2
+        x: 405
+        y: 85
+        width: 76
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb3932a552e91f340800000000000000
+      internalID: 4895868153191699391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_15
+      rect:
+        serializedVersion: 2
+        x: 455
+        y: 133
+        width: 79
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1557da95e012462b0800000000000000
+      internalID: -5592308491769514671
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_16
+      rect:
+        serializedVersion: 2
+        x: 481
+        y: 0
+        width: 129
+        height: 146
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ed561b908baa789b0800000000000000
+      internalID: -5077902347423619618
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Skill_Lock5_17
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 139
+        height: 129
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 70df0b95695cfe360800000000000000
+      internalID: 7201191578729250055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Skill_Lock5_0: 7926935571715203346
+      Skill_Lock5_1: -2032406206394972020
+      Skill_Lock5_10: -8335954071831183408
+      Skill_Lock5_11: -8401990472991898402
+      Skill_Lock5_12: -8717348617850274859
+      Skill_Lock5_13: 305794301365737828
+      Skill_Lock5_14: 4895868153191699391
+      Skill_Lock5_15: -5592308491769514671
+      Skill_Lock5_16: -5077902347423619618
+      Skill_Lock5_17: 7201191578729250055
+      Skill_Lock5_2: 2810799843037534083
+      Skill_Lock5_3: 2619052820375299197
+      Skill_Lock5_4: 4068103388816538985
+      Skill_Lock5_5: 8355744200471750453
+      Skill_Lock5_6: -8189121864251673590
+      Skill_Lock5_7: -418609179375524365
+      Skill_Lock5_8: 1883615069537805253
+      Skill_Lock5_9: -3814777867696502148
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
