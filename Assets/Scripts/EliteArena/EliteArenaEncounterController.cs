@@ -4,6 +4,8 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
 {
     public static EliteArenaEncounterController Active { get; private set; }
 
+    protected override DropRank EncounterDropRank => DropRank.Elite;
+
     [Header("Teleport")]
     [SerializeField, TeleportDestinationId] private string arenaDestinationId = "elite_arena";
 

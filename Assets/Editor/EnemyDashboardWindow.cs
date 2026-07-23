@@ -10,6 +10,12 @@ using Object = UnityEngine.Object;
 
 public sealed class EnemyDashboardWindow : EditorWindow
 {
+    private enum DashboardTab
+    {
+        PerEnemy,
+        Rank
+    }
+
     private const float FoldoutWidth = 20f;
     private const float WarningWidth = 28f;
     private const float NameWidth = 170f;
@@ -44,7 +50,9 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private readonly List<BossEncounterTable> _scannedBossEncounterTables = new List<BossEncounterTable>(2);
     private readonly List<EnemyController> _scannedSpawnPrefabs = new List<EnemyController>(32);
     private readonly List<ItemData> _queryItems = new List<ItemData>(64);
+    private DashboardTab _tab = DashboardTab.PerEnemy;
     private Vector2 _rowScrollPosition;
+    private Vector2 _rankScroll;
     private Vector2 _warningScrollPosition;
     private float _warningsPanelHeight = WarningPanelHeight;
     private bool _hasScanned;
@@ -104,6 +112,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private void OnGUI()
     {
         DrawToolbar();
+        _tab = (DashboardTab)GUILayout.Toolbar((int)_tab, new[] { "개인 드롭", "등급 드롭" });
         ClampWarningsPanelHeight();
 
         if (_showNewEnemyForm)
@@ -116,7 +125,10 @@ public sealed class EnemyDashboardWindow : EditorWindow
         }
 
         DrawSummary();
-        DrawRowsPanel();
+        if (_tab == DashboardTab.PerEnemy)
+            DrawRowsPanel();
+        else
+            DrawRankDropsPanel();
         DrawPanelSplitter();
         DrawWarningsPanel();
     }
@@ -978,6 +990,53 @@ public sealed class EnemyDashboardWindow : EditorWindow
         for (int i = 0; i < _rows.Count; i++)
             DrawRow(_rows[i]);
         EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawRankDropsPanel()
+    {
+        EnemyDropDatabase database = _primaryDropDatabase;
+        if (database == null)
+        {
+            EditorGUILayout.HelpBox("EnemyDropDatabase asset not found. Scan 먼저.", MessageType.Warning);
+            return;
+        }
+
+        _rankScroll = EditorGUILayout.BeginScrollView(_rankScroll, true, true, GUILayout.ExpandHeight(true));
+
+        SerializedObject databaseObject = new SerializedObject(database);
+        databaseObject.Update();
+
+        bool changed = false;
+        changed |= DrawRankGroupSection(databaseObject, "normalRankDrops", "일반 (Normal)");
+        changed |= DrawRankGroupSection(databaseObject, "eliteRankDrops", "엘리트 (Elite)");
+        changed |= DrawRankGroupSection(databaseObject, "bossRankDrops", "보스 (Boss)");
+        if (changed)
+            ApplyAndMark(databaseObject);
+
+        EditorGUILayout.EndScrollView();
+    }
+
+    private bool DrawRankGroupSection(SerializedObject databaseObject, string propertyName, string header)
+    {
+        SerializedProperty group = databaseObject.FindProperty(propertyName);
+        if (group == null)
+        {
+            EditorGUILayout.HelpBox(propertyName + " missing.", MessageType.Error);
+            return false;
+        }
+
+        EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+        EditorGUILayout.LabelField(
+            header + " 공유 드롭 (" + databaseObject.targetObject.name + ")",
+            EditorStyles.boldLabel);
+
+        bool changed = false;
+        changed |= DrawDrops(group.FindPropertyRelative("drops"));
+        changed |= DrawChoiceGroups(group.FindPropertyRelative("choiceGroups"));
+        changed |= DrawQueries(group.FindPropertyRelative("queries"));
+
+        EditorGUILayout.EndVertical();
+        return changed;
     }
 
     private void DrawHeader()

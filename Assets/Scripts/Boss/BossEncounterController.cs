@@ -5,6 +5,8 @@ public sealed class BossEncounterController : ArenaEncounterBase
 {
     public static BossEncounterController Active { get; private set; }
 
+    protected override DropRank EncounterDropRank => DropRank.Boss;
+
     [Header("Boss Exit")]
     [SerializeField] private BossExitPortal exitPortal;
     [SerializeField] private BossExitPortal exitPortalPrefab;

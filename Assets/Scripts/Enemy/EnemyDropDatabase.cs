@@ -10,6 +10,13 @@ public enum DropFormScope
     Specific
 }
 
+public enum DropRank
+{
+    Normal,
+    Elite,
+    Boss
+}
+
 [Serializable]
 public struct EnemyDropEntry
 {
@@ -58,10 +65,24 @@ public sealed class EnemyDropGroup
     public List<EnemyDropQuery> queries = new List<EnemyDropQuery>();
 }
 
+[Serializable]
+public sealed class RankDropGroup
+{
+    public List<EnemyDropEntry> drops = new List<EnemyDropEntry>();
+    public List<EnemyDropChoiceGroup> choiceGroups = new List<EnemyDropChoiceGroup>();
+    public List<EnemyDropQuery> queries = new List<EnemyDropQuery>();
+}
+
 [CreateAssetMenu(fileName = "EnemyDropDatabase", menuName = "JBRogLike/Enemy/Enemy Drop Database")]
 public sealed class EnemyDropDatabase : ScriptableObject
 {
     [SerializeField] private List<EnemyDropGroup> groups = new List<EnemyDropGroup>();
+
+    [Header("Rank Shared Drops")]
+    [SerializeField] private RankDropGroup normalRankDrops = new RankDropGroup();
+    [SerializeField] private RankDropGroup eliteRankDrops = new RankDropGroup();
+    [SerializeField] private RankDropGroup bossRankDrops = new RankDropGroup();
+
     [Tooltip("Runtime query candidates and editor validation item source.")]
     [FormerlySerializedAs("itemDatabaseForValidation")]
     [SerializeField] private ItemDatabase itemDatabase;
@@ -78,6 +99,16 @@ public sealed class EnemyDropDatabase : ScriptableObject
 
         EnsureCache();
         return _byEnemy.TryGetValue(enemy, out EnemyDropGroup group) ? group : null;
+    }
+
+    public RankDropGroup GetRankGroup(DropRank rank)
+    {
+        switch (rank)
+        {
+            case DropRank.Elite: return eliteRankDrops;
+            case DropRank.Boss: return bossRankDrops;
+            default: return normalRankDrops;
+        }
     }
 
     private void OnEnable()
@@ -121,6 +152,10 @@ public sealed class EnemyDropDatabase : ScriptableObject
     private void ValidateGroups()
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        ValidateRankGroup(normalRankDrops);
+        ValidateRankGroup(eliteRankDrops);
+        ValidateRankGroup(bossRankDrops);
+
         if (groups == null)
             return;
 
@@ -180,6 +215,39 @@ public sealed class EnemyDropDatabase : ScriptableObject
                             query.rollCountWeights.Length + " (>10): " + group.enemy.name +
                             " query " + queryIndex + ". Check unintended large drop counts.", this);
                     }
+                }
+            }
+        }
+#endif
+    }
+
+    private void ValidateRankGroup(RankDropGroup group)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (group == null)
+            return;
+
+        if (group.drops != null)
+        {
+            for (int dropIndex = 0; dropIndex < group.drops.Count; dropIndex++)
+            {
+                EnemyDropEntry drop = group.drops[dropIndex];
+                WarnIfEngravingLikeAmountExceedsOne(drop.itemCode, drop.minAmount, drop.maxAmount);
+            }
+        }
+
+        if (group.choiceGroups != null)
+        {
+            for (int choiceGroupIndex = 0; choiceGroupIndex < group.choiceGroups.Count; choiceGroupIndex++)
+            {
+                EnemyDropChoiceGroup choiceGroup = group.choiceGroups[choiceGroupIndex];
+                if (choiceGroup == null || choiceGroup.choices == null)
+                    continue;
+
+                for (int choiceIndex = 0; choiceIndex < choiceGroup.choices.Count; choiceIndex++)
+                {
+                    EnemyDropChoice choice = choiceGroup.choices[choiceIndex];
+                    WarnIfEngravingLikeAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
                 }
             }
         }

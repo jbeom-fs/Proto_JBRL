@@ -26,6 +26,8 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     private EliteArenaReturnPortal _activeReturnPortal;
     private bool _warnedMissingArenaDoor;
 
+    protected abstract DropRank EncounterDropRank { get; }
+
     protected bool TryTeleportPlayerToArena(PlayerController player, string destinationId)
     {
         transitionManager = transitionManager != null ? transitionManager : LocationTransitionManager.Active;
@@ -93,7 +95,7 @@ public abstract class ArenaEncounterBase : MonoBehaviour
         enemy.GetComponent<EnemyHealthBar>()?.SetBarSuppressed(true);
         enemy.GetComponent<EnemyAilmentIndicator>()?.SetSuppressed(true);
         if (dropDatabase != null && dropRng != null)
-            enemy.RollDrops(dropDatabase, dropDatabase.GetDropGroup(enemyData), dropRng);
+            enemy.RollDrops(dropDatabase, dropDatabase.GetDropGroup(enemyData), EncounterDropRank, dropRng);
         DropQueryResolver.FlushWarnings();
 
         if (deathHandler != null)

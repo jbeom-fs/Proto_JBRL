@@ -15,15 +15,26 @@ public static class EnemyDropRoller
     public static void Roll(
         EnemyDropDatabase database,
         EnemyDropGroup group,
+        RankDropGroup rankGroup,
         EnemyInventory inventory,
         System.Random rng)
     {
-        if (group == null || inventory == null || rng == null)
+        if (inventory == null || rng == null)
             return;
 
-        RollIndependent(group.drops, inventory, rng);
-        RollChoiceGroups(group.choiceGroups, inventory, rng);
-        RollQueries(database, group.queries, inventory, rng);
+        if (group != null)
+        {
+            RollIndependent(group.drops, inventory, rng);
+            RollChoiceGroups(group.choiceGroups, inventory, rng);
+            RollQueries(database, group.queries, inventory, rng);
+        }
+
+        if (rankGroup != null)
+        {
+            RollIndependent(rankGroup.drops, inventory, rng);
+            RollChoiceGroups(rankGroup.choiceGroups, inventory, rng);
+            RollQueries(database, rankGroup.queries, inventory, rng);
+        }
     }
 
     private static void RollIndependent(IReadOnlyList<EnemyDropEntry> entries, EnemyInventory inventory, System.Random rng)
