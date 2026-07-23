@@ -206,6 +206,7 @@
     <Compile Include="Assets\Scripts\World\WalkabilityQuery.cs" />
     <Compile Include="Assets\Scripts\Items\BehaviorRuntime.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\Patterns\EliteDashPatternRuntime.cs" />
+    <Compile Include="Assets\Scripts\Combat\PlayerShield.cs" />
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />

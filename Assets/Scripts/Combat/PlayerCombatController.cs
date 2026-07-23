@@ -74,6 +74,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     [Header("Damage Invincibility")]
     [SerializeField, Min(0f)] private float damageInvincibleDuration = 0.5f;
+    [SerializeField] private Color shieldFlashColor = new Color(1f, 0.82f, 0.2f, 1f);
 
     [Header("Critical")]
     [SerializeField, Min(1f)] private float critDamageMultiplier = 2f;
@@ -100,6 +101,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
     private readonly PlayerResource _resource = new();
+    private readonly PlayerShield _shield = new();
     private readonly PlayerItemStats _itemStats = new();
     private readonly SoulStatBonus _soulBonus = new SoulStatBonus();
     private readonly SkillCooldownController _cooldownController = new();
@@ -162,6 +164,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public bool IsDead { get; private set; }
     public int  CurrentHp   => _resource.CurrentHp;
     public int  MaxHp       => Mathf.Max(1, maxHp + _itemStats.MaxHpBonus);
+    public int CurrentShield => _shield.CurrentAmount;
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
@@ -239,6 +242,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void Awake()
     {
         _resource.Initialize(maxHp);
+        _shield.OnChanged += HandleShieldChanged;
         CachePlayerHitInfo();
         RegisterAsActive();
         _attackExecutor = new AttackExecutor(transform, this, CombatLayers.EnemyFilter);
@@ -314,6 +318,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void OnDestroy()
     {
+        _shield.OnChanged -= HandleShieldChanged;
         if (engravingLoadout != null)
             engravingLoadout.OnChanged -= HandleEngravingLoadoutChanged;
         UnsubscribeSoulEnhancements();
@@ -333,6 +338,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearParryState();
         ClearReloadState();
         _status?.ClearAll();
+        _shield.Clear();
         ClearDaggerRuntimeState();
     }
 
@@ -431,6 +437,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         {
             _resource.AdjustHp(maxHpDelta, MaxHp);
             combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
+            combatChannel?.RaisePlayerShieldChanged(CurrentShield, MaxHp);
         }
 
         combatChannel?.RaiseLoadoutChanged();
@@ -656,6 +663,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         if (IsDead)
             return;
+
+        _shield.Tick(Time.deltaTime);
 
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
@@ -1661,19 +1670,27 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsDamageInvincible) return false;
 
         int actual = Mathf.Max(1, incomingDamage - TotalDefense);
-        int hpBefore = CurrentHp;
-        _resource.TakeDamage(actual);
-        if (CurrentHp >= hpBefore)
-            return false;
+        int toHp = _shield.IsActive ? _shield.Absorb(actual) : actual;
+        _damageInvincibleTimer = damageInvincibleDuration;
 
         if (_isParryStartupActive)
             _parryCancelled = true;
 
-        _damageInvincibleTimer = damageInvincibleDuration;
+        if (toHp <= 0)
+        {
+            _hitFlash?.Play(shieldFlashColor);
+            return true;
+        }
+
+        int hpBefore = CurrentHp;
+        _resource.TakeDamage(toHp);
+        if (CurrentHp >= hpBefore)
+            return false;
+
         _hitFlash?.Play();
         combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
 #if UNITY_EDITOR
-        Debug.Log($"[Combat] Player -{actual} HP -> {CurrentHp}/{MaxHp}");
+        Debug.Log($"[Combat] Player -{toHp} HP -> {CurrentHp}/{MaxHp}");
 #endif
         if (CurrentHp == 0)
             Die();
@@ -1715,6 +1732,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearParryState();
         ClearReloadState();
         _status?.ClearAll();
+        _shield.Clear();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
@@ -1764,6 +1782,24 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _resource.RestoreHp(amount, MaxHp);
         combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
+    }
+
+    public void GrantShield(int amount, float duration)
+    {
+        if (IsDead)
+            return;
+
+        _shield.Grant(amount, duration);
+    }
+
+    public void ClearShield()
+    {
+        _shield.Clear();
+    }
+
+    private void HandleShieldChanged()
+    {
+        combatChannel?.RaisePlayerShieldChanged(CurrentShield, MaxHp);
     }
 
     public bool Has(SkillResourceType type, int requiredAmount)

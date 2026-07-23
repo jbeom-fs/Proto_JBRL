@@ -19,7 +19,7 @@ MonoBehaviour:
     width: 1920
     height: 989
   m_ShowMode: 4
-  m_Title: Game
+  m_Title: Hierarchy
   m_RootView: {fileID: 2}
   m_MinSize: {x: 875, y: 338}
   m_MaxSize: {x: 10000, y: 10000}
@@ -120,7 +120,7 @@ MonoBehaviour:
   m_MinSize: {x: 300, y: 112}
   m_MaxSize: {x: 24288, y: 16192}
   vertical: 0
-  controlID: 8686
+  controlID: 16015
   draggingID: 0
 --- !u!114 &6
 MonoBehaviour:
@@ -175,7 +175,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 8693
+  controlID: 16092
   draggingID: 0
 --- !u!114 &8
 MonoBehaviour:
@@ -253,7 +253,7 @@ MonoBehaviour:
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
   vertical: 1
-  controlID: 8687
+  controlID: 16016
   draggingID: 0
 --- !u!114 &11
 MonoBehaviour:
@@ -596,7 +596,7 @@ MonoBehaviour:
   m_Pos:
     serializedVersion: 2
     x: 0
-    y: 79
+    y: 24
     width: 1142
     height: 907
   m_SerializedDataModeController:
@@ -1174,9 +1174,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: 1153.7975, y: 641.8287, z: -6.186611}
+    m_Target: {x: 1113.1455, y: 226.38931, z: -2.046277}
     speed: 2
-    m_Value: {x: 692.6162, y: 402.004, z: -3.605534}
+    m_Value: {x: 1113.1455, y: 226.38931, z: -2.046277}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1227,9 +1227,9 @@ MonoBehaviour:
     speed: 2
     m_Value: {x: 0, y: 0, z: 0, w: 1}
   m_Size:
-    m_Target: 710.20636
+    m_Target: 320.0743
     speed: 2
-    m_Value: 637.13904
+    m_Value: 320.0743
   m_Ortho:
     m_Target: 1
     speed: 2
@@ -1594,14 +1594,10 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
-      - m_Data: -424706
-      - m_Data: -358370
       - m_Data: -1382
-      - m_Data: 54528
-      - m_Data: 54830
-      - m_Data: 55584
-      - m_Data: 143894
-      - m_Data: 144196
+      - m_Data: 54580
+      - m_Data: 56020
+      - m_Data: 57108
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1847,7 +1843,7 @@ MonoBehaviour:
     m_SkipHidden: 1
     m_SearchArea: 1
     m_Folders:
-    - Assets/Scriptable/Item
+    - Assets/Sprite/UI
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1857,42 +1853,42 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 64
   m_LastFolders:
-  - Assets/Scriptable/Item
+  - Assets/Sprite/UI
   m_LastFoldersGridSize: -1
   m_LastProjectPath: D:\JBUnityProject\Projects\JBRogLike
   m_LockTracker:
     m_IsLocked: 0
   m_LastLocalAssetsSearchArea: 1
   m_FolderTreeState:
-    scrollPos: {x: 0, y: 403}
+    scrollPos: {x: 0, y: 668}
     m_SelectedIDs:
-    - m_Data: 62126
+    - m_Data: 62534
     m_LastClickedID:
-      m_Data: 62126
+      m_Data: 62534
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 62300
-    - m_Data: 62302
-    - m_Data: 62304
-    - m_Data: 62306
-    - m_Data: 62308
-    - m_Data: 62310
-    - m_Data: 62312
-    - m_Data: 62314
-    - m_Data: 62316
-    - m_Data: 62318
-    - m_Data: 62320
-    - m_Data: 62322
-    - m_Data: 62324
-    - m_Data: 62326
-    - m_Data: 62328
-    - m_Data: 62330
-    - m_Data: 62332
-    - m_Data: 62334
-    - m_Data: 62336
-    - m_Data: 62338
-    - m_Data: 62340
-    - m_Data: 62342
+    - m_Data: 62372
+    - m_Data: 62374
+    - m_Data: 62376
+    - m_Data: 62378
+    - m_Data: 62380
+    - m_Data: 62382
+    - m_Data: 62384
+    - m_Data: 62386
+    - m_Data: 62388
+    - m_Data: 62390
+    - m_Data: 62392
+    - m_Data: 62394
+    - m_Data: 62396
+    - m_Data: 62398
+    - m_Data: 62400
+    - m_Data: 62402
+    - m_Data: 62404
+    - m_Data: 62406
+    - m_Data: 62408
+    - m_Data: 62410
+    - m_Data: 62412
+    - m_Data: 62414
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1926,28 +1922,28 @@ MonoBehaviour:
       m_Data: 0
     m_ExpandedIDs:
     - m_Data: 0
-    - m_Data: 62300
-    - m_Data: 62302
-    - m_Data: 62304
-    - m_Data: 62306
-    - m_Data: 62308
-    - m_Data: 62310
-    - m_Data: 62312
-    - m_Data: 62314
-    - m_Data: 62316
-    - m_Data: 62318
-    - m_Data: 62320
-    - m_Data: 62322
-    - m_Data: 62324
-    - m_Data: 62326
-    - m_Data: 62328
-    - m_Data: 62330
-    - m_Data: 62332
-    - m_Data: 62334
-    - m_Data: 62336
-    - m_Data: 62338
-    - m_Data: 62340
-    - m_Data: 62342
+    - m_Data: 62372
+    - m_Data: 62374
+    - m_Data: 62376
+    - m_Data: 62378
+    - m_Data: 62380
+    - m_Data: 62382
+    - m_Data: 62384
+    - m_Data: 62386
+    - m_Data: 62388
+    - m_Data: 62390
+    - m_Data: 62392
+    - m_Data: 62394
+    - m_Data: 62396
+    - m_Data: 62398
+    - m_Data: 62400
+    - m_Data: 62402
+    - m_Data: 62404
+    - m_Data: 62406
+    - m_Data: 62408
+    - m_Data: 62410
+    - m_Data: 62412
+    - m_Data: 62414
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -2019,7 +2015,7 @@ MonoBehaviour:
       m_Icon: {fileID: 0}
       m_ResourceFile: 
     m_NewAssetIndexInList: -1
-    m_ScrollPosition: {x: 0, y: 0}
+    m_ScrollPosition: {x: 0, y: 60}
     m_GridSize: 64
   m_SkipHiddenPackages: 1
   m_DirectoriesAreaWidth: 169

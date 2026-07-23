@@ -13,7 +13,8 @@ public enum BehaviorAction
     Heal,
     AttackPoison,
     AttackBleed,
-    CastSkill
+    CastSkill,
+    Shield
 }
 
 public enum ProcOriginMode

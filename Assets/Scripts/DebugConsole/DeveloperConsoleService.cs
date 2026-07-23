@@ -20,6 +20,7 @@ public sealed class DeveloperConsoleService
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
+    private const string ShieldUsage = "Usage: /shield <positiveAmount> [duration=5; <=0 is infinite]";
     private const string ToastUsage = "Usage: /toast <duration> <message...>";
     private const string ZoneUsage = "Usage: /zone <tickDamage> [duration=5] [slowPct=0] [slowDur=duration]";
     private const string ProcUsage = "Usage: /proc <slot 0-3>";
@@ -117,6 +118,7 @@ public sealed class DeveloperConsoleService
         _commands["combo"] = ExecuteCombo;
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
+        _commands["shield"] = ExecuteShield;
         _commands["toast"] = ExecuteToast;
         _commands["zone"] = ExecuteZone;
         _commands["proc"] = ExecuteProc;
@@ -258,6 +260,7 @@ public sealed class DeveloperConsoleService
             "\n" + ComboUsage +
             "\n" + AilmentUsage +
             "\n" + StunUsage +
+            "\n" + ShieldUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -642,6 +645,30 @@ public sealed class DeveloperConsoleService
             return DeveloperConsoleCommandResult.Error(ZoneUsage);
 
         return _executor.ExecuteZone(tickDamage, duration, slowPercentage / 100f, slowDuration);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteShield(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        string[] parts = string.IsNullOrWhiteSpace(arguments)
+            ? Array.Empty<string>()
+            : arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || parts.Length > 2 ||
+            !int.TryParse(parts[0], out int amount) || amount <= 0)
+        {
+            return DeveloperConsoleCommandResult.Error(ShieldUsage);
+        }
+
+        float duration = 5f;
+        if (parts.Length == 2 &&
+            !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out duration))
+        {
+            return DeveloperConsoleCommandResult.Error(ShieldUsage);
+        }
+
+        return _executor.ExecuteShield(amount, duration);
     }
 
     private DeveloperConsoleCommandResult ExecuteProc(string arguments)

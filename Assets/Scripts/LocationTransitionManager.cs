@@ -291,6 +291,7 @@ public class LocationTransitionManager : MonoBehaviour
             {
                 combat.ResetCombo();
                 combat.ClearAllProcSkillSequences();
+                combat.ClearShield();
             }
 
             PlayerFormController forms = player.GetComponent<PlayerFormController>();

@@ -8,6 +8,7 @@ public class PlayerStatusBarUI : MonoBehaviour
     [SerializeField] private CombatEventChannel combatChannel;
     [SerializeField] private Slider hpSlider;
     [SerializeField] private TextMeshProUGUI hpText;
+    [SerializeField] private Image shieldFill;
 
     private void Awake()
     {
@@ -35,6 +36,7 @@ public class PlayerStatusBarUI : MonoBehaviour
         if (combatChannel != null)
         {
             combatChannel.OnPlayerHpChanged += UpdateHp;
+            combatChannel.OnPlayerShieldChanged += UpdateShield;
         }
     }
 
@@ -43,6 +45,7 @@ public class PlayerStatusBarUI : MonoBehaviour
         if (combatChannel != null)
         {
             combatChannel.OnPlayerHpChanged -= UpdateHp;
+            combatChannel.OnPlayerShieldChanged -= UpdateShield;
         }
     }
 
@@ -51,6 +54,7 @@ public class PlayerStatusBarUI : MonoBehaviour
         if (combat == null) return;
 
         UpdateHp(combat.CurrentHp, combat.MaxHp);
+        UpdateShield(combat.CurrentShield, combat.MaxHp);
     }
 
     private void UpdateHp(int current, int max)
@@ -59,6 +63,17 @@ public class PlayerStatusBarUI : MonoBehaviour
 
         if (hpText != null)
             hpText.text = $"{current}/{max}";
+    }
+
+    private void UpdateShield(int current, int maxHp)
+    {
+        if (shieldFill == null)
+            return;
+
+        shieldFill.fillAmount = maxHp <= 0
+            ? 0f
+            : Mathf.Clamp01((float)current / maxHp);
+        shieldFill.gameObject.SetActive(current > 0);
     }
 
 }

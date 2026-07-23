@@ -6,16 +6,18 @@ public sealed class BehaviorRuntime
 {
     private readonly struct TriggerEntry
     {
-        public TriggerEntry(BehaviorAction action, int skillTypeFilter, int value)
+        public TriggerEntry(BehaviorAction action, int skillTypeFilter, int value, float duration)
         {
             Action = action;
             SkillTypeFilter = skillTypeFilter;
             Value = value;
+            Duration = duration;
         }
 
         public BehaviorAction Action { get; }
         public int SkillTypeFilter { get; }
         public int Value { get; }
+        public float Duration { get; }
     }
 
     private readonly struct ProcEntry
@@ -37,6 +39,7 @@ public sealed class BehaviorRuntime
     }
 
     private readonly Action<int> _healCallback;
+    private readonly Action<int, float> _shieldCallback;
     private readonly Action<SkillData, Vector3, Vector2> _procCallback;
     private readonly List<TriggerEntry> _onKill = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onSkillUsed = new List<TriggerEntry>();
@@ -49,10 +52,12 @@ public sealed class BehaviorRuntime
 
     public BehaviorRuntime(
         Action<int> healCallback,
-        Action<SkillData, Vector3, Vector2> procCallback = null)
+        Action<SkillData, Vector3, Vector2> procCallback = null,
+        Action<int, float> shieldCallback = null)
     {
         _healCallback = healCallback;
         _procCallback = procCallback;
+        _shieldCallback = shieldCallback;
     }
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
@@ -189,10 +194,12 @@ public sealed class BehaviorRuntime
         switch (behavior.action)
         {
             case BehaviorAction.Heal:
+            case BehaviorAction.Shield:
                 triggerEntries.Add(new TriggerEntry(
                     behavior.action,
                     behavior.skillTypeFilter,
-                    behavior.value * stackCount));
+                    behavior.value * stackCount,
+                    behavior.duration));
                 break;
             case BehaviorAction.CastSkill:
                 if (behavior.procSkill != null)
@@ -226,8 +233,15 @@ public sealed class BehaviorRuntime
 
     private void Execute(TriggerEntry entry)
     {
-        if (entry.Action == BehaviorAction.Heal)
-            _healCallback?.Invoke(entry.Value);
+        switch (entry.Action)
+        {
+            case BehaviorAction.Heal:
+                _healCallback?.Invoke(entry.Value);
+                break;
+            case BehaviorAction.Shield:
+                _shieldCallback?.Invoke(entry.Value, entry.Duration);
+                break;
+        }
     }
 
     private void ExecuteProc(

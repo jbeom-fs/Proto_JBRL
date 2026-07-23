@@ -39,6 +39,11 @@ public class HitFlashFeedback : MonoBehaviour
         Flash(flashColor);
     }
 
+    public void Play(Color color)
+    {
+        Flash(color);
+    }
+
     public void Flash(StatusEffectIconType type)
     {
         StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);

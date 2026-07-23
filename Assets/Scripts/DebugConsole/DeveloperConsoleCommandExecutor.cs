@@ -635,6 +635,23 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Applied stun to " + GetEnemyDisplayName(target) + " (" + duration + "s).");
     }
 
+    public DeveloperConsoleCommandResult ExecuteShield(int amount, float duration)
+    {
+        PlayerCombatController combat = ResolvePlayerCombatController();
+        if (combat == null)
+        {
+            WarnMissing(nameof(PlayerCombatController));
+            return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+        }
+
+        combat.GrantShield(amount, duration);
+        string durationText = duration <= 0f
+            ? "infinite"
+            : duration.ToString("0.##", CultureInfo.InvariantCulture) + "s";
+        return DeveloperConsoleCommandResult.Success(
+            "Shield granted: " + combat.CurrentShield + " (" + durationText + ").");
+    }
+
     public DeveloperConsoleCommandResult ExecuteZone(
         int tickDamage,
         float duration,
