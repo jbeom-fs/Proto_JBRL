@@ -14,11 +14,14 @@ public sealed class SoulAltarUIController : MonoBehaviour
         public GameObject headerRoot;
         public TMP_Text headerText;
         public SoulAltarStatRowUI[] rows;
+        public PassiveSlotUnlockRowUI passiveRow;
     }
 
     [SerializeField] private GameObject panel;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements soulEnhancements;
+    [SerializeField] private PlayerPassiveSlotUnlocks passiveUnlocks;
+    [SerializeField] private int passiveSlotUnlockBaseCost = 10;
     [SerializeField] private SoulEnhancementTable enhancementTable;
     [SerializeField] private ItemDatabase itemDatabase;
     [SerializeField] private AltarSection[] sections;
@@ -122,6 +125,37 @@ public sealed class SoulAltarUIController : MonoBehaviour
         TryEnhance(form, stat);
     }
 
+    public void HandlePassiveUnlockClicked(PlayerFormId form)
+    {
+        if (!HasRequiredReferences() || passiveUnlocks == null)
+            return;
+
+        int currentCount = passiveUnlocks.GetUnlockCount(form);
+        if (currentCount >= EngravingLoadout.PassiveSlotCount)
+            return;
+
+        int cost = PassiveSlotUnlockCost.GetCost(passiveSlotUnlockBaseCost, currentCount);
+        if (cost > 0)
+        {
+            if (!SoulShardResolver.TryResolveShardItem(
+                    itemDatabase,
+                    playerInventory,
+                    form,
+                    out ItemData shardItem))
+            {
+                return;
+            }
+
+            if (!playerInventory.HasItem(shardItem, cost))
+                return;
+
+            if (!playerInventory.RemoveItem(shardItem, cost))
+                return;
+        }
+
+        passiveUnlocks.AddUnlock(form, 1);
+    }
+
     private void OpenSharedPayment(SoulStatType stat)
     {
         if (!HasRequiredReferences() || paymentModal == null)
@@ -196,6 +230,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
         if (!unlocked)
         {
             HideRows(section.rows);
+            if (section.passiveRow != null)
+                section.passiveRow.Hide();
             return;
         }
 
@@ -215,6 +251,26 @@ public sealed class SoulAltarUIController : MonoBehaviour
         int shardCount = 0;
         if (!shared && SoulShardResolver.TryResolveShardItem(itemDatabase, playerInventory, section.form, out shardItem))
             shardCount = playerInventory.GetItemCount(shardItem);
+
+        if (section.passiveRow != null)
+        {
+            if (shared || passiveUnlocks == null)
+            {
+                section.passiveRow.Hide();
+            }
+            else
+            {
+                int currentCount = passiveUnlocks.GetUnlockCount(section.form);
+                int cost = PassiveSlotUnlockCost.GetCost(passiveSlotUnlockBaseCost, currentCount);
+                section.passiveRow.Bind(
+                    section.form,
+                    currentCount,
+                    EngravingLoadout.PassiveSlotCount,
+                    cost,
+                    shardItem,
+                    shardCount);
+            }
+        }
 
         for (int i = 0; i < rowCount; i++)
         {
@@ -259,6 +315,12 @@ public sealed class SoulAltarUIController : MonoBehaviour
         {
             if (sections[i]?.headerText != null)
                 _sectionHeaderTexts[i] = sections[i].headerText.text;
+
+            if (sections[i]?.passiveRow != null)
+            {
+                sections[i].passiveRow.Initialize(this);
+                sections[i].passiveRow.Hide();
+            }
 
             if (sections[i]?.rows == null)
                 continue;
@@ -315,6 +377,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         playerInventory.OnInventoryChanged += RefreshAll;
         soulEnhancements.OnChanged += RefreshAll;
+        if (passiveUnlocks != null)
+            passiveUnlocks.OnChanged += RefreshAll;
         _subscribed = true;
     }
 
@@ -328,6 +392,9 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         if (soulEnhancements != null)
             soulEnhancements.OnChanged -= RefreshAll;
+
+        if (passiveUnlocks != null)
+            passiveUnlocks.OnChanged -= RefreshAll;
 
         _subscribed = false;
     }

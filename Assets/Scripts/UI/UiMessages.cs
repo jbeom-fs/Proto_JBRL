@@ -13,6 +13,8 @@ public static class UiMessages
     public const string LockedSectionHeader = "ㅡㅡ ???? ㅡㅡ";
     public const string SoulStatSummaryFormat = "{0} Lv.{1}/{2}  비용 {3}";
     public const string SoulStatOwnedSuffixFormat = "  (보유 {0})";
+    public const string PassiveSlotUnlockFormat = "패시브 슬롯 {0}/{1}  비용 {2}  보유 {3}";
+    public const string PassiveSlotUnlockMaxFormat = "패시브 슬롯 {0}/{1}  MAX";
     public const string CostFree = "무료";
     public const string AllocationSummaryFormat = "배분 {0} / 필요 {1}";
     public const string EmptyDescription = "내용없음";
