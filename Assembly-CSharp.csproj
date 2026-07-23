@@ -111,6 +111,7 @@
     <Compile Include="Assets\Scripts\UI\ShardAllocationRowUI.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
+    <Compile Include="Assets\Scripts\Combat\PlayerPassiveSlotUnlocks.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternSet.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonQueryService.cs" />
     <Compile Include="Assets\Scripts\UI\InventoryUIController.cs" />

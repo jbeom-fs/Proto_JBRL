@@ -47,6 +47,13 @@ public sealed class EngravingLoadout : MonoBehaviour
         return state;
     }
 
+    private static int PassiveUnlockCount(PlayerFormId form)
+    {
+        return PlayerPassiveSlotUnlocks.Active != null
+            ? PlayerPassiveSlotUnlocks.Active.GetUnlockCount(form)
+            : 1;
+    }
+
     public void EnsureSeeded(PlayerFormId form, SkillData[] baseSkills)
     {
         FormState state = GetOrCreate(form);
@@ -96,6 +103,9 @@ public sealed class EngravingLoadout : MonoBehaviour
         if ((uint)slot >= (uint)PassiveSlotCount)
             return false;
 
+        if (slot >= PassiveUnlockCount(form))
+            return false;
+
         if (!_states.TryGetValue(form, out FormState state))
             return false;
 
@@ -139,6 +149,13 @@ public sealed class EngravingLoadout : MonoBehaviour
 
         if (!_states.TryGetValue(form, out FormState state))
             return false;
+
+        int unlockCount = PassiveUnlockCount(form);
+        for (int i = unlockCount; i < PassiveSlotCount; i++)
+        {
+            if (desiredSlots[i] != null)
+                return false;
+        }
 
         List<PassiveEngravingData> remaining =
             new List<PassiveEngravingData>(state.PassivePool.Count + PassiveSlotCount);

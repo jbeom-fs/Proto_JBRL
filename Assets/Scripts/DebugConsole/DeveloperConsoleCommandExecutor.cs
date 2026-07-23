@@ -16,6 +16,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private PlayerController player;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements playerSoulEnhancements;
+    [SerializeField] private PlayerPassiveSlotUnlocks passiveSlotUnlocks;
     [SerializeField] private EngravingLoadout engravingLoadout;
     [SerializeField] private PlayerCombatController playerCombatController;
     [SerializeField] private PlayerFormController playerFormController;
@@ -389,6 +390,26 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             " passive pool (size " + loadout.PassivePoolCount(form) + ").");
     }
 
+    public DeveloperConsoleCommandResult ExecutePassiveUnlock(string formToken, int? count)
+    {
+        if (!System.Enum.TryParse(formToken, true, out PlayerFormId form))
+            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
+
+        PlayerPassiveSlotUnlocks unlocks = ResolvePassiveSlotUnlocks();
+        if (unlocks == null)
+            return DeveloperConsoleCommandResult.Error("PlayerPassiveSlotUnlocks is not active.");
+
+        if (count.HasValue)
+            unlocks.SetUnlock(form, count.Value);
+        else
+            unlocks.AddUnlock(form, 1);
+
+        int unlockCount = unlocks.GetUnlockCount(form);
+        return DeveloperConsoleCommandResult.Success(
+            "Passive " + form + " unlocked slots: " + unlockCount +
+            "/" + EngravingLoadout.PassiveSlotCount + ".");
+    }
+
     public DeveloperConsoleCommandResult ExecutePassiveEquip(int slot, int poolIndex)
     {
         if (!IsValidPassiveSlot(slot))
@@ -438,6 +459,12 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         StringBuilder builder = new StringBuilder();
         builder.Append("Passive ");
         builder.Append(form);
+        builder.Append(" unlocked: ");
+        PlayerPassiveSlotUnlocks unlocks = ResolvePassiveSlotUnlocks();
+        int unlockCount = unlocks != null ? unlocks.GetUnlockCount(form) : 1;
+        builder.Append(unlockCount);
+        builder.Append('/');
+        builder.Append(EngravingLoadout.PassiveSlotCount);
         builder.Append(" slots: ");
         for (int i = 0; i < EngravingLoadout.PassiveSlotCount; i++)
         {
@@ -447,7 +474,15 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             builder.Append('[');
             builder.Append(i);
             builder.Append("] ");
-            builder.Append(GetPassiveName(loadout.GetPassiveSlot(form, i)));
+
+            if (i >= unlockCount)
+            {
+                builder.Append("(locked)");
+                continue;
+            }
+
+            PassiveEngravingData slot = loadout.GetPassiveSlot(form, i);
+            builder.Append(slot != null ? GetPassiveName(slot) : "(empty)");
         }
 
         builder.Append(" | pool: ");
@@ -765,6 +800,28 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         playerSoulEnhancements = UnityEngine.Object.FindAnyObjectByType<PlayerSoulEnhancements>();
         return playerSoulEnhancements;
+    }
+
+    private PlayerPassiveSlotUnlocks ResolvePassiveSlotUnlocks()
+    {
+        if (passiveSlotUnlocks != null)
+            return passiveSlotUnlocks;
+
+        if (PlayerPassiveSlotUnlocks.Active != null)
+        {
+            passiveSlotUnlocks = PlayerPassiveSlotUnlocks.Active;
+            return passiveSlotUnlocks;
+        }
+
+        if (player != null && player.TryGetComponent(out passiveSlotUnlocks))
+            return passiveSlotUnlocks;
+
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer != null && activePlayer.TryGetComponent(out passiveSlotUnlocks))
+            return passiveSlotUnlocks;
+
+        passiveSlotUnlocks = UnityEngine.Object.FindAnyObjectByType<PlayerPassiveSlotUnlocks>();
+        return passiveSlotUnlocks;
     }
 
     private PlayerCombatController ResolvePlayerCombatController()
