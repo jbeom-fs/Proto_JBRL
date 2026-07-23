@@ -22,8 +22,9 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     [SerializeField] private EngravingSlotUI slotButtonTemplate;
     [SerializeField] private Sprite emptySlotSprite;
     [SerializeField] private Sprite lockSprite;
+    [SerializeField] private TierColorTable tierColorTable;
     [SerializeField] private Transform poolContainer;
-    [SerializeField] private Button poolButtonTemplate;
+    [SerializeField] private EngravingSlotUI poolButtonTemplate;
     [SerializeField] private Button unequipButton;
     [SerializeField] private TMP_Text feedbackText;
     [SerializeField] private Button closeButton;
@@ -38,8 +39,7 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
 
     private readonly List<EngravingSlotUI> _slots =
         new List<EngravingSlotUI>(EngravingLoadout.SlotCount);
-    private readonly List<Button> _poolButtons = new List<Button>(8);
-    private readonly List<TMP_Text> _poolTexts = new List<TMP_Text>(8);
+    private readonly List<EngravingSlotUI> _pool = new List<EngravingSlotUI>(8);
     private readonly SkillData[] _stagedSlots = new SkillData[EngravingLoadout.SlotCount];
     private readonly List<SkillData> _stagedPool = new List<SkillData>(8);
     private readonly PassiveEngravingData[] _stagedPassiveSlots =
@@ -345,35 +345,46 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
 
             if (_activeTab == EngravingTab.Passive && i >= passiveUnlock)
             {
-                _slots[i].Bind(
-                    string.Format(UiMessages.EngravingSlotLockedFormat, i),
+                _slots[i].BindCard(
                     lockSprite,
-                    false);
+                    string.Format(UiMessages.EngravingSlotLockedFormat, i),
+                    string.Empty,
+                    false,
+                    GradeColor(false, default));
                 continue;
             }
 
-            Sprite iconSprite;
-            string displayName;
+            bool hasInfo;
+            EngravingDisplayInfo info;
             if (_activeTab == EngravingTab.Passive)
+                hasInfo = EngravingDisplayInfo.TryCreate(_stagedPassiveSlots[i], out info);
+            else
+                hasInfo = EngravingDisplayInfo.TryCreate(_stagedSlots[i], out info);
+
+            if (hasInfo)
             {
-                PassiveEngravingData passive = _stagedPassiveSlots[i];
-                iconSprite = passive != null ? passive.icon : emptySlotSprite;
-                displayName = DisplayName(passive);
+                _slots[i].BindCard(
+                    info.Icon != null ? info.Icon : emptySlotSprite,
+                    string.Format(
+                        UiMessages.EngravingSlotFormat,
+                        i,
+                        FormatNameWithGrade(info)),
+                    info.Description,
+                    true,
+                    GradeColor(info.HasGrade, info.Grade));
             }
             else
             {
-                SkillData skill = _stagedSlots[i];
-                iconSprite = skill != null ? skill.icon : emptySlotSprite;
-                displayName = DisplayName(skill);
+                _slots[i].BindCard(
+                    emptySlotSprite,
+                    string.Format(
+                        UiMessages.EngravingSlotFormat,
+                        i,
+                        UiMessages.EmptyEngravingSlot),
+                    string.Empty,
+                    true,
+                    GradeColor(false, default));
             }
-
-            if (iconSprite == null)
-                iconSprite = emptySlotSprite;
-
-            _slots[i].Bind(
-                string.Format(UiMessages.EngravingSlotFormat, i, displayName),
-                iconSprite,
-                true);
         }
     }
 
@@ -383,21 +394,41 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             ? _stagedPassivePool.Count
             : _stagedPool.Count;
         EnsurePoolButtonCount(count);
-        for (int i = 0; i < _poolButtons.Count; i++)
+        for (int i = 0; i < _pool.Count; i++)
         {
             if (i < count)
             {
-                _poolButtons[i].gameObject.SetActive(true);
-                if (_poolTexts[i] != null)
+                _pool[i].gameObject.SetActive(true);
+
+                bool hasInfo;
+                EngravingDisplayInfo info;
+                if (_activeTab == EngravingTab.Passive)
+                    hasInfo = EngravingDisplayInfo.TryCreate(_stagedPassivePool[i], out info);
+                else
+                    hasInfo = EngravingDisplayInfo.TryCreate(_stagedPool[i], out info);
+
+                if (hasInfo)
                 {
-                    _poolTexts[i].text = _activeTab == EngravingTab.Passive
-                        ? DisplayName(_stagedPassivePool[i])
-                        : DisplayName(_stagedPool[i]);
+                    _pool[i].BindCard(
+                        info.Icon != null ? info.Icon : emptySlotSprite,
+                        FormatNameWithGrade(info),
+                        info.Description,
+                        true,
+                        GradeColor(info.HasGrade, info.Grade));
+                }
+                else
+                {
+                    _pool[i].BindCard(
+                        emptySlotSprite,
+                        UiMessages.EmptyEngravingSlot,
+                        string.Empty,
+                        true,
+                        GradeColor(false, default));
                 }
             }
             else
             {
-                _poolButtons[i].gameObject.SetActive(false);
+                _pool[i].gameObject.SetActive(false);
             }
         }
     }
@@ -450,32 +481,19 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
         if (poolButtonTemplate == null || poolContainer == null)
             return;
 
-        while (_poolButtons.Count < count)
+        while (_pool.Count < count)
         {
-            int index = _poolButtons.Count;
-            Button button = Instantiate(poolButtonTemplate, poolContainer);
-            button.onClick.AddListener(() => HandlePoolClicked(index));
-            button.gameObject.SetActive(false);
-            _poolButtons.Add(button);
-            _poolTexts.Add(button.GetComponentInChildren<TMP_Text>(true));
+            int index = _pool.Count;
+            EngravingSlotUI card = Instantiate(poolButtonTemplate, poolContainer);
+            if (card.Button != null)
+                card.Button.onClick.AddListener(() => HandlePoolClicked(index));
+
+            card.gameObject.SetActive(false);
+            _pool.Add(card);
         }
     }
 
-    private static string DisplayName(SkillData skill)
-    {
-        return EngravingDisplayInfo.TryCreate(skill, out EngravingDisplayInfo info)
-            ? DisplayName(info)
-            : UiMessages.EmptyEngravingSlot;
-    }
-
-    private static string DisplayName(PassiveEngravingData passive)
-    {
-        return EngravingDisplayInfo.TryCreate(passive, out EngravingDisplayInfo info)
-            ? DisplayName(info)
-            : UiMessages.EmptyEngravingSlot;
-    }
-
-    private static string DisplayName(EngravingDisplayInfo info)
+    private static string FormatNameWithGrade(EngravingDisplayInfo info)
     {
         if (!info.HasGrade)
             return info.Name;
@@ -484,6 +502,13 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             UiMessages.EngravingGradeFormat,
             info.Name,
             UiMessages.GetEngravingGradeName(info.Grade));
+    }
+
+    private Color GradeColor(bool hasGrade, EngravingGrade grade)
+    {
+        return tierColorTable != null
+            ? tierColorTable.GetColor((int)grade, hasGrade)
+            : Color.white;
     }
 
     private bool HasRequiredReferences()

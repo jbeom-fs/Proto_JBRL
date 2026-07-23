@@ -16,8 +16,7 @@ public sealed class ItemTooltipUI : MonoBehaviour
     [SerializeField] private TMP_Text headerText;
     [SerializeField] private TMP_Text bodyText;
     [SerializeField] private Image borderImage;
-    [SerializeField] private Color[] tierColors = new Color[3];
-    [SerializeField] private Color neutralBorderColor;
+    [SerializeField] private TierColorTable tierColorTable;
 
     private readonly Dictionary<ItemEffectType, int> _effectTotals = new Dictionary<ItemEffectType, int>();
     private readonly StringBuilder _bodyBuilder = new StringBuilder(128);
@@ -26,7 +25,6 @@ public sealed class ItemTooltipUI : MonoBehaviour
     private Canvas _canvas;
     private RectTransform _canvasRect;
     private bool _warnedMissingReferences;
-    private bool _warnedInvalidTierColors;
 
     public static ItemTooltipUI Active => s_Active;
 
@@ -273,26 +271,9 @@ public sealed class ItemTooltipUI : MonoBehaviour
         if (borderImage == null)
             return;
 
-        if (!hasGrade)
-        {
-            borderImage.color = neutralBorderColor;
-            return;
-        }
-
-        if (tierColors == null || tierColors.Length != 3)
-        {
-            borderImage.color = neutralBorderColor;
-            if (!_warnedInvalidTierColors)
-            {
-                Debug.LogWarning("[ItemTooltipUI] tierColors must contain exactly 3 colors.", this);
-                _warnedInvalidTierColors = true;
-            }
-            return;
-        }
-
-        borderImage.color = (uint)tier < (uint)tierColors.Length
-            ? tierColors[tier]
-            : neutralBorderColor;
+        borderImage.color = tierColorTable != null
+            ? tierColorTable.GetColor(tier, hasGrade)
+            : Color.white;
     }
 
     private void ResolveCanvas()
