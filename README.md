@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-22
-> 기준 커밋: master HEAD `26425023` — **패시브 각인 축(§7-8b·§11b-13)**: `PassiveEngravingData` 신규 + 폼별 슬롯/풀 + `BehaviorRuntime` 2소스 병합(`003f86c4`) + 드랍 라우팅(`30cbdcb5`) + 각인대 액티브/패시브 탭(`5e66c4c7`) + 인벤 각인 조회 탭·툴팁 등급 테두리(`37fd98ca`). **드랍 쿼리 재설계 축(§11b-3c)**: Equipment 결번 폐기 + `ItemRarity` 3단(`477aaaff`) + 쿼리 기반 드랍(`81a5fdff`·`e8aabe80`) + 저작 툴링(`26425023`). 다음=드랍 데이터 저작(S3) / Altar 패시브 슬롯 증설(S4). 이전: Sword 캔슬 축(§7-10, `896ac3d6`)
+> 작성 기준일: 2026-07-23
+> 기준 커밋: master HEAD `b1be6c34` — **드랍 등급 공유 테이블**: `DropRank`+`RankDropGroup`, 개인+등급 그룹 합집합 롤, Enemy Dashboard 등급 탭(`e0607952`). **패시브 각인 S4 완결**: 해금 영속(`PlayerPassiveSlotUnlocks`+`SaveData.passiveUnlocks`)·게이팅(`177604c9`) + Town Altar 증설 구매(`9c765f7e`) + 슬롯 아이콘화·자물쇠(`b65140ba`). **등급 색 단일 소스** `TierColorTable` SO(툴팁+각인 카드, `75ff3527`) + 각인 편성 2컬럼 리치 카드. **강화 UI 확대**(`e0770bcb`). **HUD 패시브 슬롯**(`PassiveHudManager`, `3f31d593`). **쉴드 서브시스템**: `PlayerShield`(흡수·시간제·갱신·무한seam) + `BehaviorAction.Shield` + HP바 오버레이(`b1be6c34`). 다음=Sword 캔슬 패시브 3종 에셋. 이전: 패시브 각인 S1~S3 + 드랍 쿼리 재설계(`26425023`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -1157,7 +1157,7 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **콘솔** — `/passive give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, 액티브 `/engraving` 미러).
 
-**남은 것** — Altar 패시브 슬롯 증설(기본 1칸 + 영구강화로 확장, 영속 저장 1필드) + 미해금 슬롯 잠금 UI. 현재는 **4칸이 전부 열려 있습니다**(해금 수의 영속 저장이 없어 지금 게이팅하면 죽은 코드가 되므로 의도적으로 보류). Sword 캔슬 패시브 3종 중 추가타(`CastSkill`)·회복(`Heal`)은 기존 action으로 즉시 저작 가능하고, **쉴드는 흡수 서브시스템 자체가 미구현**입니다.
+**S4 완결(2026-07-23)** — 슬롯 해금이 **영구 성장값**이 됨(기본 1칸, 최대 4칸): `PlayerPassiveSlotUnlocks`(폼별 해금 수, `SaveData.passiveUnlocks`로 영속) + `EngravingLoadout` 해금 초과 슬롯 거부(게이팅) + Town Altar 폼 고유 조각 소비 증설(`PassiveSlotUnlockCost` base×현재해금수) + 각인대 슬롯 아이콘화 + 미해금 슬롯 `Skill_Lock` 자물쇠. HUD에도 현재 폼 패시브 4칸 표시(`PassiveHudManager`, §10). **남은 것** — Sword 캔슬 패시브 3종 에셋(추가타=`CastSkill`·회복=`Heal`은 기존 action, **쉴드=`Shield`는 §7-14 흡수 서브시스템 완료**로 저작만 남음).
 
 ### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축)
 
@@ -1262,6 +1262,20 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 - **화이트리스트**: AreaOverTime/InstantArea/Projectile/Buff — **Dash·Blink 거부**(강제이동). 원점 주입=`SkillExecutionContext.casterPositionOverride`(CasterPosition 수렴 — `ResolveWorldTargets`가 소비라 InstantArea 타겟에 전파, Projectile은 `OriginPositionOverride`), 방향 주입=회피 오버로드 재사용.
 - **proc 멀티히트**: hitSteps 스킬도 **경직 없이 완주** — 러너에 proc 시퀀스 리스트 분리(동시 16 상한·풀 재사용·swap-remove), `IsMultiHitActive`/busy는 플레이어 시퀀스만 대변, **proc 원점 스냅샷 고정**(플레이어 시퀀스의 라이브 원점과 별개), 중단=사망·층전환/던전이탈만(대시·스턴·폼변경 무관 완주).
 - 콘솔 `/proc <slot 0-3>` — 슬롯 장착 스킬을 proc 발동(에셋 결선 없이 검증).
+
+### 7-14. 쉴드 — 흡수 서브시스템 (PlayerShield, 2026-07-23)
+
+프로젝트 최초 **absorb(흡수) 축**. 캔슬 패시브 각인(`BehaviorAction.Shield`)이 부여하는 임시 방벽으로, Sword 캔슬 축 ④의 코드 기반입니다(`b1be6c34`).
+
+- **`PlayerShield`(순수 C#, Tick(dt))** — MonoBehaviour 아님, 코루틴 없음:
+  - `Grant(amount, duration)` = **갱신**(pool = `Max(현재, 신규)`, 남은 시간 리셋 → 캔슬 남발해도 무한 축적 안 됨). `duration ≤ 0` = **무한 seam**(Tick 감쇠 스킵, 소진까지 유지 — 추후 relic이 영구 쉴드 부여용).
+  - `Absorb(damage) → 초과분` = pool이 먼저 먹고 넘친 만큼만 반환. pool 0 도달 시 상태 정리.
+  - `Tick(dt)` = 무한 아니고 잔량 있으면 시간 감쇠, 만료 시 소멸. `Clear()` = 사망·던전이탈.
+- **데미지 흡수 삽입**(`PlayerCombatController.TryApplyDamage`): `actual = Max(1, incoming − 방어)` **직후 → 쉴드 흡수 → 남은 것만 HP**. 특수 관통 데미지는 없으므로 **항상 쉴드가 먼저**.
+  - **완전 흡수여도 무적시간(`_damageInvincibleTimer`) 부여** — 없으면 접촉 데미지가 매 프레임 쉴드를 갉아 즉소진되어 쉴드가 무의미해짐(A-1). 완전 흡수 시 **쉴드색 플래시**(`shieldFlashColor`), HP 손실 시 기존 빨강.
+- **부여 경로**: `BehaviorRuntime`가 `OnSkillCanceled` 트리거의 `Shield` 액션을 `_shieldCallback.Invoke(value, duration)`(Heal 미러, `value × stackCount`)로 → `PCC.GrantShield`. `HasActiveEnemies` 게이트(안전방 파밍 차단, 콤보 유예·캔슬 behavior 공용).
+- **UI**: HP바 위 오버레이 Image(fillAmount = `쉴드/MaxHp`, `OnPlayerShieldChanged` 이벤트 구동). ⚠️ 노란 쉴드가 붉은 HP fill 위에 겹치면 **색이 묻혀** 안 보인다 → **sprite·색 대비**(회색 채택)로 해결. 겹침 오버레이는 대비 강한 색/sprite 또는 분리 배치 필요.
+- 콘솔 `/shield <amount> [duration]`.
 
 ---
 
