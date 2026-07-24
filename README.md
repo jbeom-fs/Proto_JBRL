@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-23
-> 기준 커밋: master HEAD `b1be6c34` — **드랍 등급 공유 테이블**: `DropRank`+`RankDropGroup`, 개인+등급 그룹 합집합 롤, Enemy Dashboard 등급 탭(`e0607952`). **패시브 각인 S4 완결**: 해금 영속(`PlayerPassiveSlotUnlocks`+`SaveData.passiveUnlocks`)·게이팅(`177604c9`) + Town Altar 증설 구매(`9c765f7e`) + 슬롯 아이콘화·자물쇠(`b65140ba`). **등급 색 단일 소스** `TierColorTable` SO(툴팁+각인 카드, `75ff3527`) + 각인 편성 2컬럼 리치 카드. **강화 UI 확대**(`e0770bcb`). **HUD 패시브 슬롯**(`PassiveHudManager`, `3f31d593`). **쉴드 서브시스템**: `PlayerShield`(흡수·시간제·갱신·무한seam) + `BehaviorAction.Shield` + HP바 오버레이(`b1be6c34`). 다음=Sword 캔슬 패시브 3종 에셋. 이전: 패시브 각인 S1~S3 + 드랍 쿼리 재설계(`26425023`)
+> 작성 기준일: 2026-07-24
+> 기준 커밋: master HEAD `c5990950` — **각인 통합 드랍**: 쿼리 전용 `DropQueryCategory` enum(값=`ItemType` 미러 + `AnyEngraving=9`)으로 액티브·패시브 각인을 통합 후보 풀에서 1회 추첨, `DropQueryCategoryMirrorCheck` 미러 검증(`ed5cbc6c`). **Sword 캔슬 패시브 각인 3종**(회복·쉴드·추가타, 캔슬 축 완결, `299fbd6d`). **각인대 배치 검증 단일화**(`EngravingLoadout.CanApply*`+`TryPrepare*`, 부분 커밋 방지, `19c0dfe2`). **드랍DB 검증 순회 통합**(`ValidateDropLists`, `d012c4b0`). **인벤 전체 탭 각인 노출**+표시 전용 `OnPoolChanged`(`f47f6238`). **대시보드 UI**: Item Dashboard 등급 그룹 반영·정합성(`dedde076`·`f14f0fbb`), Enemy Dashboard 편집 UI(`cd812945`). 이전: 등급 공유 테이블·패시브 S4·쉴드(`b1be6c34`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -284,7 +284,8 @@ Assets/Scripts/
 │   │                               #   + RequireComponent(EnemyInventory), MarkAsEliteKeyHolder/ClearEliteKeyHolder
 │   │                               #   + Die 시 DropItemSpawner.SpawnDrops(_inventory, position) 호출
 │   ├── EnemyInventory.cs           # 적 드랍 목록 (EnemyDropItem readonly struct: ItemCode·Amount)
-│   ├── DropQueryResolver.cs        # 쿼리 기반 드랍 해석 (static, §11b-3c) — ItemDatabase 스캔 후보 인덱스 캐시((ItemType,Form,Tier)→List) + 가중 추첨(TryChooseWeightedIndex 공용) + 단일 조회(등급 하향 폴백 없음) + 후보없음 경고 배치 집계(FlushWarnings). GetTier(각인=SO grade / 그 외=ItemData.rarity)는 public — 에디터 툴 공유
+│   ├── DropQueryCategory.cs        # 쿼리 전용 카테고리 enum (ItemType 값 미러 + AnyEngraving=9, §11b-3c) — 액티브·패시브 각인 통합 조회. ItemData는 미사용
+│   ├── DropQueryResolver.cs        # 쿼리 기반 드랍 해석 (static, §11b-3c) — ItemDatabase 스캔 후보 인덱스 캐시((DropQueryCategory,Form,Tier)→List, 각인류는 owningForm/AnyForm/AnyEngraving 키 등록) + 가중 추첨(TryChooseWeightedIndex 공용) + 단일 조회(등급 하향 폴백 없음) + 후보없음 경고 배치 집계(FlushWarnings). GetTier(각인=SO grade / 그 외=ItemData.rarity)는 public — 에디터 툴 공유
 │   ├── EnemyBrain.cs               # FSM 조율 추상 + MovementHandler/TargetHandler/ActionHandler
 │   │                               #   + EnemySpecialAnimationType(Charge/Rush/Jump/Land) 트리거 라우팅
 │   │                               #   + LockSpecialFacing/UnlockSpecialFacing/HandleDeathStarted
@@ -397,7 +398,8 @@ Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── EngravingValidatorWindow.cs     # JBRogLike/Engraving Validator — EngravingData·ItemDatabase·EnemyDropDatabase 정합성 스캔 + 고아 각인 Add to ItemDatabase Fix
 ├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + **queries[] 쿼리 편집(유효 기본값 생성·경고 4종·결번 enum 안전 Popup)** + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
 ├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집 + **쿼리 역계산(매칭 쿼리 표시·[현재 폼 의존])**·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
-├── DropQueryEditorMatcher.cs       # 드랍 쿼리↔아이템 매칭 판정 (에디터 전용 static) — Enemy/Item Dashboard 공용. 등급은 DropQueryResolver.GetTier 직접 호출(단일 진실), formScope=CurrentForm은 currentFormDependent 플래그로 반환
+├── DropQueryEditorMatcher.cs       # 드랍 쿼리↔아이템 매칭 판정 (에디터 전용 static) — Enemy/Item Dashboard 공용. 등급은 DropQueryResolver.GetTier 직접 호출(단일 진실), formScope=CurrentForm은 currentFormDependent 플래그로 반환. AnyEngraving은 액티브·패시브 둘 다 매칭
+├── DropQueryCategoryMirrorCheck.cs # [InitializeOnLoadMethod] — ItemType 전 값이 DropQueryCategory에 동일 int로 존재하는지 검사(누락 시 에러 로그). 미러 enum 전용, ②안(ItemType[]) 전환 시 삭제
 └── TeleportDestinationIdDrawer.cs  # `[TeleportDestinationId]` 문자열 필드를 TeleportDestinationDatabase 의 id 드롭다운으로 렌더링
 ```
 
@@ -2202,10 +2204,12 @@ Elite Key 가 "스폰 로직이 홀더를 지정하는" 맥락 드랍이라면, 
 
 명시 엔트리는 **그대로 병존**합니다. 확정·특수 드랍(Elite Key, Currency, Soul choiceGroup)은 명시가 맞습니다.
 
+> **각인 통합 조회 — `DropQueryCategory` (2026-07-24, `ed5cbc6c`)**: 쿼리 필드 `itemType`은 `ItemType`이 아니라 **`DropQueryCategory`** enum입니다. 값을 `ItemType`과 미러(Key=0…PassiveEngraving=8)한 위에 **`AnyEngraving=9`** 를 추가한 것으로, 값이 같아 기존 `itemType:7` YAML은 무손실로 읽힙니다. 도입 이유: `EnemyDropRoller.RollQueries`가 쿼리를 순차 **독립** 실행하므로, 등급 그룹에 액티브(`Engraving=7`)·패시브(`PassiveEngraving=8`) 쿼리를 나란히 두면 "각인 1개"가 아니라 각각 1개씩 나옵니다. `AnyEngraving`은 두 타입을 **하나의 후보 풀로 묶어 1회만 추첨**합니다 — `EnsureIndex`가 각인류를 owningForm/AnyForm 2키에 더해 `AnyEngraving` 2키에도 등록하고, 조회는 단일 키 그대로입니다. `ItemType`은 "아이템이 무엇인가"(ItemData 소유), `DropQueryCategory`는 "쿼리가 무엇을 찾는가"(쿼리 소유)로 축이 다르며, `AnyEngraving`은 쿼리만 가질 수 있는 값이라 `ItemType`에 넣지 않았습니다. ⚠️ **두 enum은 미러 동기가 필요**합니다 — `ItemType`에 타입을 추가하고 `DropQueryCategory`에 빠뜨리면 별개 enum이라 컴파일 에러 없이 그 타입이 쿼리로 조회 불가가 됩니다. `DropQueryCategoryMirrorCheck`(`[InitializeOnLoadMethod]`)가 에디터 부팅 시 `Enum.IsDefined`로 누락을 잡아 에러 로그를 냅니다. (설계 근거·②안(`ItemType[]`) 전환 조건 = HANDOFF §0-0ab-note)
+
 | 필드 | 설명 |
 |------|------|
 | `chance` | 0~1. 이 쿼리가 발동할지 |
-| `itemType` | 후보 타입 필터 |
+| `itemType` | 후보 카테고리 필터 (`DropQueryCategory`: `ItemType` 미러 + `AnyEngraving`=액티브·패시브 통합) |
 | `formScope` | `CurrentForm` / `Any` / `Specific` — **각인류에만 의미**. 런 중 폼 전환이 없으므로 CurrentForm이면 타폼 각인은 애초에 나오지 않음 |
 | `specificForm` | `formScope == Specific`일 때의 대상 폼 |
 | `tierWeight0/1/2` | 등급별 가중치. **weight 0 = 미허용**(별도 허용 플래그 없음). 세 값 합이 0이면 무드랍 |
@@ -2239,7 +2243,7 @@ chance 판정
 - **Item Dashboard** — 드랍 소스 역참조에 **쿼리 역계산** 추가. 쿼리로만 드랍되는 각인이 "드랍 미등록"으로 오탐되던 문제 해소. `formScope=CurrentForm`은 `[현재 폼 의존]`으로 표기. 쿼리는 itemCode를 들지 않으므로 **삭제 분석에는 영향 없음**
 - **`DropQueryEditorMatcher`** — 두 대시보드 공용 매칭 판정(에디터 전용)
 - `EngravingValidatorWindow`의 "드랍 미배치" 경고는 쿼리 방식에서 항상 오탐이므로 **제거**됨
-- 콘솔 `/dropquery <itemType> [count=20]` — 고정 시드로 N회 해석해 아이템별 분포 + `noDrop` 집계 출력(저작 검증용)
+- 콘솔 `/dropquery <category> [count=20]` — 고정 시드로 N회 해석해 아이템별 분포 + `noDrop` 집계 출력(저작 검증용). `category`는 `DropQueryCategory`(`anyengraving` 포함)
 
 ### 11b-4. Soul 아이템 기반 Form 보유 판정
 
