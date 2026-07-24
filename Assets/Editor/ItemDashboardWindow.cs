@@ -2096,24 +2096,25 @@ public sealed class ItemDashboardWindow : EditorWindow
             return 0;
 
         SerializedObject databaseObject = new SerializedObject(database);
-        SerializedProperty groups = databaseObject.FindProperty("groups");
-        if (groups == null || !groups.isArray)
-            return 0;
-
         int count = 0;
-        for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
+
+        SerializedProperty groups = databaseObject.FindProperty("groups");
+        if (groups != null && groups.isArray)
         {
-            SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
-            count += CountDropEntriesInArray(group.FindPropertyRelative("drops"), itemCode);
-
-            SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
-            if (choiceGroups == null || !choiceGroups.isArray)
-                continue;
-
-            for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+            for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
             {
-                SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
-                count += CountDropEntriesInArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+                SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
+                count += CountDropEntriesInArray(group.FindPropertyRelative("drops"), itemCode);
+
+                SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+                if (choiceGroups == null || !choiceGroups.isArray)
+                    continue;
+
+                for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+                {
+                    SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
+                    count += CountDropEntriesInArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+                }
             }
         }
 
@@ -2209,27 +2210,25 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         SerializedObject databaseObject = new SerializedObject(database);
         databaseObject.Update();
-        SerializedProperty groups = databaseObject.FindProperty("groups");
-        if (groups == null || !groups.isArray)
-        {
-            failures.Add(database.name + ".groups 없음");
-            return 0;
-        }
-
         int removed = 0;
-        for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
+
+        SerializedProperty groups = databaseObject.FindProperty("groups");
+        if (groups != null && groups.isArray)
         {
-            SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
-            removed += RemoveDropEntriesFromArray(group.FindPropertyRelative("drops"), itemCode);
-
-            SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
-            if (choiceGroups == null || !choiceGroups.isArray)
-                continue;
-
-            for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+            for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
             {
-                SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
-                removed += RemoveDropEntriesFromArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+                SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
+                removed += RemoveDropEntriesFromArray(group.FindPropertyRelative("drops"), itemCode);
+
+                SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+                if (choiceGroups == null || !choiceGroups.isArray)
+                    continue;
+
+                for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+                {
+                    SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
+                    removed += RemoveDropEntriesFromArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+                }
             }
         }
 
@@ -2644,7 +2643,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             int maxAmount = GetInt(drop.FindPropertyRelative("maxAmount"));
             float chance = GetFloat(drop.FindPropertyRelative("chance"));
             string summary = enemyName + " " + FormatChance(chance);
-            string location = "EnemyDropDatabase '" + database.name + "' group " + groupIndex + " drop " + dropIndex;
+            string groupLabel = isRankSource ? "rank " + rank : "group " + groupIndex;
+            string location = "EnemyDropDatabase '" + database.name + "' " + groupLabel + " drop " + dropIndex;
 
             DropSourceRecord source = new DropSourceRecord(
                 database,
@@ -2698,7 +2698,8 @@ public sealed class ItemDashboardWindow : EditorWindow
                 int maxAmount = GetInt(choice.FindPropertyRelative("maxAmount"));
                 float weight = GetFloat(choice.FindPropertyRelative("weight"));
                 string summary = enemyName + " 택1 " + FormatChance(chance);
-                string location = "EnemyDropDatabase '" + database.name + "' group " + groupIndex +
+                string groupLabel = isRankSource ? "rank " + rank : "group " + groupIndex;
+                string location = "EnemyDropDatabase '" + database.name + "' " + groupLabel +
                                   " choice group " + choiceGroupIndex + " choice " + choiceIndex;
 
                 DropSourceRecord source = new DropSourceRecord(
