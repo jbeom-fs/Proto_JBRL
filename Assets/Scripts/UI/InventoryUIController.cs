@@ -22,6 +22,7 @@ public sealed class InventoryUIController : MonoBehaviour
     private readonly List<InventoryItemStack> _filteredBuffer = new List<InventoryItemStack>(16);
     private readonly List<EngravingDisplayInfo> _engravingDisplayBuffer =
         new List<EngravingDisplayInfo>(16);
+    private EngravingLoadout _subscribedLoadout;
     private const int TabAll = 0;
     private const int TabConsumable = 1;
     private const int TabRelic = 2;
@@ -66,6 +67,7 @@ public sealed class InventoryUIController : MonoBehaviour
     private void OnDisable()
     {
         ItemTooltipUI.HideActive();
+        UnsubscribeLoadout();
 
         if (playerInventory != null)
             playerInventory.OnInventoryChanged -= Refresh;
@@ -119,6 +121,7 @@ public sealed class InventoryUIController : MonoBehaviour
         if (root == null)
             return;
 
+        SubscribeLoadout();
         root.SetActive(true);
         Refresh();
     }
@@ -126,9 +129,30 @@ public sealed class InventoryUIController : MonoBehaviour
     public void Close()
     {
         ItemTooltipUI.HideActive();
+        UnsubscribeLoadout();
 
         if (root != null)
             root.SetActive(false);
+    }
+
+    private void SubscribeLoadout()
+    {
+        EngravingLoadout loadout = EngravingLoadout.Active;
+        if (loadout == null || ReferenceEquals(_subscribedLoadout, loadout))
+            return;
+
+        UnsubscribeLoadout();
+        loadout.OnPoolChanged += Refresh;
+        _subscribedLoadout = loadout;
+    }
+
+    private void UnsubscribeLoadout()
+    {
+        if (_subscribedLoadout == null)
+            return;
+
+        _subscribedLoadout.OnPoolChanged -= Refresh;
+        _subscribedLoadout = null;
     }
 
     private void Refresh()
@@ -154,21 +178,46 @@ public sealed class InventoryUIController : MonoBehaviour
         }
 
         IReadOnlyList<InventoryItemStack> items = GetDisplayItems(playerInventory.Items);
-        EnsureSlotCount(items.Count);
+        if (_activeTabIndex == TabAll && HasUsableTabs())
+            CollectEngravingDisplays();
+        else
+            _engravingDisplayBuffer.Clear();
+
+        int displayCount = items.Count + _engravingDisplayBuffer.Count;
+        EnsureSlotCount(displayCount);
 
         for (int i = 0; i < _slots.Count; i++)
         {
             if (i < items.Count)
                 _slots[i].Bind(items[i].Item, items[i].Count, this);
+            else if (i < displayCount)
+                _slots[i].Bind(_engravingDisplayBuffer[i - items.Count]);
             else
                 _slots[i].gameObject.SetActive(false);
         }
 
         if (emptyText != null)
-            emptyText.gameObject.SetActive(items.Count == 0);
+            emptyText.gameObject.SetActive(displayCount == 0);
     }
 
     private void RefreshEngravingPool()
+    {
+        CollectEngravingDisplays();
+
+        EnsureSlotCount(_engravingDisplayBuffer.Count);
+        for (int i = 0; i < _slots.Count; i++)
+        {
+            if (i < _engravingDisplayBuffer.Count)
+                _slots[i].Bind(_engravingDisplayBuffer[i]);
+            else
+                _slots[i].gameObject.SetActive(false);
+        }
+
+        if (emptyText != null)
+            emptyText.gameObject.SetActive(_engravingDisplayBuffer.Count == 0);
+    }
+
+    private void CollectEngravingDisplays()
     {
         _engravingDisplayBuffer.Clear();
         EngravingLoadout loadout = EngravingLoadout.Active;
@@ -209,18 +258,6 @@ public sealed class InventoryUIController : MonoBehaviour
                 }
             }
         }
-
-        EnsureSlotCount(_engravingDisplayBuffer.Count);
-        for (int i = 0; i < _slots.Count; i++)
-        {
-            if (i < _engravingDisplayBuffer.Count)
-                _slots[i].Bind(_engravingDisplayBuffer[i]);
-            else
-                _slots[i].gameObject.SetActive(false);
-        }
-
-        if (emptyText != null)
-            emptyText.gameObject.SetActive(_engravingDisplayBuffer.Count == 0);
     }
 
     private IReadOnlyList<InventoryItemStack> GetDisplayItems(IReadOnlyList<InventoryItemStack> source)

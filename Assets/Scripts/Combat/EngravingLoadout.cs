@@ -24,6 +24,8 @@ public sealed class EngravingLoadout : MonoBehaviour
 
     public event Action OnChanged;
     public event Action OnPassiveChanged;
+    // UI 표시 전용. PlayerCombatController·BehaviorRuntime은 구독 금지.
+    public event Action OnPoolChanged;
 
     private void OnEnable()
     {
@@ -191,6 +193,7 @@ public sealed class EngravingLoadout : MonoBehaviour
             return false;
 
         GetOrCreate(form).PassivePool.Add(passive);
+        OnPoolChanged?.Invoke();
         return true;
     }
 
@@ -290,6 +293,7 @@ public sealed class EngravingLoadout : MonoBehaviour
             return false;
 
         GetOrCreate(form).Pool.Add(skill);
+        OnPoolChanged?.Invoke();
         return true;
     }
 
@@ -313,5 +317,6 @@ public sealed class EngravingLoadout : MonoBehaviour
         _states.Clear();
         OnChanged?.Invoke();
         OnPassiveChanged?.Invoke();
+        OnPoolChanged?.Invoke();
     }
 }
