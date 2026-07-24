@@ -1256,10 +1256,33 @@ public sealed class ItemDashboardWindow : EditorWindow
         }
         else
         {
-            GUILayout.Label(source.EnemyName, GUILayout.Width(DropEnemyWidth));
+            GUIContent enemyLabel = source.IsRankSource
+                ? new GUIContent(source.EnemyName, "Enemy Dashboard에서 편집")
+                : new GUIContent(source.EnemyName);
+            GUILayout.Label(enemyLabel, GUILayout.Width(DropEnemyWidth));
         }
 
         GUILayout.Label(source.Kind == DropEntryKind.Drop ? "drop" : "택1", GUILayout.Width(DropKindWidth));
+
+        if (source.IsRankSource)
+        {
+            GUILayout.Label(source.MinAmount.ToString(CultureInfo.InvariantCulture), GUILayout.Width(DropAmountWidth));
+            GUILayout.Label(source.MaxAmount.ToString(CultureInfo.InvariantCulture), GUILayout.Width(DropAmountWidth));
+            if (source.Kind == DropEntryKind.Drop)
+            {
+                GUILayout.Label("-", GUILayout.Width(DropGroupChanceWidth));
+                GUILayout.Label(source.Chance.ToString("0.###", CultureInfo.InvariantCulture), GUILayout.Width(DropChanceWidth));
+            }
+            else
+            {
+                GUILayout.Label("그룹 " + FormatChance(source.GroupChance), GUILayout.Width(DropGroupChanceWidth));
+                GUILayout.Label(source.Weight.ToString("0.###", CultureInfo.InvariantCulture), GUILayout.Width(DropChanceWidth));
+            }
+
+            GUILayout.Label(GUIContent.none, GUILayout.Width(DropRemoveWidth));
+            EditorGUILayout.EndHorizontal();
+            return;
+        }
 
         EditorGUI.BeginChangeCheck();
         int min = EditorGUILayout.IntField(source.MinAmount, GUILayout.Width(DropAmountWidth));
@@ -1467,7 +1490,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         entry = null;
         parentArray = null;
 
-        if (source == null || source.Database == null)
+        if (source == null || source.IsRankSource || source.Database == null)
             return false;
 
         databaseObject = new SerializedObject(source.Database);
@@ -2094,6 +2117,32 @@ public sealed class ItemDashboardWindow : EditorWindow
             }
         }
 
+        count += CountDropEntriesInRankGroup(databaseObject, "normalRankDrops", itemCode);
+        count += CountDropEntriesInRankGroup(databaseObject, "eliteRankDrops", itemCode);
+        count += CountDropEntriesInRankGroup(databaseObject, "bossRankDrops", itemCode);
+        return count;
+    }
+
+    private static int CountDropEntriesInRankGroup(
+        SerializedObject databaseObject,
+        string propertyName,
+        string itemCode)
+    {
+        SerializedProperty group = databaseObject.FindProperty(propertyName);
+        if (group == null)
+            return 0;
+
+        int count = CountDropEntriesInArray(group.FindPropertyRelative("drops"), itemCode);
+        SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+        if (choiceGroups == null || !choiceGroups.isArray)
+            return count;
+
+        for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+        {
+            SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
+            count += CountDropEntriesInArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+        }
+
         return count;
     }
 
@@ -2184,8 +2233,34 @@ public sealed class ItemDashboardWindow : EditorWindow
             }
         }
 
+        removed += RemoveDropEntriesFromRankGroup(databaseObject, "normalRankDrops", itemCode);
+        removed += RemoveDropEntriesFromRankGroup(databaseObject, "eliteRankDrops", itemCode);
+        removed += RemoveDropEntriesFromRankGroup(databaseObject, "bossRankDrops", itemCode);
         if (removed > 0 && !ApplyAndMark(databaseObject))
             failures.Add(database.name + " 드랍 엔트리 제거 적용 실패");
+
+        return removed;
+    }
+
+    private static int RemoveDropEntriesFromRankGroup(
+        SerializedObject databaseObject,
+        string propertyName,
+        string itemCode)
+    {
+        SerializedProperty group = databaseObject.FindProperty(propertyName);
+        if (group == null)
+            return 0;
+
+        int removed = RemoveDropEntriesFromArray(group.FindPropertyRelative("drops"), itemCode);
+        SerializedProperty choiceGroups = group.FindPropertyRelative("choiceGroups");
+        if (choiceGroups == null || !choiceGroups.isArray)
+            return removed;
+
+        for (int choiceGroupIndex = 0; choiceGroupIndex < choiceGroups.arraySize; choiceGroupIndex++)
+        {
+            SerializedProperty choiceGroup = choiceGroups.GetArrayElementAtIndex(choiceGroupIndex);
+            removed += RemoveDropEntriesFromArray(choiceGroup.FindPropertyRelative("choices"), itemCode);
+        }
 
         return removed;
     }
@@ -2440,27 +2515,69 @@ public sealed class ItemDashboardWindow : EditorWindow
 
             SerializedObject databaseObject = new SerializedObject(database);
             SerializedProperty groups = databaseObject.FindProperty("groups");
-            if (groups == null || !groups.isArray)
-                continue;
-
-            for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
+            if (groups != null && groups.isArray)
             {
-                SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
-                EnemyData enemy = GetObject<EnemyData>(group.FindPropertyRelative("enemy"));
-                string enemyName = GetGroupEnemyName(group, groupIndex);
-                ReadDropEntries(database, groupIndex, enemy, enemyName, group.FindPropertyRelative("drops"), sourcesByCode, dropEntries);
-                ReadChoiceEntries(database, groupIndex, enemy, enemyName, group.FindPropertyRelative("choiceGroups"), sourcesByCode, dropEntries);
-                ReadQueryEntries(
-                    database,
-                    groupIndex,
-                    enemy,
-                    enemyName,
-                    group.FindPropertyRelative("queries"),
-                    dropQueries);
+                for (int groupIndex = 0; groupIndex < groups.arraySize; groupIndex++)
+                {
+                    SerializedProperty group = groups.GetArrayElementAtIndex(groupIndex);
+                    EnemyData enemy = GetObject<EnemyData>(group.FindPropertyRelative("enemy"));
+                    string enemyName = GetGroupEnemyName(group, groupIndex);
+                    ReadDropEntries(
+                        database, groupIndex, enemy, enemyName, false, default,
+                        group.FindPropertyRelative("drops"), sourcesByCode, dropEntries);
+                    ReadChoiceEntries(
+                        database, groupIndex, enemy, enemyName, false, default,
+                        group.FindPropertyRelative("choiceGroups"), sourcesByCode, dropEntries);
+                    ReadQueryEntries(
+                        database,
+                        groupIndex,
+                        enemy,
+                        enemyName,
+                        false,
+                        default,
+                        group.FindPropertyRelative("queries"),
+                        dropQueries);
+                }
             }
+
+            ReadRankGroup(database, databaseObject, "normalRankDrops", DropRank.Normal, sourcesByCode, dropEntries, dropQueries);
+            ReadRankGroup(database, databaseObject, "eliteRankDrops", DropRank.Elite, sourcesByCode, dropEntries, dropQueries);
+            ReadRankGroup(database, databaseObject, "bossRankDrops", DropRank.Boss, sourcesByCode, dropEntries, dropQueries);
         }
 
         return sourcesByCode;
+    }
+
+    private static void ReadRankGroup(
+        EnemyDropDatabase database,
+        SerializedObject databaseObject,
+        string propertyName,
+        DropRank rank,
+        Dictionary<string, List<DropSourceRecord>> sourcesByCode,
+        List<DropEntryRecord> dropEntries,
+        List<DropQueryRecord> dropQueries)
+    {
+        SerializedProperty group = databaseObject.FindProperty(propertyName);
+        if (group == null)
+            return;
+
+        const int groupIndex = -1;
+        string enemyName = "등급: " + rank;
+        ReadDropEntries(
+            database, groupIndex, null, enemyName, true, rank,
+            group.FindPropertyRelative("drops"), sourcesByCode, dropEntries);
+        ReadChoiceEntries(
+            database, groupIndex, null, enemyName, true, rank,
+            group.FindPropertyRelative("choiceGroups"), sourcesByCode, dropEntries);
+        ReadQueryEntries(
+            database,
+            groupIndex,
+            null,
+            enemyName,
+            true,
+            rank,
+            group.FindPropertyRelative("queries"),
+            dropQueries);
     }
 
     private static void ReadQueryEntries(
@@ -2468,6 +2585,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         int groupIndex,
         EnemyData enemy,
         string enemyName,
+        bool isRankSource,
+        DropRank rank,
         SerializedProperty queries,
         List<DropQueryRecord> output)
     {
@@ -2483,6 +2602,8 @@ public sealed class ItemDashboardWindow : EditorWindow
                 enemyName,
                 groupIndex,
                 queryIndex,
+                isRankSource,
+                rank,
                 ReadDropQuery(query)));
         }
     }
@@ -2506,6 +2627,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         int groupIndex,
         EnemyData enemy,
         string enemyName,
+        bool isRankSource,
+        DropRank rank,
         SerializedProperty drops,
         Dictionary<string, List<DropSourceRecord>> sourcesByCode,
         List<DropEntryRecord> dropEntries)
@@ -2531,6 +2654,8 @@ public sealed class ItemDashboardWindow : EditorWindow
                 enemyName,
                 DropEntryKind.Drop,
                 groupIndex,
+                isRankSource,
+                rank,
                 -1,
                 dropIndex,
                 minAmount,
@@ -2548,6 +2673,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         int groupIndex,
         EnemyData enemy,
         string enemyName,
+        bool isRankSource,
+        DropRank rank,
         SerializedProperty choiceGroups,
         Dictionary<string, List<DropSourceRecord>> sourcesByCode,
         List<DropEntryRecord> dropEntries)
@@ -2582,6 +2709,8 @@ public sealed class ItemDashboardWindow : EditorWindow
                     enemyName,
                     DropEntryKind.Choice,
                     groupIndex,
+                    isRankSource,
+                    rank,
                     choiceGroupIndex,
                     choiceIndex,
                     minAmount,
@@ -3113,6 +3242,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         public readonly string EnemyName;
         public readonly int GroupIndex;
         public readonly int QueryIndex;
+        public readonly bool IsRankSource;
+        public readonly DropRank Rank;
         public readonly EnemyDropQuery Query;
 
         public DropQueryRecord(
@@ -3121,6 +3252,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             string enemyName,
             int groupIndex,
             int queryIndex,
+            bool isRankSource,
+            DropRank rank,
             EnemyDropQuery query)
         {
             Database = database;
@@ -3128,6 +3261,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             EnemyName = enemyName;
             GroupIndex = groupIndex;
             QueryIndex = queryIndex;
+            IsRankSource = isRankSource;
+            Rank = rank;
             Query = query;
         }
     }
@@ -3141,7 +3276,9 @@ public sealed class ItemDashboardWindow : EditorWindow
         {
             Database = query.Database;
             Summary = "쿼리 매칭: " + query.EnemyName +
-                      "(그룹 " + query.GroupIndex + ", 쿼리 " + query.QueryIndex + ")" +
+                      (query.IsRankSource
+                          ? "(쿼리 " + query.QueryIndex + ")"
+                          : "(그룹 " + query.GroupIndex + ", 쿼리 " + query.QueryIndex + ")") +
                       (currentFormDependent ? " [현재 폼 의존]" : string.Empty);
         }
     }
@@ -3155,6 +3292,8 @@ public sealed class ItemDashboardWindow : EditorWindow
         public readonly string EnemyName;
         public readonly DropEntryKind Kind;
         public readonly int GroupIndex;
+        public readonly bool IsRankSource;
+        public readonly DropRank Rank;
         public readonly int ChoiceGroupIndex;
         public readonly int EntryIndex;
         public readonly int MinAmount;
@@ -3171,6 +3310,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             string enemyName,
             DropEntryKind kind,
             int groupIndex,
+            bool isRankSource,
+            DropRank rank,
             int choiceGroupIndex,
             int entryIndex,
             int minAmount,
@@ -3186,6 +3327,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             EnemyName = enemyName;
             Kind = kind;
             GroupIndex = groupIndex;
+            IsRankSource = isRankSource;
+            Rank = rank;
             ChoiceGroupIndex = choiceGroupIndex;
             EntryIndex = entryIndex;
             MinAmount = minAmount;
