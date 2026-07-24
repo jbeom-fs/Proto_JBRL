@@ -45,9 +45,6 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     private readonly PassiveEngravingData[] _stagedPassiveSlots =
         new PassiveEngravingData[EngravingLoadout.PassiveSlotCount];
     private readonly List<PassiveEngravingData> _stagedPassivePool = new List<PassiveEngravingData>(8);
-    private readonly List<SkillData> _activeValidationBuffer = new List<SkillData>(12);
-    private readonly List<PassiveEngravingData> _passiveValidationBuffer =
-        new List<PassiveEngravingData>(12);
 
     private PlayerFormId _form;
     private EngravingTab _activeTab;
@@ -567,54 +564,6 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
         return false;
     }
 
-    private bool CanApplyActiveArrangement()
-    {
-        _activeValidationBuffer.Clear();
-        int poolCount = loadout.PoolCount(_form);
-        for (int i = 0; i < poolCount; i++)
-            _activeValidationBuffer.Add(loadout.GetPoolAt(_form, i));
-
-        for (int i = 0; i < EngravingLoadout.SlotCount; i++)
-        {
-            SkillData token = loadout.GetSlot(_form, i);
-            if (token != null)
-                _activeValidationBuffer.Add(token);
-        }
-
-        for (int i = 0; i < EngravingLoadout.SlotCount; i++)
-        {
-            SkillData token = _stagedSlots[i];
-            if (token != null && !_activeValidationBuffer.Remove(token))
-                return false;
-        }
-
-        return true;
-    }
-
-    private bool CanApplyPassiveArrangement()
-    {
-        _passiveValidationBuffer.Clear();
-        int poolCount = loadout.PassivePoolCount(_form);
-        for (int i = 0; i < poolCount; i++)
-            _passiveValidationBuffer.Add(loadout.GetPassivePoolAt(_form, i));
-
-        for (int i = 0; i < EngravingLoadout.PassiveSlotCount; i++)
-        {
-            PassiveEngravingData token = loadout.GetPassiveSlot(_form, i);
-            if (token != null)
-                _passiveValidationBuffer.Add(token);
-        }
-
-        for (int i = 0; i < EngravingLoadout.PassiveSlotCount; i++)
-        {
-            PassiveEngravingData token = _stagedPassiveSlots[i];
-            if (token != null && !_passiveValidationBuffer.Remove(token))
-                return false;
-        }
-
-        return true;
-    }
-
     private void RequestCancel()
     {
         if (!IsOpen)
@@ -641,8 +590,8 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
     {
         bool activeDirty = IsActiveDirty();
         bool passiveDirty = IsPassiveDirty();
-        if ((activeDirty && !CanApplyActiveArrangement()) ||
-            (passiveDirty && !CanApplyPassiveArrangement()))
+        if ((activeDirty && !loadout.CanApplyArrangement(_form, _stagedSlots)) ||
+            (passiveDirty && !loadout.CanApplyPassiveArrangement(_form, _stagedPassiveSlots)))
         {
             SetFeedback(UiMessages.EngravingApplyFailed);
             return;

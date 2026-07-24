@@ -142,14 +142,42 @@ public sealed class EngravingLoadout : MonoBehaviour
         return true;
     }
 
+    public bool CanApplyPassiveArrangement(
+        PlayerFormId form,
+        IReadOnlyList<PassiveEngravingData> desiredSlots)
+    {
+        return TryPreparePassiveArrangement(form, desiredSlots, out _, out _);
+    }
+
     public bool ApplyPassiveArrangement(
         PlayerFormId form,
         IReadOnlyList<PassiveEngravingData> desiredSlots)
     {
+        if (!TryPreparePassiveArrangement(form, desiredSlots, out FormState state, out List<PassiveEngravingData> remaining))
+            return false;
+
+        for (int i = 0; i < PassiveSlotCount; i++)
+            state.PassiveSlots[i] = desiredSlots[i];
+
+        state.PassivePool.Clear();
+        state.PassivePool.AddRange(remaining);
+        OnPassiveChanged?.Invoke();
+        return true;
+    }
+
+    private bool TryPreparePassiveArrangement(
+        PlayerFormId form,
+        IReadOnlyList<PassiveEngravingData> desiredSlots,
+        out FormState state,
+        out List<PassiveEngravingData> remaining)
+    {
+        state = null;
+        remaining = null;
+
         if (desiredSlots == null || desiredSlots.Count != PassiveSlotCount)
             return false;
 
-        if (!_states.TryGetValue(form, out FormState state))
+        if (!_states.TryGetValue(form, out FormState formState))
             return false;
 
         int unlockCount = PassiveUnlockCount(form);
@@ -159,13 +187,13 @@ public sealed class EngravingLoadout : MonoBehaviour
                 return false;
         }
 
-        List<PassiveEngravingData> remaining =
-            new List<PassiveEngravingData>(state.PassivePool.Count + PassiveSlotCount);
-        remaining.AddRange(state.PassivePool);
+        List<PassiveEngravingData> remainingTokens =
+            new List<PassiveEngravingData>(formState.PassivePool.Count + PassiveSlotCount);
+        remainingTokens.AddRange(formState.PassivePool);
         for (int i = 0; i < PassiveSlotCount; i++)
         {
-            if (state.PassiveSlots[i] != null)
-                remaining.Add(state.PassiveSlots[i]);
+            if (formState.PassiveSlots[i] != null)
+                remainingTokens.Add(formState.PassiveSlots[i]);
         }
 
         for (int i = 0; i < PassiveSlotCount; i++)
@@ -174,16 +202,12 @@ public sealed class EngravingLoadout : MonoBehaviour
             if (token == null)
                 continue;
 
-            if (!remaining.Remove(token))
+            if (!remainingTokens.Remove(token))
                 return false;
         }
 
-        for (int i = 0; i < PassiveSlotCount; i++)
-            state.PassiveSlots[i] = desiredSlots[i];
-
-        state.PassivePool.Clear();
-        state.PassivePool.AddRange(remaining);
-        OnPassiveChanged?.Invoke();
+        state = formState;
+        remaining = remainingTokens;
         return true;
     }
 
@@ -249,20 +273,46 @@ public sealed class EngravingLoadout : MonoBehaviour
         return true;
     }
 
+    public bool CanApplyArrangement(PlayerFormId form, IReadOnlyList<SkillData> desiredSlots)
+    {
+        return TryPrepareArrangement(form, desiredSlots, out _, out _);
+    }
+
     public bool ApplyArrangement(PlayerFormId form, IReadOnlyList<SkillData> desiredSlots)
     {
+        if (!TryPrepareArrangement(form, desiredSlots, out FormState state, out List<SkillData> remaining))
+            return false;
+
+        for (int i = 0; i < SlotCount; i++)
+            state.Slots[i] = desiredSlots[i];
+
+        state.Pool.Clear();
+        state.Pool.AddRange(remaining);
+        OnChanged?.Invoke();
+        return true;
+    }
+
+    private bool TryPrepareArrangement(
+        PlayerFormId form,
+        IReadOnlyList<SkillData> desiredSlots,
+        out FormState state,
+        out List<SkillData> remaining)
+    {
+        state = null;
+        remaining = null;
+
         if (desiredSlots == null || desiredSlots.Count != SlotCount)
             return false;
 
-        if (!_states.TryGetValue(form, out FormState state))
+        if (!_states.TryGetValue(form, out FormState formState))
             return false;
 
-        List<SkillData> remaining = new List<SkillData>(state.Pool.Count + SlotCount);
-        remaining.AddRange(state.Pool);
+        List<SkillData> remainingTokens = new List<SkillData>(formState.Pool.Count + SlotCount);
+        remainingTokens.AddRange(formState.Pool);
         for (int i = 0; i < SlotCount; i++)
         {
-            if (state.Slots[i] != null)
-                remaining.Add(state.Slots[i]);
+            if (formState.Slots[i] != null)
+                remainingTokens.Add(formState.Slots[i]);
         }
 
         for (int i = 0; i < SlotCount; i++)
@@ -271,16 +321,12 @@ public sealed class EngravingLoadout : MonoBehaviour
             if (token == null)
                 continue;
 
-            if (!remaining.Remove(token))
+            if (!remainingTokens.Remove(token))
                 return false;
         }
 
-        for (int i = 0; i < SlotCount; i++)
-            state.Slots[i] = desiredSlots[i];
-
-        state.Pool.Clear();
-        state.Pool.AddRange(remaining);
-        OnChanged?.Invoke();
+        state = formState;
+        remaining = remainingTokens;
         return true;
     }
 

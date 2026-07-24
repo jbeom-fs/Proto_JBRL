@@ -17212,7 +17212,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &877297034
 RectTransform:
   m_ObjectHideFlags: 0
@@ -20855,7 +20855,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1146823998
 RectTransform:
   m_ObjectHideFlags: 0
@@ -83489,7 +83489,7 @@ MonoBehaviour:
   soulEnhancementTable: {fileID: 11400000, guid: 813f9f5f59f59fa4c83ee1ef000f5421, type: 2}
   comboTierConfig: {fileID: 11400000, guid: a8f47d2c1b394e56a7c8091d2e3f4a5b, type: 2}
   playerMovement: {fileID: 1562452755}
-  maxHp: 1000
+  maxHp: 100
   baseAttack: 0
   baseDefense: 1
   currentWeapon: {fileID: 11400000, guid: 8d4f0edb16dd4f88a98db580508d1a22, type: 2}
