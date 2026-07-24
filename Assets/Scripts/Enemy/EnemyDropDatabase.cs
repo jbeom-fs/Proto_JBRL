@@ -152,9 +152,21 @@ public sealed class EnemyDropDatabase : ScriptableObject
     private void ValidateGroups()
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        ValidateRankGroup(normalRankDrops);
-        ValidateRankGroup(eliteRankDrops);
-        ValidateRankGroup(bossRankDrops);
+        ValidateDropLists(
+            normalRankDrops?.drops,
+            normalRankDrops?.choiceGroups,
+            normalRankDrops?.queries,
+            "rank Normal");
+        ValidateDropLists(
+            eliteRankDrops?.drops,
+            eliteRankDrops?.choiceGroups,
+            eliteRankDrops?.queries,
+            "rank Elite");
+        ValidateDropLists(
+            bossRankDrops?.drops,
+            bossRankDrops?.choiceGroups,
+            bossRankDrops?.queries,
+            "rank Boss");
 
         if (groups == null)
             return;
@@ -178,76 +190,58 @@ public sealed class EnemyDropDatabase : ScriptableObject
             if (!seen.Add(group.enemy))
                 Debug.LogWarning("[EnemyDropDatabase] Duplicate enemy: " + group.enemy.name + ".", this);
 
-            if (group.drops != null)
-            {
-                for (int dropIndex = 0; dropIndex < group.drops.Count; dropIndex++)
-                {
-                    EnemyDropEntry drop = group.drops[dropIndex];
-                    WarnIfEngravingLikeAmountExceedsOne(drop.itemCode, drop.minAmount, drop.maxAmount);
-                }
-            }
-
-            if (group.choiceGroups != null)
-            {
-                for (int choiceGroupIndex = 0; choiceGroupIndex < group.choiceGroups.Count; choiceGroupIndex++)
-                {
-                    EnemyDropChoiceGroup choiceGroup = group.choiceGroups[choiceGroupIndex];
-                    if (choiceGroup == null || choiceGroup.choices == null)
-                        continue;
-
-                    for (int choiceIndex = 0; choiceIndex < choiceGroup.choices.Count; choiceIndex++)
-                    {
-                        EnemyDropChoice choice = choiceGroup.choices[choiceIndex];
-                        WarnIfEngravingLikeAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
-                    }
-                }
-            }
-
-            if (group.queries != null)
-            {
-                for (int queryIndex = 0; queryIndex < group.queries.Count; queryIndex++)
-                {
-                    EnemyDropQuery query = group.queries[queryIndex];
-                    if (query.rollCountWeights != null && query.rollCountWeights.Length > 10)
-                    {
-                        Debug.LogWarning(
-                            "[EnemyDropDatabase] Query rollCountWeights length is " +
-                            query.rollCountWeights.Length + " (>10): " + group.enemy.name +
-                            " query " + queryIndex + ". Check unintended large drop counts.", this);
-                    }
-                }
-            }
+            ValidateDropLists(
+                group.drops,
+                group.choiceGroups,
+                group.queries,
+                "enemy " + group.enemy.name);
         }
 #endif
     }
 
-    private void ValidateRankGroup(RankDropGroup group)
+    private void ValidateDropLists(
+        IReadOnlyList<EnemyDropEntry> drops,
+        IReadOnlyList<EnemyDropChoiceGroup> choiceGroups,
+        IReadOnlyList<EnemyDropQuery> queries,
+        string context)
     {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (group == null)
-            return;
-
-        if (group.drops != null)
+        if (drops != null)
         {
-            for (int dropIndex = 0; dropIndex < group.drops.Count; dropIndex++)
+            for (int i = 0; i < drops.Count; i++)
             {
-                EnemyDropEntry drop = group.drops[dropIndex];
+                EnemyDropEntry drop = drops[i];
                 WarnIfEngravingLikeAmountExceedsOne(drop.itemCode, drop.minAmount, drop.maxAmount);
             }
         }
 
-        if (group.choiceGroups != null)
+        if (choiceGroups != null)
         {
-            for (int choiceGroupIndex = 0; choiceGroupIndex < group.choiceGroups.Count; choiceGroupIndex++)
+            for (int i = 0; i < choiceGroups.Count; i++)
             {
-                EnemyDropChoiceGroup choiceGroup = group.choiceGroups[choiceGroupIndex];
+                EnemyDropChoiceGroup choiceGroup = choiceGroups[i];
                 if (choiceGroup == null || choiceGroup.choices == null)
                     continue;
 
-                for (int choiceIndex = 0; choiceIndex < choiceGroup.choices.Count; choiceIndex++)
+                for (int j = 0; j < choiceGroup.choices.Count; j++)
                 {
-                    EnemyDropChoice choice = choiceGroup.choices[choiceIndex];
+                    EnemyDropChoice choice = choiceGroup.choices[j];
                     WarnIfEngravingLikeAmountExceedsOne(choice.itemCode, choice.minAmount, choice.maxAmount);
+                }
+            }
+        }
+
+        if (queries != null)
+        {
+            for (int i = 0; i < queries.Count; i++)
+            {
+                EnemyDropQuery query = queries[i];
+                if (query.rollCountWeights != null && query.rollCountWeights.Length > 10)
+                {
+                    Debug.LogWarning(
+                        "[EnemyDropDatabase] Query rollCountWeights length is " +
+                        query.rollCountWeights.Length + " (>10): " + context +
+                        " query " + i + ". Check unintended large drop counts.", this);
                 }
             }
         }
