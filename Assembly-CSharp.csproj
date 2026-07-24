@@ -210,6 +210,7 @@
     <Compile Include="Assets\Scripts\Data\SkillExecutionType.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonTypes.cs" />
     <Compile Include="Assets\Scripts\Data\ProjectileTargetHitMode.cs" />
+    <Compile Include="Assets\Scripts\Enemy\DropQueryCategory.cs" />
     <Compile Include="Assets\Scripts\Generate\EngravingStationPlacer.cs" />
     <Compile Include="Assets\Scripts\Soul\SoulCommonEnhancement.cs" />
     <Compile Include="Assets\Scripts\EliteArena\EliteArenaPortal.cs" />

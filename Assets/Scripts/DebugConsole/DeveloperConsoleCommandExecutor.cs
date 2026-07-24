@@ -494,8 +494,8 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
     public DeveloperConsoleCommandResult ExecuteDropQuery(string itemTypeToken, int count)
     {
-        if (!System.Enum.TryParse(itemTypeToken, true, out ItemType itemType) ||
-            !System.Enum.IsDefined(typeof(ItemType), itemType))
+        if (!System.Enum.TryParse(itemTypeToken, true, out DropQueryCategory category) ||
+            !System.Enum.IsDefined(typeof(DropQueryCategory), category))
         {
             return DeveloperConsoleCommandResult.Error("Unknown item type: " + itemTypeToken);
         }
@@ -509,7 +509,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         EnemyDropQuery query = new EnemyDropQuery
         {
             chance = 1f,
-            itemType = itemType,
+            itemType = category,
             formScope = DropFormScope.CurrentForm,
             tierWeight0 = 1f,
             tierWeight1 = 1f,
@@ -547,7 +547,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         StringBuilder builder = new StringBuilder();
         builder.Append("DropQuery ");
-        builder.Append(itemType);
+        builder.Append(category);
         builder.Append(" form=");
         builder.Append(form);
         builder.Append(" count=");

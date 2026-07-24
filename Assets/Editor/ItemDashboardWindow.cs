@@ -2492,7 +2492,7 @@ public sealed class ItemDashboardWindow : EditorWindow
         return new EnemyDropQuery
         {
             chance = GetFloat(query?.FindPropertyRelative("chance")),
-            itemType = (ItemType)GetInt(query?.FindPropertyRelative("itemType")),
+            itemType = (DropQueryCategory)GetInt(query?.FindPropertyRelative("itemType")),
             formScope = (DropFormScope)GetInt(query?.FindPropertyRelative("formScope")),
             specificForm = (PlayerFormId)GetInt(query?.FindPropertyRelative("specificForm")),
             tierWeight0 = GetFloat(query?.FindPropertyRelative("tierWeight0")),

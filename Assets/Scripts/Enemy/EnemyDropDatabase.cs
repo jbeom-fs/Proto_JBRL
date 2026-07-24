@@ -46,7 +46,7 @@ public sealed class EnemyDropChoiceGroup
 public struct EnemyDropQuery
 {
     [Range(0f, 1f)] public float chance;
-    public ItemType itemType;
+    public DropQueryCategory itemType;
     public DropFormScope formScope;
     public PlayerFormId specificForm;
     [Min(0f)] public float tierWeight0;

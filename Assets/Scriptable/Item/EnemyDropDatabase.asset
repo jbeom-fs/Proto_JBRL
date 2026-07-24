@@ -58,7 +58,7 @@ MonoBehaviour:
     choiceGroups: []
     queries:
     - chance: 0.1
-      itemType: 7
+      itemType: 9
       formScope: 0
       specificForm: 0
       tierWeight0: 10
@@ -75,7 +75,7 @@ MonoBehaviour:
     choiceGroups: []
     queries:
     - chance: 1
-      itemType: 7
+      itemType: 9
       formScope: 0
       specificForm: 0
       tierWeight0: 4
@@ -110,7 +110,7 @@ MonoBehaviour:
         weight: 1
     queries:
     - chance: 1
-      itemType: 7
+      itemType: 9
       formScope: 0
       specificForm: 0
       tierWeight0: 0

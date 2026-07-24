@@ -35,8 +35,10 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private const string DefaultDropItemCode = "Currency";
     private const string NewEnemyAssetFolder = "Assets/Scriptable/Enemy";
 
-    private static readonly ItemType[] s_ItemTypeValues = (ItemType[])Enum.GetValues(typeof(ItemType));
-    private static readonly string[] s_ItemTypeNames = Array.ConvertAll(s_ItemTypeValues, value => value.ToString());
+    private static readonly DropQueryCategory[] s_QueryCategoryValues =
+        (DropQueryCategory[])Enum.GetValues(typeof(DropQueryCategory));
+    private static readonly string[] s_QueryCategoryNames =
+        Array.ConvertAll(s_QueryCategoryValues, value => value.ToString());
     private static readonly DropFormScope[] s_FormScopeValues =
         (DropFormScope[])Enum.GetValues(typeof(DropFormScope));
     private static readonly string[] s_FormScopeNames = Array.ConvertAll(s_FormScopeValues, value => value.ToString());
@@ -1860,7 +1862,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
             EditorGUILayout.LabelField("query " + queryIndex, GUILayout.Width(58f));
             GUILayout.Label("chance", GUILayout.Width(45f));
             changed |= DrawFloatProperty(chance, "chance", 0f, 1f, 58f);
-            changed |= DrawMappedEnumPopup(itemType, "type", s_ItemTypeValues, s_ItemTypeNames, 104f);
+            changed |= DrawMappedEnumPopup(itemType, "type", s_QueryCategoryValues, s_QueryCategoryNames, 104f);
             changed |= DrawMappedEnumPopup(formScope, "scope", s_FormScopeValues, s_FormScopeNames, 92f);
 
             DropFormScope scope = formScope != null
@@ -2004,7 +2006,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         return new EnemyDropQuery
         {
             chance = GetFloat(query?.FindPropertyRelative("chance")),
-            itemType = (ItemType)GetInt(query?.FindPropertyRelative("itemType")),
+            itemType = (DropQueryCategory)GetInt(query?.FindPropertyRelative("itemType")),
             formScope = (DropFormScope)GetInt(query?.FindPropertyRelative("formScope")),
             specificForm = (PlayerFormId)GetInt(query?.FindPropertyRelative("specificForm")),
             tierWeight0 = GetFloat(query?.FindPropertyRelative("tierWeight0")),
@@ -2188,7 +2190,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
             return;
 
         SetFloat(query.FindPropertyRelative("chance"), 1f);
-        SetInt(query.FindPropertyRelative("itemType"), (int)ItemType.Material);
+        SetInt(query.FindPropertyRelative("itemType"), (int)DropQueryCategory.Material);
         SetInt(query.FindPropertyRelative("formScope"), (int)DropFormScope.CurrentForm);
         SetInt(query.FindPropertyRelative("specificForm"), (int)PlayerFormId.Normal);
         SetFloat(query.FindPropertyRelative("tierWeight0"), 1f);

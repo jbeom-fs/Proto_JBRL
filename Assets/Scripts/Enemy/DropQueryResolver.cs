@@ -21,14 +21,14 @@ public static class DropQueryResolver
 
     private readonly struct CandidateKey : IEquatable<CandidateKey>
     {
-        public CandidateKey(ItemType itemType, PlayerFormId form, int tier)
+        public CandidateKey(DropQueryCategory itemType, PlayerFormId form, int tier)
         {
             ItemType = itemType;
             Form = form;
             Tier = tier;
         }
 
-        public ItemType ItemType { get; }
+        public DropQueryCategory ItemType { get; }
         public PlayerFormId Form { get; }
         public int Tier { get; }
 
@@ -162,12 +162,15 @@ public static class DropQueryResolver
                 if (!TryGetOwningForm(item, out PlayerFormId owningForm))
                     continue;
 
-                AddCandidate(new CandidateKey(item.ItemType, owningForm, tier), item);
-                AddCandidate(new CandidateKey(item.ItemType, AnyForm, tier), item);
+                DropQueryCategory category = (DropQueryCategory)(int)item.ItemType;
+                AddCandidate(new CandidateKey(category, owningForm, tier), item);
+                AddCandidate(new CandidateKey(category, AnyForm, tier), item);
+                AddCandidate(new CandidateKey(DropQueryCategory.AnyEngraving, owningForm, tier), item);
+                AddCandidate(new CandidateKey(DropQueryCategory.AnyEngraving, AnyForm, tier), item);
             }
             else
             {
-                AddCandidate(new CandidateKey(item.ItemType, AnyForm, tier), item);
+                AddCandidate(new CandidateKey((DropQueryCategory)(int)item.ItemType, AnyForm, tier), item);
             }
         }
 
@@ -255,6 +258,13 @@ public static class DropQueryResolver
     private static bool IsEngravingLike(ItemType itemType)
     {
         return itemType == ItemType.Engraving || itemType == ItemType.PassiveEngraving;
+    }
+
+    private static bool IsEngravingLike(DropQueryCategory category)
+    {
+        return category == DropQueryCategory.Engraving ||
+               category == DropQueryCategory.PassiveEngraving ||
+               category == DropQueryCategory.AnyEngraving;
     }
 
     private static bool TryGetOwningForm(ItemData item, out PlayerFormId form)

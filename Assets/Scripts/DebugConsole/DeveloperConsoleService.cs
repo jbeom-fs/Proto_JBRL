@@ -16,7 +16,7 @@ public sealed class DeveloperConsoleService
     private const string EnhanceCommonUsage = "Usage: /enhancecommon <stat> <form=count> [form=count ...]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
     private const string PassiveUsage = "Usage: /passive <give <form> <itemCode> | unlock <form> [count] | equip <slot> <poolIndex> | unequip <slot> | show>";
-    private const string DropQueryUsage = "Usage: /dropquery <itemType> [count=20]";
+    private const string DropQueryUsage = "Usage: /dropquery <category> [count=20]";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
     private const string StunUsage = "Usage: /stun [duration=2]";
@@ -224,7 +224,7 @@ public sealed class DeveloperConsoleService
 
     private static string[] BuildDropQueryTypes()
     {
-        Array values = Enum.GetValues(typeof(ItemType));
+        Array values = Enum.GetValues(typeof(DropQueryCategory));
         string[] tokens = new string[values.Length];
         for (int i = 0; i < values.Length; i++)
             tokens[i] = values.GetValue(i).ToString().ToLowerInvariant();

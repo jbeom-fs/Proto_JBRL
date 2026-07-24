@@ -10,7 +10,7 @@ internal static class DropQueryEditorMatcher
         out bool currentFormDependent)
     {
         currentFormDependent = false;
-        if (item == null || item.ItemType != query.itemType)
+        if (item == null || !CategoryMatches(item.ItemType, query.itemType))
             return false;
 
         int tier = DropQueryResolver.GetTier(item);
@@ -45,6 +45,14 @@ internal static class DropQueryEditorMatcher
         }
 
         return false;
+    }
+
+    private static bool CategoryMatches(ItemType itemType, DropQueryCategory category)
+    {
+        if (category == DropQueryCategory.AnyEngraving)
+            return itemType == ItemType.Engraving || itemType == ItemType.PassiveEngraving;
+
+        return (int)itemType == (int)category;
     }
 
     public static bool HasAnyTier(EnemyDropQuery query)
