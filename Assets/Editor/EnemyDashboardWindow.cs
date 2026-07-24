@@ -1678,6 +1678,14 @@ public sealed class EnemyDashboardWindow : EditorWindow
         bool changed = false;
         EditorGUILayout.LabelField("drops[]", EditorStyles.miniBoldLabel);
 
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Label("itemCode", EditorStyles.miniLabel, GUILayout.Width(170f));
+        GUILayout.Space(20f);
+        GUILayout.Label("min", EditorStyles.miniLabel, GUILayout.Width(58f));
+        GUILayout.Label("max", EditorStyles.miniLabel, GUILayout.Width(58f));
+        GUILayout.Label("chance", EditorStyles.miniLabel, GUILayout.Width(76f));
+        EditorGUILayout.EndHorizontal();
+
         if (drops == null || !drops.isArray)
         {
             EditorGUILayout.HelpBox("drops[] missing.", MessageType.Error);
@@ -1749,15 +1757,20 @@ public sealed class EnemyDashboardWindow : EditorWindow
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("choice group " + groupIndex, GUILayout.Width(110f));
-            changed |= DrawFloatProperty(chance, "chance", 0f, 1f, 76f);
-            if (GUILayout.Button("-", GUILayout.Width(24f)))
+            GUILayout.FlexibleSpace();
+            bool removed = GUILayout.Button("-", GUILayout.Width(24f));
+            EditorGUILayout.EndHorizontal();
+            if (removed)
             {
                 choiceGroups.DeleteArrayElementAtIndex(groupIndex);
                 changed = true;
-                EditorGUILayout.EndHorizontal();
                 EditorGUILayout.EndVertical();
                 break;
             }
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Label("chance", GUILayout.Width(45f));
+            changed |= DrawFloatProperty(chance, "chance", 0f, 1f, 76f);
             EditorGUILayout.EndHorizontal();
 
             changed |= DrawChoices(choices);
@@ -1860,6 +1873,18 @@ public sealed class EnemyDashboardWindow : EditorWindow
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.LabelField("query " + queryIndex, GUILayout.Width(58f));
+            GUILayout.FlexibleSpace();
+            bool removed = GUILayout.Button("-", GUILayout.Width(24f));
+            EditorGUILayout.EndHorizontal();
+            if (removed)
+            {
+                queries.DeleteArrayElementAtIndex(queryIndex);
+                changed = true;
+                EditorGUILayout.EndVertical();
+                break;
+            }
+
+            EditorGUILayout.BeginHorizontal();
             GUILayout.Label("chance", GUILayout.Width(45f));
             changed |= DrawFloatProperty(chance, "chance", 0f, 1f, 58f);
             changed |= DrawMappedEnumPopup(itemType, "type", s_QueryCategoryValues, s_QueryCategoryNames, 104f);
@@ -1871,20 +1896,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
             if (scope == DropFormScope.Specific)
                 changed |= DrawMappedEnumPopup(specificForm, "form", s_FormValues, s_FormNames, 92f);
 
-            GUILayout.FlexibleSpace();
-            bool removed = GUILayout.Button("-", GUILayout.Width(24f));
-            if (removed)
-            {
-                queries.DeleteArrayElementAtIndex(queryIndex);
-                changed = true;
-            }
             EditorGUILayout.EndHorizontal();
-
-            if (removed)
-            {
-                EditorGUILayout.EndVertical();
-                break;
-            }
 
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(16f);
@@ -1932,28 +1944,28 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private bool DrawRollCountWeights(SerializedProperty weights)
     {
         bool changed = false;
-        EditorGUILayout.BeginHorizontal();
-        GUILayout.Space(16f);
-        GUILayout.Label("rolls", GUILayout.Width(36f));
 
         if (weights == null || !weights.isArray)
         {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(16f);
+            GUILayout.Label("rolls", GUILayout.Width(36f));
             GUILayout.Label("<missing>");
             EditorGUILayout.EndHorizontal();
             return false;
         }
 
-        for (int i = 0; i < weights.arraySize; i++)
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(16f);
+        GUILayout.Label("rolls", GUILayout.Width(36f));
+
+        EditorGUI.BeginDisabledGroup(weights.arraySize <= 1);
+        if (GUILayout.Button("-", GUILayout.Width(24f)))
         {
-            GUILayout.Label((i + 1).ToString(CultureInfo.InvariantCulture), GUILayout.Width(12f));
-            changed |= DrawFloatProperty(weights.GetArrayElementAtIndex(i), "roll", 0f, float.MaxValue, 44f);
-            if (GUILayout.Button("-", GUILayout.Width(20f)))
-            {
-                weights.DeleteArrayElementAtIndex(i);
-                changed = true;
-                break;
-            }
+            weights.DeleteArrayElementAtIndex(weights.arraySize - 1);
+            changed = true;
         }
+        EditorGUI.EndDisabledGroup();
 
         if (GUILayout.Button("+", GUILayout.Width(24f)))
         {
@@ -1962,8 +1974,17 @@ public sealed class EnemyDashboardWindow : EditorWindow
             weights.GetArrayElementAtIndex(index).floatValue = 1f;
             changed = true;
         }
-
         EditorGUILayout.EndHorizontal();
+
+        for (int i = 0; i < weights.arraySize; i++)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(32f);
+            GUILayout.Label((i + 1).ToString(CultureInfo.InvariantCulture), GUILayout.Width(20f));
+            changed |= DrawFloatProperty(weights.GetArrayElementAtIndex(i), "roll", 0f, float.MaxValue, 44f);
+            EditorGUILayout.EndHorizontal();
+        }
+
         return changed;
     }
 
