@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad8ad0217784dd1b0ddd3b3219ff063, type: 3}
+  m_Name: Sword_Passive_01
+  m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
+  passiveName: "\uCE94\uC2AC\uC2E4\uB4DC"
+  icon: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
+  description: "\uCE94\uC2AC \uC2DC 5\uCD08\uAC04 \uC9C0\uC18D\uB418\uB294 \uBC29\uC5B4\uB3C4
+    10 \uD68D\uB4DD"
+  owningForm: 1
+  grade: 0
+  behaviors:
+  - trigger: 3
+    action: 4
+    skillTypeFilter: 0
+    value: 10
+    duration: 5
+    procSkill: {fileID: 0}
+    procOrigin: 0
+    procDirection: 0
+    procSpawnRadius: 0
