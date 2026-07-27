@@ -22,9 +22,37 @@ MonoBehaviour:
     choiceGroups: []
     queries: []
   - enemy: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
-    drops: []
-    choiceGroups: []
-    queries: []
+    drops:
+    - itemCode: Currency
+      minAmount: 1
+      maxAmount: 1
+      chance: 1
+    choiceGroups:
+    - chance: 1
+      choices:
+      - itemCode: Currency
+        minAmount: 1
+        maxAmount: 1
+        weight: 1
+    queries:
+    - chance: 1
+      itemType: 5
+      formScope: 0
+      specificForm: 0
+      tierWeight0: 1
+      tierWeight1: 0
+      tierWeight2: 0
+      rollCountWeights:
+      - 1
+    - chance: 1
+      itemType: 5
+      formScope: 0
+      specificForm: 0
+      tierWeight0: 1
+      tierWeight1: 0
+      tierWeight2: 0
+      rollCountWeights:
+      - 1
   - enemy: {fileID: 11400000, guid: aa319f7a68854d08ab9a4b1c035e4403, type: 2}
     drops: []
     choiceGroups: []

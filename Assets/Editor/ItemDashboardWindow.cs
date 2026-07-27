@@ -962,8 +962,8 @@ public sealed class ItemDashboardWindow : EditorWindow
             EditorGUIUtility.PingObject(row.Engraving);
         EditorGUI.EndDisabledGroup();
 
-        if (GUILayout.Button("상세는 Engraving Validator", GUILayout.Width(170f)))
-            EngravingValidatorWindow.Open();
+        if (GUILayout.Button("상세는 Skill Dashboard", GUILayout.Width(170f)))
+            SkillDashboardWindow.Open();
 
         EditorGUILayout.EndHorizontal();
     }

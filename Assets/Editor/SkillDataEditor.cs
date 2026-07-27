@@ -884,11 +884,11 @@ public sealed class SkillDataEditor : Editor
         }
 
         EditorGUILayout.HelpBox(
-            "No linked ItemData - this engraving cannot drop. Use the Engraving Validator (Scan -> Add to ItemDatabase) to create the entry.",
+            "No linked ItemData - this engraving cannot drop. Use the Skill Dashboard (Scan -> Add to ItemDatabase) to create the entry.",
             MessageType.Info);
 
-        if (GUILayout.Button("Open Engraving Validator"))
-            EngravingValidatorWindow.Open();
+        if (GUILayout.Button("Open Skill Dashboard"))
+            SkillDashboardWindow.Open();
     }
 
     private void RefreshLinkedItemCache()
