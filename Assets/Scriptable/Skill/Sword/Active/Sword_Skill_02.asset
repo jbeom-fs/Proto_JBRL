@@ -12,10 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Sword_Skill_02
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: Sword_Skill_02
-  icon: {fileID: 0}
-  description: 
-  executionType: 2
+  skillName: "\uD68C\uC804\uBCA0\uAE30"
+  icon: {fileID: 21300000, guid: a3893101543b4a143933f563daccbdf1, type: 3}
+  description: "\uC6D0\uD615\uC73C\uB85C 2\uD68C \uBCA0\uACE0 \uB109\uBC31 \uBC0F
+    2\uCD08\uAC04 \uC2AC\uB85C\uC6B0"
+  executionType: 0
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
@@ -31,18 +32,69 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 10
-  attackPattern: 1
+  attackPattern: 6
   patternRange: 1
   coneHalfAngle: 45
-  customCells: []
-  hitSteps: []
-  cancelable: 0
-  isMultiTarget: 0
+  customCells:
+  - {x: -3, y: -3}
+  - {x: -2, y: -3}
+  - {x: -1, y: -3}
+  - {x: 0, y: -3}
+  - {x: 1, y: -3}
+  - {x: 2, y: -3}
+  - {x: 3, y: -3}
+  - {x: -3, y: -2}
+  - {x: -2, y: -2}
+  - {x: -1, y: -2}
+  - {x: 0, y: -2}
+  - {x: 1, y: -2}
+  - {x: 2, y: -2}
+  - {x: 3, y: -2}
+  - {x: -3, y: -1}
+  - {x: -2, y: -1}
+  - {x: -1, y: -1}
+  - {x: 0, y: -1}
+  - {x: 1, y: -1}
+  - {x: 2, y: -1}
+  - {x: 3, y: -1}
+  - {x: -3, y: 0}
+  - {x: -2, y: 0}
+  - {x: -1, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: 3, y: 0}
+  - {x: -3, y: 1}
+  - {x: -2, y: 1}
+  - {x: -1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: 2, y: 1}
+  - {x: 3, y: 1}
+  - {x: -3, y: 2}
+  - {x: -2, y: 2}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: 2, y: 2}
+  - {x: 3, y: 2}
+  - {x: -3, y: 3}
+  - {x: -2, y: 3}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
+  - {x: 2, y: 3}
+  - {x: 3, y: 3}
+  hitSteps:
+  - delay: 0.05
+    damagePct: 100
+    overrideCells: []
+  cancelable: 1
+  isMultiTarget: 1
   canPenetrateWalls: 0
-  knockbackForce: 0
-  knockbackDuration: 0
-  slowPercentage: 0
-  slowDuration: 0
+  knockbackForce: 10
+  knockbackDuration: 0.1
+  slowPercentage: 0.3
+  slowDuration: 2
   ailments: []
   zoneSprite: {fileID: 0}
   zoneRadius: 1

@@ -536,7 +536,7 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
-  - itemCode: Psv_Sword_Faint0
+  - itemCode: Psv_Sword_Faint_0
     displayName: "\uD14C\uC2A4\uD2B8\uD398\uC2DC\uBE0C"
     icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
     description: 
@@ -558,8 +558,8 @@ MonoBehaviour:
       procOrigin: 0
       procDirection: 0
       procSpawnRadius: 0
-    soulFormId: 0
-    engraving: {fileID: 11400000, guid: 80b15211f73ed1a41b8f6096f7fe20d9, type: 2}
+    soulFormId: 1
+    engraving: {fileID: 0}
     passiveEngraving: {fileID: 11400000, guid: 2e7dc8aa085c5dd46904413d3a190e03, type: 2}
     salvageItemCode: 
     salvageMinAmount: 1
@@ -619,6 +619,44 @@ MonoBehaviour:
     soulFormId: 1
     engraving: {fileID: 0}
     passiveEngraving: {fileID: 11400000, guid: a5665d022732de245b37f95a95673274, type: 2}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Faint_3
+    displayName: "\uC804\uC9C4\uBC1C\uB3C4"
+    icon: {fileID: 0}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 62c009b48d2824148a35020edffa0346, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Whole_2
+    displayName: "\uD68C\uC804\uBCA0\uAE30"
+    icon: {fileID: 0}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: ef5decf80b9ec064384899b7d453c19f, type: 2}
+    passiveEngraving: {fileID: 0}
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1

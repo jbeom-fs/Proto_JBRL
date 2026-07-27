@@ -6,6 +6,8 @@ using UnityEngine;
 [CanEditMultipleObjects]
 public sealed class SkillDataEditor : Editor
 {
+    private const float CustomCellSize = 18f;
+
     private SerializedProperty _owningForm;
     private SerializedProperty _grade;
 
@@ -85,6 +87,15 @@ public sealed class SkillDataEditor : Editor
     private int _customCellGridRadius = 4;
     private bool _rawCustomCellsFoldout;
     private int _selectedHitPhaseIndex;
+    private bool _isPainting;
+    private bool _paintErase;
+    private readonly HashSet<Vector2Int> _strokeVisited = new HashSet<Vector2Int>();
+    private Vector2Int? _dragRectStart;
+    private Vector2Int? _dragRectCurrent;
+    private Vector2Int? _lastPaintCell;
+    private int _paintUndoGroup = -1;
+    private int _paintControlId;
+    private GUIStyle _customCellLabelStyle;
 
     private void OnEnable()
     {
@@ -158,6 +169,11 @@ public sealed class SkillDataEditor : Editor
         _blinkBehindOffset = serializedObject.FindProperty("blinkBehindOffset");
 
         RefreshLinkedItemCache();
+    }
+
+    private void OnDisable()
+    {
+        EndCustomCellStroke();
     }
 
     public override void OnInspectorGUI()
@@ -602,30 +618,334 @@ public sealed class SkillDataEditor : Editor
         HashSet<Vector2Int> cells,
         HashSet<Vector2Int> hintCells)
     {
-        Color originalColor = GUI.backgroundColor;
+        int diameter = _customCellGridRadius * 2 + 1;
+        float gridSize = diameter * CustomCellSize;
+        int controlId = GUIUtility.GetControlID(FocusType.Passive);
+
+        EditorGUILayout.BeginHorizontal();
+        GUILayout.Space(EditorGUI.indentLevel * 15f);
+        Rect gridRect = GUILayoutUtility.GetRect(
+            gridSize,
+            gridSize,
+            GUILayout.Width(gridSize),
+            GUILayout.Height(gridSize));
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+
+        Event evt = Event.current;
+        if (evt.type == EventType.Repaint)
+            DrawCustomCellGridCells(gridRect, cells, hintCells);
+
+        if (evt.type == EventType.MouseDown &&
+            (evt.button == 0 || evt.button == 1) &&
+            TryGetCustomCellAtPosition(evt.mousePosition, gridRect, out Vector2Int downCell))
+        {
+            BeginCustomCellStroke(
+                controlId,
+                downCell,
+                evt.button == 1 || cells.Contains(downCell),
+                evt.button == 0 && evt.shift);
+
+            if (!_dragRectStart.HasValue)
+            {
+                ApplyCustomCellPaint(cellsProperty, cells, downCell);
+                _strokeVisited.Add(downCell);
+                _lastPaintCell = downCell;
+            }
+
+            evt.Use();
+            Repaint();
+            return;
+        }
+
+        if (_isPainting &&
+            evt.type == EventType.MouseDrag &&
+            GUIUtility.hotControl == _paintControlId)
+        {
+            if (_dragRectStart.HasValue)
+            {
+                _dragRectCurrent =
+                    GetCustomCellCoordinate(evt.mousePosition, gridRect);
+            }
+            else if (TryGetCustomCellAtPosition(
+                         evt.mousePosition,
+                         gridRect,
+                         out Vector2Int dragCell))
+            {
+                ApplyCustomCellPaintLine(cellsProperty, cells, dragCell);
+            }
+
+            evt.Use();
+            Repaint();
+            return;
+        }
+
+        if (_isPainting &&
+            evt.type == EventType.MouseUp &&
+            GUIUtility.hotControl == _paintControlId)
+        {
+            if (_dragRectStart.HasValue)
+            {
+                _dragRectCurrent =
+                    GetCustomCellCoordinate(evt.mousePosition, gridRect);
+                ApplyCustomCellRectangle(cellsProperty, cells);
+            }
+
+            EndCustomCellStroke();
+            evt.Use();
+            Repaint();
+        }
+    }
+
+    private void DrawCustomCellGridCells(
+        Rect gridRect,
+        HashSet<Vector2Int> cells,
+        HashSet<Vector2Int> hintCells)
+    {
+        Color fallback = EditorGUIUtility.isProSkin
+            ? new Color(0.28f, 0.28f, 0.28f, 1f)
+            : new Color(0.78f, 0.78f, 0.78f, 1f);
+        Color border = EditorGUIUtility.isProSkin
+            ? new Color(0.12f, 0.12f, 0.12f, 1f)
+            : new Color(0.42f, 0.42f, 0.42f, 1f);
+
         for (int y = _customCellGridRadius; y >= -_customCellGridRadius; y--)
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.Space(EditorGUI.indentLevel * 15f);
-
             for (int x = -_customCellGridRadius; x <= _customCellGridRadius; x++)
             {
                 Vector2Int cell = new Vector2Int(x, y);
+                Rect cellRect = GetCustomCellRect(gridRect, cell);
                 bool active = cells.Contains(cell);
                 bool hinted = !active && hintCells != null && hintCells.Contains(cell);
-                bool isCenter = x == 0 && y == 0;
+                bool isCenter = cell == Vector2Int.zero;
 
-                GUI.backgroundColor = GetCustomCellButtonColor(active, hinted, isCenter, originalColor);
+                EditorGUI.DrawRect(cellRect, border);
+                Rect fillRect = new Rect(
+                    cellRect.x + 1f,
+                    cellRect.y + 1f,
+                    cellRect.width - 2f,
+                    cellRect.height - 2f);
+                EditorGUI.DrawRect(
+                    fillRect,
+                    GetCustomCellButtonColor(active, hinted, isCenter, fallback));
+
+                if (IsCustomCellRectanglePreview(cell))
+                {
+                    Color previewColor = _paintErase
+                        ? new Color(1f, 0.2f, 0.2f, 0.45f)
+                        : new Color(0.2f, 1f, 0.45f, 0.45f);
+                    EditorGUI.DrawRect(fillRect, previewColor);
+                }
+
                 string label = isCenter ? "P" : active ? "X" : hinted ? "." : string.Empty;
-                if (GUILayout.Button(label, GUILayout.Width(18f), GUILayout.Height(18f)))
-                    ToggleCustomCell(cellsProperty, cells, cell);
+                GUI.Label(cellRect, label, GetCustomCellLabelStyle());
             }
+        }
+    }
 
-            GUI.backgroundColor = originalColor;
-            EditorGUILayout.EndHorizontal();
+    private Rect GetCustomCellRect(Rect gridRect, Vector2Int cell)
+    {
+        int column = cell.x + _customCellGridRadius;
+        int row = _customCellGridRadius - cell.y;
+        return new Rect(
+            gridRect.x + column * CustomCellSize,
+            gridRect.y + row * CustomCellSize,
+            CustomCellSize,
+            CustomCellSize);
+    }
+
+    private bool TryGetCustomCellAtPosition(
+        Vector2 mousePosition,
+        Rect gridRect,
+        out Vector2Int cell)
+    {
+        if (!gridRect.Contains(mousePosition))
+        {
+            cell = default;
+            return false;
         }
 
-        GUI.backgroundColor = originalColor;
+        cell = GetCustomCellCoordinate(mousePosition, gridRect);
+        return Mathf.Abs(cell.x) <= _customCellGridRadius &&
+               Mathf.Abs(cell.y) <= _customCellGridRadius;
+    }
+
+    private Vector2Int GetCustomCellCoordinate(Vector2 mousePosition, Rect gridRect)
+    {
+        int column = Mathf.FloorToInt(
+            (mousePosition.x - gridRect.x) / CustomCellSize);
+        int row = Mathf.FloorToInt(
+            (mousePosition.y - gridRect.y) / CustomCellSize);
+        return new Vector2Int(
+            column - _customCellGridRadius,
+            _customCellGridRadius - row);
+    }
+
+    private void BeginCustomCellStroke(
+        int controlId,
+        Vector2Int startCell,
+        bool erase,
+        bool rectangle)
+    {
+        Undo.IncrementCurrentGroup();
+        _paintUndoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Paint Cells");
+
+        _isPainting = true;
+        _paintErase = erase;
+        _strokeVisited.Clear();
+        _dragRectStart = rectangle ? startCell : (Vector2Int?)null;
+        _dragRectCurrent = rectangle ? startCell : (Vector2Int?)null;
+        _lastPaintCell = rectangle ? (Vector2Int?)null : startCell;
+        _paintControlId = controlId;
+        GUIUtility.hotControl = controlId;
+    }
+
+    private void ApplyCustomCellPaint(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> cells,
+        Vector2Int cell)
+    {
+        bool changed = _paintErase ? cells.Remove(cell) : cells.Add(cell);
+        if (!changed)
+            return;
+
+        WriteCustomCellSet(cellsProperty, cells);
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private void ApplyCustomCellPaintLine(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> cells,
+        Vector2Int endCell)
+    {
+        Vector2Int startCell = _lastPaintCell ?? endCell;
+        int x = startCell.x;
+        int y = startCell.y;
+        int deltaX = Mathf.Abs(endCell.x - startCell.x);
+        int deltaY = Mathf.Abs(endCell.y - startCell.y);
+        int stepX = startCell.x < endCell.x ? 1 : -1;
+        int stepY = startCell.y < endCell.y ? 1 : -1;
+        int error = deltaX - deltaY;
+        bool changed = false;
+
+        while (true)
+        {
+            Vector2Int cell = new Vector2Int(x, y);
+            if (_strokeVisited.Add(cell))
+                changed |= _paintErase ? cells.Remove(cell) : cells.Add(cell);
+
+            if (x == endCell.x && y == endCell.y)
+                break;
+
+            int doubleError = error * 2;
+            if (doubleError > -deltaY)
+            {
+                error -= deltaY;
+                x += stepX;
+            }
+            if (doubleError < deltaX)
+            {
+                error += deltaX;
+                y += stepY;
+            }
+        }
+
+        _lastPaintCell = endCell;
+        if (!changed)
+            return;
+
+        WriteCustomCellSet(cellsProperty, cells);
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private void ApplyCustomCellRectangle(
+        SerializedProperty cellsProperty,
+        HashSet<Vector2Int> cells)
+    {
+        if (!_dragRectStart.HasValue || !_dragRectCurrent.HasValue)
+            return;
+
+        Vector2Int start = _dragRectStart.Value;
+        Vector2Int end = _dragRectCurrent.Value;
+        int minX = Mathf.Max(
+            -_customCellGridRadius,
+            Mathf.Min(start.x, end.x));
+        int maxX = Mathf.Min(
+            _customCellGridRadius,
+            Mathf.Max(start.x, end.x));
+        int minY = Mathf.Max(
+            -_customCellGridRadius,
+            Mathf.Min(start.y, end.y));
+        int maxY = Mathf.Min(
+            _customCellGridRadius,
+            Mathf.Max(start.y, end.y));
+
+        bool changed = false;
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                Vector2Int cell = new Vector2Int(x, y);
+                changed |= _paintErase ? cells.Remove(cell) : cells.Add(cell);
+            }
+        }
+
+        if (!changed)
+            return;
+
+        WriteCustomCellSet(cellsProperty, cells);
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    private bool IsCustomCellRectanglePreview(Vector2Int cell)
+    {
+        if (!_isPainting ||
+            !_dragRectStart.HasValue ||
+            !_dragRectCurrent.HasValue)
+        {
+            return false;
+        }
+
+        Vector2Int start = _dragRectStart.Value;
+        Vector2Int end = _dragRectCurrent.Value;
+        return cell.x >= Mathf.Min(start.x, end.x) &&
+               cell.x <= Mathf.Max(start.x, end.x) &&
+               cell.y >= Mathf.Min(start.y, end.y) &&
+               cell.y <= Mathf.Max(start.y, end.y);
+    }
+
+    private GUIStyle GetCustomCellLabelStyle()
+    {
+        if (_customCellLabelStyle == null)
+        {
+            _customCellLabelStyle = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter
+            };
+        }
+
+        return _customCellLabelStyle;
+    }
+
+    private void EndCustomCellStroke()
+    {
+        if (!_isPainting)
+            return;
+
+        if (_paintUndoGroup >= 0)
+            Undo.CollapseUndoOperations(_paintUndoGroup);
+        if (GUIUtility.hotControl == _paintControlId)
+            GUIUtility.hotControl = 0;
+
+        _isPainting = false;
+        _paintErase = false;
+        _strokeVisited.Clear();
+        _dragRectStart = null;
+        _dragRectCurrent = null;
+        _lastPaintCell = null;
+        _paintUndoGroup = -1;
+        _paintControlId = 0;
     }
 
     private static Color GetCustomCellButtonColor(
@@ -644,18 +964,6 @@ public sealed class SkillDataEditor : Editor
             return new Color(1f, 0.8f, 0.25f);
 
         return fallback;
-    }
-
-    private void ToggleCustomCell(
-        SerializedProperty cellsProperty,
-        HashSet<Vector2Int> cells,
-        Vector2Int cell)
-    {
-        if (!cells.Add(cell))
-            cells.Remove(cell);
-
-        WriteCustomCellSet(cellsProperty, cells);
-        serializedObject.ApplyModifiedProperties();
     }
 
     private static void WriteCustomCellSet(

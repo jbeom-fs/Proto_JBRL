@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
   m_Name: Dodge
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uC0C8 \uC2A4\uD0AC"
+  skillName: "\uD68C\uD53C"
   icon: {fileID: 0}
   description: 
   executionType: 2
@@ -44,6 +44,10 @@ MonoBehaviour:
   slowPercentage: 0
   slowDuration: 0
   ailments: []
+  zoneSprite: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
