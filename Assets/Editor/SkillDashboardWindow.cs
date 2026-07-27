@@ -502,6 +502,18 @@ public sealed class SkillDashboardWindow : EditorWindow
             Selection.activeObject = row.Asset;
             EditorGUIUtility.PingObject(row.Asset);
         }
+
+        Color previousBackgroundColor = GUI.backgroundColor;
+        GUI.backgroundColor = EditorGUIUtility.isProSkin
+            ? new Color(0.82f, 0.3f, 0.3f, 1f)
+            : new Color(1f, 0.55f, 0.55f, 1f);
+        if (GUILayout.Button("Delete Asset", GUILayout.Width(110f)))
+        {
+            GUI.backgroundColor = previousBackgroundColor;
+            if (PromptDeleteSkill(row))
+                GUIUtility.ExitGUI();
+        }
+        GUI.backgroundColor = previousBackgroundColor;
         EditorGUILayout.EndHorizontal();
         GUILayout.Space(4f);
         EditorGUILayout.EndVertical();
@@ -510,6 +522,722 @@ public sealed class SkillDashboardWindow : EditorWindow
         {
             RefreshSkillRowCachedValues(row, skillObject);
             Repaint();
+        }
+    }
+
+    private bool PromptDeleteSkill(SkillRow row)
+    {
+        SkillData target = row != null ? row.Asset : null;
+        if (target == null)
+            return false;
+
+        SkillReferenceReport report = AnalyzeSkillReferences(target);
+        string message = BuildDeleteConfirmationMessage(target, report);
+        if (!EditorUtility.DisplayDialog(
+                "Delete Skill Asset",
+                message,
+                "참조 정리 후 삭제",
+                "취소"))
+        {
+            return false;
+        }
+
+        DeleteSkillAsset(row, report);
+        return true;
+    }
+
+    private static SkillReferenceReport AnalyzeSkillReferences(SkillData target)
+    {
+        SkillReferenceReport report = new SkillReferenceReport();
+
+        List<WeaponData> weapons = LoadAssets<WeaponData>("t:WeaponData");
+        for (int weaponIndex = 0; weaponIndex < weapons.Count; weaponIndex++)
+        {
+            WeaponData weapon = weapons[weaponIndex];
+            SerializedObject weaponObject = new SerializedObject(weapon);
+            try
+            {
+                weaponObject.Update();
+
+                SerializedProperty weaponSkills = weaponObject.FindProperty("skills");
+                if (weaponSkills != null && weaponSkills.isArray)
+                {
+                    for (int slotIndex = 0; slotIndex < weaponSkills.arraySize; slotIndex++)
+                    {
+                        SerializedProperty slot =
+                            weaponSkills.GetArrayElementAtIndex(slotIndex);
+                        if (slot.objectReferenceValue != target)
+                            continue;
+
+                        report.WeaponSlots.Add(new WeaponSlotReference
+                        {
+                            Weapon = weapon,
+                            SlotIndex = slotIndex
+                        });
+                    }
+                }
+
+                SerializedProperty basicAttack =
+                    weaponObject.FindProperty("basicAttackSkillData");
+                if (basicAttack != null && basicAttack.objectReferenceValue == target)
+                {
+                    report.BasicAttacks.Add(new WeaponBasicAttackReference
+                    {
+                        Weapon = weapon
+                    });
+                }
+            }
+            finally
+            {
+                weaponObject.Dispose();
+            }
+        }
+
+        if (target is EngravingData)
+        {
+            List<ItemDatabase> databases = LoadAssets<ItemDatabase>("t:ItemDatabase");
+            for (int databaseIndex = 0; databaseIndex < databases.Count; databaseIndex++)
+            {
+                ItemDatabase database = databases[databaseIndex];
+                SerializedObject databaseObject = new SerializedObject(database);
+                try
+                {
+                    databaseObject.Update();
+                    SerializedProperty items = databaseObject.FindProperty("items");
+                    if (items == null || !items.isArray)
+                        continue;
+
+                    for (int itemIndex = 0; itemIndex < items.arraySize; itemIndex++)
+                    {
+                        SerializedProperty item = items.GetArrayElementAtIndex(itemIndex);
+                        SerializedProperty engraving = item.FindPropertyRelative("engraving");
+                        if (engraving == null || engraving.objectReferenceValue != target)
+                            continue;
+
+                        report.ItemBridges.Add(new ItemEngravingReference
+                        {
+                            Database = database,
+                            ItemIndex = itemIndex,
+                            ItemCode = GetString(item.FindPropertyRelative("itemCode"))
+                        });
+                    }
+                }
+                finally
+                {
+                    databaseObject.Dispose();
+                }
+            }
+        }
+
+        List<ItemDatabase> behaviorDatabases =
+            LoadAssets<ItemDatabase>("t:ItemDatabase");
+        for (int databaseIndex = 0; databaseIndex < behaviorDatabases.Count; databaseIndex++)
+        {
+            ItemDatabase database = behaviorDatabases[databaseIndex];
+            SerializedObject databaseObject = new SerializedObject(database);
+            try
+            {
+                databaseObject.Update();
+                SerializedProperty items = databaseObject.FindProperty("items");
+                if (items == null || !items.isArray)
+                    continue;
+
+                for (int itemIndex = 0; itemIndex < items.arraySize; itemIndex++)
+                {
+                    SerializedProperty item = items.GetArrayElementAtIndex(itemIndex);
+                    SerializedProperty behaviors =
+                        item.FindPropertyRelative("behaviorEffects");
+                    if (behaviors == null || !behaviors.isArray)
+                        continue;
+
+                    string itemCode = GetString(item.FindPropertyRelative("itemCode"));
+                    for (int behaviorIndex = 0;
+                         behaviorIndex < behaviors.arraySize;
+                         behaviorIndex++)
+                    {
+                        SerializedProperty behavior =
+                            behaviors.GetArrayElementAtIndex(behaviorIndex);
+                        SerializedProperty procSkill =
+                            behavior.FindPropertyRelative("procSkill");
+                        if (procSkill == null || procSkill.objectReferenceValue != target)
+                            continue;
+
+                        report.ItemBehaviorProcs.Add(new ItemBehaviorProcReference
+                        {
+                            Database = database,
+                            ItemIndex = itemIndex,
+                            ItemCode = itemCode,
+                            BehaviorIndex = behaviorIndex
+                        });
+                    }
+                }
+            }
+            finally
+            {
+                databaseObject.Dispose();
+            }
+        }
+
+        List<PassiveEngravingData> passiveEngravings =
+            LoadAssets<PassiveEngravingData>("t:PassiveEngravingData");
+        for (int passiveIndex = 0; passiveIndex < passiveEngravings.Count; passiveIndex++)
+        {
+            PassiveEngravingData passive = passiveEngravings[passiveIndex];
+            SerializedObject passiveObject = new SerializedObject(passive);
+            try
+            {
+                passiveObject.Update();
+                SerializedProperty behaviors = passiveObject.FindProperty("behaviors");
+                if (behaviors == null || !behaviors.isArray)
+                    continue;
+
+                for (int behaviorIndex = 0;
+                     behaviorIndex < behaviors.arraySize;
+                     behaviorIndex++)
+                {
+                    SerializedProperty behavior =
+                        behaviors.GetArrayElementAtIndex(behaviorIndex);
+                    SerializedProperty procSkill =
+                        behavior.FindPropertyRelative("procSkill");
+                    if (procSkill == null || procSkill.objectReferenceValue != target)
+                        continue;
+
+                    report.PassiveBehaviorProcs.Add(new PassiveBehaviorProcReference
+                    {
+                        Passive = passive,
+                        BehaviorIndex = behaviorIndex
+                    });
+                }
+            }
+            finally
+            {
+                passiveObject.Dispose();
+            }
+        }
+
+        List<SkillData> skills = LoadAssets<SkillData>("t:SkillData");
+        for (int skillIndex = 0; skillIndex < skills.Count; skillIndex++)
+        {
+            SkillData owner = skills[skillIndex];
+            if (owner == null || owner == target)
+                continue;
+
+            SerializedObject ownerObject = new SerializedObject(owner);
+            try
+            {
+                ownerObject.Update();
+                SerializedProperty recastStages = ownerObject.FindProperty("recastStages");
+                if (recastStages == null || !recastStages.isArray)
+                    continue;
+
+                for (int stageIndex = 0; stageIndex < recastStages.arraySize; stageIndex++)
+                {
+                    SerializedProperty stage =
+                        recastStages.GetArrayElementAtIndex(stageIndex);
+                    if (stage.objectReferenceValue != target)
+                        continue;
+
+                    report.RecastStages.Add(new RecastStageReference
+                    {
+                        Owner = owner,
+                        StageIndex = stageIndex
+                    });
+                }
+            }
+            finally
+            {
+                ownerObject.Dispose();
+            }
+        }
+
+        return report;
+    }
+
+    private static string BuildDeleteConfirmationMessage(
+        SkillData target,
+        SkillReferenceReport report)
+    {
+        string message =
+            "'" + target.name + "'을(를) 참조하는 곳\n" +
+            "무기 슬롯 " + report.WeaponSlots.Count +
+            " / 기본공격 " + report.BasicAttacks.Count +
+            " / ItemData 브릿지 " + report.ItemBridges.Count +
+            " / recast 스테이지 " + report.RecastStages.Count +
+            " / behavior proc(아이템) " + report.ItemBehaviorProcs.Count +
+            " / behavior proc(패시브) " + report.PassiveBehaviorProcs.Count + "\n";
+
+        List<string> locations = BuildReferenceLocations(report);
+        if (locations.Count == 0)
+        {
+            message += "\n참조 0곳 — 고아 에셋입니다.\n";
+        }
+        else
+        {
+            message += "\n참조 위치:\n";
+            const int maxLocations = 12;
+            int visibleCount = Mathf.Min(locations.Count, maxLocations);
+            for (int i = 0; i < visibleCount; i++)
+                message += "• " + locations[i] + "\n";
+
+            if (locations.Count > visibleCount)
+                message += "• 외 " + (locations.Count - visibleCount) + "건\n";
+        }
+
+        if (report.ItemBridges.Count > 0)
+        {
+            message +=
+                "\nItemData 엔트리는 유지되고 engraving만 null 처리됩니다. " +
+                "다음 Scan에서 engraving null 오류로 표시됩니다.\n";
+        }
+
+        if (report.ItemBehaviorProcs.Count > 0 ||
+            report.PassiveBehaviorProcs.Count > 0)
+        {
+            message +=
+                "\nprocSkill만 null 처리하며 behavior 요소는 유지됩니다. " +
+                "해당 CastSkill은 procSkill이 없어 발동하지 않습니다.\n";
+        }
+
+        message +=
+            "\n참조를 정리한 뒤 에셋을 삭제하시겠습니까?\n" +
+            "이 작업의 에셋 삭제는 Undo로 되돌릴 수 없습니다.";
+        return message;
+    }
+
+    private static List<string> BuildReferenceLocations(SkillReferenceReport report)
+    {
+        List<string> locations = new List<string>(report.TotalCount);
+
+        for (int i = 0; i < report.WeaponSlots.Count; i++)
+        {
+            WeaponSlotReference reference = report.WeaponSlots[i];
+            locations.Add(
+                "WeaponData '" + reference.Weapon.name + "' skills[" +
+                reference.SlotIndex + "] (" + GetWeaponSlotLabel(reference.SlotIndex) + ")");
+        }
+
+        for (int i = 0; i < report.BasicAttacks.Count; i++)
+        {
+            locations.Add(
+                "WeaponData '" + report.BasicAttacks[i].Weapon.name +
+                "' basicAttackSkillData");
+        }
+
+        for (int i = 0; i < report.ItemBridges.Count; i++)
+        {
+            ItemEngravingReference reference = report.ItemBridges[i];
+            string itemCode = string.IsNullOrWhiteSpace(reference.ItemCode)
+                ? "<empty>"
+                : reference.ItemCode;
+            locations.Add(
+                "ItemDatabase '" + reference.Database.name + "' items[" +
+                reference.ItemIndex + "] '" + itemCode + "' engraving");
+        }
+
+        for (int i = 0; i < report.RecastStages.Count; i++)
+        {
+            RecastStageReference reference = report.RecastStages[i];
+            locations.Add(
+                "SkillData '" + reference.Owner.name + "' recastStages[" +
+                reference.StageIndex + "]");
+        }
+
+        for (int i = 0; i < report.ItemBehaviorProcs.Count; i++)
+        {
+            ItemBehaviorProcReference reference = report.ItemBehaviorProcs[i];
+            string itemCode = string.IsNullOrWhiteSpace(reference.ItemCode)
+                ? "<empty>"
+                : reference.ItemCode;
+            locations.Add(
+                "ItemDatabase '" + reference.Database.name + "' items[" +
+                reference.ItemIndex + "] '" + itemCode + "' behaviorEffects[" +
+                reference.BehaviorIndex + "].procSkill");
+        }
+
+        for (int i = 0; i < report.PassiveBehaviorProcs.Count; i++)
+        {
+            PassiveBehaviorProcReference reference = report.PassiveBehaviorProcs[i];
+            locations.Add(
+                "PassiveEngravingData '" + reference.Passive.name + "' behaviors[" +
+                reference.BehaviorIndex + "].procSkill");
+        }
+
+        return locations;
+    }
+
+    private static string GetWeaponSlotLabel(int slotIndex)
+    {
+        switch (slotIndex)
+        {
+            case 0:
+                return "Q";
+            case 1:
+                return "W";
+            case 2:
+                return "E";
+            case 3:
+                return "R";
+            default:
+                return "?";
+        }
+    }
+
+    private void DeleteSkillAsset(SkillRow row, SkillReferenceReport report)
+    {
+        SkillData target = row != null ? row.Asset : null;
+        if (target == null)
+            return;
+
+        string path = AssetDatabase.GetAssetPath(target);
+        if (string.IsNullOrEmpty(path))
+        {
+            EditorUtility.DisplayDialog(
+                "Delete Skill Asset",
+                "에셋 경로를 찾을 수 없어 삭제하지 않았습니다.",
+                "확인");
+            return;
+        }
+
+        Undo.IncrementCurrentGroup();
+        int undoGroup = Undo.GetCurrentGroup();
+        Undo.SetCurrentGroupName("Remove Skill References");
+
+        ClearWeaponReferences(target, report);
+        ClearItemEngravingReferences(target, report);
+        ClearRecastStageReferences(target, report);
+        ClearItemBehaviorProcReferences(target, report);
+        ClearPassiveBehaviorProcReferences(target, report);
+        Undo.CollapseUndoOperations(undoGroup);
+
+        bool wasSelected = Selection.activeObject == target;
+        _expandedSkills.Remove(target);
+        if (row.SerializedObject != null)
+        {
+            row.SerializedObject.Dispose();
+            row.SerializedObject = null;
+        }
+
+        bool deleted = AssetDatabase.DeleteAsset(path);
+        if (!deleted)
+        {
+            EditorUtility.DisplayDialog(
+                "Delete Skill Asset",
+                "참조는 정리했지만 에셋 삭제에 실패했습니다.\n" + path,
+                "확인");
+            Scan();
+            return;
+        }
+
+        RemoveCreatedSkillUndoRecord(path);
+        if (wasSelected)
+            Selection.activeObject = null;
+
+        Scan();
+        Repaint();
+    }
+
+    private static void ClearWeaponReferences(
+        SkillData target,
+        SkillReferenceReport report)
+    {
+        List<WeaponData> owners = new List<WeaponData>();
+        for (int i = 0; i < report.WeaponSlots.Count; i++)
+            AddUnique(owners, report.WeaponSlots[i].Weapon);
+        for (int i = 0; i < report.BasicAttacks.Count; i++)
+            AddUnique(owners, report.BasicAttacks[i].Weapon);
+
+        for (int ownerIndex = 0; ownerIndex < owners.Count; ownerIndex++)
+        {
+            WeaponData owner = owners[ownerIndex];
+            if (owner == null)
+                continue;
+
+            Undo.RecordObject(owner, "Remove Skill References");
+            SerializedObject ownerObject = new SerializedObject(owner);
+            try
+            {
+                ownerObject.Update();
+                SerializedProperty skills = ownerObject.FindProperty("skills");
+                if (skills != null && skills.isArray)
+                {
+                    for (int i = 0; i < report.WeaponSlots.Count; i++)
+                    {
+                        WeaponSlotReference reference = report.WeaponSlots[i];
+                        if (reference.Weapon != owner ||
+                            reference.SlotIndex < 0 ||
+                            reference.SlotIndex >= skills.arraySize)
+                        {
+                            continue;
+                        }
+
+                        SerializedProperty slot =
+                            skills.GetArrayElementAtIndex(reference.SlotIndex);
+                        if (slot.objectReferenceValue == target)
+                            slot.objectReferenceValue = null;
+                    }
+                }
+
+                SerializedProperty basicAttack =
+                    ownerObject.FindProperty("basicAttackSkillData");
+                if (basicAttack != null && basicAttack.objectReferenceValue == target)
+                    basicAttack.objectReferenceValue = null;
+
+                ownerObject.ApplyModifiedProperties();
+            }
+            finally
+            {
+                ownerObject.Dispose();
+            }
+        }
+    }
+
+    private static void ClearItemEngravingReferences(
+        SkillData target,
+        SkillReferenceReport report)
+    {
+        List<ItemDatabase> owners = new List<ItemDatabase>();
+        for (int i = 0; i < report.ItemBridges.Count; i++)
+            AddUnique(owners, report.ItemBridges[i].Database);
+
+        for (int ownerIndex = 0; ownerIndex < owners.Count; ownerIndex++)
+        {
+            ItemDatabase owner = owners[ownerIndex];
+            if (owner == null)
+                continue;
+
+            Undo.RecordObject(owner, "Remove Skill References");
+            SerializedObject ownerObject = new SerializedObject(owner);
+            try
+            {
+                ownerObject.Update();
+                SerializedProperty items = ownerObject.FindProperty("items");
+                if (items != null && items.isArray)
+                {
+                    for (int i = 0; i < report.ItemBridges.Count; i++)
+                    {
+                        ItemEngravingReference reference = report.ItemBridges[i];
+                        if (reference.Database != owner ||
+                            reference.ItemIndex < 0 ||
+                            reference.ItemIndex >= items.arraySize)
+                        {
+                            continue;
+                        }
+
+                        SerializedProperty item =
+                            items.GetArrayElementAtIndex(reference.ItemIndex);
+                        SerializedProperty engraving =
+                            item.FindPropertyRelative("engraving");
+                        if (engraving != null && engraving.objectReferenceValue == target)
+                            engraving.objectReferenceValue = null;
+                    }
+                }
+
+                ownerObject.ApplyModifiedProperties();
+            }
+            finally
+            {
+                ownerObject.Dispose();
+            }
+        }
+    }
+
+    private static void ClearRecastStageReferences(
+        SkillData target,
+        SkillReferenceReport report)
+    {
+        List<SkillData> owners = new List<SkillData>();
+        for (int i = 0; i < report.RecastStages.Count; i++)
+            AddUnique(owners, report.RecastStages[i].Owner);
+
+        for (int ownerIndex = 0; ownerIndex < owners.Count; ownerIndex++)
+        {
+            SkillData owner = owners[ownerIndex];
+            if (owner == null)
+                continue;
+
+            List<int> indices = new List<int>();
+            for (int i = 0; i < report.RecastStages.Count; i++)
+            {
+                RecastStageReference reference = report.RecastStages[i];
+                if (reference.Owner == owner && !indices.Contains(reference.StageIndex))
+                    indices.Add(reference.StageIndex);
+            }
+            indices.Sort((left, right) => right.CompareTo(left));
+
+            Undo.RecordObject(owner, "Remove Skill References");
+            SerializedObject ownerObject = new SerializedObject(owner);
+            try
+            {
+                ownerObject.Update();
+                SerializedProperty recastStages = ownerObject.FindProperty("recastStages");
+                if (recastStages != null && recastStages.isArray)
+                {
+                    for (int i = 0; i < indices.Count; i++)
+                    {
+                        int stageIndex = indices[i];
+                        if (stageIndex < 0 || stageIndex >= recastStages.arraySize)
+                            continue;
+
+                        SerializedProperty stage =
+                            recastStages.GetArrayElementAtIndex(stageIndex);
+                        if (stage.objectReferenceValue != target)
+                            continue;
+
+                        DeleteArrayElementCompletely(recastStages, stageIndex);
+                    }
+                }
+
+                ownerObject.ApplyModifiedProperties();
+            }
+            finally
+            {
+                ownerObject.Dispose();
+            }
+        }
+    }
+
+    private static void ClearItemBehaviorProcReferences(
+        SkillData target,
+        SkillReferenceReport report)
+    {
+        List<ItemDatabase> owners = new List<ItemDatabase>();
+        for (int i = 0; i < report.ItemBehaviorProcs.Count; i++)
+            AddUnique(owners, report.ItemBehaviorProcs[i].Database);
+
+        for (int ownerIndex = 0; ownerIndex < owners.Count; ownerIndex++)
+        {
+            ItemDatabase owner = owners[ownerIndex];
+            if (owner == null)
+                continue;
+
+            Undo.RecordObject(owner, "Remove Skill References");
+            SerializedObject ownerObject = new SerializedObject(owner);
+            try
+            {
+                ownerObject.Update();
+                SerializedProperty items = ownerObject.FindProperty("items");
+                if (items != null && items.isArray)
+                {
+                    for (int i = 0; i < report.ItemBehaviorProcs.Count; i++)
+                    {
+                        ItemBehaviorProcReference reference =
+                            report.ItemBehaviorProcs[i];
+                        if (reference.Database != owner ||
+                            reference.ItemIndex < 0 ||
+                            reference.ItemIndex >= items.arraySize)
+                        {
+                            continue;
+                        }
+
+                        SerializedProperty item =
+                            items.GetArrayElementAtIndex(reference.ItemIndex);
+                        SerializedProperty behaviors =
+                            item.FindPropertyRelative("behaviorEffects");
+                        if (behaviors == null ||
+                            !behaviors.isArray ||
+                            reference.BehaviorIndex < 0 ||
+                            reference.BehaviorIndex >= behaviors.arraySize)
+                        {
+                            continue;
+                        }
+
+                        SerializedProperty behavior =
+                            behaviors.GetArrayElementAtIndex(reference.BehaviorIndex);
+                        SerializedProperty procSkill =
+                            behavior.FindPropertyRelative("procSkill");
+                        if (procSkill != null && procSkill.objectReferenceValue == target)
+                            procSkill.objectReferenceValue = null;
+                    }
+                }
+
+                ownerObject.ApplyModifiedProperties();
+            }
+            finally
+            {
+                ownerObject.Dispose();
+            }
+        }
+    }
+
+    private static void ClearPassiveBehaviorProcReferences(
+        SkillData target,
+        SkillReferenceReport report)
+    {
+        List<PassiveEngravingData> owners = new List<PassiveEngravingData>();
+        for (int i = 0; i < report.PassiveBehaviorProcs.Count; i++)
+            AddUnique(owners, report.PassiveBehaviorProcs[i].Passive);
+
+        for (int ownerIndex = 0; ownerIndex < owners.Count; ownerIndex++)
+        {
+            PassiveEngravingData owner = owners[ownerIndex];
+            if (owner == null)
+                continue;
+
+            Undo.RecordObject(owner, "Remove Skill References");
+            SerializedObject ownerObject = new SerializedObject(owner);
+            try
+            {
+                ownerObject.Update();
+                SerializedProperty behaviors = ownerObject.FindProperty("behaviors");
+                if (behaviors != null && behaviors.isArray)
+                {
+                    for (int i = 0; i < report.PassiveBehaviorProcs.Count; i++)
+                    {
+                        PassiveBehaviorProcReference reference =
+                            report.PassiveBehaviorProcs[i];
+                        if (reference.Passive != owner ||
+                            reference.BehaviorIndex < 0 ||
+                            reference.BehaviorIndex >= behaviors.arraySize)
+                        {
+                            continue;
+                        }
+
+                        SerializedProperty behavior =
+                            behaviors.GetArrayElementAtIndex(reference.BehaviorIndex);
+                        SerializedProperty procSkill =
+                            behavior.FindPropertyRelative("procSkill");
+                        if (procSkill != null && procSkill.objectReferenceValue == target)
+                            procSkill.objectReferenceValue = null;
+                    }
+                }
+
+                ownerObject.ApplyModifiedProperties();
+            }
+            finally
+            {
+                ownerObject.Dispose();
+            }
+        }
+    }
+
+    private static void DeleteArrayElementCompletely(
+        SerializedProperty array,
+        int index)
+    {
+        int previousSize = array.arraySize;
+        array.DeleteArrayElementAtIndex(index);
+        if (array.arraySize == previousSize)
+            array.DeleteArrayElementAtIndex(index);
+    }
+
+    private static void AddUnique<T>(List<T> values, T value)
+        where T : UnityEngine.Object
+    {
+        if (value != null && !values.Contains(value))
+            values.Add(value);
+    }
+
+    private static void RemoveCreatedSkillUndoRecord(string path)
+    {
+        for (int i = s_CreatedSkillUndoRecords.Count - 1; i >= 0; i--)
+        {
+            if (string.Equals(
+                    s_CreatedSkillUndoRecords[i].Path,
+                    path,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                s_CreatedSkillUndoRecords.RemoveAt(i);
+            }
         }
     }
 
@@ -1751,6 +2479,68 @@ public sealed class SkillDashboardWindow : EditorWindow
         public int CustomCellCount;
         public int AilmentCount;
         public string LinkedItemCodesText;
+    }
+
+    private sealed class SkillReferenceReport
+    {
+        public readonly List<WeaponSlotReference> WeaponSlots =
+            new List<WeaponSlotReference>();
+        public readonly List<WeaponBasicAttackReference> BasicAttacks =
+            new List<WeaponBasicAttackReference>();
+        public readonly List<ItemEngravingReference> ItemBridges =
+            new List<ItemEngravingReference>();
+        public readonly List<RecastStageReference> RecastStages =
+            new List<RecastStageReference>();
+        public readonly List<ItemBehaviorProcReference> ItemBehaviorProcs =
+            new List<ItemBehaviorProcReference>();
+        public readonly List<PassiveBehaviorProcReference> PassiveBehaviorProcs =
+            new List<PassiveBehaviorProcReference>();
+
+        public int TotalCount =>
+            WeaponSlots.Count +
+            BasicAttacks.Count +
+            ItemBridges.Count +
+            RecastStages.Count +
+            ItemBehaviorProcs.Count +
+            PassiveBehaviorProcs.Count;
+    }
+
+    private sealed class WeaponSlotReference
+    {
+        public WeaponData Weapon;
+        public int SlotIndex;
+    }
+
+    private sealed class WeaponBasicAttackReference
+    {
+        public WeaponData Weapon;
+    }
+
+    private sealed class ItemEngravingReference
+    {
+        public ItemDatabase Database;
+        public int ItemIndex;
+        public string ItemCode;
+    }
+
+    private sealed class RecastStageReference
+    {
+        public SkillData Owner;
+        public int StageIndex;
+    }
+
+    private sealed class ItemBehaviorProcReference
+    {
+        public ItemDatabase Database;
+        public int ItemIndex;
+        public string ItemCode;
+        public int BehaviorIndex;
+    }
+
+    private sealed class PassiveBehaviorProcReference
+    {
+        public PassiveEngravingData Passive;
+        public int BehaviorIndex;
     }
 
     private sealed class ScanContext
