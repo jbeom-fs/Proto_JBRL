@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-24
-> 기준 커밋: master HEAD `c5990950` — **각인 통합 드랍**: 쿼리 전용 `DropQueryCategory` enum(값=`ItemType` 미러 + `AnyEngraving=9`)으로 액티브·패시브 각인을 통합 후보 풀에서 1회 추첨, `DropQueryCategoryMirrorCheck` 미러 검증(`ed5cbc6c`). **Sword 캔슬 패시브 각인 3종**(회복·쉴드·추가타, 캔슬 축 완결, `299fbd6d`). **각인대 배치 검증 단일화**(`EngravingLoadout.CanApply*`+`TryPrepare*`, 부분 커밋 방지, `19c0dfe2`). **드랍DB 검증 순회 통합**(`ValidateDropLists`, `d012c4b0`). **인벤 전체 탭 각인 노출**+표시 전용 `OnPoolChanged`(`f47f6238`). **대시보드 UI**: Item Dashboard 등급 그룹 반영·정합성(`dedde076`·`f14f0fbb`), Enemy Dashboard 편집 UI(`cd812945`). 이전: 등급 공유 테이블·패시브 S4·쉴드(`b1be6c34`)
+> 작성 기준일: 2026-07-27
+> 기준 커밋: master HEAD `2d847463` — **Skill Dashboard 신설**(`JBRogLike/Skill Dashboard`): plain SkillData + EngravingData 통합 조망·평면 편집·생성·삭제 툴, 기존 `EngravingValidatorWindow` 흡수·삭제. S1 조망+검증 전량 이관(등급 공유 드롭 그룹 순회 추가)+각인 orphan Fix(`bb90b64e`), S2 평면 인라인 편집(`e5d2907c`), S3 생성(executionType 프리셋+`SaveFilePanelInProject`, `26f85306`), S4 삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·**BehaviorEffect.procSkill**, `f91543ea`). **SkillData Custom 셀 그리드 드래그 페인팅**(좌드래그 칠/지움+Bresenham 보간, 우드래그 지움, Shift 사각, 스트로크 1회=Undo 1회, `2d847463`). 워킹트리(미커밋): **Sword 초기 QWER 실스킬 저작**(Q 3연타 콤보/W 대시+베기/E 회전 광역/R 일도양단, 플레이스홀더 졸업). 이전: 각인 통합 드랍·Sword 캔슬 패시브 3종·대시보드 UI(`c5990950`)
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -393,9 +393,9 @@ Assets/Scripts/
 
 ```
 Assets/Editor/                     # Editor-only (런타임 미포함)
-├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
+├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells **드래그 페인팅** 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
-├── EngravingValidatorWindow.cs     # JBRogLike/Engraving Validator — EngravingData·ItemDatabase·EnemyDropDatabase 정합성 스캔 + 고아 각인 Add to ItemDatabase Fix
+├── SkillDashboardWindow.cs         # JBRogLike/Skill Dashboard — plain SkillData + EngravingData 통합 조망(헤더 고정·zebra·검색/Kind/Info 필터)/평면 인라인 편집(공통 11필드+각인 owningForm·grade)/생성(executionType 프리셋+SaveFilePanelInProject)/삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·BehaviorEffect.procSkill + 다이얼로그+Undo 그룹 정리) + 검증 전량(orphan 각인/패시브 Add to ItemDatabase Fix·참조 정합성·중복·죽은드랍·개인+등급 그룹 순회). EngravingValidatorWindow 흡수. 복잡 저작은 SkillDataEditor 인스펙터 위임
 ├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + **queries[] 쿼리 편집(유효 기본값 생성·경고 4종·결번 enum 안전 Popup)** + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
 ├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집 + **쿼리 역계산(매칭 쿼리 표시·[현재 폼 의존])**·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
 ├── DropQueryEditorMatcher.cs       # 드랍 쿼리↔아이템 매칭 판정 (에디터 전용 static) — Enemy/Item Dashboard 공용. 등급은 DropQueryResolver.GetTier 직접 호출(단일 진실), formScope=CurrentForm은 currentFormDependent 플래그로 반환. AnyEngraving은 액티브·패시브 둘 다 매칭
@@ -933,7 +933,7 @@ InstantArea:
 
 Custom InstantArea:
   SkillData.customCells = 시전자 기준 상대 셀(+Y=전방, 원점 허용)
-    — 저작은 SkillDataEditor 그리드 페인팅(가변 반경 1~12, 중앙=P) 인스펙터
+    — 저작은 SkillDataEditor 그리드 페인팅(가변 반경 1~12, 중앙=P, 드래그 칠/지움·우드래그 지움·Shift 사각) 인스펙터
   SkillTargetResolver.FillWorldTargets
     → customCells 를 조준 방향으로 float 회전한 월드 포인트로 변환(반올림 없음)
   SkillTargetResolver.TryCreateCustomShapeMatcher
@@ -2242,7 +2242,7 @@ chance 판정
 - **Enemy Dashboard** — `queries[]` 인라인 편집. `+ query`가 **즉시 유효한 기본값**(chance 1 / Material / CurrentForm / tier 1,0,0 / rolls [1])으로 생성해 "추가했는데 조용히 아무것도 안 나온다"를 구조적으로 차단. 경고 4종(chance 0 / 허용 tier 없음 / rolls 길이 과다 / 매칭 후보 없음)
 - **Item Dashboard** — 드랍 소스 역참조에 **쿼리 역계산** 추가. 쿼리로만 드랍되는 각인이 "드랍 미등록"으로 오탐되던 문제 해소. `formScope=CurrentForm`은 `[현재 폼 의존]`으로 표기. 쿼리는 itemCode를 들지 않으므로 **삭제 분석에는 영향 없음**
 - **`DropQueryEditorMatcher`** — 두 대시보드 공용 매칭 판정(에디터 전용)
-- `EngravingValidatorWindow`의 "드랍 미배치" 경고는 쿼리 방식에서 항상 오탐이므로 **제거**됨
+- `EngravingValidatorWindow`(현 Skill Dashboard로 흡수)의 "드랍 미배치" 경고는 쿼리 방식에서 항상 오탐이므로 **제거**됨
 - 콘솔 `/dropquery <category> [count=20]` — 고정 시드로 N회 해석해 아이템별 분포 + `noDrop` 집계 출력(저작 검증용). `category`는 `DropQueryCategory`(`anyengraving` 포함)
 
 ### 11b-4. Soul 아이템 기반 Form 보유 판정
@@ -2901,14 +2901,14 @@ case AttackPatternType.Ring:
     break;
 ```
 
-WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다. 이미 구현된 `Custom` 은 `SkillData.customCells` 로 저작한 셀 묶음을 조준 방향으로 회전해 쓰는 패턴입니다. 기본 6패턴처럼 grid 셀에 반올림하지 않고, 실행은 연속 월드 포인트 + 셀별 회전 `Physics2D.OverlapBox` 콜라이더 겹침 판정으로 처리합니다. 저작은 SkillDataEditor 의 그리드 페인팅 인스펙터(격자 클릭 토글)로 합니다.
+WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다. 이미 구현된 `Custom` 은 `SkillData.customCells` 로 저작한 셀 묶음을 조준 방향으로 회전해 쓰는 패턴입니다. 기본 6패턴처럼 grid 셀에 반올림하지 않고, 실행은 연속 월드 포인트 + 셀별 회전 `Physics2D.OverlapBox` 콜라이더 겹침 판정으로 처리합니다. 저작은 SkillDataEditor 의 그리드 페인팅 인스펙터(격자 클릭 토글 + 좌드래그 칠/지움·Bresenham 보간·우드래그 지움·Shift 사각 채우기)로 합니다.
 
 ### 새 스킬(=영혼각인) / 무기 추가
 
 **신규 스킬 콘텐츠의 기본 경로는 plain SkillData 가 아니라 영혼각인(`EngravingData`)** — 런 중 드랍/교체 시스템(§7-8)에 태우려면 `Create > JBRogLike > Combat > Engraving` 으로 생성한다. plain SkillData 는 무기 기본 loadout(`WeaponData.skills[4]`·`basicAttackSkillData`) 전용.
 
 1. `Create > JBRogLike > Combat > Engraving` — `owningForm`(결속 폼) + `grade`(Faint/Whole/Primordial) 지정, SkillData 상속 필드(실행타입/수치/형태/ailments) 입력
-2. **Engraving Validator**(`JBRogLike > Engraving Validator`)로 ItemDatabase 등록(고아 각인 "Add to ItemDatabase" Fix — itemCode 자동 발급)
+2. **Skill Dashboard**(`JBRogLike > Skill Dashboard`)로 ItemDatabase 등록(고아 각인 "Add to ItemDatabase" Fix — itemCode 자동 발급). EngravingValidator 흡수됨
 3. `EnemyDropDatabase` 에 드랍 배치(일반=저확률 / 엘리트=choiceGroup / 보스=확정 Primordial, **전부 min=max=1**)
 4. 검증: Validator 재스캔 경고 0 + 콘솔 `/engraving give <form> <itemCode>` 로 즉시 장착 테스트
 
@@ -3080,7 +3080,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 폼 시스템 | `PlayerFormData`/`PlayerFormId`/`PlayerFormDatabase` + `TrySwitchForm`(Soul 보유 게이팅 + `FormSwitchResult`) + loadout 단일 소스(`WeaponData.skills[4]`+`basicAttackSkillData` 폼별 평타) + `OnLoadoutChanged`→스킬 UI 자동 갱신 + 콘솔 `/form set` |
-| 폼별 메커니즘 | **Sword**(콤보+캔슬 — 연타·체인·피캔슬, §7-10, 정체성 확정 2026-07-15) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(패리 가로채기→스택 자원, `ParryStackResource` 순수 C#) |
+| 폼별 메커니즘 | **Sword**(콤보+캔슬 — 연타·체인·피캔슬, §7-10, 정체성 확정 2026-07-15. **초기 QWER 킷 저작 완료 2026-07-27**: Q 3연타 콤보/W 대시+베기(recast)/E 회전 광역(Spin·hitSteps)/R 일도양단(무거운 hitSteps·cancelable=false)) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(패리 가로채기→스택 자원, `ParryStackResource` 순수 C#) |
 | 폼 애니메이션 | 4폼 전용 스프라이트시트→5클립+AnimatorController+에셋 결선, Parry 정면/측면 분기(`ApplyParryFacing`), 스킬 애니는 **SkillData 단일 진입점**(`PlaySkillAnimation`) |
 | 폼 자원 UI | `ParryStackBarUI` / `FreischutzMagazineUI` / `ComboCounterUI`(**정식화 2026-07-14** — x{총스택}+단계 orb 4개+유예 slider, 단계별 색) — BasicAttackMode 로 표시 분기 |
 
@@ -3114,7 +3114,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + **Altar UI 개편(2026-07-16)** — 단일 스크롤+섹션 헤더+"????" 마스킹+한글화+행 프리팹, 공통 스탯=조각 배분 창(혼합 지불, Max=잔여 클램프) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속) + **소실 예방 3종**(.bak 백업·unknown itemCode 보존·원자적 쓰기, 2026-07-14). 상세 §11b-9~10 |
 | 폼 진행·선택 (2026-07-16) | **A안 확정** — 폼=런 단위 선택, 해금=Soul 보유(기존 축), 시작 Sword Soul 자동 지급 + 던전 이탈 Normal 복귀(마을=슬라임) + **던전 입장 폼 선택 화면**(풀스크린, 카드 프리팹=데이터 캐리어, 실루엣 잠금 표시). 남은 S3: 흡수 해금 연출·Soul 드랍 랜덤 폼 보정·last-form 영속. 상세 §11a-4 |
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
-| 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Engraving Validator. **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
+| 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Skill Dashboard(조망·편집·생성·삭제·검증, Validator 흡수). **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
 | 패시브 각인 (2026-07-22 신설) | `PassiveEngravingData`(SkillData 비파생, `BehaviorEffect[]`) + `EngravingLoadout` 패시브 슬롯4/풀 미러(**`OnPassiveChanged` 이벤트 분리 = 쿨다운 리셋 차단**) + `BehaviorRuntime.Rescan` 2소스 병합(인벤 Relic + 장착 패시브) + 드랍 라우팅(ItemType.PassiveEngraving) + 각인대 **액티브/패시브 탭**(변경된 축만 커밋) + 인벤 조회 탭. **남은 것: Altar 슬롯 증설·영속+잠금 UI, 쉴드 서브시스템**. 상세 §7-8b |
 
 **지역 전환·아레나**
