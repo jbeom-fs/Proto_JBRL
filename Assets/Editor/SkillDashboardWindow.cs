@@ -13,6 +13,7 @@ public sealed class SkillDashboardWindow : EditorWindow
     private const float TableWidth = 1390f;
     private const float SkillHeaderHeight = 20f;
     private const float SkillRowHeight = 23f;
+    private const float SkillFoldoutWidth = 16f;
 
     private enum SkillKindFilter
     {
@@ -23,6 +24,7 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private readonly List<SkillRow> _skillRows = new List<SkillRow>(64);
     private readonly List<ValidationResult> _results = new List<ValidationResult>(64);
+    private readonly HashSet<SkillData> _expandedSkills = new HashSet<SkillData>();
     private bool _hasScanned;
     private string _search = string.Empty;
     private SkillKindFilter _kindFilter;
@@ -47,6 +49,8 @@ public sealed class SkillDashboardWindow : EditorWindow
     private void OnDisable()
     {
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        ClearSkillSerializedObjectCache();
+        _expandedSkills.Clear();
     }
 
     private void OnUndoRedoPerformed()
@@ -169,6 +173,7 @@ public sealed class SkillDashboardWindow : EditorWindow
             EditorGUI.DrawRect(headerRect, headerColor);
         }
 
+        GUILayout.Space(SkillFoldoutWidth);
         GUILayout.Label("", GUILayout.Width(42f));
         GUILayout.Label("Name", EditorStyles.miniBoldLabel, GUILayout.Width(190f));
         GUILayout.Label("Kind", EditorStyles.miniBoldLabel, GUILayout.Width(76f));
@@ -184,7 +189,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         EditorGUILayout.EndHorizontal();
     }
 
-    private static void DrawSkillRow(SkillRow row, int visibleIndex)
+    private void DrawSkillRow(SkillRow row, int visibleIndex)
     {
         Rect rowRect = EditorGUILayout.BeginHorizontal(
             GUIStyle.none,
@@ -198,14 +203,42 @@ public sealed class SkillDashboardWindow : EditorWindow
             EditorGUI.DrawRect(rowRect, stripeColor);
         }
 
-        if (GUILayout.Button("Ping", GUILayout.Width(42f)))
-            EditorGUIUtility.PingObject(row.Asset);
+        Rect foldoutRect = GUILayoutUtility.GetRect(
+            SkillFoldoutWidth,
+            SkillRowHeight,
+            GUILayout.Width(SkillFoldoutWidth),
+            GUILayout.Height(SkillRowHeight));
+        bool hasTarget = row.Asset != null;
+        bool isExpanded = hasTarget && _expandedSkills.Contains(row.Asset);
+        bool nextExpanded;
+        using (new EditorGUI.DisabledScope(!hasTarget))
+        {
+            nextExpanded = EditorGUI.Foldout(
+                foldoutRect,
+                isExpanded,
+                GUIContent.none,
+                false);
+        }
+
+        if (nextExpanded != isExpanded)
+        {
+            if (nextExpanded)
+                _expandedSkills.Add(row.Asset);
+            else
+                _expandedSkills.Remove(row.Asset);
+        }
+
+        using (new EditorGUI.DisabledScope(!hasTarget))
+        {
+            if (GUILayout.Button("Ping", GUILayout.Width(42f)))
+                EditorGUIUtility.PingObject(row.Asset);
+        }
 
         GUILayout.Label(row.DisplayName, GUILayout.Width(190f));
         GUILayout.Label(row.IsEngraving ? "Engraving" : "Plain", GUILayout.Width(76f));
-        GUILayout.Label(row.Asset.executionType.ToString(), GUILayout.Width(112f));
-        GUILayout.Label(row.Asset.cooldown.ToString("0.###"), GUILayout.Width(66f));
-        GUILayout.Label(row.Asset.damage.ToString(), GUILayout.Width(58f));
+        GUILayout.Label(row.ExecutionTypeText, GUILayout.Width(112f));
+        GUILayout.Label(row.CooldownText, GUILayout.Width(66f));
+        GUILayout.Label(row.DamageText, GUILayout.Width(58f));
         GUILayout.Label(row.FormAndGrade, GUILayout.Width(155f));
         GUILayout.Label(row.RecastCount.ToString(), GUILayout.Width(48f));
         GUILayout.Label(row.HitStepCount.ToString(), GUILayout.Width(40f));
@@ -214,6 +247,212 @@ public sealed class SkillDashboardWindow : EditorWindow
         GUILayout.Label(row.LinkedItemCodesText, GUILayout.Width(390f));
 
         EditorGUILayout.EndHorizontal();
+
+        if (nextExpanded)
+            DrawSkillEditPanel(row);
+    }
+
+    private void DrawSkillEditPanel(SkillRow row)
+    {
+        SerializedObject skillObject = row.SerializedObject;
+        if (skillObject == null || skillObject.targetObject == null)
+            return;
+
+        skillObject.Update();
+
+        SerializedProperty skillName = skillObject.FindProperty("skillName");
+        SerializedProperty executionType = skillObject.FindProperty("executionType");
+        SerializedProperty resourceType = skillObject.FindProperty("resourceType");
+        SerializedProperty requiredAmount = skillObject.FindProperty("requiredAmount");
+        SerializedProperty consumeAmount = skillObject.FindProperty("consumeAmount");
+        SerializedProperty cooldown = skillObject.FindProperty("cooldown");
+        SerializedProperty castDelay = skillObject.FindProperty("castDelay");
+        SerializedProperty recoveryDelay = skillObject.FindProperty("recoveryDelay");
+        SerializedProperty recastWindow = skillObject.FindProperty("recastWindow");
+        SerializedProperty damage = skillObject.FindProperty("damage");
+        SerializedProperty cancelable = skillObject.FindProperty("cancelable");
+        SerializedProperty owningForm = skillObject.FindProperty("owningForm");
+        SerializedProperty grade = skillObject.FindProperty("grade");
+
+        Rect panelRect = EditorGUILayout.BeginVertical(
+            GUIStyle.none,
+            GUILayout.Width(TableWidth));
+        if (Event.current.type == EventType.Repaint)
+        {
+            Color panelColor = EditorGUIUtility.isProSkin
+                ? new Color(0.16f, 0.16f, 0.16f, 1f)
+                : new Color(0.9f, 0.9f, 0.9f, 1f);
+            EditorGUI.DrawRect(panelRect, panelColor);
+        }
+
+        GUILayout.Space(4f);
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        GUILayout.Space(SkillFoldoutWidth + 4f);
+        DrawSkillProperty(skillName, "Skill Name", 330f, 72f);
+        DrawSkillProperty(executionType, "Execution", 230f, 68f);
+        DrawSkillProperty(resourceType, "Resource", 190f, 64f);
+        DrawSkillProperty(cancelable, "Cancelable", 150f, 68f);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        GUILayout.Space(SkillFoldoutWidth + 4f);
+        DrawSkillProperty(requiredAmount, "Required", 165f, 60f);
+        DrawSkillProperty(consumeAmount, "Consume", 165f, 60f);
+        DrawSkillProperty(cooldown, "Cooldown", 165f, 62f);
+        DrawSkillProperty(castDelay, "Cast Delay", 165f, 66f);
+        DrawSkillProperty(recoveryDelay, "Recovery", 175f, 64f);
+        DrawSkillProperty(recastWindow, "Recast Win", 175f, 70f);
+        DrawSkillProperty(damage, "Damage", 150f, 58f);
+        EditorGUILayout.EndHorizontal();
+
+        if (owningForm != null && grade != null)
+        {
+            EditorGUILayout.BeginHorizontal(GUIStyle.none);
+            GUILayout.Space(SkillFoldoutWidth + 4f);
+            DrawSkillProperty(owningForm, "Owning Form", 230f, 84f);
+            DrawSkillProperty(grade, "Grade", 190f, 52f);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        GUILayout.Space(SkillFoldoutWidth + 4f);
+        GUILayout.Label(
+            "Read-only counts — Recast " + row.RecastCount +
+            " / Hit Steps " + row.HitStepCount +
+            " / Custom Cells " + row.CustomCellCount +
+            " / Ailments " + row.AilmentCount,
+            EditorStyles.miniLabel,
+            GUILayout.Width(580f));
+        EditorGUILayout.HelpBox(
+            "복잡 필드는 인스펙터에서 편집",
+            MessageType.Info);
+        if (GUILayout.Button("Ping / Inspector", GUILayout.Width(130f)))
+        {
+            Selection.activeObject = row.Asset;
+            EditorGUIUtility.PingObject(row.Asset);
+        }
+        EditorGUILayout.EndHorizontal();
+        GUILayout.Space(4f);
+        EditorGUILayout.EndVertical();
+
+        if (skillObject.ApplyModifiedProperties())
+        {
+            RefreshSkillRowCachedValues(row, skillObject);
+            Repaint();
+        }
+    }
+
+    private static void DrawSkillProperty(
+        SerializedProperty property,
+        string label,
+        float width,
+        float labelWidth)
+    {
+        if (property == null)
+            return;
+
+        float previousLabelWidth = EditorGUIUtility.labelWidth;
+        EditorGUIUtility.labelWidth = labelWidth;
+        GUIContent labelContent = new GUIContent(label);
+        switch (property.propertyType)
+        {
+            case SerializedPropertyType.String:
+            {
+                string nextValue = EditorGUILayout.TextField(
+                    labelContent,
+                    property.stringValue,
+                    GUILayout.Width(width));
+                if (!string.Equals(nextValue, property.stringValue, StringComparison.Ordinal))
+                    property.stringValue = nextValue;
+                break;
+            }
+
+            case SerializedPropertyType.Enum:
+            {
+                int nextValue = EditorGUILayout.Popup(
+                    labelContent,
+                    property.enumValueIndex,
+                    property.enumDisplayNames,
+                    GUILayout.Width(width));
+                if (nextValue != property.enumValueIndex)
+                    property.enumValueIndex = nextValue;
+                break;
+            }
+
+            case SerializedPropertyType.Integer:
+            {
+                int nextValue = Mathf.Max(
+                    0,
+                    EditorGUILayout.IntField(
+                        labelContent,
+                        property.intValue,
+                        GUILayout.Width(width)));
+                if (nextValue != property.intValue)
+                    property.intValue = nextValue;
+                break;
+            }
+
+            case SerializedPropertyType.Float:
+            {
+                float nextValue = Mathf.Max(
+                    0f,
+                    EditorGUILayout.FloatField(
+                        labelContent,
+                        property.floatValue,
+                        GUILayout.Width(width)));
+                if (!Mathf.Approximately(nextValue, property.floatValue))
+                    property.floatValue = nextValue;
+                break;
+            }
+
+            case SerializedPropertyType.Boolean:
+            {
+                bool nextValue = EditorGUILayout.Toggle(
+                    labelContent,
+                    property.boolValue,
+                    GUILayout.Width(width));
+                if (nextValue != property.boolValue)
+                    property.boolValue = nextValue;
+                break;
+            }
+        }
+        EditorGUIUtility.labelWidth = previousLabelWidth;
+    }
+
+    private static void RefreshSkillRowCachedValues(
+        SkillRow row,
+        SerializedObject skillObject)
+    {
+        SerializedProperty skillName = skillObject.FindProperty("skillName");
+        string serializedName = GetString(skillName);
+        row.DisplayName = string.IsNullOrWhiteSpace(serializedName)
+            ? row.Asset.name
+            : serializedName;
+
+        SerializedProperty owningForm = skillObject.FindProperty("owningForm");
+        SerializedProperty grade = skillObject.FindProperty("grade");
+        row.FormAndGrade = owningForm != null && grade != null
+            ? ((PlayerFormId)owningForm.intValue) + " / " + ((EngravingGrade)grade.intValue)
+            : "—";
+
+        SerializedProperty executionType = skillObject.FindProperty("executionType");
+        SerializedProperty cooldown = skillObject.FindProperty("cooldown");
+        SerializedProperty damage = skillObject.FindProperty("damage");
+        row.ExecutionTypeText = executionType != null
+            ? ((SkillExecutionType)executionType.intValue).ToString()
+            : "—";
+        row.CooldownText = cooldown != null ? cooldown.floatValue.ToString("0.###") : "—";
+        row.DamageText = damage != null ? damage.intValue.ToString() : "—";
+
+        row.RecastCount = GetArraySize(skillObject.FindProperty("recastStages"));
+        row.HitStepCount = GetArraySize(skillObject.FindProperty("hitSteps"));
+        row.CustomCellCount = GetArraySize(skillObject.FindProperty("customCells"));
+        row.AilmentCount = GetArraySize(skillObject.FindProperty("ailments"));
+    }
+
+    private static int GetArraySize(SerializedProperty property)
+    {
+        return property != null && property.isArray ? property.arraySize : 0;
     }
 
     private bool IsSkillVisible(SkillRow row)
@@ -351,9 +590,11 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private void Scan()
     {
+        ClearSkillSerializedObjectCache();
         _skillRows.Clear();
         _results.Clear();
         _hasScanned = true;
+        _expandedSkills.RemoveWhere(skill => skill == null);
 
         List<SkillData> skills = LoadAssets<SkillData>("t:SkillData");
         List<PassiveEngravingData> passiveEngravings =
@@ -386,8 +627,12 @@ public sealed class SkillDashboardWindow : EditorWindow
             _skillRows.Add(new SkillRow
             {
                 Asset = skill,
+                SerializedObject = new SerializedObject(skill),
                 DisplayName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName,
                 IsEngraving = engraving != null,
+                ExecutionTypeText = skill.executionType.ToString(),
+                CooldownText = skill.cooldown.ToString("0.###"),
+                DamageText = skill.damage.ToString(),
                 FormAndGrade = engraving != null ? engraving.owningForm + " / " + engraving.grade : "—",
                 RecastCount = skill.recastStages != null ? skill.recastStages.Count : 0,
                 HitStepCount = skill.hitSteps != null ? skill.hitSteps.Count : 0,
@@ -395,6 +640,19 @@ public sealed class SkillDashboardWindow : EditorWindow
                 AilmentCount = skill.ailments != null ? skill.ailments.Length : 0,
                 LinkedItemCodesText = BuildLinkedItemCodes(linkedItems)
             });
+        }
+    }
+
+    private void ClearSkillSerializedObjectCache()
+    {
+        for (int i = 0; i < _skillRows.Count; i++)
+        {
+            SerializedObject skillObject = _skillRows[i].SerializedObject;
+            if (skillObject == null)
+                continue;
+
+            skillObject.Dispose();
+            _skillRows[i].SerializedObject = null;
         }
     }
 
@@ -1235,8 +1493,12 @@ public sealed class SkillDashboardWindow : EditorWindow
     private sealed class SkillRow
     {
         public SkillData Asset;
+        public SerializedObject SerializedObject;
         public string DisplayName;
         public bool IsEngraving;
+        public string ExecutionTypeText;
+        public string CooldownText;
+        public string DamageText;
         public string FormAndGrade;
         public int RecastCount;
         public int HitStepCount;
