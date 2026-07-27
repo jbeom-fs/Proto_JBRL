@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEngine;
 
@@ -25,6 +26,8 @@ public sealed class SkillDashboardWindow : EditorWindow
     private readonly List<SkillRow> _skillRows = new List<SkillRow>(64);
     private readonly List<ValidationResult> _results = new List<ValidationResult>(64);
     private readonly HashSet<SkillData> _expandedSkills = new HashSet<SkillData>();
+    private static readonly List<CreatedSkillUndoRecord> s_CreatedSkillUndoRecords =
+        new List<CreatedSkillUndoRecord>();
     private bool _hasScanned;
     private string _search = string.Empty;
     private SkillKindFilter _kindFilter;
@@ -37,6 +40,13 @@ public sealed class SkillDashboardWindow : EditorWindow
     public static void Open()
     {
         GetWindow<SkillDashboardWindow>("Skill Dashboard");
+    }
+
+    [InitializeOnLoadMethod]
+    private static void InitializeCreatedSkillUndoCleanup()
+    {
+        Undo.undoRedoPerformed -= CleanupUndoneCreatedSkillAssets;
+        Undo.undoRedoPerformed += CleanupUndoneCreatedSkillAssets;
     }
 
     private void OnEnable()
@@ -55,6 +65,8 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private void OnUndoRedoPerformed()
     {
+        CleanupUndoneCreatedSkillAssets();
+
         if (!_hasScanned)
             return;
 
@@ -90,6 +102,12 @@ public sealed class SkillDashboardWindow : EditorWindow
         if (GUILayout.Button("Scan", EditorStyles.toolbarButton, GUILayout.Width(70f)))
             Scan();
 
+        if (GUILayout.Button("+ New", EditorStyles.toolbarButton, GUILayout.Width(70f)))
+        {
+            Rect buttonRect = GUILayoutUtility.GetLastRect();
+            PopupWindow.Show(buttonRect, new NewSkillPopup(this));
+        }
+
         GUILayout.Space(6f);
         GUILayout.Label("Search", GUILayout.Width(44f));
         _search = GUILayout.TextField(
@@ -116,6 +134,159 @@ public sealed class SkillDashboardWindow : EditorWindow
             GUILayout.Label(_skillRows.Count + " skills / " + _results.Count + " results", EditorStyles.miniLabel);
 
         EditorGUILayout.EndHorizontal();
+    }
+
+    private void PromptCreateSkill(
+        SkillExecutionType executionType,
+        bool createAsEngraving,
+        PlayerFormId owningForm,
+        EngravingGrade grade)
+    {
+        string defaultName = createAsEngraving
+            ? owningForm + "_" + grade + "_New"
+            : executionType + "_New";
+        string defaultPath = GetDefaultSkillCreationFolder(createAsEngraving, owningForm);
+        string path = EditorUtility.SaveFilePanelInProject(
+            "Create Skill",
+            defaultName,
+            "asset",
+            "Select a location for the new skill asset.",
+            defaultPath);
+
+        CreateSkillAsset(path, executionType, createAsEngraving, owningForm, grade);
+    }
+
+    private SkillData CreateSkillAsset(
+        string path,
+        SkillExecutionType executionType,
+        bool createAsEngraving,
+        PlayerFormId owningForm,
+        EngravingGrade grade)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return null;
+
+        if (!path.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+            path += ".asset";
+
+        if (AssetDatabase.LoadMainAssetAtPath(path) != null)
+        {
+            EditorUtility.DisplayDialog(
+                "Create Skill",
+                "An asset already exists at:\n" + path,
+                "OK");
+            return null;
+        }
+
+        SkillData skill = createAsEngraving
+            ? ScriptableObject.CreateInstance<EngravingData>()
+            : ScriptableObject.CreateInstance<SkillData>();
+        string fileName = Path.GetFileNameWithoutExtension(path);
+        skill.name = fileName;
+        skill.skillName = fileName;
+        skill.executionType = executionType;
+
+        if (skill is EngravingData engraving)
+        {
+            engraving.owningForm = owningForm;
+            engraving.grade = grade;
+        }
+
+        ApplyCreationPreset(skill, executionType);
+
+        try
+        {
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("Create Skill");
+            AssetDatabase.CreateAsset(skill, path);
+            Undo.RegisterCreatedObjectUndo(skill, "Create Skill");
+            s_CreatedSkillUndoRecords.Add(new CreatedSkillUndoRecord
+            {
+                Asset = skill,
+                Path = path
+            });
+            Undo.CollapseUndoOperations(undoGroup);
+        }
+        catch (Exception exception)
+        {
+            if (skill != null && string.IsNullOrEmpty(AssetDatabase.GetAssetPath(skill)))
+                DestroyImmediate(skill);
+
+            EditorUtility.DisplayDialog(
+                "Create Skill",
+                "Failed to create skill asset.\n" + exception.Message,
+                "OK");
+            return null;
+        }
+
+        Scan();
+        _expandedSkills.Add(skill);
+        EditorGUIUtility.PingObject(skill);
+        Selection.activeObject = skill;
+        Repaint();
+        return skill;
+    }
+
+    private static void CleanupUndoneCreatedSkillAssets()
+    {
+        for (int i = s_CreatedSkillUndoRecords.Count - 1; i >= 0; i--)
+        {
+            CreatedSkillUndoRecord record = s_CreatedSkillUndoRecords[i];
+            if (record.Asset != null)
+                continue;
+
+            if (!AssetDatabase.DeleteAsset(record.Path))
+            {
+                FileUtil.DeleteFileOrDirectory(record.Path);
+                FileUtil.DeleteFileOrDirectory(record.Path + ".meta");
+            }
+
+            s_CreatedSkillUndoRecords.RemoveAt(i);
+        }
+    }
+
+    private static void ApplyCreationPreset(
+        SkillData skill,
+        SkillExecutionType executionType)
+    {
+        switch (executionType)
+        {
+            case SkillExecutionType.InstantArea:
+                skill.attackPattern = AttackPatternType.Cross;
+                skill.patternRange = 1;
+                skill.damage = 10;
+                break;
+
+            case SkillExecutionType.Projectile:
+                skill.projectileCount = 1;
+                skill.damage = 10;
+                break;
+
+            case SkillExecutionType.Dash:
+                skill.dashDistance = 3f;
+                skill.dashDuration = 0.12f;
+                skill.dashStopOnWall = true;
+                break;
+
+            case SkillExecutionType.AreaOverTime:
+                skill.zoneRadius = 1f;
+                skill.zoneTickInterval = 0.5f;
+                skill.zoneDuration = 3f;
+                break;
+        }
+    }
+
+    private static string GetDefaultSkillCreationFolder(
+        bool createAsEngraving,
+        PlayerFormId owningForm)
+    {
+        const string root = "Assets/Scriptable/Skill";
+        if (!createAsEngraving)
+            return root;
+
+        string formFolder = root + "/" + owningForm;
+        return AssetDatabase.IsValidFolder(formFolder) ? formFolder : root;
     }
 
     private void DrawSkillsPanel(float height)
@@ -1483,11 +1654,86 @@ public sealed class SkillDashboardWindow : EditorWindow
         return string.IsNullOrEmpty(result) ? "Engraving" : result;
     }
 
+    private sealed class NewSkillPopup : PopupWindowContent
+    {
+        private readonly SkillDashboardWindow _owner;
+        private SkillExecutionType _executionType = SkillExecutionType.InstantArea;
+        private bool _createAsEngraving;
+        private PlayerFormId _owningForm = PlayerFormId.Normal;
+        private EngravingGrade _grade = EngravingGrade.Faint;
+
+        public NewSkillPopup(SkillDashboardWindow owner)
+        {
+            _owner = owner;
+        }
+
+        public override Vector2 GetWindowSize()
+        {
+            return new Vector2(320f, 178f);
+        }
+
+        public override void OnGUI(Rect rect)
+        {
+            EditorGUILayout.LabelField("Create Skill", EditorStyles.boldLabel);
+            EditorGUILayout.Space(3f);
+
+            float previousLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 130f;
+            _executionType = (SkillExecutionType)EditorGUILayout.EnumPopup(
+                "Execution Type",
+                _executionType);
+            _createAsEngraving = EditorGUILayout.Toggle(
+                "Create as Engraving",
+                _createAsEngraving);
+            if (_createAsEngraving)
+            {
+                _owningForm = (PlayerFormId)EditorGUILayout.EnumPopup(
+                    "Owning Form",
+                    _owningForm);
+                _grade = (EngravingGrade)EditorGUILayout.EnumPopup(
+                    "Grade",
+                    _grade);
+            }
+            EditorGUIUtility.labelWidth = previousLabelWidth;
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Create", GUILayout.Width(90f)))
+            {
+                SkillExecutionType executionType = _executionType;
+                bool createAsEngraving = _createAsEngraving;
+                PlayerFormId owningForm = _owningForm;
+                EngravingGrade grade = _grade;
+                editorWindow.Close();
+                _owner.PromptCreateSkill(
+                    executionType,
+                    createAsEngraving,
+                    owningForm,
+                    grade);
+                GUIUtility.ExitGUI();
+            }
+
+            if (GUILayout.Button("Cancel", GUILayout.Width(90f)))
+            {
+                editorWindow.Close();
+                GUIUtility.ExitGUI();
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
     private enum ResultSeverity
     {
         Error,
         Warning,
         Info
+    }
+
+    private sealed class CreatedSkillUndoRecord
+    {
+        public SkillData Asset;
+        public string Path;
     }
 
     private sealed class SkillRow
