@@ -16,9 +16,9 @@ MonoBehaviour:
   icon: {fileID: 3816796570929180759, guid: 8df514d95ab64b14c87aaa245894398e, type: 3}
   description: 
   executionType: 0
-  resourceType: 0
-  requiredAmount: 0
-  consumeAmount: 0
+  resourceType: 3
+  requiredAmount: 20
+  consumeAmount: 20
   bulletShortageMode: 0
   reloadAmount: 0
   cooldown: 30

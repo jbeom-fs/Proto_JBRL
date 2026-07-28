@@ -1,0 +1,76 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Sword_Skill_10
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: 무형참
+  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
+  description: 세 갈래의 관통 검기를 날려 벽에 두 번 반사시킨다.
+  executionType: 1
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 18
+  castDelay: 0
+  recoveryDelay: 0.2
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 0
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 80
+  attackPattern: 1
+  patternRange: 1
+  coneHalfAngle: 45
+  customCells: []
+  hitSteps: []
+  cancelable: 1
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
+  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
+  projectileSpeed: 10
+  projectileLifetime: 2.5
+  projectileCount: 3
+  projectileSpreadAngle: 12
+  projectileFirePattern: 2
+  projectileWallHitMode: 2
+  projectileTargetHitMode: 1
+  projectileMaxBounceCount: 2
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  owningForm: 1
+  grade: 2

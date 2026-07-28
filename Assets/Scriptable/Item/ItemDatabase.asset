@@ -603,3 +603,155 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Faint_4
+    displayName: 베어넘기기
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: e5b5d64788d448d79c5e350790766296, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Faint_5
+    displayName: 올려베기
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 009a316d394c423586a8712bbcf9f47b, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Whole_3
+    displayName: 기세베기
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 8c62f80d25654f13a597d4916bc408a5, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Whole_4
+    displayName: 연격·연쇄
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: b55e7d9b451d45ceac74d1b98c774169, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Whole_5
+    displayName: 도약참
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 188e533eab094b3e993b0c999273d988, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Primordial_4
+    displayName: 난무
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 2423396cac4c4ca7a42be61d1ce3035c, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Primordial_5
+    displayName: 무형참
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 51c1ab8cda5c4ba0bf1661e300bee557, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Sword_Primordial_6
+    displayName: 종언
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: b3e4ef99f98646b79756571613816c73, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1

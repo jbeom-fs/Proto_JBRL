@@ -85,7 +85,7 @@ MonoBehaviour:
       chance: 0.1
     choiceGroups: []
     queries:
-    - chance: 0.05
+    - chance: 1
       itemType: 9
       formScope: 0
       specificForm: 0
