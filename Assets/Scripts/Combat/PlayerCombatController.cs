@@ -123,6 +123,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private int _currentBullet;
     private ParryStackResource _parryStack;
     private ComboMeter _combo;
+    private PlayerFormId _previousFormId;
     private Transform _cachedTransform;
     private Collider2D _cachedHitCollider;
     private float _cachedHitRadius = DefaultPlayerHitRadius;
@@ -176,7 +177,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public float ComboWindowRemaining => _combo != null ? _combo.WindowRemaining : 0f;
     public float ComboWindowRemainingNormalized => _combo != null ? _combo.WindowRemainingNormalized : 0f;
     public float CurrentComboDamageMultiplier => GetComboDamageMultiplier();
-    public bool IsComboBonusActive => _soulBonus.Get(SoulStatType.ComboDamage) > 0f;
+    public bool IsComboActive => _formController?.CurrentForm?.UsesCombo == true;
     public PlayerFormId CurrentFormId =>
         _formController != null && _formController.CurrentForm != null
             ? _formController.CurrentForm.FormId
@@ -274,6 +275,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _inputReader = GetComponent<PlayerInputReader>();
         _dashController = GetComponent<PlayerDashController>();
         _formController = GetComponent<PlayerFormController>();
+        _previousFormId = CurrentFormId;
         _relicBehaviors = GetComponent<PlayerBehaviors>();
         if (engravingLoadout == null)
             engravingLoadout = GetComponent<EngravingLoadout>();
@@ -604,7 +606,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     /// <summary>Registers one landed attack action (one swing/projectile) toward the combo stack.</summary>
     public void RegisterComboHit()
     {
-        if (!IsComboBonusActive)
+        if (!IsComboActive)
             return;
 
         _combo?.RegisterHit();
@@ -630,7 +632,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (amount <= 0)
             return;
 
-        string combo = IsComboBonusActive && CurrentComboStack > 0
+        string combo = IsComboActive && CurrentComboStack > 0
             ? $" [combo x{CurrentComboStack}]"
             : string.Empty;
         Debug.Log((isCrit
@@ -672,6 +674,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _status?.Tick(Time.deltaTime);
         _parryStack?.Tick(Time.deltaTime);
         bool hasActiveEnemies = EnemyPoolManager.Instance != null && EnemyPoolManager.Instance.HasActiveEnemies;
+        PlayerFormId currentFormId = CurrentFormId;
+        if (currentFormId != _previousFormId)
+        {
+            _previousFormId = currentFormId;
+            ResetCombo();
+        }
         _combo?.Tick(Time.deltaTime, hasActiveEnemies);
         EnsureSkillSlotsBound();
         _cooldownController.Tick(Time.deltaTime);
@@ -1832,6 +1840,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             case SkillResourceType.ParryStack:
                 return _parryStack != null && _parryStack.Spend(amount);
 
+            case SkillResourceType.Combo:
+                return _combo != null && _combo.Spend(amount);
+
             case SkillResourceType.None:
             default:
                 return true;
@@ -1847,6 +1858,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
             case SkillResourceType.ParryStack:
                 return _parryStack != null ? _parryStack.Current : 0;
+
+            case SkillResourceType.Combo:
+                return CurrentComboStack;
 
             case SkillResourceType.None:
             default:
@@ -1963,6 +1977,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         EnsureSkillSlotsBound();
         return GetSkillSlot(slotIndex)?.Data;
+    }
+
+    public bool HasResourceFor(SkillData skill)
+    {
+        if (skill == null || skill.resourceType == SkillResourceType.None)
+            return true;
+
+        return Has(skill.resourceType, SkillSlotRuntime.ResolveRequiredAmount(skill));
     }
 
     public bool IsSkillReady(int slotIndex)

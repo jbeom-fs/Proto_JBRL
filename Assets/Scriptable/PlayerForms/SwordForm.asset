@@ -22,3 +22,4 @@ MonoBehaviour:
   dashBaseAngle: 0
   basicAttackMode: 0
   defaultWeapon: {fileID: 11400000, guid: 5ddd89ab7fc46a84fbac4a9c23dd1b89, type: 2}
+  usesCombo: 1

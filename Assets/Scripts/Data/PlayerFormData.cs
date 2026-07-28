@@ -25,6 +25,7 @@ public sealed class PlayerFormData : ScriptableObject
     [Header("Future Extensions")]
     [SerializeField] private PlayerBasicAttackMode basicAttackMode = PlayerBasicAttackMode.Damage;
     [SerializeField] private WeaponData defaultWeapon;
+    [SerializeField] private bool usesCombo;
 
     public PlayerFormId FormId => formId;
     public string DisplayName => displayName;
@@ -36,4 +37,5 @@ public sealed class PlayerFormData : ScriptableObject
     public float DashBaseAngle => dashBaseAngle;
     public PlayerBasicAttackMode BasicAttackMode => basicAttackMode;
     public WeaponData DefaultWeapon => defaultWeapon;
+    public bool UsesCombo => usesCombo;
 }

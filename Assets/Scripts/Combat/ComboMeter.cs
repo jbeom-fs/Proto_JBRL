@@ -59,6 +59,20 @@ public sealed class ComboMeter
         _progress = _tier >= _maxTier ? 0 : (int)(nextTotal % _stacksPerTier);
     }
 
+    public bool Spend(int amount)
+    {
+        if (amount <= 0)
+            return true;
+
+        if (TotalStacks < amount)
+            return false;
+
+        int nextTotal = TotalStacks - amount;
+        _tier = nextTotal / _stacksPerTier;
+        _progress = _tier >= _maxTier ? 0 : nextTotal % _stacksPerTier;
+        return true;
+    }
+
     public void Tick(float deltaTime, bool enemiesPresent)
     {
         if (TotalStacks <= 0)

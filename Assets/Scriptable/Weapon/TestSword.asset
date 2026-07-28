@@ -32,6 +32,7 @@ MonoBehaviour:
   reloadAmount: 0
   skills:
   - {fileID: 11400000, guid: e34bd2de6ac2c9442a23e7fdf8d05887, type: 2}
-  - {fileID: 11400000, guid: c188ef6289488904cbb91a1e4e0e7a81, type: 2}
-  - {fileID: 11400000, guid: e643993fc1a8ca242819d67107c79a93, type: 2}
-  - {fileID: 11400000, guid: e67d0a675f42c684ca8ce1dac57a2e5f, type: 2}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  passiveEngravings: []

@@ -15,7 +15,8 @@ public enum SkillResourceType
 {
     None = 0,
     Bullet = 1,
-    ParryStack = 2
+    ParryStack = 2,
+    Combo = 3
 }
 
 public enum BulletShortageMode

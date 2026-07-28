@@ -38,7 +38,7 @@ public sealed class ComboCounterUI : MonoBehaviour
         if (combat == null)
             combat = PlayerCombatController.Active;
 
-        bool visible = combat != null && combat.IsComboBonusActive && combat.CurrentComboStack > 0;
+        bool visible = combat != null && combat.IsComboActive;
         SetVisible(visible);
         if (!visible)
             return;
