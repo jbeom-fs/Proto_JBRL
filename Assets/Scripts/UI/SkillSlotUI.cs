@@ -29,6 +29,9 @@ public class SkillSlotUI : MonoBehaviour
     [Header("Recast Chain")]
     [SerializeField] private Color recastWindowFillColor = new Color(1f, 0.55f, 0.1f, 0.9f);
 
+    [Header("Skill Resource")]
+    [SerializeField] private Color resourceBlockedIconColor = new Color(0.45f, 0.45f, 0.45f, 1f);
+
     // ── 런타임 상태 ─────────────────────────────────────────────────
 
     private int                    _slotIndex;
@@ -39,10 +42,11 @@ public class SkillSlotUI : MonoBehaviour
     private SkillData _skill;          // 현재 슬롯에 할당된 스킬 캐시
     private float     _cooldownMax;    // 스킬 사용 시점의 최대 쿨타임
     private bool      _trackingCooldown;
-    private int       _lastDisplayedTenths = int.MinValue;
+    private int       _lastDisplayedSeconds = int.MinValue;
     private bool?     _cooldownUIVisible;
     private Sprite    _rootIconSprite;
     private bool      _rootIconEnabled;
+    private Color     _normalIconColor;
     private Color     _normalFillColor;
     private Image.Type _normalFillType;
     private Image.FillMethod _normalFillMethod;
@@ -53,6 +57,8 @@ public class SkillSlotUI : MonoBehaviour
     private Sprite    _lastAppliedIcon;
     private bool      _lastAppliedIconEnabled;
     private bool      _hasLastAppliedIcon;
+    private Color     _lastAppliedIconTint;
+    private bool      _hasLastAppliedIconTint;
     private Color     _lastAppliedFillColor;
     private bool      _hasLastAppliedFillColor;
     private float     _lastAppliedFillAmount = -1f;
@@ -97,6 +103,7 @@ public class SkillSlotUI : MonoBehaviour
             return;
         }
 
+        _normalIconColor = iconImage.color;
         _normalFillColor = cooldownOverlay.color;
         _normalFillType = cooldownOverlay.type;
         _normalFillMethod = cooldownOverlay.fillMethod;
@@ -127,6 +134,7 @@ public class SkillSlotUI : MonoBehaviour
         _showingRecast = false;
         RestoreNormalOverlayConfiguration();
         ApplyIcon(_rootIconSprite, _rootIconEnabled);
+        ApplyIconTint(_normalIconColor);
         ApplyFillColor(_normalFillColor);
     }
 
@@ -160,7 +168,7 @@ public class SkillSlotUI : MonoBehaviour
         {
             _trackingCooldown = false;
             _cooldownMax = 0f;
-            _lastDisplayedTenths = int.MinValue;
+            _lastDisplayedSeconds = int.MinValue;
 
             if (_showingRecast)
                 ExitRecastVisuals();
@@ -178,7 +186,7 @@ public class SkillSlotUI : MonoBehaviour
         if (_skill == null)
         {
             _trackingCooldown = false;
-            _lastDisplayedTenths = int.MinValue;
+            _lastDisplayedSeconds = int.MinValue;
             SetCooldownVisible(false);
         }
     }
@@ -193,7 +201,7 @@ public class SkillSlotUI : MonoBehaviour
 
         _cooldownMax      = _skill.cooldown;
         _trackingCooldown = true;
-        _lastDisplayedTenths = int.MinValue;
+        _lastDisplayedSeconds = int.MinValue;
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -216,6 +224,7 @@ public class SkillSlotUI : MonoBehaviour
                 out SkillData _))
         {
             UpdateRecastRecoveryVisuals(recoveryRemaining, recoveryTotal);
+            UpdateResourceTint(_skill);
             return;
         }
 
@@ -226,11 +235,13 @@ public class SkillSlotUI : MonoBehaviour
                 out SkillData nextStage))
         {
             UpdateRecastVisuals(recastRemaining, recastTotal, nextStage);
+            UpdateResourceTint(nextStage != null ? nextStage : _skill);
             return;
         }
 
         ExitRecastVisuals();
         UpdateCooldownVisuals();
+        UpdateResourceTint(_skill);
     }
 
     private void UpdateCooldownVisuals()
@@ -241,25 +252,20 @@ public class SkillSlotUI : MonoBehaviour
         {
             _trackingCooldown = true;
             _cooldownMax = _combat.GetSkillCooldownMax(_slotIndex);
-            _lastDisplayedTenths = int.MinValue;
+            _lastDisplayedSeconds = int.MinValue;
         }
 
         if (remaining <= 0f)
         {
             _trackingCooldown = false;
-            _lastDisplayedTenths = int.MinValue;
+            _lastDisplayedSeconds = int.MinValue;
             SetCooldownVisible(false);
             return;
         }
 
         // fillAmount: 1(사용 직후) → 0(완료)
         ApplyFillAmount(_cooldownMax > 0f ? remaining / _cooldownMax : 0f);
-        int tenths = Mathf.RoundToInt(remaining * 10f);
-        if (tenths != _lastDisplayedTenths)
-        {
-            _lastDisplayedTenths = tenths;
-            cooldownText.text = $"{tenths * 0.1f:F1}s";
-        }
+        UpdateRemainingText(remaining);
         SetCooldownVisible(true);
     }
 
@@ -282,7 +288,7 @@ public class SkillSlotUI : MonoBehaviour
         if (!_showingRecast)
         {
             _showingRecast = true;
-            _lastDisplayedTenths = int.MinValue;
+            _lastDisplayedSeconds = int.MinValue;
             _lastAppliedFillAmount = -1f;
             ConfigureRecastOverlay();
         }
@@ -306,7 +312,7 @@ public class SkillSlotUI : MonoBehaviour
         RestoreNormalOverlayConfiguration();
         ApplyIcon(_rootIconSprite, _rootIconEnabled);
         ApplyFillColor(_normalFillColor);
-        _lastDisplayedTenths = int.MinValue;
+        _lastDisplayedSeconds = int.MinValue;
         _lastAppliedFillAmount = -1f;
     }
 
@@ -338,12 +344,12 @@ public class SkillSlotUI : MonoBehaviour
 
     private void UpdateRemainingText(float remaining)
     {
-        int tenths = Mathf.RoundToInt(Mathf.Max(0f, remaining) * 10f);
-        if (tenths == _lastDisplayedTenths)
+        int seconds = Mathf.CeilToInt(Mathf.Max(0f, remaining));
+        if (seconds == _lastDisplayedSeconds)
             return;
 
-        _lastDisplayedTenths = tenths;
-        cooldownText.text = $"{tenths * 0.1f:F1}s";
+        _lastDisplayedSeconds = seconds;
+        cooldownText.text = seconds.ToString();
     }
 
     private void ApplyIcon(Sprite sprite, bool enabledState)
@@ -360,6 +366,23 @@ public class SkillSlotUI : MonoBehaviour
         _lastAppliedIconEnabled = enabledState;
         iconImage.sprite = sprite;
         iconImage.enabled = enabledState;
+    }
+
+    private void UpdateResourceTint(SkillData displayedSkill)
+    {
+        ApplyIconTint(_combat.HasResourceFor(displayedSkill)
+            ? _normalIconColor
+            : resourceBlockedIconColor);
+    }
+
+    private void ApplyIconTint(Color color)
+    {
+        if (_hasLastAppliedIconTint && _lastAppliedIconTint == color)
+            return;
+
+        _hasLastAppliedIconTint = true;
+        _lastAppliedIconTint = color;
+        iconImage.color = color;
     }
 
     private void ApplyFillColor(Color color)
@@ -385,10 +408,11 @@ public class SkillSlotUI : MonoBehaviour
     private void InvalidateVisualCaches()
     {
         _cooldownUIVisible = null;
-        _lastDisplayedTenths = int.MinValue;
+        _lastDisplayedSeconds = int.MinValue;
         _hasLastAppliedIcon = false;
         _lastAppliedIcon = null;
         _lastAppliedIconEnabled = false;
+        _hasLastAppliedIconTint = false;
         _hasLastAppliedFillColor = false;
         _lastAppliedFillAmount = -1f;
     }
