@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-27
-> 기준 커밋: master HEAD `2d847463` — **Skill Dashboard 신설**(`JBRogLike/Skill Dashboard`): plain SkillData + EngravingData 통합 조망·평면 편집·생성·삭제 툴, 기존 `EngravingValidatorWindow` 흡수·삭제. S1 조망+검증 전량 이관(등급 공유 드롭 그룹 순회 추가)+각인 orphan Fix(`bb90b64e`), S2 평면 인라인 편집(`e5d2907c`), S3 생성(executionType 프리셋+`SaveFilePanelInProject`, `26f85306`), S4 삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·**BehaviorEffect.procSkill**, `f91543ea`). **SkillData Custom 셀 그리드 드래그 페인팅**(좌드래그 칠/지움+Bresenham 보간, 우드래그 지움, Shift 사각, 스트로크 1회=Undo 1회, `2d847463`). 워킹트리(미커밋): **Sword 초기 QWER 실스킬 저작**(Q 3연타 콤보/W 대시+베기/E 회전 광역/R 일도양단, 플레이스홀더 졸업). 이전: 각인 통합 드랍·Sword 캔슬 패시브 3종·대시보드 UI(`c5990950`)
+> 작성 기준일: 2026-07-28
+> 기준 커밋: master HEAD `389b4bd4` — **콤보 스택 자원화**: `SkillResourceType.Combo` 신설로 스킬이 콤보를 요구·소모(`required N/consume 0`=게이트형, `N/N`=소모형, `N/M<N`=부분소모) + `ComboMeter.Spend(int)` + **콤보 활성 조건을 `ComboDamage` 소울 → 폼(`PlayerFormData.usesCombo`)으로 이전**(축적=폼 / 배율=소울 분리, 죽은 드랍 방지) + `ComboCounterUI` 0스택 노출 + 폼 전환 시 `ResetCombo` 폴링. **스킬 슬롯 자원 부족 회색 틴트**(`HasResourceFor(SkillData)` — 마탄·콤보·패리 공통, 쿨다운/recast 오버레이와 직교, `0fd998fd`). **쿨다운 표기 올림 정수화**(`30.0s`→`30`, 포맷 3경로 통합, 캐시 0.1초→올림 초로 TMP 리빌드 초당 40→4회, `389b4bd4`). 워킹트리(미커밋): **Sword 액티브 각인 8종 저작** — SO 15개(루트 8=EngravingData / recast 단계 7=plain SkillData) + `ItemDatabase` 엔트리 8개, 등급당 4종·총 12종 라인업 완성, 아이콘 전부 `Skill_Null` 임시. 이전: Skill Dashboard 신설·셀 드래그 페인팅·Sword QWER(`2d847463`)
+>
+> <details><summary>이전 기준(2026-07-27, `2d847463`)</summary>
+>
+> **Skill Dashboard 신설**(`JBRogLike/Skill Dashboard`): plain SkillData + EngravingData 통합 조망·평면 편집·생성·삭제 툴, 기존 `EngravingValidatorWindow` 흡수·삭제. S1 조망+검증 전량 이관(등급 공유 드롭 그룹 순회 추가)+각인 orphan Fix(`bb90b64e`), S2 평면 인라인 편집(`e5d2907c`), S3 생성(executionType 프리셋+`SaveFilePanelInProject`, `26f85306`), S4 삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·**BehaviorEffect.procSkill**, `f91543ea`). **SkillData Custom 셀 그리드 드래그 페인팅**(좌드래그 칠/지움+Bresenham 보간, 우드래그 지움, Shift 사각, 스트로크 1회=Undo 1회, `2d847463`). 워킹트리(미커밋): **Sword 초기 QWER 실스킬 저작**(Q 3연타 콤보/W 대시+베기/E 회전 광역/R 일도양단, 플레이스홀더 졸업). 이전: 각인 통합 드랍·Sword 캔슬 패시브 3종·대시보드 UI(`c5990950`)
+> </details>
+>
 > 엔진: Unity 2D (Tilemap)  
 > 언어: C# (.NET)  
 > 현재 브랜치: master
@@ -183,10 +189,10 @@ Assets/Scripts/
 │   ├── WeaponData.cs               # 무기 ScriptableObject
 │   ├── SkillData.cs                # 스킬 ScriptableObject (executionType + Projectile/Dash 필드 + Animation 필드 + Custom customCells + 자원: resourceType(None/Bullet/ParryStack)/requiredAmount/consumeAmount/bulletShortageMode/reloadAmount + ailments(DoT 부여 목록, §7-9)). MP(mpCost) 폐지
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
-│   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의
+│   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack/**Combo**), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의. Combo=3(2026-07-28 append): requiredAmount/consumeAmount 조합으로 게이트형(N/0)·소모형(N/N)·부분소모(N/M<N) 저작. RestoreSkillResource에는 의도적 미배선(콤보 회복은 타격으로만)
 │   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. SkillDataEditor child 적용으로 조건부 인스펙터 사용
 │   ├── PassiveEngravingData.cs     # 패시브 각인 ScriptableObject (SkillData 비파생 — 패시브는 스킬이 아님) — passiveName/icon/description + owningForm + grade(EngravingGrade 재사용) + behaviors(BehaviorEffect[]). 장착 중 BehaviorRuntime에 병합 (§7-8b)
-│   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
+│   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout + **usesCombo**(2026-07-28 — 콤보 스택 축적 가능 폼 여부, 현재 SwordForm만 true. 하드코딩 폼 비교 대신 이 플래그를 쓸 것)). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
 │   ├── StatusEffectIconTable.cs    # 상태이상 표시 SO 단일 소스 (StatusEffectIconType: Poison/Bleed/Slow/Stun → Sprite + flashColor + slotPrefab). Resources/UI 폴백, 적 인디케이터·플레이어 HUD·틱 flash 공용 (§7-9)
 │   ├── ProjectileTargetHitMode.cs  # 타깃 적중 정책 enum (DestroyOnHit/Pierce/HitOncePerTarget)
@@ -255,7 +261,7 @@ Assets/Scripts/
 │   ├── SkillTargetResolver.cs      # 스킬 셀·월드 타겟·미리보기 반경·투사체 거리 공통 계산. Custom은 연속 월드 포인트와 matcher 생성 담당
 │   ├── SkillExecutionContext.cs    # 스킬 1회 사용에 필요한 런타임 정보 컨테이너
 │   ├── SkillSlotRuntime.cs         # 스킬 슬롯 1칸의 SkillData·쿨다운 상태 (MonoBehaviour 미의존). CanUse(ISkillResourceLedger) 로 쿨다운+자원 확인. ISkillResourceLedger 인터페이스 정의
-│   ├── ComboMeter.cs               # ComboDamage 단계제 콤보 추적 (순수 C#) — tier+progress 모델, 적중 적립(이월·캡), 윈도우 만료 시 단계 -1 계단 하락, 적 0=풀 리필 동결. RegisterHit/AddStacks/Tick(dt, enemiesPresent)/Reset
+│   ├── ComboMeter.cs               # 단계제 콤보 추적 (순수 C#) — tier+progress 모델, 적중 적립(이월·캡), 윈도우 만료 시 단계 -1 계단 하락, 적 0=풀 리필 동결. RegisterHit/AddStacks/**Spend(int)**/Tick(dt, enemiesPresent)/Reset. Spend(2026-07-28)=부족 시 상태 무변경 false·성공 시 tier/progress 역산(AddStacks 미러)·_windowTimer 미갱신. ⚠️ AddStacks가 tier>=maxTier면 early return → **총 스택 상한 = maxTier×stacksPerTier = 20**(required 상한도 20)
 │   ├── ComboTierConfig.cs          # 콤보 단계 설정 SO (Scriptable/Soul/) — stacksPerTier/maxTier/window/gainPerHit/tierBonusPct[] 전부 가변, OnValidate 배열 길이 경고
 │   ├── EngravingLoadout.cs         # 영혼각인 로드아웃 (MonoBehaviour) — 폼별 FormState{Slots[4]+Pool+Seeded / PassiveSlots[4]+PassivePool+PassiveSeeded} 토큰 모델. 액티브: EnsureSeeded/Equip/Unequip/AddToPool/ApplyArrangement → OnChanged→PlayerCombatController 리바인드(=쿨다운 리셋). 패시브: EnsurePassiveSeeded/EquipPassive/UnequipPassive/AddPassiveToPool/ApplyPassiveArrangement → **OnPassiveChanged(반드시 분리 — OnChanged 재사용 시 쿨 리셋 익스플로잇)**. ClearAll=런리셋(양 축). static Active(픽업·UI 결선용)
 │   ├── EngravingStation.cs         # 영혼각인 교체대 (Slice E2, TownSoulAltar 미러) — Collider2D 트리거 + InteractConfirmPressedThisFrame → ui.Open(consumeOnCommit ? this : null). UI는 placer의 Bind(ui) 주입 또는 씬 배치 시 sceneUI 직결. 던전 stair방=런타임 스폰·커밋 시 소멸(NotifyConsumed), 정비실=씬 배치·비소멸
@@ -332,7 +338,7 @@ Assets/Scripts/
 │   ├── PlayerStatusBarUI.cs        # 플레이어 HP 상태바 (슬라이더 + 텍스트) + Elite Key 아이콘 — PlayerInventory.OnInventoryChanged 로 elite_key 보유 수에 따라 아이콘 토글. MP 바 제거
 │   ├── ParryStackBarUI.cs          # 패리 폼 자원 UI — 현재 ParryStack 을 Slider 로 표시 (임시). 현재 폼이 Parry 일 때만 노출
 │   ├── FreischutzMagazineUI.cs     # 마탄 폼 탄창 UI — Bullet/Bullet_empty 이미지 칸 + x/max·Reloading 텍스트. 현재 폼이 Bullet 일 때만 노출
-│   ├── ComboCounterUI.cs           # 콤보 HUD (정식화, 2026-07-14) — x{총스택} TMP + 단계 orb 4개 점등(orbOnOverlays SerializeField 직결) + 유예 slider. TMP·slider fill 색=tierColors[단계], 0스택 전체 숨김(드라이버+Content 분리=숨김 중 폴링 유지), 변경값 캐시. 배율 비노출
+│   ├── ComboCounterUI.cs           # 콤보 HUD (정식화, 2026-07-14) — x{총스택} TMP + 단계 orb 4개 점등(orbOnOverlays SerializeField 직결) + 유예 slider. TMP·slider fill 색=tierColors[단계], 변경값 캐시. 배율 비노출. **표시 조건 = `IsComboActive`(폼 기준) 단독**(2026-07-28 — 기존 `IsComboBonusActive && stack>0`에서 스택 조건 제거). 콤보가 자원이 된 뒤로는 **0스택에서도 게이지가 보여야** "지금 콤보 각인을 못 쓴다"가 읽힌다. 마을 복귀는 `CleanupDungeonRuntime`이 `SetCurrentForm(Normal)`을 부르므로 자동 숨김, 폼 전환 반영은 `Update` 폴링이라 이벤트 배선 불필요
 │   ├── CurrencyCounterUI.cs        # Currency HUD 카운터 — OnInventoryChanged 이벤트 구동(resolve 전만 lazy Update), 아이콘=ItemDB 단일 소스 런타임 주입, count 0 숨김. 우상단 미니맵 아래
 │   ├── ArenaHealthBarPanel.cs      # 엘리트/보스 스크린 HP바 패널 — 씬 사전 배치 행(보스2+엘리트3) Attach/Detach 할당, Awake에서 스트립 Prewarm. static Active. §10-1-2
 │   ├── ArenaHealthBarRowUI.cs      # 상단 HP바 행 1개 — Bind(EnemyController)+폴링(fillAmount), 사망/비활성 자동 Release. BossRow/EliteRow 프리팹으로 저작
@@ -340,7 +346,7 @@ Assets/Scripts/
 │   ├── AilmentCanvasSlotView.cs    # 캔버스 상태이상 슬롯 1칸 뷰 (Image+스택 TMP — 독/출혈만 숫자). AilmentStatusSlotView(월드판) 미러
 │   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임. 아이콘은 StatusEffectIconTable 수급(실패 시 씬 결선 폴백)
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트, SetIcon 주입)
-│   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임)
+│   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임·자원). 시각 3축 **직교**: 쿨다운=cooldownOverlay radial fill / recast window=주황 recastWindowFillColor / **자원 부족=iconImage 회색 틴트**(2026-07-28). 틴트 판정=`HasResourceFor(표시 중인 SkillData)` — ⚠️ `CanUseSkill(int)` 재사용 금지(IsSkillBusy·IsCombatBlockedByLocation 포함이라 후딜·마을에서 4슬롯 전부 깜빡임), ⚠️ 슬롯 인덱스가 아니라 SkillData를 넘겨야 recast stage 표시와 판정이 일치. 정상색은 Initialize에서 iconImage.color 캐시. 쿨타임 표기는 **올림 정수**(Mathf.CeilToInt, `30.0s`→`30`, 0 미표시) + 캐시 단위 올림 초(`_lastDisplayedSeconds`)로 TMP 리빌드 초당 40→4회
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
 │   ├── SkillRangePreviewer.cs      # Q/W/E/R 미리보기 — InstantArea/Projectile/Dash + 기본공격 홀드. Custom은 CustomCellFill(셀별 반투명 쿼드 메시, 런타임 생성·localRotation 회전·sortingOrder 오프셋)로 표시
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
@@ -834,7 +840,7 @@ PlayerCombatController
   ├── PlayerResource (HP 상태) · ISkillResourceLedger 구현 (Bullet 탄창 / ParryStack 자원 원장)
   ├── SkillSlotRuntime[4] (슬롯별 SkillData·쿨다운 상태) — BindSkillSlots 가 EngravingLoadout 토큰으로 시드/바인딩
   ├── EngravingLoadout (영혼각인 폼별 토큰 로드아웃, OnChanged→리바인드) — 있으면 슬롯 소스, 없으면 weapon.skills 폴백
-  ├── ComboMeter (_combo) — ComboDamage 단계제 콤보 (ComboTierConfig SO 주입, CurrentComboStack/Tier/MaxComboTier/WindowRemainingNormalized/IsComboBonusActive 노출)
+  ├── ComboMeter (_combo) — 단계제 콤보 (ComboTierConfig SO 주입, CurrentComboStack/Tier/MaxComboTier/WindowRemainingNormalized/**IsComboActive** 노출). ⚠️ IsComboActive는 **폼 기준**(`CurrentForm.UsesCombo`) — 구 `IsComboBonusActive`(ComboDamage 소울>0)에서 2026-07-28 전환. **축적=폼 / 배율=소울**로 역할이 갈렸고 `GetComboDamageMultiplier`는 soulScale 비례를 유지한다(소울 미투자자도 콤보 각인 시전 가능, 배율만 1.0 = 죽은 드랍 방지). 폼 전환 시 `_previousFormId` 폴링으로 `ResetCombo` — `OnLoadoutChanged`는 DefaultWeapon 의존이라 미사용
   ├── AttackExecutor / SkillExecutor (스킬 실행 라우팅)
   ├── PlayerDashController (대시 코루틴, RequireComponent)
   ├── PlayerInputReader (RequireComponent)
@@ -3066,7 +3072,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 데이터·실행 구조 | WeaponData/SkillData/EnemyData(SO) + `SkillExecutor` 라우팅(InstantArea/Projectile/Dash/Blink/Buff) + `SkillSlotRuntime`(슬롯 상태) + `SkillExecutionContext` + `SkillTargetResolver`(미리보기·실행 동일 계산) + `AttackExecutor`(판정 분리, 시야 차단, 멀티/단일 타겟). 상세 §7 |
-| 자원 시스템 | MP 폐지 — `SkillResourceType`(None/Bullet/ParryStack) + `ISkillResourceLedger` + 실소모만 Spend(실패 시 쿨다운·소모 없음) + castDelay/recoveryDelay 이동 잠금 |
+| 자원 시스템 | MP 폐지 — `SkillResourceType`(None/Bullet/ParryStack/**Combo**) + `ISkillResourceLedger` + 실소모만 Spend(실패 시 쿨다운·소모 없음) + castDelay/recoveryDelay 이동 잠금. 게이트는 `ResolveRequiredAmount` = **max(required, consume)** 라 `consume`만 채워도 자동으로 걸리고, `consume > required` 오저작 시 무료 시전이 구조적으로 불가 |
 | 공격 패턴 | 기본 6종 + **Custom 저작 파이프라인**: customCells 그리드 페인팅(에디터) → `CustomCellFill` 셀 채움 미리보기 → 셀별 회전 `OverlapBox` 판정 + `Linecast` 벽차단. 상세 §7-5, §10-3 |
 | **Sword 콤보 축** | **멀티히트 후속타**(`hitSteps` additive, `MultiHitSkillRunner` 타 단위 판정·콤보 적립, 스텝별 형태 override+페인팅) + **cancelable 피캔슬**(성공 시전만 트리거, `RaiseSkillCanceled` seam) + **재시전 체인**(`recastStages`=SkillData 참조, 슬롯별 독립, 종료=만료·소진뿐, UI 유예 게이지+다음 단계 아이콘·미리보기) + **히트 플래시**(타별 실판정 형태 월드 고정 페이드). 상세 §7-10 (2026-07-15) |
 | 조준·미리보기 | `AimDirectionUtility` 8방향+360° 통합(스킬/투사체/대시/미리보기 공유) + `ToAuthoredFacingAngle`(+Y=전방 규약→회전각 단일 격리점, 3파일 중복 통합 2026-07-14) + `SkillRangePreviewer`(패턴별/대시 벽 클리핑/기본 공격 홀드) |
