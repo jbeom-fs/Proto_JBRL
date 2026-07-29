@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
   m_Name: Sword_Skill_07_1
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uC5F0\uACA9\xB7\uC5F0\uC1C4 2\uACA9"
+  skillName: "\uC5F0\uACA9-\uC5F0\uC1C4 2\uACA9"
   icon: {fileID: 21300000, guid: ec79208cc9a379f438e48f62ec0cc69c, type: 3}
-  description: "\uC5F0\uACA9\xB7\uC5F0\uC1C4\uC758 \uB450 \uBC88\uC9F8 \uBCA0\uAE30\uB2E4."
+  description: "\uC5F0\uACA9-\uC5F0\uC1C4\uC758 \uB450 \uBC88\uC9F8 \uBCA0\uAE30\uB2E4."
   executionType: 0
   resourceType: 0
   requiredAmount: 0

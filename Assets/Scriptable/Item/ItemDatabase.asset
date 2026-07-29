@@ -548,7 +548,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Faint_3
     displayName: "\uC804\uC9C4\uBC1C\uB3C4"
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: d461da56a0c79934089d5fec22caefbc, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -567,7 +567,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Whole_2
     displayName: "\uD68C\uC804\uBCA0\uAE30"
-    icon: {fileID: 0}
+    icon: {fileID: 21300000, guid: a3893101543b4a143933f563daccbdf1, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -586,7 +586,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Primordial_3
     displayName: "\uC77C\uB3C4\uC591\uB2E8"
-    icon: {fileID: 0}
+    icon: {fileID: 3816796570929180759, guid: 8df514d95ab64b14c87aaa245894398e, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -604,9 +604,9 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Faint_4
-    displayName: 베어넘기기
-    icon: {fileID: 0}
-    description:
+    displayName: "\uBCA0\uC5B4\uB118\uAE30\uAE30"
+    icon: {fileID: 21300000, guid: 75bf342c93ccf2049bc15fbe4493d147, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -619,13 +619,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: e5b5d64788d448d79c5e350790766296, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Faint_5
-    displayName: 올려베기
-    icon: {fileID: 0}
-    description:
+    displayName: "\uC62C\uB824\uBCA0\uAE30"
+    icon: {fileID: 21300000, guid: 57afa96fb47acbf4988538504d1aac72, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -638,13 +638,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 009a316d394c423586a8712bbcf9f47b, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Whole_3
-    displayName: 기세베기
-    icon: {fileID: 0}
-    description:
+    displayName: "\uAE30\uC138\uBCA0\uAE30"
+    icon: {fileID: 21300000, guid: 72f560b03884fc749ab9845ad5b7bf30, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -657,13 +657,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 8c62f80d25654f13a597d4916bc408a5, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Whole_4
-    displayName: 연격·연쇄
-    icon: {fileID: 0}
-    description:
+    displayName: "\uC5F0\uACA9-\uC5F0\uC1C4"
+    icon: {fileID: 21300000, guid: 7f88e77fdb718854e94eb5c3e7a6cb25, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -676,13 +676,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: b55e7d9b451d45ceac74d1b98c774169, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Whole_5
-    displayName: 도약참
-    icon: {fileID: 0}
-    description:
+    displayName: "\uB3C4\uC57D\uCC38"
+    icon: {fileID: 21300000, guid: 1cc158dd2921f394aa9db25a97c3b543, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -695,13 +695,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 188e533eab094b3e993b0c999273d988, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Primordial_4
-    displayName: 난무
-    icon: {fileID: 0}
-    description:
+    displayName: "\uB09C\uBB34"
+    icon: {fileID: 21300000, guid: 3012ac89c2b09ec48a4860ba8a804043, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -714,13 +714,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 2423396cac4c4ca7a42be61d1ce3035c, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Primordial_5
-    displayName: 무형참
-    icon: {fileID: 0}
-    description:
+    displayName: "\uBB34\uD615\uCC38"
+    icon: {fileID: 21300000, guid: a220bb527762d6b4592212b5f52cdad8, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -733,13 +733,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 51c1ab8cda5c4ba0bf1661e300bee557, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Sword_Primordial_6
-    displayName: 종언
-    icon: {fileID: 0}
-    description:
+    displayName: "\uC885\uC5B8"
+    icon: {fileID: 21300000, guid: 1e970104341f2cb4d895517d652fb766, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -752,6 +752,6 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: b3e4ef99f98646b79756571613816c73, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
