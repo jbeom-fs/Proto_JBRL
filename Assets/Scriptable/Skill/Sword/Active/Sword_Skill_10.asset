@@ -53,7 +53,7 @@ MonoBehaviour:
   projectileSpeed: 20
   projectileLifetime: 2.5
   projectileCount: 3
-  projectileSpreadAngle: 12
+  projectileSpreadAngle: 30
   projectileFirePattern: 2
   projectileWallHitMode: 2
   projectileTargetHitMode: 1
