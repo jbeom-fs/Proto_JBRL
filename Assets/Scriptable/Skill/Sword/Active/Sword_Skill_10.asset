@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Sword_Skill_10
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: 무형참
-  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
-  description: 세 갈래의 관통 검기를 날려 벽에 두 번 반사시킨다.
+  skillName: "\uBB34\uD615\uCC38"
+  icon: {fileID: 21300000, guid: a220bb527762d6b4592212b5f52cdad8, type: 3}
+  description: "\uC138 \uAC08\uB798\uC758 \uAD00\uD1B5 \uAC80\uAE30\uB97C \uB0A0\uB824
+    \uBCBD\uC5D0 \uB450 \uBC88 \uBC18\uC0AC\uC2DC\uD0A8\uB2E4."
   executionType: 1
   resourceType: 0
   requiredAmount: 0
@@ -48,8 +49,8 @@ MonoBehaviour:
   zoneRadius: 1
   zoneTickInterval: 0.5
   zoneDuration: 3
-  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
-  projectileSpeed: 10
+  projectilePrefab: {fileID: 2350118766386836629, guid: b0c400be67d347a4b927a28a4412ab49, type: 3}
+  projectileSpeed: 20
   projectileLifetime: 2.5
   projectileCount: 3
   projectileSpreadAngle: 12
