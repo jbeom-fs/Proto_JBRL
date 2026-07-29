@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public sealed class SkillDashboardWindow : EditorWindow
 {
@@ -11,10 +12,11 @@ public sealed class SkillDashboardWindow : EditorWindow
     private const float MinSplitRatio = 0.22f;
     private const float MaxSplitRatio = 0.78f;
     private const float SplitterHeight = 5f;
-    private const float TableWidth = 1390f;
+    private const float TableWidth = 1424f;
     private const float SkillHeaderHeight = 20f;
-    private const float SkillRowHeight = 23f;
+    private const float SkillRowHeight = 32f;
     private const float SkillFoldoutWidth = 16f;
+    private const string PlaceholderIconAssetName = "Skill_Null.png";
 
     private enum SkillKindFilter
     {
@@ -29,6 +31,7 @@ public sealed class SkillDashboardWindow : EditorWindow
     private static readonly List<CreatedSkillUndoRecord> s_CreatedSkillUndoRecords =
         new List<CreatedSkillUndoRecord>();
     private bool _hasScanned;
+    private bool _isScopedSaveQueued;
     private string _search = string.Empty;
     private SkillKindFilter _kindFilter;
     private bool _showInfo = true;
@@ -59,6 +62,8 @@ public sealed class SkillDashboardWindow : EditorWindow
     private void OnDisable()
     {
         Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        EditorApplication.delayCall -= SaveScopedAssetsAfterFocusFlush;
+        _isScopedSaveQueued = false;
         ClearSkillSerializedObjectCache();
         _expandedSkills.Clear();
     }
@@ -130,10 +135,87 @@ public sealed class SkillDashboardWindow : EditorWindow
             GUILayout.Width(82f));
 
         GUILayout.FlexibleSpace();
+        if (GUILayout.Button("Save Assets", EditorStyles.toolbarButton, GUILayout.Width(96f)))
+            SaveScopedAssets();
         if (_hasScanned)
             GUILayout.Label(_skillRows.Count + " skills / " + _results.Count + " results", EditorStyles.miniLabel);
 
         EditorGUILayout.EndHorizontal();
+    }
+
+    // SerializedObject/Undo paths stay separate. Global SaveAssets is forbidden; save only dirty scanned skills.
+    private void SaveScopedAssets()
+    {
+        if (_isScopedSaveQueued)
+            return;
+
+        GUI.FocusControl(null);
+        EditorGUIUtility.editingTextField = false;
+        _isScopedSaveQueued = true;
+        EditorApplication.delayCall += SaveScopedAssetsAfterFocusFlush;
+        Repaint();
+    }
+
+    private void SaveScopedAssetsAfterFocusFlush()
+    {
+        _isScopedSaveQueued = false;
+        SaveScopedAssetsNow();
+    }
+
+    private void SaveScopedAssetsNow()
+    {
+        if (!_hasScanned)
+        {
+            Debug.LogWarning("[SkillDashboardWindow] Scan first; no scoped assets were saved.");
+            return;
+        }
+
+        var assets = new HashSet<Object>();
+        AddMainAssets(assets, _skillRows);
+
+        int savedCount = SaveDirtyAssets(assets, out int dirtyCount);
+        Debug.Log(
+            "[SkillDashboardWindow] Scoped save: assets=" + assets.Count +
+            ", dirty=" + dirtyCount + ", saved=" + savedCount + ".");
+        Repaint();
+    }
+
+    private static void AddMainAssets(HashSet<Object> assets, List<SkillRow> source)
+    {
+        for (int i = 0; i < source.Count; i++)
+            AddMainAsset(assets, source[i].Asset);
+    }
+
+    private static void AddMainAsset(HashSet<Object> assets, Object asset)
+    {
+        if (asset == null)
+            return;
+
+        string path = AssetDatabase.GetAssetPath(asset);
+        if (string.IsNullOrEmpty(path))
+            return;
+
+        Object mainAsset = AssetDatabase.LoadMainAssetAtPath(path);
+        if (mainAsset != null)
+            assets.Add(mainAsset);
+    }
+
+    private static int SaveDirtyAssets(HashSet<Object> assets, out int dirtyCount)
+    {
+        dirtyCount = 0;
+        int savedCount = 0;
+        foreach (Object asset in assets)
+        {
+            if (asset == null || !EditorUtility.IsDirty(asset))
+                continue;
+
+            dirtyCount++;
+            AssetDatabase.SaveAssetIfDirty(asset);
+            if (!EditorUtility.IsDirty(asset))
+                savedCount++;
+        }
+
+        return savedCount;
     }
 
     private void PromptCreateSkill(
@@ -328,6 +410,9 @@ public sealed class SkillDashboardWindow : EditorWindow
 
         EditorGUILayout.EndVertical();
         EditorGUILayout.EndScrollView();
+
+        if (AssetPreview.IsLoadingAssetPreviews())
+            Repaint();
     }
 
     private static void DrawSkillHeader()
@@ -346,6 +431,7 @@ public sealed class SkillDashboardWindow : EditorWindow
 
         GUILayout.Space(SkillFoldoutWidth);
         GUILayout.Label("", GUILayout.Width(42f));
+        GUILayout.Label("Icon", EditorStyles.miniBoldLabel, GUILayout.Width(30f));
         GUILayout.Label("Name", EditorStyles.miniBoldLabel, GUILayout.Width(190f));
         GUILayout.Label("Kind", EditorStyles.miniBoldLabel, GUILayout.Width(76f));
         GUILayout.Label("Execution", EditorStyles.miniBoldLabel, GUILayout.Width(112f));
@@ -405,6 +491,22 @@ public sealed class SkillDashboardWindow : EditorWindow
                 EditorGUIUtility.PingObject(row.Asset);
         }
 
+        Rect iconRect = GUILayoutUtility.GetRect(
+            30f,
+            SkillRowHeight,
+            GUILayout.Width(30f),
+            GUILayout.Height(SkillRowHeight));
+        Texture2D preview = row.Icon != null ? AssetPreview.GetAssetPreview(row.Icon) : null;
+        if (preview != null)
+        {
+            Rect previewRect = new Rect(
+                iconRect.x + (iconRect.width - 28f) * 0.5f,
+                iconRect.y + (iconRect.height - 28f) * 0.5f,
+                28f,
+                28f);
+            GUI.DrawTexture(previewRect, preview, ScaleMode.ScaleToFit);
+        }
+
         GUILayout.Label(row.DisplayName, GUILayout.Width(190f));
         GUILayout.Label(row.IsEngraving ? "Engraving" : "Plain", GUILayout.Width(76f));
         GUILayout.Label(row.ExecutionTypeText, GUILayout.Width(112f));
@@ -442,6 +544,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         SerializedProperty recastWindow = skillObject.FindProperty("recastWindow");
         SerializedProperty damage = skillObject.FindProperty("damage");
         SerializedProperty cancelable = skillObject.FindProperty("cancelable");
+        SerializedProperty icon = skillObject.FindProperty("icon");
         SerializedProperty owningForm = skillObject.FindProperty("owningForm");
         SerializedProperty grade = skillObject.FindProperty("grade");
 
@@ -457,6 +560,27 @@ public sealed class SkillDashboardWindow : EditorWindow
         }
 
         GUILayout.Space(4f);
+        if (icon != null)
+        {
+            EditorGUILayout.BeginHorizontal(GUIStyle.none);
+            GUILayout.Space(SkillFoldoutWidth + 4f);
+            GUILayout.Label("Icon", GUILayout.Width(72f));
+            Rect iconRect = GUILayoutUtility.GetRect(
+                64f,
+                64f,
+                GUILayout.Width(64f),
+                GUILayout.Height(64f));
+            EditorGUI.BeginChangeCheck();
+            Sprite nextIcon = EditorGUI.ObjectField(
+                iconRect,
+                icon.objectReferenceValue,
+                typeof(Sprite),
+                false) as Sprite;
+            if (EditorGUI.EndChangeCheck())
+                icon.objectReferenceValue = nextIcon;
+            EditorGUILayout.EndHorizontal();
+        }
+
         EditorGUILayout.BeginHorizontal(GUIStyle.none);
         GUILayout.Space(SkillFoldoutWidth + 4f);
         DrawSkillProperty(skillName, "Skill Name", 330f, 72f);
@@ -1343,6 +1467,9 @@ public sealed class SkillDashboardWindow : EditorWindow
         row.CooldownText = cooldown != null ? cooldown.floatValue.ToString("0.###") : "—";
         row.DamageText = damage != null ? damage.intValue.ToString() : "—";
 
+        SerializedProperty icon = skillObject.FindProperty("icon");
+        row.Icon = icon != null ? icon.objectReferenceValue as Sprite : null;
+
         row.RecastCount = GetArraySize(skillObject.FindProperty("recastStages"));
         row.HitStepCount = GetArraySize(skillObject.FindProperty("hitSteps"));
         row.CustomCellCount = GetArraySize(skillObject.FindProperty("customCells"));
@@ -1508,6 +1635,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         AddOrphanResults(skills, passiveEngravings, itemDatabases, context);
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
+        AddIconResults(skills, passiveEngravings);
     }
 
     private void BuildSkillRows(List<SkillData> skills, ScanContext context)
@@ -1527,6 +1655,7 @@ public sealed class SkillDashboardWindow : EditorWindow
             {
                 Asset = skill,
                 SerializedObject = new SerializedObject(skill),
+                Icon = skill.icon,
                 DisplayName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName,
                 IsEngraving = engraving != null,
                 ExecutionTypeText = skill.executionType.ToString(),
@@ -1974,6 +2103,62 @@ public sealed class SkillDashboardWindow : EditorWindow
                     " rolls up to " + effectiveMax + " (>1). Set min=max=1.",
                     drop.Database);
             }
+        }
+    }
+
+    private void AddIconResults(
+        List<SkillData> skills,
+        List<PassiveEngravingData> passiveEngravings)
+    {
+        for (int i = 0; i < skills.Count; i++)
+        {
+            SkillData skill = skills[i];
+            if (skill != null)
+                AddIconResult(skill, skill.icon);
+        }
+
+        for (int i = 0; i < passiveEngravings.Count; i++)
+        {
+            PassiveEngravingData passive = passiveEngravings[i];
+            if (passive != null)
+                AddIconResult(passive, passive.icon);
+        }
+    }
+
+    private void AddIconResult(UnityEngine.Object asset, Sprite icon)
+    {
+        if (icon == null)
+        {
+            AddResult(
+                ResultSeverity.Warning,
+                "Missing icon on '" + asset.name +
+                "'. SkillSlotUI falls back to the empty-slot sprite.",
+                asset);
+            return;
+        }
+
+        string path = AssetDatabase.GetAssetPath(icon);
+        if (string.Equals(
+                Path.GetFileName(path),
+                PlaceholderIconAssetName,
+                StringComparison.Ordinal))
+        {
+            AddResult(
+                ResultSeverity.Info,
+                "Placeholder icon on '" + asset.name + "': " +
+                PlaceholderIconAssetName + ".",
+                asset);
+            return;
+        }
+
+        if (path.StartsWith("Resources/unity_builtin_extra", StringComparison.Ordinal) ||
+            path.StartsWith("Library/unity default resources", StringComparison.Ordinal))
+        {
+            AddResult(
+                ResultSeverity.Warning,
+                "Built-in Unity sprite used as icon on '" + asset.name +
+                "'. Assign a project sprite.",
+                asset);
         }
     }
 
@@ -2468,6 +2653,7 @@ public sealed class SkillDashboardWindow : EditorWindow
     {
         public SkillData Asset;
         public SerializedObject SerializedObject;
+        public Sprite Icon;
         public string DisplayName;
         public bool IsEngraving;
         public string ExecutionTypeText;
