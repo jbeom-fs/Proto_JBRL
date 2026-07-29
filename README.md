@@ -1,11 +1,16 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-28
-> 기준 커밋: master HEAD `389b4bd4` — **콤보 스택 자원화**: `SkillResourceType.Combo` 신설로 스킬이 콤보를 요구·소모(`required N/consume 0`=게이트형, `N/N`=소모형, `N/M<N`=부분소모) + `ComboMeter.Spend(int)` + **콤보 활성 조건을 `ComboDamage` 소울 → 폼(`PlayerFormData.usesCombo`)으로 이전**(축적=폼 / 배율=소울 분리, 죽은 드랍 방지) + `ComboCounterUI` 0스택 노출 + 폼 전환 시 `ResetCombo` 폴링. **스킬 슬롯 자원 부족 회색 틴트**(`HasResourceFor(SkillData)` — 마탄·콤보·패리 공통, 쿨다운/recast 오버레이와 직교, `0fd998fd`). **쿨다운 표기 올림 정수화**(`30.0s`→`30`, 포맷 3경로 통합, 캐시 0.1초→올림 초로 TMP 리빌드 초당 40→4회, `389b4bd4`). 워킹트리(미커밋): **Sword 액티브 각인 8종 저작** — SO 15개(루트 8=EngravingData / recast 단계 7=plain SkillData) + `ItemDatabase` 엔트리 8개, 등급당 4종·총 12종 라인업 완성, 아이콘 전부 `Skill_Null` 임시. 이전: Skill Dashboard 신설·셀 드래그 페인팅·Sword QWER(`2d847463`)
+> 작성 기준일: 2026-07-29
+> 기준 커밋: master HEAD `e5daa575` — **Skill Dashboard 저작 도구 2차**: 행 아이콘 썸네일 컬럼(`AssetPreview` 비동기)·펼침 패널 64px `ObjectField` 아이콘 편집·**아이콘 검증 3종**(미설정/`Skill_Null` 플레이스홀더/**Unity 빌트인 스프라이트**)·**스코프 한정 Save Assets**(전역 `SaveAssets` 금지 정책 유지, `37e03597`) + **폼별 그룹 접기·펴기**와 **폼 귀속 4단계 추론**(EngravingData.owningForm 13 → recast 루트 상속 fixpoint 10 → `PlayerFormData.DefaultWeapon` 역참조 13 → Unassigned 4, 순환 가드 포함) + 검증 2종(폼 교차 오배선 / 에셋 참조 없음) + 배경 폭 픽스(`08d9602b`). **Sword 액티브 아이콘 전량 완료**(신규 15종, `Skill_Null` 참조 0건, 파일명 `Sword_Skill_NN[_M]` 규약 통일 — Unity 참조는 guid+fileID라 `.png`+`.png.meta` 동시 이동이면 무손상, `459bc516`/`608b0418`). **스킬 슬롯 호버 툴팁**(`SkillSlotUI`에 `IPointerEnter/Exit`, 대상=**현재 표시 중인 SkillData**라 recast window 중엔 stage 기준 + **실효 쿨타임 줄**, `e5daa575`) + **쿨감이 쿨다운 radial에 반영 안 되던 버그 픽스**(`GetEffectiveCooldown` 단일 진실로 툴팁·`GetSkillCooldownMax`·`HandleSkillUsed` 통합). **폰트 미수록 문자 U+00B7 제거**(Pretendard Static 아틀라스 미수록 → `-` 교체, `6a6fd555`). 이전: 콤보 자원화·슬롯 자원 틴트·쿨다운 표기 정수화(`389b4bd4`)
+>
+> <details><summary>이전 기준(2026-07-28, `389b4bd4`)</summary>
+>
+> **콤보 스택 자원화**: `SkillResourceType.Combo` 신설로 스킬이 콤보를 요구·소모(`required N/consume 0`=게이트형, `N/N`=소모형, `N/M<N`=부분소모) + `ComboMeter.Spend(int)` + **콤보 활성 조건을 `ComboDamage` 소울 → 폼(`PlayerFormData.usesCombo`)으로 이전**(축적=폼 / 배율=소울 분리, 죽은 드랍 방지) + `ComboCounterUI` 0스택 노출 + 폼 전환 시 `ResetCombo` 폴링. **스킬 슬롯 자원 부족 회색 틴트**(`HasResourceFor(SkillData)` — 마탄·콤보·패리 공통, 쿨다운/recast 오버레이와 직교, `0fd998fd`). **쿨다운 표기 올림 정수화**(`30.0s`→`30`, 포맷 3경로 통합, 캐시 0.1초→올림 초로 TMP 리빌드 초당 40→4회, `389b4bd4`). 워킹트리(미커밋): **Sword 액티브 각인 8종 저작** — SO 15개(루트 8=EngravingData / recast 단계 7=plain SkillData) + `ItemDatabase` 엔트리 8개, 등급당 4종·총 12종 라인업 완성, 아이콘 전부 `Skill_Null` 임시. 이전: Skill Dashboard 신설·셀 드래그 페인팅·Sword QWER(`2d847463`)
 >
 > <details><summary>이전 기준(2026-07-27, `2d847463`)</summary>
 >
 > **Skill Dashboard 신설**(`JBRogLike/Skill Dashboard`): plain SkillData + EngravingData 통합 조망·평면 편집·생성·삭제 툴, 기존 `EngravingValidatorWindow` 흡수·삭제. S1 조망+검증 전량 이관(등급 공유 드롭 그룹 순회 추가)+각인 orphan Fix(`bb90b64e`), S2 평면 인라인 편집(`e5d2907c`), S3 생성(executionType 프리셋+`SaveFilePanelInProject`, `26f85306`), S4 삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·**BehaviorEffect.procSkill**, `f91543ea`). **SkillData Custom 셀 그리드 드래그 페인팅**(좌드래그 칠/지움+Bresenham 보간, 우드래그 지움, Shift 사각, 스트로크 1회=Undo 1회, `2d847463`). 워킹트리(미커밋): **Sword 초기 QWER 실스킬 저작**(Q 3연타 콤보/W 대시+베기/E 회전 광역/R 일도양단, 플레이스홀더 졸업). 이전: 각인 통합 드랍·Sword 캔슬 패시브 3종·대시보드 UI(`c5990950`)
+> </details>
 > </details>
 >
 > 엔진: Unity 2D (Tilemap)  
@@ -401,7 +406,7 @@ Assets/Scripts/
 Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells **드래그 페인팅** 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
-├── SkillDashboardWindow.cs         # JBRogLike/Skill Dashboard — plain SkillData + EngravingData 통합 조망(헤더 고정·zebra·검색/Kind/Info 필터)/평면 인라인 편집(공통 11필드+각인 owningForm·grade)/생성(executionType 프리셋+SaveFilePanelInProject)/삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·BehaviorEffect.procSkill + 다이얼로그+Undo 그룹 정리) + 검증 전량(orphan 각인/패시브 Add to ItemDatabase Fix·참조 정합성·중복·죽은드랍·개인+등급 그룹 순회). EngravingValidatorWindow 흡수. 복잡 저작은 SkillDataEditor 인스펙터 위임
+├── SkillDashboardWindow.cs         # JBRogLike/Skill Dashboard — plain SkillData + EngravingData 통합 조망(헤더 고정·zebra·검색/Kind/Info 필터)/평면 인라인 편집(공통 11필드+각인 owningForm·grade)/생성(executionType 프리셋+SaveFilePanelInProject)/삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·BehaviorEffect.procSkill + 다이얼로그+Undo 그룹 정리) + 검증 전량(orphan 각인/패시브 Add to ItemDatabase Fix·참조 정합성·중복·죽은드랍·개인+등급 그룹 순회) + **아이콘 컬럼·편집·검증 3종**(썸네일 `AssetPreview`, 64px ObjectField, 미설정/`Skill_Null`/빌트인) + **폼별 그룹 접기·펴기(폼 귀속 4단계 추론)** + 검증 2종(폼 교차 오배선·에셋 참조 없음) + **스코프 한정 Save Assets**. EngravingValidatorWindow 흡수. 복잡 저작은 SkillDataEditor 인스펙터 위임
 ├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + **queries[] 쿼리 편집(유효 기본값 생성·경고 4종·결번 enum 안전 Popup)** + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
 ├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집 + **쿼리 역계산(매칭 쿼리 표시·[현재 폼 의존])**·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
 ├── DropQueryEditorMatcher.cs       # 드랍 쿼리↔아이템 매칭 판정 (에디터 전용 static) — Enemy/Item Dashboard 공용. 등급은 DropQueryResolver.GetTier 직접 호출(단일 진실), formScope=CurrentForm은 currentFormDependent 플래그로 반환. AnyEngraving은 액티브·패시브 둘 다 매칭
@@ -1730,6 +1735,13 @@ SkillUIManager:
   └── OnFloorChanged → WeaponData 교체 시 슬롯 갱신
 ```
 
+**호버 툴팁 (2026-07-29, `e5daa575`)**: `SkillSlotUI`가 `IPointerEnterHandler`/`IPointerExitHandler`를 구현해 `ItemTooltipUI.ShowActive(EngravingDisplayInfo, rect)`를 호출합니다(패시브 HUD 슬롯 `PassiveHudSlotUI`와 동일 경로 재사용 — 신규 툴팁 타입 없음).
+
+- ⚠️ **툴팁 대상 = `_displayedSkill`**(자원 틴트가 쓰는 값과 동일). 슬롯 루트를 쓰면 recast window 중 **아이콘은 다음 stage인데 설명은 루트**가 되어 어긋납니다. 표시 스킬이 바뀐 프레임에만 재호출하며(`ReferenceEquals` 가드), 새 스킬로 정보 생성이 실패하면 숨깁니다
+- **쿨타임 줄** — HUD는 **소울 쿨감이 반영된 실효 쿨타임**(`PlayerCombatController.GetEffectiveCooldown(SkillData)`), 인벤토리 각인 탭은 원본값. `cooldown <= 0`이면 줄 자체를 그리지 않습니다. 포맷은 `ToString("0.#")` — **카운트다운의 `CeilToInt` 규칙을 쓰지 않습니다**(스펙 표기에 올림을 쓰면 `1.5초`가 `2초`로 보임)
+- 🐛 **동반 픽스**: 실제 쿨다운은 `slot.StartCooldown(EffectiveSkillCooldownMultiplier())`로 배율이 걸리는데 `GetSkillCooldownMax`가 원본 `skill.cooldown`을 반환해, **쿨감 투자 시 radial fill이 100%가 아니라 중간에서 시작**했습니다. `GetEffectiveCooldown`을 단일 진실로 두고 툴팁·`GetSkillCooldownMax`·`HandleSkillUsed` 세 곳이 전부 경유하도록 통합했습니다(`EffectiveSkillCooldownMultiplier`는 private 유지)
+- 씬: 쿨다운 오버레이 `Image`·잔여시간 TMP의 `Raycast Target`을 꺼야 호버가 슬롯에 도달합니다(오버레이가 이벤트를 먹음)
+
 **재시전 체인 3단 표시 (2026-07-15, §7-10)**: `TryGetRecastState(slot, …)` 폴링 — 체인 활성이면 덮개가 **유예 게이지**(색=`recastWindowFillColor` SerializeField, Radial360 강제 후 원설정 복원)+아이콘=**다음 단계 스킬**, 종료 시 원래 아이콘·색·루트 쿨 잔량 복귀(쿨은 첫 시전부터 진행돼 차감된 상태). 단계 발동의 `RaiseSkillUsed(단계)`는 `usedSkill != _skill` 비교로 루트 쿨 추적 미오염. 전 항목 변경값 캐시.
 
 ### 10-3. 스킬 범위 미리보기 (SkillRangePreviewer)
@@ -2346,11 +2358,13 @@ Relic 패시브는 `PlayerCombatController` 가 `PlayerInventory.OnInventoryChan
 
 - 소스가 다르므로 `Refresh()`가 각인 탭에서만 `EngravingLoadout.Active` + `PlayerCombatController.Active.CurrentFormId` 경로로 갈라집니다
 - **읽기 전용** — 클릭은 무시됩니다(장착/해제는 각인대 독점). 장착 중인 슬롯은 표시하지 않습니다(장착 패시브 확인 UI는 별도 예정)
-- `EngravingDisplayInfo`(readonly struct)가 `EngravingData` / `PassiveEngravingData` / plain `SkillData`(폼 기본 스킬 토큰, 등급 없음) 3종을 표시용 정보로 통합합니다. **이름·등급 표시 로직의 단일 지점**이며 각인대 UI도 이걸 재사용합니다
+- `EngravingDisplayInfo`(readonly struct)가 `EngravingData` / `PassiveEngravingData` / plain `SkillData`(폼 기본 스킬 토큰, 등급 없음) 3종을 표시용 정보로 통합합니다. **이름·등급 표시 로직의 단일 지점**이며 각인대 UI·HUD 스킬 슬롯 툴팁도 이걸 재사용합니다. `HasGrade`/`Grade`와 같은 패턴으로 **`HasCooldown`/`Cooldown`**(2026-07-29)을 가지며, 실효 쿨타임을 아는 호출부(HUD)는 선택적 오버라이드 인자로 넘깁니다(패시브는 항상 `false`)
 - `InventorySlotUI`는 `ItemData` 바인드 경로와 각인 바인드 경로를 **상호 배타**로 관리합니다(한쪽 바인드 시 반대쪽 상태를 null로)
 - ⚠️ **알려진 한계** — 인벤을 열어둔 채 각인을 주우면 목록이 갱신되지 않습니다. `AddToPool`/`AddPassiveToPool`이 **쿨다운 리셋 방지를 위해 의도적으로 이벤트를 발행하지 않기 때문**입니다(§7-8b). 탭 전환·재개방 시 갱신되므로 이를 고치려고 이벤트를 발행하지 말 것
 
-**툴팁 등급 테두리** — `ItemTooltipUI`가 `borderImage.color`를 등급별로 바꿉니다. 색 소스는 3단으로 통일되어 있습니다: 일반 아이템 = `ItemData.Rarity`(Common/Rare/Legendary), 각인 = `EngravingGrade`(희미한/온전한/태초의). 등급이 없는 plain 기본 스킬 토큰은 중립색입니다. 색·중립색은 전부 SerializeField(인스펙터 저작)이고, `borderImage` 미결선이나 색 배열 길이 불일치 시 중립색으로 폴백합니다. 각인 툴팁 헤더는 이름 옆에 `<size=70%>`로 `액티브 · 온전한` 형태의 메타를 붙입니다(라벨은 `UiMessages` 상수).
+**툴팁 등급 테두리** — `ItemTooltipUI`가 `borderImage.color`를 등급별로 바꿉니다. 색 소스는 3단으로 통일되어 있습니다: 일반 아이템 = `ItemData.Rarity`(Common/Rare/Legendary), 각인 = `EngravingGrade`(희미한/온전한/태초의). 등급이 없는 plain 기본 스킬 토큰은 중립색입니다. 색·중립색은 전부 SerializeField(인스펙터 저작)이고, `borderImage` 미결선이나 색 배열 길이 불일치 시 중립색으로 폴백합니다. 각인 툴팁 헤더는 이름 옆에 `<size=70%>`로 `액티브 - 온전한` 형태의 메타를 붙입니다(라벨·구분자·쿨타임 줄 전부 `UiMessages` 상수 — **표시 문구 하드코딩 금지**).
+
+⚠️ **폰트 미수록 문자 주의 (2026-07-29, `6a6fd555`)** — `Assets/Fonts/Pretendard.asset`은 **Static 아틀라스**(4096² 단일, multi-atlas 꺼짐, 11,697자)라 미수록 문자를 런타임에 추가할 수 없고 □로 대체되며 TMP 경고가 납니다. **U+00B7(`·`)·U+30FB(`・`)·U+FF65(`･`)는 미수록**, **U+2022(`•`)는 수록**. 원래 구분자가 `·`였고 스킬명 `연격·연쇄`(루트+recast 3단+`ItemDatabase` displayName)도 같은 문자를 써서 두 경로 모두 `-`로 교체했습니다. 폰트 재생성(39MB 에셋 재커밋)·Dynamic 전환(아틀라스 여유 부족 → multi-atlas 필요 → 드로우콜 증가)은 비용 대비 실익이 없어 비채택.
 
 ### 11b-8. Soul 강화 (영구 폼 메커니즘 강화)
 
@@ -2914,7 +2928,7 @@ WeaponData / SkillData Inspector 드롭다운에 자동으로 추가됩니다. �
 **신규 스킬 콘텐츠의 기본 경로는 plain SkillData 가 아니라 영혼각인(`EngravingData`)** — 런 중 드랍/교체 시스템(§7-8)에 태우려면 `Create > JBRogLike > Combat > Engraving` 으로 생성한다. plain SkillData 는 무기 기본 loadout(`WeaponData.skills[4]`·`basicAttackSkillData`) 전용.
 
 1. `Create > JBRogLike > Combat > Engraving` — `owningForm`(결속 폼) + `grade`(Faint/Whole/Primordial) 지정, SkillData 상속 필드(실행타입/수치/형태/ailments) 입력
-2. **Skill Dashboard**(`JBRogLike > Skill Dashboard`)로 ItemDatabase 등록(고아 각인 "Add to ItemDatabase" Fix — itemCode 자동 발급). EngravingValidator 흡수됨
+2. **Skill Dashboard**(`JBRogLike > Skill Dashboard`)로 ItemDatabase 등록(고아 각인 "Add to ItemDatabase" Fix — itemCode 자동 발급). EngravingValidator 흡수됨. 아이콘은 같은 창의 **행 썸네일로 훑고 펼침 패널 64px ObjectField로 교체**한 뒤 **툴바 Save Assets**로 내린다(이 창은 `SerializedObject` 쓰기만 해서 저장 버튼 없이는 dirty로만 남는다). recast 단계 아이콘도 **반드시 채울 것** — 비우면 `ApplyIcon`이 빈 슬롯 스프라이트로 폴백해 자원 틴트가 빈 그림에 칠해진다
 3. `EnemyDropDatabase` 에 드랍 배치(일반=저확률 / 엘리트=choiceGroup / 보스=확정 Primordial, **전부 min=max=1**)
 4. 검증: Validator 재스캔 경고 0 + 콘솔 `/engraving give <form> <itemCode>` 로 즉시 장착 테스트
 
@@ -3120,7 +3134,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 경제 루프·영속 | Town Soul Altar(조각 소비→AddLevel, 누진 비용) + **Altar UI 개편(2026-07-16)** — 단일 스크롤+섹션 헤더+"????" 마스킹+한글화+행 프리팹, 공통 스탯=조각 배분 창(혼합 지불, Max=잔여 클램프) + 영구축 JSON 세이브(`SaveService`, Soul+Material+강화레벨 사망·앱재시작 영속) + **소실 예방 3종**(.bak 백업·unknown itemCode 보존·원자적 쓰기, 2026-07-14). 상세 §11b-9~10 |
 | 폼 진행·선택 (2026-07-16) | **A안 확정** — 폼=런 단위 선택, 해금=Soul 보유(기존 축), 시작 Sword Soul 자동 지급 + 던전 이탈 Normal 복귀(마을=슬라임) + **던전 입장 폼 선택 화면**(풀스크린, 카드 프리팹=데이터 캐리어, 실루엣 잠금 표시). 남은 S3: 흡수 해금 연출·Soul 드랍 랜덤 폼 보정·last-form 영속. 상세 §11a-4 |
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
-| 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Skill Dashboard(조망·편집·생성·삭제·검증, Validator 흡수). **E3 콘텐츠 에셋만 남음(보류 — 폼 컨셉 확정 대기)**. 상세 §7-8 |
+| 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Skill Dashboard(조망·편집·생성·삭제·검증 + 아이콘 축 + 폼별 그룹, Validator 흡수). **Sword 액티브 12종 저작·아이콘 전량 완료(2026-07-29)** — 남은 건 수치 조정과 타 폼 물량. 상세 §7-8 |
 | 패시브 각인 (2026-07-22 신설) | `PassiveEngravingData`(SkillData 비파생, `BehaviorEffect[]`) + `EngravingLoadout` 패시브 슬롯4/풀 미러(**`OnPassiveChanged` 이벤트 분리 = 쿨다운 리셋 차단**) + `BehaviorRuntime.Rescan` 2소스 병합(인벤 Relic + 장착 패시브) + 드랍 라우팅(ItemType.PassiveEngraving) + 각인대 **액티브/패시브 탭**(변경된 축만 커밋) + 인벤 조회 탭. **남은 것: Altar 슬롯 증설·영속+잠금 UI, 쉴드 서브시스템**. 상세 §7-8b |
 
 **지역 전환·아레나**
