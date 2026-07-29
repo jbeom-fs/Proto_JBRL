@@ -545,6 +545,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return Mathf.Max(0f, 1f - _soulBonus.Get(SoulStatType.CooldownReduction) / 100f);
     }
 
+    public float GetEffectiveCooldown(SkillData skill)
+    {
+        return skill != null
+            ? Mathf.Max(0f, skill.cooldown) * EffectiveSkillCooldownMultiplier()
+            : 0f;
+    }
+
     public float AilmentDamageMultiplier =>
         1f + Mathf.Max(0f, _soulBonus.Get(SoulStatType.AilmentDamage)) / 100f;
 
@@ -1964,7 +1971,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public float GetSkillCooldownMax(int slotIndex)
     {
         SkillData skill = GetSkillData(slotIndex);
-        return skill != null ? skill.cooldown : 0f;
+        return GetEffectiveCooldown(skill);
     }
 
     public float GetSkillCooldownNormalized(int slotIndex)

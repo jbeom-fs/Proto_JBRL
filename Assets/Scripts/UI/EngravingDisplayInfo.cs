@@ -8,6 +8,8 @@ public readonly struct EngravingDisplayInfo
     public readonly bool IsPassive;
     public readonly bool HasGrade;
     public readonly EngravingGrade Grade;
+    public readonly bool HasCooldown;
+    public readonly float Cooldown;
 
     private EngravingDisplayInfo(
         Sprite icon,
@@ -15,7 +17,9 @@ public readonly struct EngravingDisplayInfo
         string description,
         bool isPassive,
         bool hasGrade,
-        EngravingGrade grade)
+        EngravingGrade grade,
+        bool hasCooldown,
+        float cooldown)
     {
         Icon = icon;
         Name = displayName;
@@ -23,9 +27,20 @@ public readonly struct EngravingDisplayInfo
         IsPassive = isPassive;
         HasGrade = hasGrade;
         Grade = grade;
+        HasCooldown = hasCooldown;
+        Cooldown = cooldown;
     }
 
     public static bool TryCreate(SkillData skill, out EngravingDisplayInfo info)
+    {
+        float cooldown = skill != null ? skill.cooldown : 0f;
+        return TryCreate(skill, cooldown, out info);
+    }
+
+    public static bool TryCreate(
+        SkillData skill,
+        float cooldownOverride,
+        out EngravingDisplayInfo info)
     {
         if (skill == null)
         {
@@ -46,7 +61,9 @@ public readonly struct EngravingDisplayInfo
             skill.description,
             false,
             hasGrade,
-            grade);
+            grade,
+            cooldownOverride > 0f,
+            cooldownOverride);
         return true;
     }
 
@@ -67,7 +84,9 @@ public readonly struct EngravingDisplayInfo
             passive.description,
             true,
             true,
-            passive.grade);
+            passive.grade,
+            false,
+            0f);
         return true;
     }
 }

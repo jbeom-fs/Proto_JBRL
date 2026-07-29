@@ -8,7 +8,7 @@ public static class UiMessages
     public const string FormDescriptionSword = "검 메시지";
     public const string FormDescriptionDagger = "대거 메시지";
     public const string FormDescriptionFreischutz = "마탄 메시지";
-    public const string FormDescriptionParry = "패리 메세";
+    public const string FormDescriptionParry = "패리 메세지";
 
     public const string LockedSectionHeader = "ㅡㅡ ???? ㅡㅡ";
     public const string SoulStatSummaryFormat = "{0} Lv.{1}/{2}  비용 {3}";
@@ -40,7 +40,7 @@ public static class UiMessages
     public const string EngravingGradeWhole = "온전한";
     public const string EngravingGradePrimordial = "태초의";
     public const string EngravingTooltipMetaFormat = "<size=70%>{0}</size>";
-    public const string EngravingTooltipMetaWithGradeFormat = "<size=70%>{0} · {1}</size>";
+    public const string EngravingTooltipMetaWithGradeFormat = "<size=70%>{0} - {1}</size>";
     public const string RestAreaCoreMissing = "코어 없음";
     public const string RestAreaCurrencyMissing = "재화 없음";
     public const string RestAreaNotEnoughCurrency = "재화 부족";
@@ -53,6 +53,8 @@ public static class UiMessages
     public const string RestAreaOfferCostFormat = "비용 {0}";
     public const string MagazineReloadingFormat = "재장전 중... {0}/{1}";
     public const string MagazineCountFormat = "{0}/{1}";
+
+    public const string CooldownLineFormat = "쿨타임 {0}초";
 
     public static string GetFormName(PlayerFormId form)
     {

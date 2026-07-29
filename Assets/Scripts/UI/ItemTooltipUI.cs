@@ -99,9 +99,13 @@ public sealed class ItemTooltipUI : MonoBehaviour
                 UiMessages.GetEngravingGradeName(info.Grade))
             : string.Format(UiMessages.EngravingTooltipMetaFormat, typeLabel);
         headerText.text = info.Name + " " + meta;
-        bodyText.text = string.IsNullOrWhiteSpace(info.Description)
+        string description = string.IsNullOrWhiteSpace(info.Description)
             ? UiMessages.EmptyDescription
             : info.Description;
+        bodyText.text = info.HasCooldown
+                ? string.Format(UiMessages.CooldownLineFormat, info.Cooldown.ToString("0.#"))
+                + "\n" + description
+                : description;
         ApplyBorderColor((int)info.Grade, info.HasGrade);
         panelRect.gameObject.SetActive(true);
 

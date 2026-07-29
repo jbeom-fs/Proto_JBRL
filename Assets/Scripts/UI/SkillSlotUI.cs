@@ -14,10 +14,11 @@
 // ═══════════════════════════════════════════════════════════════════
 
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
-public class SkillSlotUI : MonoBehaviour
+public class SkillSlotUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     // ── Inspector 필드 ───────────────────────────────────────────────
 
@@ -40,6 +41,9 @@ public class SkillSlotUI : MonoBehaviour
     private Sprite                 _emptySlotSprite;  // 빈 슬롯 대체 이미지 (SkillUIManager에서 주입)
 
     private SkillData _skill;          // 현재 슬롯에 할당된 스킬 캐시
+    private SkillData _displayedSkill;
+    private bool      _isPointerInside;
+    private RectTransform _rect;
     private float     _cooldownMax;    // 스킬 사용 시점의 최대 쿨타임
     private bool      _trackingCooldown;
     private int       _lastDisplayedSeconds = int.MinValue;
@@ -66,6 +70,11 @@ public class SkillSlotUI : MonoBehaviour
     // ══════════════════════════════════════════════════════════════
     //  초기화 (SkillUIManager가 호출)
     // ══════════════════════════════════════════════════════════════
+
+    private void Awake()
+    {
+        _rect = transform as RectTransform;
+    }
 
     /// <summary>슬롯 인덱스·전투 컨트롤러·이벤트 채널·빈 슬롯 스프라이트를 주입합니다.</summary>
     public void Initialize(int slotIndex, PlayerCombatController combat,
@@ -140,12 +149,27 @@ public class SkillSlotUI : MonoBehaviour
 
     private void OnDisable()
     {
+        _isPointerInside = false;
+        ItemTooltipUI.HideActive();
+
         if (!_isInitialized)
             return;
 
         ExitRecastVisuals();
         SetCooldownVisible(false);
         InvalidateVisualCaches();
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        _isPointerInside = true;
+        TryShowTooltip();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        _isPointerInside = false;
+        ItemTooltipUI.HideActive();
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -199,7 +223,9 @@ public class SkillSlotUI : MonoBehaviour
     {
         if (usedSkill == null || usedSkill != _skill) return;
 
-        _cooldownMax      = _skill.cooldown;
+        _cooldownMax      = _combat != null
+            ? _combat.GetEffectiveCooldown(_skill)
+            : _skill.cooldown;
         _trackingCooldown = true;
         _lastDisplayedSeconds = int.MinValue;
     }
@@ -370,9 +396,35 @@ public class SkillSlotUI : MonoBehaviour
 
     private void UpdateResourceTint(SkillData displayedSkill)
     {
+        CacheDisplayedSkill(displayedSkill);
         ApplyIconTint(_combat.HasResourceFor(displayedSkill)
             ? _normalIconColor
             : resourceBlockedIconColor);
+    }
+
+    private void CacheDisplayedSkill(SkillData displayedSkill)
+    {
+        if (ReferenceEquals(_displayedSkill, displayedSkill))
+            return;
+
+        _displayedSkill = displayedSkill;
+        if (_isPointerInside && !TryShowTooltip())
+            ItemTooltipUI.HideActive();
+    }
+
+    private bool TryShowTooltip()
+    {
+        bool hasInfo = _combat != null
+            ? EngravingDisplayInfo.TryCreate(
+                _displayedSkill,
+                _combat.GetEffectiveCooldown(_displayedSkill),
+                out EngravingDisplayInfo info)
+            : EngravingDisplayInfo.TryCreate(_displayedSkill, out info);
+        if (!hasInfo)
+            return false;
+
+        ItemTooltipUI.ShowActive(info, _rect);
+        return true;
     }
 
     private void ApplyIconTint(Color color)
