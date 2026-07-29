@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Sword_Skill_11
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: 종언
-  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
-  description: 최대 콤보를 모두 태워 주변에 파괴적인 일격을 가한다.
+  skillName: "\uC885\uC5B8"
+  icon: {fileID: 21300000, guid: 1e970104341f2cb4d895517d652fb766, type: 3}
+  description: "\uCD5C\uB300 \uCF64\uBCF4\uB97C \uBAA8\uB450 \uD0DC\uC6CC \uC8FC\uBCC0\uC5D0
+    \uD30C\uAD34\uC801\uC778 \uC77C\uACA9\uC744 \uAC00\uD55C\uB2E4."
   executionType: 0
   resourceType: 3
   requiredAmount: 20

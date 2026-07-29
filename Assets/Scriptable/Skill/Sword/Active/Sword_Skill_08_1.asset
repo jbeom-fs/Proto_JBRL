@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
   m_Name: Sword_Skill_08_1
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: 도약참 착지
-  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
-  description: 착지 지점 주변을 원형으로 벤다.
+  skillName: "\uB3C4\uC57D\uCC38 \uCC29\uC9C0"
+  icon: {fileID: 21300000, guid: 7367d253597dabe4f8a1fe42212c8ff1, type: 3}
+  description: "\uCC29\uC9C0 \uC9C0\uC810 \uC8FC\uBCC0\uC744 \uC6D0\uD615\uC73C\uB85C
+    \uBCA4\uB2E4."
   executionType: 0
   resourceType: 0
   requiredAmount: 0

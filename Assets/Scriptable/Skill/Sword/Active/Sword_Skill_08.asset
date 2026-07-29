@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Sword_Skill_08
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: 도약참
-  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
-  description: 무적으로 도약한 뒤 재입력해 착지 지점 주변을 벤다.
+  skillName: "\uB3C4\uC57D\uCC38"
+  icon: {fileID: 21300000, guid: 1cc158dd2921f394aa9db25a97c3b543, type: 3}
+  description: "\uBB34\uC801\uC73C\uB85C \uB3C4\uC57D\uD55C \uB4A4 \uC7AC\uC785\uB825\uD574
+    \uCC29\uC9C0 \uC9C0\uC810 \uC8FC\uBCC0\uC744 \uBCA4\uB2E4."
   executionType: 2
   resourceType: 0
   requiredAmount: 0

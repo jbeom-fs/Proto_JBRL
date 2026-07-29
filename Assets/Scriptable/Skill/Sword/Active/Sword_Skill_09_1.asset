@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
   m_Name: Sword_Skill_09_1
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: 난무 2격
-  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
-  description: 난무의 두 번째 베기다.
+  skillName: "\uB09C\uBB34 2\uACA9"
+  icon: {fileID: 21300000, guid: 57fba0d6e568e114bb3c2d80947ea293, type: 3}
+  description: "\uB09C\uBB34\uC758 \uB450 \uBC88\uC9F8 \uBCA0\uAE30\uB2E4."
   executionType: 0
   resourceType: 0
   requiredAmount: 0

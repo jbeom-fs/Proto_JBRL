@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Sword_Skill_06
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: 기세베기
-  icon: {fileID: -5736735508621051572, guid: da9d54ee364d6a14181031ac8d366035, type: 3}
-  description: 콤보 10 이상에서 기세를 실어 강하게 벤다.
+  skillName: "\uAE30\uC138\uBCA0\uAE30"
+  icon: {fileID: 21300000, guid: 72f560b03884fc749ab9845ad5b7bf30, type: 3}
+  description: "\uCF64\uBCF4 10 \uC774\uC0C1\uC5D0\uC11C \uAE30\uC138\uB97C \uC2E4\uC5B4
+    \uAC15\uD558\uAC8C \uBCA4\uB2E4."
   executionType: 0
   resourceType: 3
   requiredAmount: 10
