@@ -8,6 +8,7 @@ using Object = UnityEngine.Object;
 public sealed class SkillDashboardWindow : EditorWindow
 {
     private const string SplitRatioKey = "SkillDashboard.SplitRatio";
+    private const string GroupFoldoutKeyPrefix = "SkillDashboard.Group.";
     private const float DefaultSplitRatio = 0.58f;
     private const float MinSplitRatio = 0.22f;
     private const float MaxSplitRatio = 0.78f;
@@ -30,9 +31,12 @@ public sealed class SkillDashboardWindow : EditorWindow
     private readonly HashSet<SkillData> _expandedSkills = new HashSet<SkillData>();
     private static readonly List<CreatedSkillUndoRecord> s_CreatedSkillUndoRecords =
         new List<CreatedSkillUndoRecord>();
+    private static readonly Comparison<SkillRow> s_SkillRowFormComparer =
+        CompareSkillRowsByFormAndAssetName;
     private bool _hasScanned;
     private bool _isScopedSaveQueued;
     private string _search = string.Empty;
+    private string _formInferenceSummary = string.Empty;
     private SkillKindFilter _kindFilter;
     private bool _showInfo = true;
     private Vector2 _skillScrollPosition;
@@ -138,7 +142,11 @@ public sealed class SkillDashboardWindow : EditorWindow
         if (GUILayout.Button("Save Assets", EditorStyles.toolbarButton, GUILayout.Width(96f)))
             SaveScopedAssets();
         if (_hasScanned)
+        {
             GUILayout.Label(_skillRows.Count + " skills / " + _results.Count + " results", EditorStyles.miniLabel);
+            GUILayout.Space(8f);
+            GUILayout.Label(_formInferenceSummary, EditorStyles.miniLabel);
+        }
 
         EditorGUILayout.EndHorizontal();
     }
@@ -395,17 +403,19 @@ public sealed class SkillDashboardWindow : EditorWindow
         EditorGUILayout.BeginVertical(GUILayout.Width(TableWidth));
 
         int visibleCount = 0;
-        for (int i = 0; i < _skillRows.Count; i++)
+        int matchedCount = 0;
+        Array formValues = Enum.GetValues(typeof(PlayerFormId));
+        for (int i = 0; i < formValues.Length; i++)
         {
-            SkillRow row = _skillRows[i];
-            if (!IsSkillVisible(row))
-                continue;
-
-            DrawSkillRow(row, visibleCount);
-            visibleCount++;
+            DrawSkillGroup(
+                (PlayerFormId)formValues.GetValue(i),
+                true,
+                ref visibleCount,
+                ref matchedCount);
         }
+        DrawSkillGroup(default, false, ref visibleCount, ref matchedCount);
 
-        if (visibleCount == 0)
+        if (matchedCount == 0)
             EditorGUILayout.HelpBox("현재 필터에 맞는 스킬이 없습니다.", MessageType.Info);
 
         EditorGUILayout.EndVertical();
@@ -413,6 +423,86 @@ public sealed class SkillDashboardWindow : EditorWindow
 
         if (AssetPreview.IsLoadingAssetPreviews())
             Repaint();
+    }
+
+    private void DrawSkillGroup(
+        PlayerFormId form,
+        bool hasForm,
+        ref int visibleCount,
+        ref int matchedCount)
+    {
+        List<SkillRow> visibleRows = new List<SkillRow>();
+        for (int i = 0; i < _skillRows.Count; i++)
+        {
+            SkillRow row = _skillRows[i];
+            bool belongsToGroup = hasForm
+                ? row.HasInferredForm && row.InferredForm.Equals(form)
+                : !row.HasInferredForm;
+            if (belongsToGroup && IsSkillVisible(row))
+                visibleRows.Add(row);
+        }
+
+        if (visibleRows.Count == 0)
+            return;
+
+        matchedCount += visibleRows.Count;
+
+        string groupName = hasForm ? form.ToString() : "Unassigned";
+        string preferenceKey = GroupFoldoutKeyPrefix + groupName;
+        bool storedExpanded = EditorPrefs.GetBool(preferenceKey, true);
+        bool forceExpanded = !string.IsNullOrEmpty(_search);
+        bool displayedExpanded = forceExpanded || storedExpanded;
+        bool nextExpanded = DrawSkillGroupHeader(
+            groupName,
+            visibleRows.Count,
+            displayedExpanded);
+        if (!forceExpanded && nextExpanded != storedExpanded)
+            EditorPrefs.SetBool(preferenceKey, nextExpanded);
+
+        if (!displayedExpanded)
+            return;
+
+        for (int i = 0; i < visibleRows.Count; i++)
+        {
+            DrawSkillRow(visibleRows[i], visibleCount);
+            visibleCount++;
+        }
+    }
+
+    private static bool DrawSkillGroupHeader(
+        string groupName,
+        int visibleCount,
+        bool expanded)
+    {
+        Rect groupRect = GUILayoutUtility.GetRect(
+            TableWidth,
+            SkillHeaderHeight,
+            GUILayout.Width(TableWidth),
+            GUILayout.Height(SkillHeaderHeight));
+        if (Event.current.type == EventType.Repaint)
+        {
+            Color groupColor = EditorGUIUtility.isProSkin
+                ? new Color(0.19f, 0.19f, 0.19f, 1f)
+                : new Color(0.84f, 0.84f, 0.84f, 1f);
+            EditorGUI.DrawRect(ExpandRectToViewWidth(groupRect), groupColor);
+        }
+
+        Rect foldoutRect = new Rect(
+            groupRect.x + 4f,
+            groupRect.y,
+            groupRect.width - 8f,
+            groupRect.height);
+        return EditorGUI.Foldout(
+            foldoutRect,
+            expanded,
+            groupName + " (표시 중 " + visibleCount + "개)",
+            true);
+    }
+
+    private static Rect ExpandRectToViewWidth(Rect rect)
+    {
+        rect.width = Mathf.Max(TableWidth, EditorGUIUtility.currentViewWidth);
+        return rect;
     }
 
     private static void DrawSkillHeader()
@@ -426,7 +516,7 @@ public sealed class SkillDashboardWindow : EditorWindow
             Color headerColor = EditorGUIUtility.isProSkin
                 ? new Color(0.22f, 0.22f, 0.22f, 1f)
                 : new Color(0.78f, 0.78f, 0.78f, 1f);
-            EditorGUI.DrawRect(headerRect, headerColor);
+            EditorGUI.DrawRect(ExpandRectToViewWidth(headerRect), headerColor);
         }
 
         GUILayout.Space(SkillFoldoutWidth);
@@ -457,7 +547,7 @@ public sealed class SkillDashboardWindow : EditorWindow
             Color stripeColor = EditorGUIUtility.isProSkin
                 ? new Color(1f, 1f, 1f, 0.035f)
                 : new Color(0f, 0f, 0f, 0.035f);
-            EditorGUI.DrawRect(rowRect, stripeColor);
+            EditorGUI.DrawRect(ExpandRectToViewWidth(rowRect), stripeColor);
         }
 
         Rect foldoutRect = GUILayoutUtility.GetRect(
@@ -556,7 +646,7 @@ public sealed class SkillDashboardWindow : EditorWindow
             Color panelColor = EditorGUIUtility.isProSkin
                 ? new Color(0.16f, 0.16f, 0.16f, 1f)
                 : new Color(0.9f, 0.9f, 0.9f, 1f);
-            EditorGUI.DrawRect(panelRect, panelColor);
+            EditorGUI.DrawRect(ExpandRectToViewWidth(panelRect), panelColor);
         }
 
         GUILayout.Space(4f);
@@ -1627,18 +1717,36 @@ public sealed class SkillDashboardWindow : EditorWindow
             LoadAssets<PassiveEngravingData>("t:PassiveEngravingData");
         List<ItemDatabase> itemDatabases = LoadAssets<ItemDatabase>("t:ItemDatabase");
         List<EnemyDropDatabase> dropDatabases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
+        List<PlayerFormData> playerForms = LoadAssets<PlayerFormData>("t:PlayerFormData");
+        List<WeaponData> weapons = LoadAssets<WeaponData>("t:WeaponData");
 
+        SkillFormIndex formIndex = BuildSkillFormIndex(
+            skills,
+            playerForms,
+            weapons,
+            itemDatabases,
+            passiveEngravings);
         ScanContext context = BuildItemContext(itemDatabases);
-        BuildSkillRows(skills, context);
+        BuildSkillRows(skills, context, formIndex);
+        _skillRows.Sort(s_SkillRowFormComparer);
+        _formInferenceSummary =
+            "직접 " + formIndex.DirectInferredCount +
+            " / recast " + formIndex.RecastInferredCount +
+            " / weapon " + formIndex.WeaponInferredCount +
+            " / 미분류 " + formIndex.UnassignedInferredCount;
         List<DropRecord> dropRecords = BuildDropRecords(dropDatabases);
 
         AddOrphanResults(skills, passiveEngravings, itemDatabases, context);
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
         AddIconResults(skills, passiveEngravings);
+        AddSkillFormResults(skills, formIndex);
     }
 
-    private void BuildSkillRows(List<SkillData> skills, ScanContext context)
+    private void BuildSkillRows(
+        List<SkillData> skills,
+        ScanContext context,
+        SkillFormIndex formIndex)
     {
         for (int i = 0; i < skills.Count; i++)
         {
@@ -1650,6 +1758,10 @@ public sealed class SkillDashboardWindow : EditorWindow
             List<ItemRecord> linkedItems = null;
             if (engraving != null)
                 context.ItemsByEngraving.TryGetValue(engraving, out linkedItems);
+            bool hasInferredForm = formIndex.Forms.TryGetValue(
+                skill,
+                out PlayerFormId inferredForm) &&
+                Enum.IsDefined(typeof(PlayerFormId), inferredForm);
 
             _skillRows.Add(new SkillRow
             {
@@ -1658,6 +1770,8 @@ public sealed class SkillDashboardWindow : EditorWindow
                 Icon = skill.icon,
                 DisplayName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName,
                 IsEngraving = engraving != null,
+                HasInferredForm = hasInferredForm,
+                InferredForm = inferredForm,
                 ExecutionTypeText = skill.executionType.ToString(),
                 CooldownText = skill.cooldown.ToString("0.###"),
                 DamageText = skill.damage.ToString(),
@@ -1668,6 +1782,319 @@ public sealed class SkillDashboardWindow : EditorWindow
                 AilmentCount = skill.ailments != null ? skill.ailments.Length : 0,
                 LinkedItemCodesText = BuildLinkedItemCodes(linkedItems)
             });
+        }
+    }
+
+    private static int CompareSkillRowsByFormAndAssetName(SkillRow left, SkillRow right)
+    {
+        if (left.HasInferredForm != right.HasInferredForm)
+            return left.HasInferredForm ? -1 : 1;
+
+        if (left.HasInferredForm)
+        {
+            int formComparison = Comparer<PlayerFormId>.Default.Compare(
+                left.InferredForm,
+                right.InferredForm);
+            if (formComparison != 0)
+                return formComparison;
+        }
+
+        return StringComparer.Ordinal.Compare(
+            left.Asset != null ? left.Asset.name : string.Empty,
+            right.Asset != null ? right.Asset.name : string.Empty);
+    }
+
+    private static SkillFormIndex BuildSkillFormIndex(
+        List<SkillData> skills,
+        List<PlayerFormData> playerForms,
+        List<WeaponData> weapons,
+        List<ItemDatabase> itemDatabases,
+        List<PassiveEngravingData> passiveEngravings)
+    {
+        SkillFormIndex index = new SkillFormIndex();
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            EngravingData engraving = skills[i] as EngravingData;
+            if (engraving == null)
+                continue;
+
+            index.Forms.Add(engraving, engraving.owningForm);
+            index.DirectInferredCount++;
+        }
+
+        int maxPasses = Mathf.Max(1, skills.Count);
+        bool changed = false;
+        for (int pass = 0; pass < maxPasses; pass++)
+        {
+            changed = false;
+            for (int rootIndex = 0; rootIndex < skills.Count; rootIndex++)
+            {
+                SkillData root = skills[rootIndex];
+                if (root == null || root.recastStages == null)
+                    continue;
+
+                for (int stageIndex = 0; stageIndex < root.recastStages.Count; stageIndex++)
+                {
+                    SkillData stage = root.recastStages[stageIndex];
+                    if (stage == null)
+                        continue;
+
+                    index.AssetReferences.Add(stage);
+                    if (!index.Forms.TryGetValue(root, out PlayerFormId rootForm))
+                        continue;
+
+                    if (index.Forms.TryGetValue(stage, out PlayerFormId stageForm))
+                    {
+                        if (!stageForm.Equals(rootForm))
+                            AddRecastFormConflict(index, root, rootForm, stage, stageForm);
+                        continue;
+                    }
+
+                    index.Forms.Add(stage, rootForm);
+                    index.RecastInferredCount++;
+                    changed = true;
+                }
+            }
+
+            if (!changed)
+                break;
+        }
+        index.RecastGuardHit = changed;
+
+        Dictionary<SkillData, WeaponFormSource> weaponSources =
+            new Dictionary<SkillData, WeaponFormSource>();
+        for (int formIndex = 0; formIndex < playerForms.Count; formIndex++)
+        {
+            PlayerFormData playerForm = playerForms[formIndex];
+            if (playerForm == null || playerForm.DefaultWeapon == null)
+                continue;
+
+            WeaponData weapon = playerForm.DefaultWeapon;
+            if (weapon.skills != null)
+            {
+                for (int slotIndex = 0; slotIndex < weapon.skills.Length; slotIndex++)
+                {
+                    AddWeaponFormAssignment(
+                        index,
+                        weaponSources,
+                        weapon.skills[slotIndex],
+                        playerForm.FormId,
+                        weapon);
+                }
+            }
+
+            AddWeaponFormAssignment(
+                index,
+                weaponSources,
+                weapon.basicAttackSkillData,
+                playerForm.FormId,
+                weapon);
+        }
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            SkillData root = skills[i];
+            if (root == null ||
+                root.recastStages == null ||
+                !index.Forms.TryGetValue(root, out PlayerFormId rootForm))
+            {
+                continue;
+            }
+
+            for (int stageIndex = 0; stageIndex < root.recastStages.Count; stageIndex++)
+            {
+                SkillData stage = root.recastStages[stageIndex];
+                if (stage != null &&
+                    index.Forms.TryGetValue(stage, out PlayerFormId stageForm) &&
+                    !stageForm.Equals(rootForm))
+                {
+                    AddRecastFormConflict(index, root, rootForm, stage, stageForm);
+                }
+            }
+        }
+
+        AddAssetLevelReferences(index, weapons, itemDatabases, passiveEngravings);
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            SkillData skill = skills[i];
+            if (skill == null)
+                continue;
+
+            if (index.Forms.TryGetValue(skill, out PlayerFormId inferredForm) &&
+                Enum.IsDefined(typeof(PlayerFormId), inferredForm))
+            {
+                continue;
+            }
+
+            index.UnassignedInferredCount++;
+        }
+
+        return index;
+    }
+
+    private static void AddWeaponFormAssignment(
+        SkillFormIndex index,
+        Dictionary<SkillData, WeaponFormSource> weaponSources,
+        SkillData skill,
+        PlayerFormId form,
+        WeaponData weapon)
+    {
+        if (skill == null)
+            return;
+
+        index.AssetReferences.Add(skill);
+        bool conflictingWeaponForms = false;
+        if (weaponSources.TryGetValue(skill, out WeaponFormSource firstSource))
+        {
+            if (!firstSource.Form.Equals(form))
+            {
+                conflictingWeaponForms = true;
+                AddFormConflict(
+                    index,
+                    "weapon:" + GetAssetIdentity(skill) + ":" +
+                    firstSource.Form + ":" + form,
+                    "Cross-form skill wiring: skill '" + skill.name +
+                    "' is referenced by weapon root '" + firstSource.Weapon.name +
+                    "' as " + firstSource.Form + " and weapon root '" + weapon.name +
+                    "' as " + form + ".",
+                    skill);
+            }
+        }
+        else
+        {
+            weaponSources.Add(skill, new WeaponFormSource
+            {
+                Form = form,
+                Weapon = weapon
+            });
+        }
+
+        if (index.Forms.TryGetValue(skill, out PlayerFormId existingForm))
+        {
+            if (!conflictingWeaponForms && !existingForm.Equals(form))
+            {
+                AddFormConflict(
+                    index,
+                    "inferred-weapon:" + GetAssetIdentity(skill) + ":" +
+                    existingForm + ":" + form + ":" + GetAssetIdentity(weapon),
+                    "Cross-form skill wiring: weapon root '" + weapon.name +
+                    "' references '" + skill.name + "' as " + form +
+                    ", but its earlier inferred form is " + existingForm + ".",
+                    skill);
+            }
+            return;
+        }
+
+        index.Forms.Add(skill, form);
+        index.WeaponInferredCount++;
+    }
+
+    private static void AddRecastFormConflict(
+        SkillFormIndex index,
+        SkillData root,
+        PlayerFormId rootForm,
+        SkillData stage,
+        PlayerFormId stageForm)
+    {
+        AddFormConflict(
+            index,
+            "recast:" + GetAssetIdentity(root) + ":" + GetAssetIdentity(stage) +
+            ":" + rootForm + ":" + stageForm,
+            "Cross-form skill wiring: root '" + root.name + "' is " + rootForm +
+            " but recast stage '" + stage.name + "' is " + stageForm + ".",
+            stage);
+    }
+
+    private static string GetAssetIdentity(Object asset)
+    {
+        if (asset == null)
+            return "<null>";
+
+        string path = AssetDatabase.GetAssetPath(asset);
+        return string.IsNullOrEmpty(path) ? asset.name : path;
+    }
+
+    private static void AddFormConflict(
+        SkillFormIndex index,
+        string key,
+        string message,
+        SkillData target)
+    {
+        if (!index.ConflictKeys.Add(key))
+            return;
+
+        index.Conflicts.Add(new SkillFormConflict
+        {
+            Message = message,
+            Target = target
+        });
+    }
+
+    private static void AddAssetLevelReferences(
+        SkillFormIndex index,
+        List<WeaponData> weapons,
+        List<ItemDatabase> itemDatabases,
+        List<PassiveEngravingData> passiveEngravings)
+    {
+        for (int i = 0; i < weapons.Count; i++)
+        {
+            WeaponData weapon = weapons[i];
+            if (weapon == null)
+                continue;
+
+            if (weapon.skills != null)
+            {
+                for (int slotIndex = 0; slotIndex < weapon.skills.Length; slotIndex++)
+                {
+                    if (weapon.skills[slotIndex] != null)
+                        index.AssetReferences.Add(weapon.skills[slotIndex]);
+                }
+            }
+
+            if (weapon.basicAttackSkillData != null)
+                index.AssetReferences.Add(weapon.basicAttackSkillData);
+        }
+
+        List<ItemData> items = new List<ItemData>();
+        for (int i = 0; i < itemDatabases.Count; i++)
+        {
+            ItemDatabase database = itemDatabases[i];
+            if (database == null)
+                continue;
+
+            items.Clear();
+            database.GetAllItems(items);
+            for (int itemIndex = 0; itemIndex < items.Count; itemIndex++)
+            {
+                ItemData item = items[itemIndex];
+                if (item.Engraving != null)
+                    index.AssetReferences.Add(item.Engraving);
+                AddBehaviorSkillReferences(index.AssetReferences, item.BehaviorEffects);
+            }
+        }
+
+        for (int i = 0; i < passiveEngravings.Count; i++)
+        {
+            PassiveEngravingData passive = passiveEngravings[i];
+            if (passive != null)
+                AddBehaviorSkillReferences(index.AssetReferences, passive.behaviors);
+        }
+    }
+
+    private static void AddBehaviorSkillReferences(
+        HashSet<SkillData> references,
+        IReadOnlyList<BehaviorEffect> behaviors)
+    {
+        if (behaviors == null)
+            return;
+
+        for (int i = 0; i < behaviors.Count; i++)
+        {
+            BehaviorEffect behavior = behaviors[i];
+            if (behavior != null && behavior.procSkill != null)
+                references.Add(behavior.procSkill);
         }
     }
 
@@ -2159,6 +2586,40 @@ public sealed class SkillDashboardWindow : EditorWindow
                 "Built-in Unity sprite used as icon on '" + asset.name +
                 "'. Assign a project sprite.",
                 asset);
+        }
+    }
+
+    private void AddSkillFormResults(
+        List<SkillData> skills,
+        SkillFormIndex formIndex)
+    {
+        for (int i = 0; i < formIndex.Conflicts.Count; i++)
+        {
+            SkillFormConflict conflict = formIndex.Conflicts[i];
+            AddResult(
+                ResultSeverity.Warning,
+                conflict.Message,
+                conflict.Target);
+        }
+
+        for (int i = 0; i < skills.Count; i++)
+        {
+            SkillData skill = skills[i];
+            if (skill == null || formIndex.AssetReferences.Contains(skill))
+                continue;
+
+            AddResult(
+                ResultSeverity.Info,
+                "No asset-level reference found for '" + skill.name +
+                "' (scene/prefab references are not scanned).",
+                skill);
+        }
+
+        if (formIndex.RecastGuardHit)
+        {
+            Debug.LogWarning(
+                "[SkillDashboardWindow] Recast form inference reached its " +
+                "safety pass limit; cyclic references may exist.");
         }
     }
 
@@ -2656,6 +3117,8 @@ public sealed class SkillDashboardWindow : EditorWindow
         public Sprite Icon;
         public string DisplayName;
         public bool IsEngraving;
+        public bool HasInferredForm;
+        public PlayerFormId InferredForm;
         public string ExecutionTypeText;
         public string CooldownText;
         public string DamageText;
@@ -2665,6 +3128,35 @@ public sealed class SkillDashboardWindow : EditorWindow
         public int CustomCellCount;
         public int AilmentCount;
         public string LinkedItemCodesText;
+    }
+
+    private sealed class SkillFormIndex
+    {
+        public readonly Dictionary<SkillData, PlayerFormId> Forms =
+            new Dictionary<SkillData, PlayerFormId>();
+        public readonly HashSet<SkillData> AssetReferences =
+            new HashSet<SkillData>();
+        public readonly List<SkillFormConflict> Conflicts =
+            new List<SkillFormConflict>();
+        public readonly HashSet<string> ConflictKeys =
+            new HashSet<string>(StringComparer.Ordinal);
+        public int DirectInferredCount;
+        public int RecastInferredCount;
+        public int WeaponInferredCount;
+        public int UnassignedInferredCount;
+        public bool RecastGuardHit;
+    }
+
+    private sealed class SkillFormConflict
+    {
+        public string Message;
+        public SkillData Target;
+    }
+
+    private sealed class WeaponFormSource
+    {
+        public PlayerFormId Form;
+        public WeaponData Weapon;
     }
 
     private sealed class SkillReferenceReport
