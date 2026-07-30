@@ -84,6 +84,19 @@ public sealed class EngravingLoadout : MonoBehaviour
         return _states.TryGetValue(form, out FormState state) ? state.PassiveEngraving : null;
     }
 
+    public bool SetSelectedPassive(PlayerFormId form, PassiveEngravingData passive)
+    {
+        PlayerPassiveUnlocks unlocks = PlayerPassiveUnlocks.Active;
+        if (passive == null || unlocks == null || !unlocks.IsUnlocked(passive))
+            return false;
+
+        FormState state = GetOrCreate(form);
+        state.PassiveEngraving = passive;
+        state.PassiveSeeded = true;
+        OnPassiveChanged?.Invoke();
+        return true;
+    }
+
     public bool Equip(PlayerFormId form, int slot, int poolIndex)
     {
         if ((uint)slot >= (uint)SlotCount)

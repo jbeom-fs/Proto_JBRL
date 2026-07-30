@@ -1,5 +1,6 @@
 public static class UiMessages
 {
+    public const string PassiveSelectionLocked = "잠긴 패시브입니다. 제단에서 먼저 해금하세요.";
     public const string FormUnlockedFormat = "새로운 폼 해금: {0}";
     public const string FormNameSword = "검";
     public const string FormNameDagger = "단검";
@@ -13,6 +14,11 @@ public static class UiMessages
     public const string LockedSectionHeader = "ㅡㅡ ???? ㅡㅡ";
     public const string SoulStatSummaryFormat = "{0} Lv.{1}/{2}  비용 {3}";
     public const string SoulStatOwnedSuffixFormat = "  (보유 {0})";
+    public const string PassiveUnlockCostFormat = "비용 {0}";
+    public const string PassiveUnlockOwnedFormat = "보유 {0}";
+    public const string PassiveUnlockCostComplete = "비용 지불 완료";
+    public const string PassiveUnlockAction = "해금";
+    public const string PassiveUnlockComplete = "해금 완료";
     public const string CostFree = "무료";
     public const string AllocationSummaryFormat = "배분 {0} / 필요 {1}";
     public const string EmptyDescription = "내용없음";

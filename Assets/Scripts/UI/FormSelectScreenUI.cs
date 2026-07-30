@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,9 +11,13 @@ public sealed class FormSelectScreenUI : MonoBehaviour
     [SerializeField] private TMP_Text formNameText;
     [SerializeField] private TMP_Text descriptionText;
     [SerializeField] private FormSelectCardUI[] cards;
+    [SerializeField] private PassiveSelectCardUI[] passiveCards;
     [SerializeField] private Button enterButton;
     [SerializeField] private Button exitButton;
     [SerializeField] private PlayerInventory playerInventory;
+    [SerializeField] private PlayerPassiveUnlocks passiveUnlocks;
+    [SerializeField] private EngravingLoadout engravingLoadout;
+    [SerializeField, Min(0f)] private float lockedPassiveToastDuration = 2f;
     [SerializeField, TeleportDestinationId] private string dungeonDestinationId;
     [SerializeField] private LocationTransitionManager transitionManager;
 
@@ -20,6 +25,9 @@ public sealed class FormSelectScreenUI : MonoBehaviour
 
     private PlayerController _player;
     private FormSelectCardUI _selectedCard;
+    private PassiveSelectCardUI _selectedPassiveCard;
+    private readonly List<PassiveEngravingData> _passiveCatalogBuffer =
+        new List<PassiveEngravingData>(8);
     private bool _initialized;
 
     public bool IsOpen { get; private set; }
@@ -81,6 +89,7 @@ public sealed class FormSelectScreenUI : MonoBehaviour
         IsOpen = false;
         _player = null;
         _selectedCard = null;
+        _selectedPassiveCard = null;
         if (panel != null)
             panel.SetActive(false);
     }
@@ -91,6 +100,22 @@ public sealed class FormSelectScreenUI : MonoBehaviour
             return;
 
         SelectCard(card);
+    }
+
+    public void HandlePassiveCardClicked(PassiveSelectCardUI card)
+    {
+        if (!IsOpen || card == null)
+            return;
+
+        if (!card.IsUnlocked)
+        {
+            ToastUI.Instance?.Show(
+                UiMessages.PassiveSelectionLocked,
+                lockedPassiveToastDuration);
+            return;
+        }
+
+        SelectPassiveCard(card);
     }
 
     private void EnsureInitialized()
@@ -104,6 +129,15 @@ public sealed class FormSelectScreenUI : MonoBehaviour
             {
                 if (cards[i] != null)
                     cards[i].Initialize(this);
+            }
+        }
+
+        if (passiveCards != null)
+        {
+            for (int i = 0; i < passiveCards.Length; i++)
+            {
+                if (passiveCards[i] != null)
+                    passiveCards[i].Initialize(this);
             }
         }
 
@@ -140,6 +174,62 @@ public sealed class FormSelectScreenUI : MonoBehaviour
             descriptionText.text = selected != null ? selected.Description : string.Empty;
         if (enterButton != null)
             enterButton.interactable = selected != null;
+
+        RefreshPassiveCards(selected != null ? selected.Form : default);
+    }
+
+    private void RefreshPassiveCards(PlayerFormId form)
+    {
+        _selectedPassiveCard = null;
+        _passiveCatalogBuffer.Clear();
+        if (passiveUnlocks != null)
+            passiveUnlocks.GetCatalog(form, _passiveCatalogBuffer);
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        int cardCount = passiveCards?.Length ?? 0;
+        if (_passiveCatalogBuffer.Count > cardCount)
+        {
+            Debug.LogWarning(
+                "[FormSelectScreenUI] Passive card capacity exceeded for " +
+                form + ": catalog " + _passiveCatalogBuffer.Count +
+                ", cards " + cardCount + ".",
+                this);
+        }
+#endif
+
+        for (int i = 0; passiveCards != null && i < passiveCards.Length; i++)
+        {
+            PassiveSelectCardUI card = passiveCards[i];
+            if (card == null)
+                continue;
+
+            if (i >= _passiveCatalogBuffer.Count ||
+                !EngravingDisplayInfo.TryCreate(
+                    _passiveCatalogBuffer[i],
+                    out EngravingDisplayInfo info))
+            {
+                card.Hide();
+                continue;
+            }
+
+            PassiveEngravingData passive = _passiveCatalogBuffer[i];
+            card.Bind(passive, info, passiveUnlocks.IsUnlocked(passive));
+            if (i == 0)
+                _selectedPassiveCard = card;
+        }
+
+        _passiveCatalogBuffer.Clear();
+        SelectPassiveCard(_selectedPassiveCard);
+    }
+
+    private void SelectPassiveCard(PassiveSelectCardUI selected)
+    {
+        _selectedPassiveCard = selected;
+        for (int i = 0; passiveCards != null && i < passiveCards.Length; i++)
+        {
+            if (passiveCards[i] != null)
+                passiveCards[i].SetSelected(passiveCards[i] == selected);
+        }
     }
 
     private void EnterDungeon()
@@ -156,6 +246,19 @@ public sealed class FormSelectScreenUI : MonoBehaviour
         PlayerFormController forms = _player.GetComponent<PlayerFormController>();
         if (forms == null)
             return;
+
+        if (_selectedPassiveCard != null &&
+            (engravingLoadout == null ||
+             !engravingLoadout.SetSelectedPassive(
+                 _selectedCard.Form,
+                 _selectedPassiveCard.Passive)))
+        {
+            Debug.LogWarning(
+                "[FormSelectScreenUI] Passive selection apply blocked: " +
+                _selectedPassiveCard.Passive + ".",
+                this);
+            return;
+        }
 
         FormSwitchResult result = forms.TrySwitchForm(_selectedCard.Form);
         if (result != FormSwitchResult.Switched && result != FormSwitchResult.AlreadyActive)

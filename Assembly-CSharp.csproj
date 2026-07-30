@@ -221,10 +221,13 @@
     <Compile Include="Assets\Scripts\UI\CurrencyCounterUI.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverFlowController.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyDropRoller.cs" />
+    <Compile Include="Assets\Scripts\UI\PassiveUnlockRowUI.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillCooldownController.cs" />
     <Compile Include="Assets\Scripts\DungeonManager.cs" />
+    <Compile Include="Assets\Scripts\UI\PassiveSelectCardUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyActionHandler.cs" />
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />
+    <Compile Include="Assets\Scripts\Soul\PassiveUnlockCost.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonGenerator.cs" />
     <Compile Include="Assets\Scripts\LocationRootRegistry.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonPlacementUtility.cs" />

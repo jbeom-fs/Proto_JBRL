@@ -14,11 +14,14 @@ public sealed class SoulAltarUIController : MonoBehaviour
         public GameObject headerRoot;
         public TMP_Text headerText;
         public SoulAltarStatRowUI[] rows;
+        public PassiveUnlockRowUI[] passiveRows;
     }
 
     [SerializeField] private GameObject panel;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements soulEnhancements;
+    [SerializeField] private PlayerPassiveUnlocks passiveUnlocks;
+    [SerializeField, Min(0)] private int passiveUnlockBaseCost = 10;
     [SerializeField] private SoulEnhancementTable enhancementTable;
     [SerializeField] private ItemDatabase itemDatabase;
     [SerializeField] private AltarSection[] sections;
@@ -34,6 +37,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
     };
 
     private readonly List<SoulStatGrowth> _growthBuffer = new List<SoulStatGrowth>(8);
+    private readonly List<PassiveEngravingData> _passiveCatalogBuffer =
+        new List<PassiveEngravingData>(8);
     private string[] _sectionHeaderTexts;
     private bool _subscribed;
     private bool _warnedMissingReferences;
@@ -122,6 +127,61 @@ public sealed class SoulAltarUIController : MonoBehaviour
         TryEnhance(form, stat);
     }
 
+    public void HandlePassiveUnlockClicked(
+        PlayerFormId form,
+        PassiveEngravingData passive)
+    {
+        if (!HasRequiredReferences() ||
+            passiveUnlocks == null ||
+            passive == null ||
+            string.IsNullOrWhiteSpace(passive.unlockId))
+        {
+            return;
+        }
+
+        _passiveCatalogBuffer.Clear();
+        passiveUnlocks.GetCatalog(form, _passiveCatalogBuffer);
+
+        bool targetFound = false;
+        int unlockedCandidateCount = 0;
+        for (int i = 1; i < _passiveCatalogBuffer.Count; i++)
+        {
+            PassiveEngravingData candidate = _passiveCatalogBuffer[i];
+            if (candidate == passive)
+                targetFound = true;
+            if (passiveUnlocks.IsUnlocked(candidate))
+                unlockedCandidateCount++;
+        }
+
+        _passiveCatalogBuffer.Clear();
+        if (!targetFound || passiveUnlocks.IsUnlocked(passive))
+            return;
+
+        int cost = PassiveUnlockCost.GetCost(
+            passiveUnlockBaseCost,
+            unlockedCandidateCount);
+        ItemData shardItem = null;
+        if (cost > 0)
+        {
+            if (!SoulShardResolver.TryResolveShardItem(
+                    itemDatabase,
+                    playerInventory,
+                    form,
+                    out shardItem) ||
+                !playerInventory.HasItem(shardItem, cost) ||
+                !playerInventory.RemoveItem(shardItem, cost))
+            {
+                return;
+            }
+        }
+
+        if (passiveUnlocks.Unlock(passive))
+            return;
+
+        if (cost > 0 && shardItem != null)
+            playerInventory.AddItem(shardItem, cost);
+    }
+
     private void OpenSharedPayment(SoulStatType stat)
     {
         if (!HasRequiredReferences() || paymentModal == null)
@@ -196,6 +256,7 @@ public sealed class SoulAltarUIController : MonoBehaviour
         if (!unlocked)
         {
             HideRows(section.rows);
+            HideRows(section.passiveRows);
             return;
         }
 
@@ -216,6 +277,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
         if (!shared && SoulShardResolver.TryResolveShardItem(itemDatabase, playerInventory, section.form, out shardItem))
             shardCount = playerInventory.GetItemCount(shardItem);
 
+        RefreshPassiveRows(section, shared, shardItem, shardCount);
+
         for (int i = 0; i < rowCount; i++)
         {
             SoulAltarStatRowUI row = section.rows[i];
@@ -233,6 +296,70 @@ public sealed class SoulAltarUIController : MonoBehaviour
             int cost = SoulEnhancementCost.GetMaterialCost(growth, currentLevel);
             row.Bind(section.form, growth, currentLevel, cost, shardItem, shardCount, shared);
         }
+    }
+
+    private void RefreshPassiveRows(
+        AltarSection section,
+        bool shared,
+        ItemData shardItem,
+        int shardCount)
+    {
+        if (shared || passiveUnlocks == null)
+        {
+            HideRows(section.passiveRows);
+            return;
+        }
+
+        _passiveCatalogBuffer.Clear();
+        passiveUnlocks.GetCatalog(section.form, _passiveCatalogBuffer);
+
+        int rowCount = section.passiveRows?.Length ?? 0;
+        int candidateCount = Mathf.Max(0, _passiveCatalogBuffer.Count - 1);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (candidateCount > rowCount)
+        {
+            Debug.LogWarning(
+                "[SoulAltarUIController] " + section.form +
+                " passive unlock row capacity exceeded: candidates " +
+                candidateCount + ", rows " + rowCount + ".",
+                this);
+        }
+#endif
+
+        int unlockedCandidateCount = 0;
+        for (int i = 1; i < _passiveCatalogBuffer.Count; i++)
+        {
+            if (passiveUnlocks.IsUnlocked(_passiveCatalogBuffer[i]))
+                unlockedCandidateCount++;
+        }
+
+        int cost = PassiveUnlockCost.GetCost(
+            passiveUnlockBaseCost,
+            unlockedCandidateCount);
+        for (int i = 0; i < rowCount; i++)
+        {
+            PassiveUnlockRowUI row = section.passiveRows[i];
+            if (row == null)
+                continue;
+
+            int catalogIndex = i + 1;
+            if (catalogIndex >= _passiveCatalogBuffer.Count)
+            {
+                row.Hide();
+                continue;
+            }
+
+            PassiveEngravingData passive = _passiveCatalogBuffer[catalogIndex];
+            row.Bind(
+                section.form,
+                passive,
+                cost,
+                shardItem,
+                shardCount,
+                passiveUnlocks.IsUnlocked(passive));
+        }
+
+        _passiveCatalogBuffer.Clear();
     }
 
     private int FindSectionIndex(PlayerFormId form)
@@ -260,6 +387,19 @@ public sealed class SoulAltarUIController : MonoBehaviour
             if (sections[i]?.headerText != null)
                 _sectionHeaderTexts[i] = sections[i].headerText.text;
 
+            if (sections[i]?.passiveRows != null)
+            {
+                for (int j = 0; j < sections[i].passiveRows.Length; j++)
+                {
+                    PassiveUnlockRowUI row = sections[i].passiveRows[j];
+                    if (row == null)
+                        continue;
+
+                    row.Initialize(this);
+                    row.Hide();
+                }
+            }
+
             if (sections[i]?.rows == null)
                 continue;
 
@@ -276,6 +416,18 @@ public sealed class SoulAltarUIController : MonoBehaviour
     }
 
     private static void HideRows(SoulAltarStatRowUI[] rows)
+    {
+        if (rows == null)
+            return;
+
+        for (int i = 0; i < rows.Length; i++)
+        {
+            if (rows[i] != null)
+                rows[i].Hide();
+        }
+    }
+
+    private static void HideRows(PassiveUnlockRowUI[] rows)
     {
         if (rows == null)
             return;
@@ -315,6 +467,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         playerInventory.OnInventoryChanged += RefreshAll;
         soulEnhancements.OnChanged += RefreshAll;
+        if (passiveUnlocks != null)
+            passiveUnlocks.OnChanged += RefreshAll;
         _subscribed = true;
     }
 
@@ -328,6 +482,9 @@ public sealed class SoulAltarUIController : MonoBehaviour
 
         if (soulEnhancements != null)
             soulEnhancements.OnChanged -= RefreshAll;
+
+        if (passiveUnlocks != null)
+            passiveUnlocks.OnChanged -= RefreshAll;
 
         _subscribed = false;
     }
