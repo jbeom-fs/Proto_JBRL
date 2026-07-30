@@ -143,6 +143,9 @@ public sealed class ItemData
                 trigger = behavior.trigger,
                 action = behavior.action,
                 skillTypeFilter = behavior.skillTypeFilter,
+                comboTierDamages = behavior.comboTierDamages != null
+                    ? (int[])behavior.comboTierDamages.Clone()
+                    : Array.Empty<int>(),
                 value = behavior.value,
                 duration = behavior.duration,
                 procSkill = behavior.procSkill,

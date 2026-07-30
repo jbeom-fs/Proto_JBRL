@@ -139,9 +139,10 @@ public sealed class SkillExecutor
         }
 
         bool didCrit = false;
+        int skillDamage = ResolveSkillDamage(context);
         int damage = context.CasterCombat != null
-            ? context.CasterCombat.RollCritDamage(context.TotalAttack + context.Skill.damage, out didCrit)
-            : context.TotalAttack + context.Skill.damage;
+            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skillDamage, out didCrit)
+            : context.TotalAttack + skillDamage;
         _attackExecutor.BeginAttackActivation();
         _attackExecutor.ExecuteAttackWorld(
             targets,
@@ -160,7 +161,8 @@ public sealed class SkillExecutor
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.DamageDealtThisAttack > 0)
         {
-            context.CasterCombat?.RegisterComboHit();
+            if (!context.IsProcCast)
+                context.CasterCombat?.RegisterComboHit();
             context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
         }
 
@@ -211,7 +213,8 @@ public sealed class SkillExecutor
             customShape = matcher;
 
         int scaledDamage = Mathf.RoundToInt(
-            (context.TotalAttack + context.Skill.damage) * hitStep.damagePct / 100f);
+            (context.TotalAttack + ResolveSkillDamage(context)) *
+            hitStep.damagePct / 100f);
         bool didCrit = false;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
@@ -234,7 +237,8 @@ public sealed class SkillExecutor
         context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
         if (_attackExecutor.DamageDealtThisAttack > 0)
         {
-            context.CasterCombat?.RegisterComboHit();
+            if (!context.IsProcCast)
+                context.CasterCombat?.RegisterComboHit();
             context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
         }
 
@@ -345,7 +349,8 @@ public sealed class SkillExecutor
             return SkillExecutionResult.Failure;
 
         SkillData skill = context.Skill;
-        int tickDamage = skill.damage > 0 ? context.TotalAttack + skill.damage : 0;
+        int skillDamage = ResolveSkillDamage(context);
+        int tickDamage = skillDamage > 0 ? context.TotalAttack + skillDamage : 0;
         ZonePayload payload = new ZonePayload(
             tickDamage,
             skill.zoneDuration,
@@ -474,9 +479,12 @@ public sealed class SkillExecutor
         int damage = 0;
         if (hasDashDamage)
         {
+            int skillDamage = ResolveSkillDamage(context);
             damage = context.CasterCombat != null
-                ? context.CasterCombat.RollCritDamage(context.TotalAttack + skill.damage, out didCrit)
-                : context.TotalAttack + skill.damage;
+                ? context.CasterCombat.RollCritDamage(
+                    context.TotalAttack + skillDamage,
+                    out didCrit)
+                : context.TotalAttack + skillDamage;
         }
 
         return new DashDamageRequest
@@ -503,9 +511,10 @@ public sealed class SkillExecutor
     {
         SkillData skill = context.Skill;
         bool didCrit = false;
+        int skillDamage = ResolveSkillDamage(context);
         int damage = context.CasterCombat != null
-            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skill.damage, out didCrit)
-            : context.TotalAttack + skill.damage;
+            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skillDamage, out didCrit)
+            : context.TotalAttack + skillDamage;
         return new ProjectileFireRequest
         {
             ProjectilePrefab = skill.projectilePrefab,
@@ -517,6 +526,7 @@ public sealed class SkillExecutor
             Direction = direction,
             Damage = damage,
             IsCrit = didCrit,
+            IsProcCast = context.IsProcCast,
             Speed = skill.projectileSpeed,
             Lifetime = skill.projectileLifetime,
             ProjectileCount = Mathf.Max(1, projectileCount),
@@ -544,6 +554,11 @@ public sealed class SkillExecutor
     private static float ResolveAilmentMultiplier(SkillExecutionContext context)
     {
         return context.CasterCombat != null ? context.CasterCombat.AilmentDamageMultiplier : 1f;
+    }
+
+    private static int ResolveSkillDamage(SkillExecutionContext context)
+    {
+        return context.SkillDamageOverride ?? context.Skill.damage;
     }
 
     private static AilmentApplication[] ResolveAttackAilments(SkillExecutionContext context)

@@ -25,6 +25,7 @@ public sealed class BehaviorRuntime
         public ProcEntry(BehaviorEffect behavior)
         {
             SkillTypeFilter = behavior.skillTypeFilter;
+            ComboTierDamages = behavior.comboTierDamages;
             Skill = behavior.procSkill;
             OriginMode = behavior.procOrigin;
             DirectionMode = behavior.procDirection;
@@ -32,6 +33,7 @@ public sealed class BehaviorRuntime
         }
 
         public int SkillTypeFilter { get; }
+        public int[] ComboTierDamages { get; }
         public SkillData Skill { get; }
         public ProcOriginMode OriginMode { get; }
         public ProcDirectionMode DirectionMode { get; }
@@ -40,7 +42,7 @@ public sealed class BehaviorRuntime
 
     private readonly Action<int> _healCallback;
     private readonly Action<int, float> _shieldCallback;
-    private readonly Action<SkillData, Vector3, Vector2> _procCallback;
+    private readonly Action<SkillData, Vector3, Vector2, int?> _procCallback;
     private readonly List<TriggerEntry> _onKill = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onSkillUsed = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onCancel = new List<TriggerEntry>();
@@ -52,7 +54,7 @@ public sealed class BehaviorRuntime
 
     public BehaviorRuntime(
         Action<int> healCallback,
-        Action<SkillData, Vector3, Vector2> procCallback = null,
+        Action<SkillData, Vector3, Vector2, int?> procCallback = null,
         Action<int, float> shieldCallback = null)
     {
         _healCallback = healCallback;
@@ -126,7 +128,8 @@ public sealed class BehaviorRuntime
     public void HandleSkillUsed(
         SkillData skill,
         Vector3 playerPosition,
-        Vector2 aimDirection)
+        Vector2 aimDirection,
+        int comboTier)
     {
         if (skill == null)
             return;
@@ -142,8 +145,29 @@ public sealed class BehaviorRuntime
         for (int i = 0; i < _onSkillUsedProcs.Count; i++)
         {
             ProcEntry entry = _onSkillUsedProcs[i];
-            if ((entry.SkillTypeFilter & skillTypeBit) != 0)
-                ExecuteProc(entry, playerPosition, playerPosition, aimDirection, false);
+            if ((entry.SkillTypeFilter & skillTypeBit) == 0)
+                continue;
+
+            int? skillDamageOverride = null;
+            if (entry.ComboTierDamages != null &&
+                entry.ComboTierDamages.Length > 0)
+            {
+                if (comboTier <= 0)
+                    continue;
+
+                int damageIndex = Mathf.Min(
+                    comboTier,
+                    entry.ComboTierDamages.Length) - 1;
+                skillDamageOverride = entry.ComboTierDamages[damageIndex];
+            }
+
+            ExecuteProc(
+                entry,
+                playerPosition,
+                playerPosition,
+                aimDirection,
+                false,
+                skillDamageOverride);
         }
     }
 
@@ -249,7 +273,8 @@ public sealed class BehaviorRuntime
         Vector3 playerPosition,
         Vector3 contextPosition,
         Vector2 aimDirection,
-        bool hasHitContext)
+        bool hasHitContext,
+        int? skillDamageOverride = null)
     {
         if (entry.Skill == null)
             return;
@@ -293,7 +318,11 @@ public sealed class BehaviorRuntime
         if (direction.sqrMagnitude > 0.0001f)
             direction.Normalize();
 
-        _procCallback?.Invoke(entry.Skill, origin, direction);
+        _procCallback?.Invoke(
+            entry.Skill,
+            origin,
+            direction,
+            skillDamageOverride);
     }
 
     private Vector3 FindNearestKillPosition(Vector3 playerPosition)

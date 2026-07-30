@@ -37,6 +37,10 @@ public sealed class SoulAltarUIController : MonoBehaviour
     };
 
     private readonly List<SoulStatGrowth> _growthBuffer = new List<SoulStatGrowth>(8);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private readonly HashSet<PlayerFormId> _passiveCapacityWarnings =
+        new HashSet<PlayerFormId>();
+#endif
     private string[] _sectionHeaderTexts;
     private bool _subscribed;
     private bool _warnedMissingReferences;
@@ -320,7 +324,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
         int rowCount = section.passiveRows?.Length ?? 0;
         int candidateCount = weapon.passiveEngravings.Count;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (candidateCount > rowCount)
+        if (candidateCount > rowCount &&
+            _passiveCapacityWarnings.Add(section.form))
         {
             Debug.LogWarning(
                 "[SoulAltarUIController] " + section.form +

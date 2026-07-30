@@ -34,6 +34,7 @@ public class ProjectileController : MonoBehaviour
     private float _speed = 6f;
     private int _damage = 1;
     private bool _isCrit;
+    private bool _isProcCast;
     private float _knockbackForce;
     private float _knockbackDuration;
     private float _slowPercentage;
@@ -160,13 +161,15 @@ public class ProjectileController : MonoBehaviour
         float ailmentDamageMultiplier,
         Action<EnemyController, ProjectileController> onEnemyHit = null,
         float daggerMarkerDuration = 0f,
-        bool isCrit = false)
+        bool isCrit = false,
+        bool isProcCast = false)
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
         RefreshVisualRotation();
         _damage = Mathf.Max(0, damage);
         _isCrit = isCrit;
+        _isProcCast = isProcCast;
         _knockbackForce = Mathf.Max(0f, knockbackForce);
         _knockbackDuration = Mathf.Max(0f, knockbackDuration);
         _slowPercentage = Mathf.Clamp01(slowPercentage);
@@ -442,7 +445,7 @@ public class ProjectileController : MonoBehaviour
             if (_owner is PlayerCombatController playerCombat)
             {
                 playerCombat.ReportLifestealDamage(actualDamage);
-                if (actualDamage > 0)
+                if (actualDamage > 0 && !_isProcCast)
                     playerCombat.RegisterComboHit();
                 playerCombat.LogDamageDealt(actualDamage, _isCrit);
             }

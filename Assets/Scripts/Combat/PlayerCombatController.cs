@@ -1032,7 +1032,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     /// Executes a skill outside the normal cast pipeline without cost, cooldown,
     /// recovery, animation, recast, cancellation, or skill-used events.
     /// </summary>
-    public bool ExecuteSkillProc(SkillData skill, Vector3 origin, Vector2 direction)
+    public bool ExecuteSkillProc(
+        SkillData skill,
+        Vector3 origin,
+        Vector2 direction,
+        int? skillDamageOverride = null)
     {
         if (skill == null || IsDead)
             return false;
@@ -1070,7 +1074,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             TotalAttack,
             hitRadius,
             true,
-            origin);
+            origin,
+            skillDamageOverride);
 
         return _skillExecutor.Execute(context).Success;
     }

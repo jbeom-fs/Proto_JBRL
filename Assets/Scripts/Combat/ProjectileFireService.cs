@@ -156,7 +156,8 @@ public sealed class ProjectileFireService
             request.AilmentDamageMultiplier,
             request.OnEnemyHit,
             request.DaggerMarkerDuration,
-            request.IsCrit);
+            request.IsCrit,
+            request.IsProcCast);
         return true;
     }
 

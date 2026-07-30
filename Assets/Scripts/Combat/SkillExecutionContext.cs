@@ -20,6 +20,7 @@ public sealed class SkillExecutionContext
     public int TotalAttack { get; }
     public float HitRadius { get; }
     public bool IsProcCast { get; }
+    public int? SkillDamageOverride { get; }
 
     public SkillExecutionContext(
         PlayerCombatController casterCombat,
@@ -33,7 +34,8 @@ public sealed class SkillExecutionContext
         int totalAttack,
         float hitRadius,
         bool isProcCast = false,
-        Vector3? casterPositionOverride = null)
+        Vector3? casterPositionOverride = null,
+        int? skillDamageOverride = null)
     {
         CasterCombat = casterCombat;
         CasterDash = casterDash;
@@ -49,5 +51,6 @@ public sealed class SkillExecutionContext
         TotalAttack = totalAttack;
         HitRadius = hitRadius;
         IsProcCast = isProcCast;
+        SkillDamageOverride = skillDamageOverride;
     }
 }

@@ -98,7 +98,12 @@ public sealed class PlayerBehaviors : MonoBehaviour
 
     private void HandleSkillUsed(SkillData skill)
     {
-        _runtime.HandleSkillUsed(skill, transform.position, ResolveAimDirection());
+        int comboTier = _combat != null ? _combat.CurrentComboTier : 0;
+        _runtime.HandleSkillUsed(
+            skill,
+            transform.position,
+            ResolveAimDirection(),
+            comboTier);
     }
 
     private void HandleSkillCanceled(SkillData canceled, SkillData canceling)
@@ -114,9 +119,17 @@ public sealed class PlayerBehaviors : MonoBehaviour
         _runtime?.FlushKillProcs(transform.position, ResolveAimDirection());
     }
 
-    private void ExecuteProc(SkillData skill, Vector3 origin, Vector2 direction)
+    private void ExecuteProc(
+        SkillData skill,
+        Vector3 origin,
+        Vector2 direction,
+        int? skillDamageOverride)
     {
-        _combat?.ExecuteSkillProc(skill, origin, direction);
+        _combat?.ExecuteSkillProc(
+            skill,
+            origin,
+            direction,
+            skillDamageOverride);
     }
 
     private Vector2 ResolveAimDirection()

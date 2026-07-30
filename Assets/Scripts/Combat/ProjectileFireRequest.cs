@@ -12,6 +12,7 @@ public sealed class ProjectileFireRequest
     public Vector2 Direction;
     public int Damage;
     public bool IsCrit;
+    public bool IsProcCast;
     public float Speed;
     public float Lifetime;
     public int ProjectileCount = 1;
