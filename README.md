@@ -1,7 +1,12 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-29
-> 기준 커밋: master HEAD `e5daa575` — **Skill Dashboard 저작 도구 2차**: 행 아이콘 썸네일 컬럼(`AssetPreview` 비동기)·펼침 패널 64px `ObjectField` 아이콘 편집·**아이콘 검증 3종**(미설정/`Skill_Null` 플레이스홀더/**Unity 빌트인 스프라이트**)·**스코프 한정 Save Assets**(전역 `SaveAssets` 금지 정책 유지, `37e03597`) + **폼별 그룹 접기·펴기**와 **폼 귀속 4단계 추론**(EngravingData.owningForm 13 → recast 루트 상속 fixpoint 10 → `PlayerFormData.DefaultWeapon` 역참조 13 → Unassigned 4, 순환 가드 포함) + 검증 2종(폼 교차 오배선 / 에셋 참조 없음) + 배경 폭 픽스(`08d9602b`). **Sword 액티브 아이콘 전량 완료**(신규 15종, `Skill_Null` 참조 0건, 파일명 `Sword_Skill_NN[_M]` 규약 통일 — Unity 참조는 guid+fileID라 `.png`+`.png.meta` 동시 이동이면 무손상, `459bc516`/`608b0418`). **스킬 슬롯 호버 툴팁**(`SkillSlotUI`에 `IPointerEnter/Exit`, 대상=**현재 표시 중인 SkillData**라 recast window 중엔 stage 기준 + **실효 쿨타임 줄**, `e5daa575`) + **쿨감이 쿨다운 radial에 반영 안 되던 버그 픽스**(`GetEffectiveCooldown` 단일 진실로 툴팁·`GetSkillCooldownMax`·`HandleSkillUsed` 통합). **폰트 미수록 문자 U+00B7 제거**(Pretendard Static 아틀라스 미수록 → `-` 교체, `6a6fd555`). 이전: 콤보 자원화·슬롯 자원 틴트·쿨다운 표기 정수화(`389b4bd4`)
+> 작성 기준일: 2026-07-30
+> 기준 커밋: master HEAD `407dda19`(+P4 워킹트리) — **패시브 각인 축 전면 재설계**: 유물과 어휘·런타임 완전 중복(같은 `BehaviorEffect[]`·같은 `AddBehaviors` 합류) 진단에 따라 드랍·각인대 교체·슬롯 증설을 폐기하고 **"런 시작 시 폼선택에서 1개 고르는 근간, 런 중 변경 불가"**로 전환(§7-8b 전면 개정). 폼당 1개 고정 + `unlockId` 해금 집합 영속(신규 세이브 키 `unlockedPassiveIds`) + Town Altar 후보별 해금 구매 + 폼선택 카드 1택(잠금=회색 오버레이+자물쇠, 내용 노출). **Sword 패시브 3종 재저작**(3축=콤보/피흡/캔슬): 콤보 폭발(티어별 고정딜 proc + proc 콤보 적립 차단 일괄 규칙) / 생명 흡수(자체 피흡+저체력 강화+과회복 쉴드 전환) / 전투의 흐름(캔슬 시 공격력 버프, `PlayerAttackBuff` 신설). **쉴드 소스 분리**(`ShieldSource` 4종 독립 타이머 — 덮어쓰기 봉인) + 버프 HUD 아이콘. **Resources 폴더 철거 정책 확정**(SO=`Scriptable/` 하위+SerializeField 결선만, `Resolve` 폴백 제거, 전역 `Resources.Load` 0건). `WeaponData.defaultPassive` 명시화(카탈로그 [0] 위치 규칙 소멸). 이전: Skill Dashboard 2차·Sword 아이콘 전량·슬롯 툴팁(`e5daa575`)
+>
+> <details><summary>이전 기준(2026-07-29, `e5daa575`)</summary>
+>
+> **Skill Dashboard 저작 도구 2차**: 행 아이콘 썸네일 컬럼(`AssetPreview` 비동기)·펼침 패널 64px `ObjectField` 아이콘 편집·**아이콘 검증 3종**(미설정/`Skill_Null` 플레이스홀더/**Unity 빌트인 스프라이트**)·**스코프 한정 Save Assets**(전역 `SaveAssets` 금지 정책 유지, `37e03597`) + **폼별 그룹 접기·펴기**와 **폼 귀속 4단계 추론**(EngravingData.owningForm 13 → recast 루트 상속 fixpoint 10 → `PlayerFormData.DefaultWeapon` 역참조 13 → Unassigned 4, 순환 가드 포함) + 검증 2종(폼 교차 오배선 / 에셋 참조 없음) + 배경 폭 픽스(`08d9602b`). **Sword 액티브 아이콘 전량 완료**(신규 15종, `Skill_Null` 참조 0건, 파일명 `Sword_Skill_NN[_M]` 규약 통일 — Unity 참조는 guid+fileID라 `.png`+`.png.meta` 동시 이동이면 무손상, `459bc516`/`608b0418`). **스킬 슬롯 호버 툴팁**(`SkillSlotUI`에 `IPointerEnter/Exit`, 대상=**현재 표시 중인 SkillData**라 recast window 중엔 stage 기준 + **실효 쿨타임 줄**, `e5daa575`) + **쿨감이 쿨다운 radial에 반영 안 되던 버그 픽스**(`GetEffectiveCooldown` 단일 진실로 툴팁·`GetSkillCooldownMax`·`HandleSkillUsed` 통합). **폰트 미수록 문자 U+00B7 제거**(Pretendard Static 아틀라스 미수록 → `-` 교체, `6a6fd555`). 이전: 콤보 자원화·슬롯 자원 틴트·쿨다운 표기 정수화(`389b4bd4`)
+> </details>
 >
 > <details><summary>이전 기준(2026-07-28, `389b4bd4`)</summary>
 >
@@ -196,7 +201,7 @@ Assets/Scripts/
 │   ├── SkillExecutionType.cs       # 스킬 실행 라우팅 enum (InstantArea/Projectile/Dash/AreaOverTime/Buff)
 │   ├── SkillResourceType / BulletShortageMode  # 스킬 자원 타입 enum (None/Bullet/ParryStack/**Combo**), 탄 부족 처리(RequireFullCost/AllowPartialUse) — SkillData.cs 내 정의. Combo=3(2026-07-28 append): requiredAmount/consumeAmount 조합으로 게이트형(N/0)·소모형(N/N)·부분소모(N/M<N) 저작. RestoreSkillResource에는 의도적 미배선(콤보 회복은 타격으로만)
 │   ├── EngravingData.cs            # 영혼각인 ScriptableObject (SkillData 파생) — owningForm(결속 폼) + grade(EngravingGrade: Faint/Whole/Primordial). 슬롯에 그대로 Bind. grade=드랍/UI 라벨(코드 자동스케일 없음). EngravingGrade enum 동봉. SkillDataEditor child 적용으로 조건부 인스펙터 사용
-│   ├── PassiveEngravingData.cs     # 패시브 각인 ScriptableObject (SkillData 비파생 — 패시브는 스킬이 아님) — passiveName/icon/description + owningForm + grade(EngravingGrade 재사용) + behaviors(BehaviorEffect[]). 장착 중 BehaviorRuntime에 병합 (§7-8b)
+│   ├── PassiveEngravingData.cs     # 패시브 각인 ScriptableObject (SkillData 비파생 — 패시브는 스킬이 아님) — unlockId(영속 해금 키, 수기 유니크·변경 금지) + passiveName/icon/description + owningForm + grade(표기 폐기, 필드만 존치) + behaviors(BehaviorEffect[]). 폼선택 1택 근간, 장착 중 BehaviorRuntime에 병합 (§7-8b)
 │   ├── PlayerFormData.cs           # 플레이어 폼 ScriptableObject (formId/displayName/animatorController/defaultSprite/facing·dash 옵션 + basicAttackMode(Damage/Parry/Bullet) + defaultWeapon=loadout + **usesCombo**(2026-07-28 — 콤보 스택 축적 가능 폼 여부, 현재 SwordForm만 true. 하드코딩 폼 비교 대신 이 플래그를 쓸 것)). skills[] 필드는 제거(loadout 단일 소스=WeaponData)
 │   ├── PlayerFormId.cs             # 폼 식별 enum (Normal/Sword/Dagger/Freischutz/Parry)
 │   ├── StatusEffectIconTable.cs    # 상태이상 표시 SO 단일 소스 (StatusEffectIconType: Poison/Bleed/Slow/Stun → Sprite + flashColor + slotPrefab). Resources/UI 폴백, 적 인디케이터·플레이어 HUD·틱 flash 공용 (§7-9)
@@ -231,7 +236,7 @@ Assets/Scripts/
 │   ├── ItemEffectApplier.cs        # Consumable useEffects 적용 정적 서비스 (HealHp → PlayerCombatController.RestoreHp)
 │   ├── ItemData.cs                 # 직렬화 가능한 단일 아이템 정의 (itemCode·displayName·icon·description·itemType·stackable·maxStack·useEffects·passiveEffects·soulFormId·engraving(EngravingData 참조, 영혼각인 드랍 브릿지)·정리 플래그)
 │   ├── ItemDatabase.cs             # ScriptableObject — itemCode→ItemData Dictionary 캐시 + OnValidate 중복/공백 검사 + itemCode 자동완성 목록 제공
-│   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister). ItemType.Engraving/PassiveEngraving이면 인벤 우회 → EngravingLoadout.Active.AddToPool / AddPassiveToPool(owningForm)으로 폼 풀 적재(각인은 수량 1 고정, _amount 무시 — 현재 폼과 무관하게 소유 폼으로 라우팅)
+│   ├── DroppedItem.cs              # 월드에 떨어진 아이템 MonoBehaviour — OnTriggerEnter2D 시 PlayerInventory.AddItem 호출 (성공 시 Destroy + DropItemSpawner.Unregister). ItemType.Engraving(액티브)이면 인벤 우회 → EngravingLoadout.Active.AddToPool(owningForm)으로 폼 풀 적재(수량 1 고정, _amount 무시). **PassiveEngraving은 픽업 무시**(패시브 드랍 폐기 2026-07-30, dev 경고만)
 │   └── DropItemSpawner.cs          # 사망 위치 기준 EnemyInventory 의 드랍 목록을 Instantiate (Singleton, dropSpacing 으로 다중 아이템 정렬, ClearAllActiveDrops)
 │
 ├── Inventory/
@@ -357,7 +362,7 @@ Assets/Scripts/
 │   ├── GameOverFlowController.cs   # 사망 이벤트 구독 → 지연 후 게임오버 UI 표시
 │   ├── InventoryUIController.cs    # 인벤토리 패널 — PlayerInventory 구독, 6개 카테고리 탭 필터/전체 그룹 정렬(각인 탭은 EngravingLoadout 현재 폼 미장착 풀을 읽기 전용 표시), 슬롯 클릭 Consumable 사용, 인벤토리 키·ESC 토글, 콘솔 열림 시 자동 닫힘
 │   ├── InventorySlotUI.cs          # 인벤토리 슬롯 단일 뷰 (아이콘·수량 텍스트 Bind) + IPointerClickHandler 로 컨트롤러에 클릭 위임. ItemData 경로와 각인 경로를 상호 배타로 바인드(각인은 클릭 무시·수량 숨김)
-│   ├── EngravingDisplayInfo.cs     # 각인 표시 정보 통합 struct — EngravingData/PassiveEngravingData/plain SkillData 3종 → Icon·Name·Description·IsPassive·HasGrade·Grade. 인벤 각인 탭·각인대 UI 공용(이름·등급 표시 단일 지점)
+│   ├── EngravingDisplayInfo.cs     # 각인 표시 정보 통합 struct — EngravingData/PassiveEngravingData/plain SkillData 3종 → Icon·Name·Description·IsPassive·HasGrade·Grade·Cooldown. 인벤 각인 탭·각인대·스킬 슬롯 툴팁·폼선택 패시브 카드 공용. **패시브는 hasGrade=false 고정**(등급 표기 전 경로 폐기 2026-07-30)
 │   ├── UIDraggableWindow.cs        # 드래그 가능한 UI 패널 기반 MonoBehaviour
 │   ├── GameOverUIController.cs     # 게임오버 UI 페이드 인/아웃·확인 버튼 (UI 참조 누락 시 1회 경고 후 표시 skip)
 │   ├── GameOverRestartHandler.cs   # IGameOverRestartHandler 인터페이스
@@ -1145,32 +1150,45 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI→스테이징 세션 커밋)·E2(Stair방 각인대+1회 사용 소멸) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. 2026-07-22에 각인대 모달이 **액티브/패시브 탭 2단**으로 확장되었습니다(§7-8b). **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋, 폼 컨셉 확정 대기로 보류) + 고유 메커니즘 태초 각인별 실행 로직**.
 
-### 7-8b. 패시브 각인 (PassiveEngravingData, 2026-07-22)
+### 7-8b. 패시브 각인 (PassiveEngravingData) — 2026-07-30 전면 재설계
 
-액티브 각인이 **스킬 슬롯을 교체**한다면, 패시브 각인은 **behavior(trigger×action, §11b-12)를 장착**합니다. 어제 추가된 `OnSkillCanceled` 트리거의 콘텐츠 그릇이며, Sword 정체성(콤보+캔슬)의 보상 축입니다.
+> ⚠️ 2026-07-22~23의 구 설계(슬롯 4칸·풀·드랍·각인대 탭·Altar 증설)는 **전부 폐기**됐습니다. 이 절은 현행 설계만 기술합니다.
 
-**타입** — `PassiveEngravingData`(ScriptableObject)는 `EngravingData : SkillData`와 **별개 타입**입니다. 패시브는 스킬이 아니므로 슬롯 바인딩·쿨다운·자원 개념이 없습니다.
+**정체성** — 패시브 각인은 **런의 근간**입니다(StS의 시작 유물·직업 대응). **런 시작 시 폼선택 화면에서 1개를 고르고, 런 중에는 바꿀 수 없습니다.** 재설계 동기: `PassiveEngravingData.behaviors`와 `ItemData.behaviorEffects`(Relic)가 같은 `BehaviorEffect` 타입으로 같은 `BehaviorRuntime`에 합류해 **유물과 구조적으로 완전 중복**이었고, 드랍 획득이 그 체감을 더 흐렸습니다.
+
+**타입** — `PassiveEngravingData`(ScriptableObject)는 `EngravingData : SkillData`와 별개 타입(패시브는 스킬이 아님 — 슬롯 바인딩·쿨다운·자원 없음).
 
 | 필드 | 설명 |
 |------|------|
+| `unlockId` | **영속 해금용 전역 유니크 문자열(수기)**. 에셋명 사용 금지(rename=세이브 무효). 한 번 정하면 변경 금지 |
 | `passiveName` / `icon` / `description` | UI 메타데이터(이름 비면 asset 이름) |
-| `owningForm` | 결속 폼. 해당 폼 풀에만 적재 가능(액티브 각인과 동일 규칙) |
-| `grade` | `EngravingGrade` 재사용(희미한/온전한/태초의) |
+| `owningForm` | 결속 폼 |
+| `grade` | **표기 폐기** — 전 경로 미표기(`EngravingDisplayInfo` 패시브 경로 `hasGrade=false`). 필드는 존치 |
 | `behaviors` | `BehaviorEffect[]` — 장착 중 `BehaviorRuntime`에 병합 |
 
-**슬롯/풀** — `EngravingLoadout.FormState`에 `PassiveSlots[4]` / `PassivePool` / `PassiveSeeded`를 액티브 미러로 추가했습니다. 폼 첫 진입 시 `WeaponData.passiveEngravings[0]`을 슬롯 0에 시드하며(교체 가능), 런 리셋(`ClearAll`)은 기존 경로가 그대로 커버합니다. API도 `AddPassiveToPool`/`EquipPassive`/`UnequipPassive`/`ApplyPassiveArrangement`로 1:1 미러입니다.
+**카탈로그** — `WeaponData.defaultPassive`(무료 기본 1개, 항상 해금·런 시작 시드) + `WeaponData.passiveEngravings`(Altar 구매 후보 목록). 구 "카탈로그 [0]=무료" 위치 규칙은 `defaultPassive` 명시 필드로 대체됐습니다(재정렬 사고 봉인, Altar 행 i=`passiveEngravings[i]` 1:1).
 
-> ⚠️ **`OnPassiveChanged`는 반드시 `OnChanged`와 분리되어야 합니다.** `OnChanged`는 `PlayerCombatController`가 구독해 `BindSkillSlots`를 부르고, 그 안의 `SkillSlotRuntime.Bind`가 **쿨다운을 리셋**합니다. 패시브 변경에 `OnChanged`를 재사용하면 패시브를 끼울 때마다 스킬 쿨다운이 초기화되는 익스플로잇이 됩니다. `AddToPool`/`AddPassiveToPool`이 아무 이벤트도 발행하지 않는 것도 같은 이유입니다(픽업마다 쿨 리셋 방지).
+**해금(영속)** — `PlayerPassiveUnlocks`: 해금된 `unlockId` 집합. `IsUnlocked` = 집합 포함 ∨ defaultPassive. 카탈로그 탐색은 `PlayerFormId` 순회+`PlayerFormDatabase`(런타임 에셋 스캔 없음). 세이브 = `SaveData.unlockedPassiveIds`(문자열 리스트, Ordinal 정렬로 결정화) — **미해석 id는 pass-through 보존**(에셋 rename·삭제 시 해금 소실 방지, 아이템 unresolved 규약 미러). ⚠️영속 게이트(`HasDependencies`)에 패시브를 넣지 말 것 — 결선 하나가 인벤·소울 영속 전체를 인질로 잡는다(개별 null 가드로 처리됨).
 
-**런타임 병합** — `BehaviorRuntime.Rescan(items, equippedPassives)`가 **소스 2개**를 받습니다: 인벤토리의 Relic 아이템 + **현재 폼에 장착된 패시브 각인**. 내부 `AddBehaviors(behaviors, stackCount)`를 그대로 재사용하므로(패시브는 stackCount 1) 트리거 분기·proc·ailment 집계 엔진은 무수정입니다. `PlayerBehaviors`의 재집계 트리거는 셋 — 인벤 변경 / `OnPassiveChanged` / `combatChannel.OnLoadoutChanged`(폼 전환·무기 교체 경로).
+**획득/선택 흐름** — Town Altar 폼 섹션의 **후보별 해금 행**(`PassiveUnlockRowUI`, 누진 base×(추가해금수+1), 폼 고유 조각 지불: 보유확인→차감→`Unlock`, 실패 시 환불) → **폼선택 화면**(`FormSelectScreenUI`+`PassiveSelectCardUI`)에서 1택. 잠긴 후보 카드는 **내용(아이콘·이름·설명)을 그대로 노출**하고 반투명 회색 오버레이+`Skill_Lock` 자물쇠만 덮습니다(무엇을 해금할지 보여야 Altar 구매가 성립 — "???" 은닉 금지). 잠긴 카드 클릭=토스트. 기본 선택=defaultPassive. 카탈로그 빈 폼=카드 0장(특수 분기 없음). 입장 확정 시 `EngravingLoadout.SetSelectedPassive`(미해금 거부, `PassiveSeeded` 세팅으로 후속 시딩이 선택을 못 덮음, **`OnPassiveChanged`만 발행**).
 
-**드랍** — `ItemType.PassiveEngraving`(=8) + `ItemData.passiveEngraving` 브릿지로 액티브 각인과 **동일한 파이프라인**을 씁니다. `DroppedItem` 픽업이 인벤을 우회해 `AddPassiveToPool(passive.owningForm, …)`으로 라우팅하며, **현재 폼과 무관하게 소유 폼 풀로** 들어갑니다(액티브와 동일 규약). 각인 SO 자체에는 itemCode가 없고 **ItemDatabase 엔트리가 이름표** 역할을 한다는 점에 주의하세요 — 엔트리를 만들지 않으면 드랍 테이블에 적을 코드 자체가 존재하지 않습니다.
+> ⚠️ **`OnPassiveChanged`는 반드시 `OnChanged`와 분리.** `OnChanged`는 `BindSkillSlots`→쿨다운 전체 리셋 경로다.
 
-**장착 UI** — 각인대 모달(`EngravingLoadoutUIController`)에 **액티브/패시브 탭**이 붙었습니다. 하단 슬롯·풀 컨테이너는 **1세트를 공유**하고 탭이 데이터 소스만 전환합니다. 편집은 액티브와 동일한 **스테이징 커밋**(복사본 편집 → 확인 시 일괄 커밋 → 취소 시 폐기)이며, dirty는 **양 축 합산**이라 어느 쪽을 바꿔도 각인대가 소모됩니다. 커밋은 두 축의 유효성을 **먼저 모두 검사한 뒤** 변경된 축만 수행합니다 — 그래서 **패시브만 바꾸면 `ApplyArrangement`가 아예 호출되지 않아 쿨다운 리셋이 없습니다**. 보유분 조회는 인벤토리 각인 탭(§11b-7)에서도 가능합니다(읽기 전용).
+**런타임 병합** — `BehaviorRuntime.Rescan(items, equippedPassives)` 소스 2개(인벤 Relic + 현재 폼 선택 패시브 1개) 구조는 유지. Rescan이 출처를 `TriggerEntry.ShieldSource`로 태깅합니다(쉴드 소스 분리, §7-14).
 
-**콘솔** — `/passive give <form> <itemCode> | equip <slot> <poolIdx> | unequip <slot> | show`(인자 0-based, 액티브 `/engraving` 미러).
+**콘솔** — `/passive show | list [form] | unlock <id> | lock <id>`(lock은 defaultPassive 불가).
 
-**S4 완결(2026-07-23)** — 슬롯 해금이 **영구 성장값**이 됨(기본 1칸, 최대 4칸): `PlayerPassiveSlotUnlocks`(폼별 해금 수, `SaveData.passiveUnlocks`로 영속) + `EngravingLoadout` 해금 초과 슬롯 거부(게이팅) + Town Altar 폼 고유 조각 소비 증설(`PassiveSlotUnlockCost` base×현재해금수) + 각인대 슬롯 아이콘화 + 미해금 슬롯 `Skill_Lock` 자물쇠. HUD에도 현재 폼 패시브 4칸 표시(`PassiveHudManager`, §10). **남은 것** — Sword 캔슬 패시브 3종 에셋(추가타=`CastSkill`·회복=`Heal`은 기존 action, **쉴드=`Shield`는 §7-14 흡수 서브시스템 완료**로 저작만 남음).
+**Sword 3종(2026-07-30 저작, 3축=축당 1개·개성 분리)**:
+
+| 패시브 | 축 | 효과 | 핵심 수치(전부 에셋 튜닝) |
+|------|----|------|------|
+| **콤보 폭발**(기본) | 콤보 | 티어 1↑에서 스킬 사용 시 자기중심 3×3 폭발(`Sword_ComboExplosion_Proc`, InstantArea+Custom) | `comboTierDamages [20,35,55,80]`, `skillTypeFilter 59`(Dash 제외) |
+| **생명 흡수** | 피흡 | 기본 피흡 자체 보유(소울 합산) + 저체력 강화 + 과회복→쉴드 전환 | 15% / 임계50% / 2%당+1% / 전환30% / 캡=총쉴드 MaxHp50% / 30s(0=무한) |
+| **전투의 흐름** | 캔슬 | 캔슬 성공 시 공격력 버프(`PlayerAttackBuff`, 재발동=Max+타이머 리셋 — 누적 금지) | +10 / 5s(0=무한). HUD 상태 아이콘(`StatusEffectIconType.AttackBuff`) 표시 |
+
+관련 인프라 규칙: **proc으로 시전된 스킬은 콤보를 쌓지 않는다**(일괄 규칙 — InstantArea·Projectile 경로 `IsProcCast` 게이트, 피흡은 proc 데미지에도 적용) / proc 데미지 오버라이드는 `SkillExecutionContext.SkillDamageOverride`→`ResolveSkillDamage`(SkillData 에셋 변이 금지) / `comboTierDamages` 빈 배열=티어 게이트·오버라이드 없는 기존 proc(하위호환) / 티어별 고정딜을 두는 이유=기존 콤보 배율이 soulScale 비례라 **소울 미투자자에게 죽은 드랍**이 되기 때문(자체 계수 필수 원칙).
+
+**폐기 목록**(코드·데이터에서 제거됨): `PassiveSlots[4]`·`PassivePool`·equip/unequip/arrangement API·각인대 패시브 탭·`PlayerPassiveSlotUnlocks`(슬롯 수 해금)·`SaveData.passiveUnlocks`(구 키 — 신규 키와 별개, 구 세이브의 해당 키는 무시됨)·던전 드랍(ItemDatabase PassiveEngraving 엔트리 0, `DroppedItem`은 해당 타입 픽업 무시)·구 에셋 `Sword_Passive_00/01/02`.
 
 ### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축)
 
@@ -2134,7 +2152,7 @@ SetTilemapSource(locationId):
 | `DefenseBonus` | `passiveEffects` | Relic 소지 수만큼 `TotalDefense` 가산 |
 | `MoveSpeedBonus` | `passiveEffects` | Relic 소지 수만큼 이동속도 % 가산 |
 
-현재 `ItemDatabase.asset` 에는 24종이 등록되어 있습니다 — Key 1(`elite_key`) / Currency 1 / Consumable 2 / Relic 7(테스트 Relic·정비실 `Core` 포함) / Material 4(폼별 조각) / Soul 4 / **Engraving 6**(Sword 5 = Faint 2·Whole 1·Primordial 2, Dagger 1) / **PassiveEngraving 1**(`Psv_Sword_Faint0`).
+`ItemDatabase.asset` 등록 분류 — Key(`elite_key`) / Currency / Consumable / Relic(정비실 `Core` 포함) / Material(폼별 조각) / Soul 4종 / **Engraving**(액티브 각인 브릿지 — Sword 12종 라인업 포함) / **PassiveEngraving 0**(드랍 폐기로 전 엔트리 제거, 2026-07-30 — 패시브는 ItemData 브릿지를 타지 않음). 실시간 목록·검증은 Item Dashboard 참조.
 
 > ⚠️ **에디터 코드 주의 — `ItemType`은 프로젝트 유일의 "갭 enum"입니다.** 3번이 결번이라 `SerializedProperty.enumValueIndex`(이름 배열 **인덱스**)와 실제 int **값**이 어긋납니다(Engraving = 값 7 / 인덱스 6). itemType을 읽고 쓸 때는 반드시 **`intValue`** 를 사용하고, Popup은 `Enum.GetValues` 배열로 인덱스↔값을 명시 변환해야 합니다(`ItemDashboardWindow.s_ItemTypeValues`, `EnemyDashboardWindow.DrawMappedEnumPopup` 선례). 다른 enum(PlayerFormId·ItemRarity·EngravingGrade 등)은 갭이 없어 `enumValueIndex` 사용이 안전합니다.
 
