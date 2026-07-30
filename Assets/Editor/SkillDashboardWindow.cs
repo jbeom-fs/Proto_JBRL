@@ -18,6 +18,7 @@ public sealed class SkillDashboardWindow : EditorWindow
     private const float SkillRowHeight = 32f;
     private const float SkillFoldoutWidth = 16f;
     private const string PlaceholderIconAssetName = "Skill_Null.png";
+    private const string StatusEffectIconFolder = "Assets/Sprite/UI/Buff/";
 
     private enum SkillKindFilter
     {
@@ -1736,7 +1737,7 @@ public sealed class SkillDashboardWindow : EditorWindow
             " / 미분류 " + formIndex.UnassignedInferredCount;
         List<DropRecord> dropRecords = BuildDropRecords(dropDatabases);
 
-        AddOrphanResults(skills, passiveEngravings, itemDatabases, context);
+        AddOrphanResults(skills, itemDatabases, context);
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
         AddDefaultPassiveResults(weapons);
@@ -2396,7 +2397,6 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private void AddOrphanResults(
         List<SkillData> skills,
-        List<PassiveEngravingData> passiveEngravings,
         List<ItemDatabase> itemDatabases,
         ScanContext context)
     {
@@ -2409,19 +2409,6 @@ public sealed class SkillDashboardWindow : EditorWindow
                 continue;
 
             AddOrphanResult("engraving", engraving, targetDatabase, ItemType.Engraving);
-        }
-
-        for (int i = 0; i < passiveEngravings.Count; i++)
-        {
-            PassiveEngravingData passive = passiveEngravings[i];
-            if (passive == null || context.ItemsByPassiveEngraving.ContainsKey(passive))
-                continue;
-
-            AddOrphanResult(
-                "passive engraving",
-                passive,
-                targetDatabase,
-                ItemType.PassiveEngraving);
         }
     }
 
@@ -2687,6 +2674,16 @@ public sealed class SkillDashboardWindow : EditorWindow
         }
 
         string path = AssetDatabase.GetAssetPath(icon);
+        if (path.StartsWith(StatusEffectIconFolder, StringComparison.Ordinal))
+        {
+            AddResult(
+                ResultSeverity.Info,
+                "Status-effect icon used as temporary icon on '" + asset.name +
+                "': " + path + ".",
+                asset);
+            return;
+        }
+
         if (string.Equals(
                 Path.GetFileName(path),
                 PlaceholderIconAssetName,
