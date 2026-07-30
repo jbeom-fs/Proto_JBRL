@@ -13,8 +13,6 @@ public static class UiMessages
     public const string LockedSectionHeader = "ㅡㅡ ???? ㅡㅡ";
     public const string SoulStatSummaryFormat = "{0} Lv.{1}/{2}  비용 {3}";
     public const string SoulStatOwnedSuffixFormat = "  (보유 {0})";
-    public const string PassiveSlotUnlockFormat = "패시브 슬롯 {0}/{1}  비용 {2}  보유 {3}";
-    public const string PassiveSlotUnlockMaxFormat = "패시브 슬롯 {0}/{1}  MAX";
     public const string CostFree = "무료";
     public const string AllocationSummaryFormat = "배분 {0} / 필요 {1}";
     public const string EmptyDescription = "내용없음";
@@ -32,7 +30,6 @@ public static class UiMessages
     public const string EngravingApplyFailed = "각인 적용 실패";
     public const string EmptyEngravingSlot = "(비어 있음)";
     public const string EngravingSlotFormat = "[{0}] {1}";
-    public const string EngravingSlotLockedFormat = "[{0}] 잠김";
     public const string EngravingGradeFormat = "{0} [{1}]";
     public const string EngravingTypeActive = "액티브";
     public const string EngravingTypePassive = "패시브";

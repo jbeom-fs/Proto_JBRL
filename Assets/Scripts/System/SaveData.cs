@@ -9,7 +9,6 @@ public sealed class SaveData
     public int version = CurrentVersion;
     public List<ItemStackSave> items = new List<ItemStackSave>();
     public List<EnhancementSave> enhancements = new List<EnhancementSave>();
-    public List<PassiveSlotUnlockSave> passiveUnlocks = new List<PassiveSlotUnlockSave>();
 }
 
 [Serializable]
@@ -25,11 +24,4 @@ public sealed class EnhancementSave
     public int form;
     public int stat;
     public int level;
-}
-
-[Serializable]
-public sealed class PassiveSlotUnlockSave
-{
-    public int form;
-    public int count;
 }

@@ -71,9 +71,6 @@ public sealed class SaveService
         if (data.enhancements == null)
             data.enhancements = new System.Collections.Generic.List<EnhancementSave>();
 
-        if (data.passiveUnlocks == null)
-            data.passiveUnlocks = new System.Collections.Generic.List<PassiveSlotUnlockSave>();
-
         return true;
     }
 

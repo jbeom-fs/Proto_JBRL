@@ -247,15 +247,11 @@ public sealed class InventoryUIController : MonoBehaviour
                     _engravingDisplayBuffer.Add(info);
             }
 
-            int passiveCount = loadout.PassivePoolCount(form);
-            for (int i = 0; i < passiveCount; i++)
+            if (EngravingDisplayInfo.TryCreate(
+                    loadout.GetPassive(form),
+                    out EngravingDisplayInfo passiveInfo))
             {
-                if (EngravingDisplayInfo.TryCreate(
-                        loadout.GetPassivePoolAt(form, i),
-                        out EngravingDisplayInfo info))
-                {
-                    _engravingDisplayBuffer.Add(info);
-                }
+                _engravingDisplayBuffer.Add(passiveInfo);
             }
         }
     }

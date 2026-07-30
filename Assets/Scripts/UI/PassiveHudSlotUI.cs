@@ -36,14 +36,6 @@ public sealed class PassiveHudSlotUI : MonoBehaviour, IPointerEnterHandler, IPoi
             iconImage.sprite = empty;
     }
 
-    public void BindLocked(Sprite lockSprite)
-    {
-        _info = default;
-        _hasTooltip = false;
-        if (iconImage != null)
-            iconImage.sprite = lockSprite;
-    }
-
     public void OnPointerEnter(PointerEventData eventData)
     {
         if (_hasTooltip)

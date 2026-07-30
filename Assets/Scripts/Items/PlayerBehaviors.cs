@@ -10,8 +10,8 @@ public sealed class PlayerBehaviors : MonoBehaviour
     private PlayerCombatController _combat;
     private EngravingLoadout _engravingLoadout;
     private BehaviorRuntime _runtime;
-    private readonly PassiveEngravingData[] _equippedPassives =
-        new PassiveEngravingData[EngravingLoadout.PassiveSlotCount];
+    private readonly List<PassiveEngravingData> _equippedPassives =
+        new List<PassiveEngravingData>(1);
 
     public IReadOnlyList<AilmentApplication> AttackAilments =>
         _runtime != null ? _runtime.AttackAilments : Array.Empty<AilmentApplication>();
@@ -79,12 +79,12 @@ public sealed class PlayerBehaviors : MonoBehaviour
             return;
 
         PlayerFormId form = _combat != null ? _combat.CurrentFormId : PlayerFormId.Normal;
-        for (int i = 0; i < _equippedPassives.Length; i++)
-        {
-            _equippedPassives[i] = _engravingLoadout != null
-                ? _engravingLoadout.GetPassiveSlot(form, i)
-                : null;
-        }
+        PassiveEngravingData passive = _engravingLoadout != null
+            ? _engravingLoadout.GetPassive(form)
+            : null;
+        _equippedPassives.Clear();
+        if (passive != null)
+            _equippedPassives.Add(passive);
 
         _runtime.Rescan(_inventory != null ? _inventory.Items : null, _equippedPassives);
     }

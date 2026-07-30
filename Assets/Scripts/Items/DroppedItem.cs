@@ -16,6 +16,7 @@ public sealed class DroppedItem : MonoBehaviour
     private float _baseCircleRadius;
     private Vector2 _baseCircleOffset;
     private float _baseColliderScale = 1f;
+    private bool _passiveDropWarningLogged;
 
     private void Awake()
     {
@@ -63,6 +64,19 @@ public sealed class DroppedItem : MonoBehaviour
         if (!other.TryGetComponent<PlayerInventory>(out var inventory))
             return;
 
+        if (_itemData.ItemType == ItemType.PassiveEngraving)
+        {
+            if (!_passiveDropWarningLogged)
+            {
+                _passiveDropWarningLogged = true;
+                Debug.LogWarning(
+                    "[DroppedItem] Passive engraving drops cannot be picked up: " + _itemCode + ".",
+                    this);
+            }
+
+            return;
+        }
+
         if (_itemData.ItemType == ItemType.Engraving)
         {
             EngravingData engraving = _itemData.Engraving;
@@ -81,31 +95,6 @@ public sealed class DroppedItem : MonoBehaviour
             // (엔트리 max>1 오작성은 EnemyDropDatabase.OnValidate가 경고로 잡음.)
             EngravingLoadout loadout = EngravingLoadout.Active;
             if (loadout == null || !loadout.AddToPool(engraving.owningForm, engraving))
-                return;
-
-            DropItemSpawner.Instance?.Unregister(this);
-            Destroy(gameObject);
-            return;
-        }
-
-        if (_itemData.ItemType == ItemType.PassiveEngraving)
-        {
-            PassiveEngravingData passive = _itemData.PassiveEngraving;
-            if (passive == null)
-            {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                Debug.LogWarning("[DroppedItem] Passive engraving item '" + _itemCode + "' has no PassiveEngravingData ref.", this);
-#endif
-                DropItemSpawner.Instance?.Unregister(this);
-                Destroy(gameObject);
-                return;
-            }
-
-            // 패시브 각인은 설계상 항상 수량 1(슬롯 토큰, 스택 개념 없음).
-            // 드랍 엔트리 _amount는 의도적으로 무시 — 1개만 풀 적재.
-            // (엔트리 max>1 오작성은 EnemyDropDatabase.OnValidate가 경고로 잡음.)
-            EngravingLoadout loadout = EngravingLoadout.Active;
-            if (loadout == null || !loadout.AddPassiveToPool(passive.owningForm, passive))
                 return;
 
             DropItemSpawner.Instance?.Unregister(this);

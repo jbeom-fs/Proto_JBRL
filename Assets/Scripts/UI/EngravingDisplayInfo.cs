@@ -83,7 +83,7 @@ public readonly struct EngravingDisplayInfo
             displayName,
             passive.description,
             true,
-            true,
+            false,
             passive.grade,
             false,
             0f);

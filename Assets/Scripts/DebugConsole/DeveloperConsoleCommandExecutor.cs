@@ -16,7 +16,6 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private PlayerController player;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements playerSoulEnhancements;
-    [SerializeField] private PlayerPassiveSlotUnlocks passiveSlotUnlocks;
     [SerializeField] private EngravingLoadout engravingLoadout;
     [SerializeField] private PlayerCombatController playerCombatController;
     [SerializeField] private PlayerFormController playerFormController;
@@ -358,138 +357,15 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return DeveloperConsoleCommandResult.Success(builder.ToString());
     }
 
-    public DeveloperConsoleCommandResult ExecutePassiveGive(string formToken, string itemCode)
-    {
-        if (!System.Enum.TryParse(formToken, true, out PlayerFormId form))
-            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
-
-        PlayerInventory inventory = ResolvePlayerInventory();
-        if (inventory == null)
-        {
-            WarnMissing(nameof(PlayerInventory));
-            return DeveloperConsoleCommandResult.Error("PlayerInventory is not active.");
-        }
-
-        if (!inventory.TryGetDatabaseItem(itemCode, out ItemData item))
-            return DeveloperConsoleCommandResult.Error("Unknown itemCode: " + itemCode);
-
-        PassiveEngravingData passive = item.PassiveEngraving;
-        if (passive == null)
-            return DeveloperConsoleCommandResult.Error("Item is not a passive engraving: " + itemCode);
-
-        EngravingLoadout loadout = ResolveEngravingLoadout();
-        if (loadout == null)
-            return DeveloperConsoleCommandResult.Error("EngravingLoadout is not active.");
-
-        if (!loadout.AddPassiveToPool(form, passive))
-            return DeveloperConsoleCommandResult.Error(
-                "Passive engraving is locked to another form (cannot add to " + form + " pool).");
-
-        return DeveloperConsoleCommandResult.Success(
-            "Gave " + GetPassiveName(passive) + " to " + form +
-            " passive pool (size " + loadout.PassivePoolCount(form) + ").");
-    }
-
-    public DeveloperConsoleCommandResult ExecutePassiveUnlock(string formToken, int? count)
-    {
-        if (!System.Enum.TryParse(formToken, true, out PlayerFormId form))
-            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
-
-        PlayerPassiveSlotUnlocks unlocks = ResolvePassiveSlotUnlocks();
-        if (unlocks == null)
-            return DeveloperConsoleCommandResult.Error("PlayerPassiveSlotUnlocks is not active.");
-
-        if (count.HasValue)
-            unlocks.SetUnlock(form, count.Value);
-        else
-            unlocks.AddUnlock(form, 1);
-
-        int unlockCount = unlocks.GetUnlockCount(form);
-        return DeveloperConsoleCommandResult.Success(
-            "Passive " + form + " unlocked slots: " + unlockCount +
-            "/" + EngravingLoadout.PassiveSlotCount + ".");
-    }
-
-    public DeveloperConsoleCommandResult ExecutePassiveEquip(int slot, int poolIndex)
-    {
-        if (!IsValidPassiveSlot(slot))
-        {
-            return DeveloperConsoleCommandResult.Error(
-                "Invalid slot: must be 0-" + (EngravingLoadout.PassiveSlotCount - 1) + ".");
-        }
-
-        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
-            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
-
-        PlayerFormId form = combat.CurrentFormId;
-        PassiveEngravingData passive = loadout.GetPassivePoolAt(form, poolIndex);
-        if (passive == null || !loadout.EquipPassive(form, slot, poolIndex))
-            return DeveloperConsoleCommandResult.Error("Invalid slot/pool index.");
-
-        return DeveloperConsoleCommandResult.Success(
-            "Equipped " + GetPassiveName(passive) + " to " + form + " passive slot " + slot + ".");
-    }
-
-    public DeveloperConsoleCommandResult ExecutePassiveUnequip(int slot)
-    {
-        if (!IsValidPassiveSlot(slot))
-        {
-            return DeveloperConsoleCommandResult.Error(
-                "Invalid slot: must be 0-" + (EngravingLoadout.PassiveSlotCount - 1) + ".");
-        }
-
-        if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
-            return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
-
-        PlayerFormId form = combat.CurrentFormId;
-        PassiveEngravingData passive = loadout.GetPassiveSlot(form, slot);
-        if (!loadout.UnequipPassive(form, slot))
-            return DeveloperConsoleCommandResult.Error("Slot empty or invalid.");
-
-        return DeveloperConsoleCommandResult.Success(
-            "Unequipped " + GetPassiveName(passive) + " from " + form + " passive slot " + slot + ".");
-    }
-
     public DeveloperConsoleCommandResult ExecutePassiveShow()
     {
         if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
             return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
 
         PlayerFormId form = combat.CurrentFormId;
-        StringBuilder builder = new StringBuilder();
-        builder.Append("Passive ");
-        builder.Append(form);
-        builder.Append(" unlocked: ");
-        PlayerPassiveSlotUnlocks unlocks = ResolvePassiveSlotUnlocks();
-        int unlockCount = unlocks != null ? unlocks.GetUnlockCount(form) : 1;
-        builder.Append(unlockCount);
-        builder.Append('/');
-        builder.Append(EngravingLoadout.PassiveSlotCount);
-        builder.Append(" slots: ");
-        for (int i = 0; i < EngravingLoadout.PassiveSlotCount; i++)
-        {
-            if (i > 0)
-                builder.Append(", ");
-
-            builder.Append('[');
-            builder.Append(i);
-            builder.Append("] ");
-
-            if (i >= unlockCount)
-            {
-                builder.Append("(locked)");
-                continue;
-            }
-
-            PassiveEngravingData slot = loadout.GetPassiveSlot(form, i);
-            builder.Append(slot != null ? GetPassiveName(slot) : "(empty)");
-        }
-
-        builder.Append(" | pool: ");
-        AppendPassiveList(builder, loadout, form);
-        builder.Append(" | catalog: ");
-        AppendPassiveCatalog(builder, combat.currentWeapon);
-        return DeveloperConsoleCommandResult.Success(builder.ToString());
+        PassiveEngravingData passive = loadout.GetPassive(form);
+        return DeveloperConsoleCommandResult.Success(
+            "Passive " + form + ": " + GetPassiveName(passive) + ".");
     }
 
     public DeveloperConsoleCommandResult ExecuteDropQuery(string itemTypeToken, int count)
@@ -819,28 +695,6 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return playerSoulEnhancements;
     }
 
-    private PlayerPassiveSlotUnlocks ResolvePassiveSlotUnlocks()
-    {
-        if (passiveSlotUnlocks != null)
-            return passiveSlotUnlocks;
-
-        if (PlayerPassiveSlotUnlocks.Active != null)
-        {
-            passiveSlotUnlocks = PlayerPassiveSlotUnlocks.Active;
-            return passiveSlotUnlocks;
-        }
-
-        if (player != null && player.TryGetComponent(out passiveSlotUnlocks))
-            return passiveSlotUnlocks;
-
-        PlayerController activePlayer = PlayerController.Active;
-        if (activePlayer != null && activePlayer.TryGetComponent(out passiveSlotUnlocks))
-            return passiveSlotUnlocks;
-
-        passiveSlotUnlocks = UnityEngine.Object.FindAnyObjectByType<PlayerPassiveSlotUnlocks>();
-        return passiveSlotUnlocks;
-    }
-
     private PlayerCombatController ResolvePlayerCombatController()
     {
         if (playerCombatController != null)
@@ -968,11 +822,6 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         return (uint)slot < (uint)EngravingLoadout.SlotCount;
     }
 
-    private static bool IsValidPassiveSlot(int slot)
-    {
-        return (uint)slot < (uint)EngravingLoadout.PassiveSlotCount;
-    }
-
     private static string GetSkillName(SkillData skill)
     {
         if (skill == null)
@@ -990,49 +839,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         string passiveName = string.IsNullOrWhiteSpace(passive.passiveName)
             ? passive.name
             : passive.passiveName;
-        return passiveName + " [" + passive.grade + "]";
-    }
-
-    private static void AppendPassiveList(
-        StringBuilder builder,
-        EngravingLoadout loadout,
-        PlayerFormId form)
-    {
-        int poolCount = loadout.PassivePoolCount(form);
-        if (poolCount == 0)
-        {
-            builder.Append("(empty)");
-            return;
-        }
-
-        for (int i = 0; i < poolCount; i++)
-        {
-            if (i > 0)
-                builder.Append(", ");
-
-            builder.Append(i);
-            builder.Append(':');
-            builder.Append(GetPassiveName(loadout.GetPassivePoolAt(form, i)));
-        }
-    }
-
-    private static void AppendPassiveCatalog(StringBuilder builder, WeaponData weapon)
-    {
-        if (weapon == null || weapon.passiveEngravings == null || weapon.passiveEngravings.Count == 0)
-        {
-            builder.Append("(empty)");
-            return;
-        }
-
-        for (int i = 0; i < weapon.passiveEngravings.Count; i++)
-        {
-            if (i > 0)
-                builder.Append(", ");
-
-            builder.Append(i);
-            builder.Append(':');
-            builder.Append(GetPassiveName(weapon.passiveEngravings[i]));
-        }
+        return passiveName;
     }
 
     private static string GetEnemyDisplayName(EnemyController enemy)
