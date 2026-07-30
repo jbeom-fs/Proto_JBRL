@@ -6,18 +6,25 @@ public sealed class BehaviorRuntime
 {
     private readonly struct TriggerEntry
     {
-        public TriggerEntry(BehaviorAction action, int skillTypeFilter, int value, float duration)
+        public TriggerEntry(
+            BehaviorAction action,
+            int skillTypeFilter,
+            int value,
+            float duration,
+            ShieldSource shieldSource)
         {
             Action = action;
             SkillTypeFilter = skillTypeFilter;
             Value = value;
             Duration = duration;
+            ShieldSource = shieldSource;
         }
 
         public BehaviorAction Action { get; }
         public int SkillTypeFilter { get; }
         public int Value { get; }
         public float Duration { get; }
+        public ShieldSource ShieldSource { get; }
     }
 
     private readonly struct ProcEntry
@@ -64,7 +71,8 @@ public sealed class BehaviorRuntime
     }
 
     private readonly Action<int> _healCallback;
-    private readonly Action<int, float> _shieldCallback;
+    private readonly Action<ShieldSource, int, float> _shieldCallback;
+    private readonly Action<int, float> _attackBuffCallback;
     private readonly Action<SkillData, Vector3, Vector2, int?> _procCallback;
     private readonly List<TriggerEntry> _onKill = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onSkillUsed = new List<TriggerEntry>();
@@ -80,11 +88,13 @@ public sealed class BehaviorRuntime
     public BehaviorRuntime(
         Action<int> healCallback,
         Action<SkillData, Vector3, Vector2, int?> procCallback = null,
-        Action<int, float> shieldCallback = null)
+        Action<ShieldSource, int, float> shieldCallback = null,
+        Action<int, float> attackBuffCallback = null)
     {
         _healCallback = healCallback;
         _procCallback = procCallback;
         _shieldCallback = shieldCallback;
+        _attackBuffCallback = attackBuffCallback;
     }
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
@@ -161,7 +171,10 @@ public sealed class BehaviorRuntime
                 if (item == null || item.ItemType != ItemType.Relic)
                     continue;
 
-                AddBehaviors(item.BehaviorEffects, stack.Count);
+                AddBehaviors(
+                    item.BehaviorEffects,
+                    stack.Count,
+                    ShieldSource.Relic);
             }
         }
 
@@ -172,7 +185,12 @@ public sealed class BehaviorRuntime
         {
             PassiveEngravingData passive = equippedPassives[i];
             if (passive != null)
-                AddBehaviors(passive.behaviors, 1);
+            {
+                AddBehaviors(
+                    passive.behaviors,
+                    1,
+                    ShieldSource.PassiveEngraving);
+            }
         }
     }
 
@@ -252,7 +270,10 @@ public sealed class BehaviorRuntime
             ExecuteProc(_onCancelProcs[i], playerPosition, playerPosition, aimDirection, false);
     }
 
-    private void AddBehaviors(IReadOnlyList<BehaviorEffect> behaviors, int stackCount)
+    private void AddBehaviors(
+        IReadOnlyList<BehaviorEffect> behaviors,
+        int stackCount,
+        ShieldSource shieldSource)
     {
         if (behaviors == null)
             return;
@@ -266,13 +287,28 @@ public sealed class BehaviorRuntime
             switch (behavior.trigger)
             {
                 case BehaviorTrigger.OnKill:
-                    AddTriggeredBehavior(behavior, stackCount, _onKill, _onKillProcs);
+                    AddTriggeredBehavior(
+                        behavior,
+                        stackCount,
+                        shieldSource,
+                        _onKill,
+                        _onKillProcs);
                     break;
                 case BehaviorTrigger.OnSkillUsed:
-                    AddTriggeredBehavior(behavior, stackCount, _onSkillUsed, _onSkillUsedProcs);
+                    AddTriggeredBehavior(
+                        behavior,
+                        stackCount,
+                        shieldSource,
+                        _onSkillUsed,
+                        _onSkillUsedProcs);
                     break;
                 case BehaviorTrigger.OnSkillCanceled:
-                    AddTriggeredBehavior(behavior, stackCount, _onCancel, _onCancelProcs);
+                    AddTriggeredBehavior(
+                        behavior,
+                        stackCount,
+                        shieldSource,
+                        _onCancel,
+                        _onCancelProcs);
                     break;
                 case BehaviorTrigger.Passive:
                     AddPassiveBehavior(behavior, stackCount);
@@ -284,6 +320,7 @@ public sealed class BehaviorRuntime
     private static void AddTriggeredBehavior(
         BehaviorEffect behavior,
         int stackCount,
+        ShieldSource shieldSource,
         List<TriggerEntry> triggerEntries,
         List<ProcEntry> procEntries)
     {
@@ -291,11 +328,13 @@ public sealed class BehaviorRuntime
         {
             case BehaviorAction.Heal:
             case BehaviorAction.Shield:
+            case BehaviorAction.AttackBuff:
                 triggerEntries.Add(new TriggerEntry(
                     behavior.action,
                     behavior.skillTypeFilter,
                     behavior.value * stackCount,
-                    behavior.duration));
+                    behavior.duration,
+                    shieldSource));
                 break;
             case BehaviorAction.CastSkill:
                 if (behavior.procSkill != null)
@@ -342,7 +381,13 @@ public sealed class BehaviorRuntime
                 _healCallback?.Invoke(entry.Value);
                 break;
             case BehaviorAction.Shield:
-                _shieldCallback?.Invoke(entry.Value, entry.Duration);
+                _shieldCallback?.Invoke(
+                    entry.ShieldSource,
+                    entry.Value,
+                    entry.Duration);
+                break;
+            case BehaviorAction.AttackBuff:
+                _attackBuffCallback?.Invoke(entry.Value, entry.Duration);
                 break;
         }
     }

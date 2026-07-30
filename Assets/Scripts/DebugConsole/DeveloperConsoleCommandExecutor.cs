@@ -621,7 +621,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
         }
 
-        combat.GrantShield(amount, duration);
+        combat.GrantShield(ShieldSource.Console, amount, duration);
         string durationText = duration <= 0f
             ? "infinite"
             : duration.ToString("0.##", CultureInfo.InvariantCulture) + "s";

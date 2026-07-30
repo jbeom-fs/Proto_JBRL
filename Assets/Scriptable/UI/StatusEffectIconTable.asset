@@ -27,3 +27,6 @@ MonoBehaviour:
   - type: 3
     icon: {fileID: 3156634924717718424, guid: 044fe9dadc00e6246aa31145330cfd6e, type: 3}
     flashColor: {r: 1, g: 1, b: 1, a: 1}
+  - type: 4
+    icon: {fileID: 21300000, guid: fd62314bdeea80b4eb978de98b9bbab4, type: 3}
+    flashColor: {r: 1, g: 1, b: 1, a: 1}

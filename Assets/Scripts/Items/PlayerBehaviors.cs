@@ -47,7 +47,11 @@ public sealed class PlayerBehaviors : MonoBehaviour
         _inventory = GetComponent<PlayerInventory>();
         _combat = GetComponent<PlayerCombatController>();
         _engravingLoadout = GetComponent<EngravingLoadout>();
-        _runtime = new BehaviorRuntime(Heal, ExecuteProc, GrantShield);
+        _runtime = new BehaviorRuntime(
+            Heal,
+            ExecuteProc,
+            GrantShield,
+            GrantAttackBuff);
     }
 
     private void OnEnable()
@@ -171,11 +175,22 @@ public sealed class PlayerBehaviors : MonoBehaviour
         _combat.RestoreHp(amount);
     }
 
-    private void GrantShield(int amount, float duration)
+    private void GrantShield(
+        ShieldSource source,
+        int amount,
+        float duration)
     {
         if (_combat == null || _combat.IsDead)
             return;
 
-        _combat.GrantShield(amount, duration);
+        _combat.GrantShield(source, amount, duration);
+    }
+
+    private void GrantAttackBuff(int amount, float duration)
+    {
+        if (_combat == null || _combat.IsDead)
+            return;
+
+        _combat.GrantAttackBuff(amount, duration);
     }
 }

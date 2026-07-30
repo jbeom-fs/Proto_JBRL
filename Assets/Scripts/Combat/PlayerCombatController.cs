@@ -102,6 +102,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private readonly PlayerResource _resource = new();
     private readonly PlayerShield _shield = new();
+    private readonly PlayerAttackBuff _attackBuff = new();
     private readonly PlayerItemStats _itemStats = new();
     private readonly SoulStatBonus _soulBonus = new SoulStatBonus();
     private readonly SkillCooldownController _cooldownController = new();
@@ -167,6 +168,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int  CurrentHp   => _resource.CurrentHp;
     public int  MaxHp       => Mathf.Max(1, maxHp + _itemStats.MaxHpBonus);
     public int CurrentShield => _shield.CurrentAmount;
+    public int CurrentAttackBuff => _attackBuff.CurrentAmount;
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
@@ -226,7 +228,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public Vector2Int  CurrentAimRawDirection => _lastAimDirection;
 
     /// <summary>무기 보정치가 합산된 최종 공격력.</summary>
-    public int TotalAttack  => baseAttack  + (currentWeapon?.bonusAttack  ?? 0) + _itemStats.AttackBonus;
+    public int TotalAttack  => baseAttack
+                               + (currentWeapon?.bonusAttack ?? 0)
+                               + _itemStats.AttackBonus
+                               + _attackBuff.CurrentAmount;
 
     /// <summary>무기 보정치가 합산된 최종 방어력.</summary>
     public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0) + _itemStats.DefenseBonus;
@@ -342,6 +347,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearReloadState();
         _status?.ClearAll();
         _shield.Clear();
+        _attackBuff.Clear();
         ClearDaggerRuntimeState();
     }
 
@@ -699,7 +705,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         int shieldRoom = Mathf.Max(0, shieldCap - CurrentShield);
         int shieldToAdd = Mathf.Min(convertedShield, shieldRoom);
         if (shieldToAdd > 0)
-            _shield.Add(shieldToAdd, shieldDuration);
+        {
+            _shield.Add(
+                ShieldSource.LifestealConversion,
+                shieldToAdd,
+                shieldDuration);
+        }
     }
 
     private void Update()
@@ -711,6 +722,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
 
         _shield.Tick(Time.deltaTime);
+        _attackBuff.Tick(Time.deltaTime);
 
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
@@ -1790,6 +1802,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearReloadState();
         _status?.ClearAll();
         _shield.Clear();
+        _attackBuff.Clear();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
@@ -1841,12 +1854,23 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         combatChannel?.RaisePlayerHpChanged(CurrentHp, MaxHp);
     }
 
-    public void GrantShield(int amount, float duration)
+    public void GrantShield(
+        ShieldSource source,
+        int amount,
+        float duration)
     {
         if (IsDead)
             return;
 
-        _shield.Grant(amount, duration);
+        _shield.Grant(source, amount, duration);
+    }
+
+    public void GrantAttackBuff(int amount, float duration)
+    {
+        if (IsDead)
+            return;
+
+        _attackBuff.Grant(amount, duration);
     }
 
     public void ClearShield()

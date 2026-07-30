@@ -5,12 +5,14 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
     [SerializeField] private StatusEffectIconTable iconTable;
     [SerializeField] private StatusEffectIconView slowIconView;
     [SerializeField] private StatusEffectIconView stunIconView;
+    [SerializeField] private StatusEffectIconView buffIconView;
 
     private PlayerCombatController _combat;
     private bool _iconsResolved;
     private bool _warnedMissingTable;
     private bool _warnedMissingSlowIcon;
     private bool _warnedMissingStunIcon;
+    private bool _warnedMissingAttackBuffIcon;
 
     private void OnEnable()
     {
@@ -65,6 +67,8 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
             slowIconView.SetVisible(false);
         if (stunIconView != null)
             stunIconView.SetVisible(false);
+        if (buffIconView != null)
+            buffIconView.SetVisible(false);
     }
 
     private void ResolveIconsOnce()
@@ -73,7 +77,7 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
             return;
 
         _iconsResolved = true;
-        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        StatusEffectIconTable table = iconTable;
         if (table == null)
         {
             WarnMissingTable();
@@ -94,6 +98,20 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
                 stunIconView.SetIcon(stunIcon);
             else
                 WarnMissingIcon(StatusEffectIconType.Stun);
+        }
+
+        if (buffIconView != null)
+        {
+            if (table.TryGetIcon(
+                    StatusEffectIconType.AttackBuff,
+                    out Sprite attackBuffIcon))
+            {
+                buffIconView.SetIcon(attackBuffIcon);
+            }
+            else
+            {
+                WarnMissingIcon(StatusEffectIconType.AttackBuff);
+            }
         }
     }
 
@@ -147,6 +165,22 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
             RefreshIcon(PlayerStatusEffectType.Slow, slowIconView);
         if (stunIconView != null && _combat.IsStunned)
             RefreshIcon(PlayerStatusEffectType.Stun, stunIconView);
+
+        RefreshAttackBuffIcon();
+    }
+
+    private void RefreshAttackBuffIcon()
+    {
+        if (_combat == null || buffIconView == null)
+            return;
+
+        bool visible = _combat.CurrentAttackBuff > 0;
+        if (buffIconView.gameObject.activeSelf == visible)
+            return;
+
+        buffIconView.SetVisible(visible);
+        if (visible)
+            buffIconView.MoveToLast();
     }
 
     private void RefreshIcon(PlayerStatusEffectType type, StatusEffectIconView view)
@@ -189,8 +223,7 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
 
         _warnedMissingTable = true;
         Debug.LogWarning(
-            "[PlayerStatusEffectUI] StatusEffectIconTable is missing. Existing scene icon sprites remain in use. Expected Resources path: " +
-            StatusEffectIconTable.ResourcePath,
+            "[PlayerStatusEffectUI] StatusEffectIconTable is missing. Inspector assignment is required; existing scene icon sprites remain in use.",
             this);
 #endif
     }
@@ -209,6 +242,16 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
         {
             _warnedMissingStunIcon = true;
             Debug.LogWarning("[PlayerStatusEffectUI] Stun icon missing. Existing scene icon sprite remains in use.", this);
+            return;
+        }
+
+        if (type == StatusEffectIconType.AttackBuff &&
+            !_warnedMissingAttackBuffIcon)
+        {
+            _warnedMissingAttackBuffIcon = true;
+            Debug.LogWarning(
+                "[PlayerStatusEffectUI] AttackBuff icon missing. Existing scene icon sprite remains in use.",
+                this);
         }
 #endif
     }

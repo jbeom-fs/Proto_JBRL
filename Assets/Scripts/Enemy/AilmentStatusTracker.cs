@@ -16,7 +16,12 @@ public readonly struct AilmentStatus
 public sealed class AilmentStatusTracker
 {
     private static readonly StatusEffectIconType[] s_StatusTypes =
-        (StatusEffectIconType[])Enum.GetValues(typeof(StatusEffectIconType));
+    {
+        StatusEffectIconType.Poison,
+        StatusEffectIconType.Bleed,
+        StatusEffectIconType.Slow,
+        StatusEffectIconType.Stun
+    };
 
     private readonly bool[] _active = new bool[s_StatusTypes.Length];
     private readonly List<AilmentStatus> _activeStatuses = new List<AilmentStatus>(s_StatusTypes.Length);

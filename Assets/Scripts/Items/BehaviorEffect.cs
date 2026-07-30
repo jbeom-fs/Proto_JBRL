@@ -16,7 +16,8 @@ public enum BehaviorAction
     AttackBleed,
     CastSkill,
     Shield,
-    LifestealEngine
+    LifestealEngine,
+    AttackBuff
 }
 
 public enum ProcOriginMode

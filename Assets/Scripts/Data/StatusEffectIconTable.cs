@@ -7,14 +7,13 @@ public enum StatusEffectIconType
     Poison = 0,
     Bleed = 1,
     Slow = 2,
-    Stun = 3
+    Stun = 3,
+    AttackBuff = 4
 }
 
 [CreateAssetMenu(fileName = "StatusEffectIconTable", menuName = "JBRogLike/UI/Status Effect Icon Table")]
 public sealed class StatusEffectIconTable : ScriptableObject
 {
-    public const string ResourcePath = "UI/StatusEffectIconTable";
-
     [SerializeField] private AilmentStatusSlotView slotPrefab;
     [SerializeField] private AilmentCanvasSlotView canvasSlotPrefab;
 
@@ -30,13 +29,6 @@ public sealed class StatusEffectIconTable : ScriptableObject
         public StatusEffectIconType type;
         public Sprite icon;
         public Color flashColor = Color.white;
-    }
-
-    public static StatusEffectIconTable Resolve(StatusEffectIconTable serialized)
-    {
-        return serialized != null
-            ? serialized
-            : Resources.Load<StatusEffectIconTable>(ResourcePath);
     }
 
     public bool TryGetIcon(StatusEffectIconType type, out Sprite icon)

@@ -13,6 +13,7 @@ public class HitFlashFeedback : MonoBehaviour
     private Coroutine _flashRoutine;
     private Color _originalColor = Color.white;
     private bool _hasOriginalColor;
+    private bool _warnedMissingIconTable;
 
     private void Awake()
     {
@@ -46,11 +47,17 @@ public class HitFlashFeedback : MonoBehaviour
 
     public void Flash(StatusEffectIconType type)
     {
-        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        StatusEffectIconTable table = iconTable;
         if (table != null && table.TryGetFlashColor(type, out Color color))
+        {
             Flash(color);
+        }
         else
+        {
+            if (table == null)
+                WarnMissingIconTable();
             Flash(flashColor);
+        }
     }
 
     public void Flash(Color color)
@@ -150,5 +157,18 @@ public class HitFlashFeedback : MonoBehaviour
         }
 
         return renderers[0];
+    }
+
+    private void WarnMissingIconTable()
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedMissingIconTable)
+            return;
+
+        _warnedMissingIconTable = true;
+        Debug.LogWarning(
+            "[HitFlashFeedback] StatusEffectIconTable is missing. Inspector assignment is required.",
+            this);
+#endif
     }
 }

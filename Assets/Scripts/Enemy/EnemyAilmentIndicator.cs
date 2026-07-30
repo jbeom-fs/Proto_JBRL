@@ -17,7 +17,12 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
     [SerializeField] private float spacing = 0.28f;
 
     private static readonly StatusEffectIconType[] s_IconTypes =
-        (StatusEffectIconType[])Enum.GetValues(typeof(StatusEffectIconType));
+    {
+        StatusEffectIconType.Poison,
+        StatusEffectIconType.Bleed,
+        StatusEffectIconType.Slow,
+        StatusEffectIconType.Stun
+    };
 
     private EnemyController _enemy;
     private EnemyHealthBar _healthBar;
@@ -90,7 +95,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
 
     private void CreateSlots()
     {
-        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        StatusEffectIconTable table = iconTable;
         if (table == null)
         {
             WarnMissingTable();
@@ -237,8 +242,7 @@ public sealed class EnemyAilmentIndicator : MonoBehaviour
 
         _warnedMissingTable = true;
         Debug.LogWarning(
-            "[EnemyAilmentIndicator] StatusEffectIconTable is missing. Expected Resources path: " +
-            StatusEffectIconTable.ResourcePath,
+            "[EnemyAilmentIndicator] StatusEffectIconTable is missing. Inspector assignment is required.",
             this);
 #endif
     }

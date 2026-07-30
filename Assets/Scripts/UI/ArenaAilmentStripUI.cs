@@ -5,7 +5,12 @@ using UnityEngine;
 public sealed class ArenaAilmentStripUI : MonoBehaviour
 {
     private static readonly StatusEffectIconType[] s_IconTypes =
-        (StatusEffectIconType[])Enum.GetValues(typeof(StatusEffectIconType));
+    {
+        StatusEffectIconType.Poison,
+        StatusEffectIconType.Bleed,
+        StatusEffectIconType.Slow,
+        StatusEffectIconType.Stun
+    };
     private static readonly int s_StatusCount = s_IconTypes.Length;
 
     [SerializeField] private StatusEffectIconTable iconTable;
@@ -143,7 +148,7 @@ public sealed class ArenaAilmentStripUI : MonoBehaviour
             return;
 
         _iconsResolved = true;
-        StatusEffectIconTable table = StatusEffectIconTable.Resolve(iconTable);
+        StatusEffectIconTable table = iconTable;
         if (table == null)
         {
             WarnMissingTable();
@@ -246,8 +251,7 @@ public sealed class ArenaAilmentStripUI : MonoBehaviour
 
         _warnedMissingTable = true;
         Debug.LogWarning(
-            "[ArenaAilmentStripUI] StatusEffectIconTable is missing. Expected Resources path: " +
-            StatusEffectIconTable.ResourcePath,
+            "[ArenaAilmentStripUI] StatusEffectIconTable is missing. Inspector assignment is required.",
             this);
 #endif
     }

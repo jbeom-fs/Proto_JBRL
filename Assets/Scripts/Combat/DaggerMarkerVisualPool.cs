@@ -5,7 +5,6 @@ using UnityEngine;
 public sealed class DaggerMarkerVisualPool : MonoBehaviour
 {
     private const string RuntimePoolName = "DaggerMarkerVisualPool";
-    private const string DefaultMarkerResourcePath = "Dagger/Test_Marker";
 
     [SerializeField] private GameObject markerPrefab;
     [SerializeField] private GameObject burstPrefab;
@@ -48,7 +47,6 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
         }
 
         Active = this;
-        ResolveMarkerSprite();
     }
 
     private void OnDestroy()
@@ -156,7 +154,6 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
         if (markerPrefab != null)
             return Get(markerPrefab, _markerPool);
 
-        ResolveMarkerSprite();
         if (markerSprite == null)
             return null;
 
@@ -181,14 +178,6 @@ public sealed class DaggerMarkerVisualPool : MonoBehaviour
         marker.SetActive(false);
         _markerPool.Add(marker);
         return marker;
-    }
-
-    private void ResolveMarkerSprite()
-    {
-        if (markerSprite != null)
-            return;
-
-        markerSprite = Resources.Load<Sprite>(DefaultMarkerResourcePath);
     }
 
     private GameObject Get(GameObject prefab, List<GameObject> pool)

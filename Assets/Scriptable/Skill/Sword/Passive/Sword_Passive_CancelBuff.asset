@@ -10,29 +10,27 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4ad8ad0217784dd1b0ddd3b3219ff063, type: 3}
-  m_Name: Sword_Passive_ComboExplosion
+  m_Name: Sword_Passive_CancelBuff
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
-  unlockId: sword_passive_combo_explosion
-  passiveName: "\uCF64\uBCF4 \uD3ED\uBC1C"
+  unlockId: sword_passive_cancel_buff
+  passiveName: "\uC804\uD22C\uC758 \uD750\uB984"
   icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
-  description: "\uCF64\uBCF4 \uD2F0\uC5B4 1 \uC774\uC0C1\uC5D0\uC11C \uC2A4\uD0AC
-    \uC0AC\uC6A9 \uC2DC \n20 / 35 / 55 / 80 \uB370\uBBF8\uC9C0\uC758 \uD3ED\uBC1C
-    \uBC1C\uC0DD "
+  description: "\uC2A4\uD0AC \uD6C4\uB51C\uC744 \uCE94\uC2AC\uD558\uBA74 5\uCD08 \uB3D9\uC548 \uACF5\uACA9\uB825\uC774 10 \uC99D\uAC00\uD569\uB2C8\uB2E4."
   owningForm: 1
   grade: 1
   behaviors:
-  - trigger: 1
-    action: 3
-    skillTypeFilter: 59
-    comboTierDamages: 14000000230000003700000050000000
-    value: 0
+  - trigger: 3
+    action: 6
+    skillTypeFilter: 0
+    comboTierDamages: 
+    value: 10
     lowHealthThresholdPct: 0
     lostHealthPctPerLifestealPct: 0
     overhealShieldConversionPct: 0
     lifestealShieldCapPct: 0
     lifestealShieldDuration: 0
-    duration: 0
-    procSkill: {fileID: 11400000, guid: ecc680f0dfb349be87ec4d87f274ac40, type: 2}
+    duration: 5
+    procSkill: {fileID: 0}
     procOrigin: 0
     procDirection: 0
     procSpawnRadius: 0
