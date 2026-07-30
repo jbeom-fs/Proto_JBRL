@@ -63,6 +63,7 @@
     <Compile Include="Assets\Scripts\Combat\WorldEnvironmentQuery.cs" />
     <Compile Include="Assets\Scripts\Soul\PlayerSoulEnhancements.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnPositionService.cs" />
+    <Compile Include="Assets\Scripts\Combat\PlayerPassiveUnlocks.cs" />
     <Compile Include="Assets\Scripts\Items\ItemType.cs" />
     <Compile Include="Assets\Scripts\UI\TeleportFadeOverlay.cs" />
     <Compile Include="Assets\Scripts\Data\WeaponData.cs" />
@@ -112,7 +113,6 @@
     <Compile Include="Assets\Scripts\UI\ShardAllocationRowUI.cs" />
     <Compile Include="Assets\Scripts\UI\GameOverRestartHandler.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyMovementHandler.cs" />
-    <Compile Include="Assets\Scripts\Combat\PlayerPassiveSlotUnlocks.cs" />
     <Compile Include="Assets\Scripts\UI\EngravingSlotUI.cs" />
     <Compile Include="Assets\Scripts\Enemy\Elite\ElitePatternSet.cs" />
     <Compile Include="Assets\Scripts\Generate\DungeonQueryService.cs" />
@@ -130,7 +130,6 @@
     <Compile Include="Assets\Scripts\Combat\PlayerDashController.cs" />
     <Compile Include="Assets\Scripts\Items\ItemCodes.cs" />
     <Compile Include="Assets\Scripts\Generate\SpawnRegion.cs" />
-    <Compile Include="Assets\Scripts\Combat\PassiveSlotUnlockCost.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectilePool.cs" />
     <Compile Include="Assets\Scripts\Combat\DamageZoneSpawner.cs" />
     <Compile Include="Assets\Scripts\UI\OfferRowUI.cs" />
@@ -223,7 +222,6 @@
     <Compile Include="Assets\Scripts\UI\GameOverFlowController.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyDropRoller.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillCooldownController.cs" />
-    <Compile Include="Assets\Scripts\UI\PassiveSlotUnlockRowUI.cs" />
     <Compile Include="Assets\Scripts\DungeonManager.cs" />
     <Compile Include="Assets\Scripts\Enemy\EnemyActionHandler.cs" />
     <Compile Include="Assets\Scripts\Data\DungeonData.cs" />

@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4ad8ad0217784dd1b0ddd3b3219ff063, type: 3}
   m_Name: Sword_Passive_00
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
+  unlockId: sword_passive_00
   passiveName: "\uCE94\uC2AC\uD68C\uBCF5"
   icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
   description: "\uCE94\uC2AC\uC2DC \uCCB4\uB825 10 \uD68C\uBCF5"

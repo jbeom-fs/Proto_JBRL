@@ -16,7 +16,9 @@ public sealed class DroppedItem : MonoBehaviour
     private float _baseCircleRadius;
     private Vector2 _baseCircleOffset;
     private float _baseColliderScale = 1f;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private bool _passiveDropWarningLogged;
+#endif
 
     private void Awake()
     {
@@ -66,6 +68,7 @@ public sealed class DroppedItem : MonoBehaviour
 
         if (_itemData.ItemType == ItemType.PassiveEngraving)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (!_passiveDropWarningLogged)
             {
                 _passiveDropWarningLogged = true;
@@ -73,6 +76,7 @@ public sealed class DroppedItem : MonoBehaviour
                     "[DroppedItem] Passive engraving drops cannot be picked up: " + _itemCode + ".",
                     this);
             }
+#endif
 
             return;
         }

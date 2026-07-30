@@ -5,11 +5,15 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
 {
     [SerializeField] private PlayerInventory inventory;
     [SerializeField] private PlayerSoulEnhancements soulEnhancements;
+    [SerializeField] private PlayerPassiveUnlocks passiveUnlocks;
 
     private readonly List<ItemData> _removeItemBuffer = new List<ItemData>(16);
     private readonly List<SoulEnhancementLevelSnapshot> _enhancementBuffer = new List<SoulEnhancementLevelSnapshot>(32);
+    private readonly List<string> _passiveUnlockBuffer = new List<string>(16);
     private readonly List<ItemStackSave> _unresolvedItemEntries = new List<ItemStackSave>();
+    private readonly List<string> _unresolvedPassiveUnlockIds = new List<string>();
     private readonly HashSet<string> _unknownItemWarnings = new HashSet<string>();
+    private readonly HashSet<string> _unknownPassiveWarnings = new HashSet<string>();
 
     private SaveService _service;
     private bool _dirty;
@@ -28,6 +32,9 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
 
         if (soulEnhancements != null)
             soulEnhancements.OnChanged += HandlePersistentStateChanged;
+
+        if (passiveUnlocks != null)
+            passiveUnlocks.OnChanged += HandlePersistentStateChanged;
     }
 
     private void Start()
@@ -55,6 +62,9 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
 
         if (soulEnhancements != null)
             soulEnhancements.OnChanged -= HandlePersistentStateChanged;
+
+        if (passiveUnlocks != null)
+            passiveUnlocks.OnChanged -= HandlePersistentStateChanged;
     }
 
     private void OnApplicationQuit()
@@ -72,6 +82,7 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
     {
         SaveData data = new SaveData();
         HashSet<string> capturedItemCodes = new HashSet<string>();
+        HashSet<string> capturedPassiveIds = new HashSet<string>();
 
         if (inventory != null)
         {
@@ -117,6 +128,24 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
             _enhancementBuffer.Clear();
         }
 
+        if (passiveUnlocks != null)
+        {
+            _passiveUnlockBuffer.Clear();
+            passiveUnlocks.GetUnlockedIds(_passiveUnlockBuffer);
+            _passiveUnlockBuffer.Sort(System.StringComparer.Ordinal);
+
+            for (int i = 0; i < _passiveUnlockBuffer.Count; i++)
+            {
+                string unlockId = _passiveUnlockBuffer[i];
+                if (string.IsNullOrWhiteSpace(unlockId) || !capturedPassiveIds.Add(unlockId))
+                    continue;
+
+                data.unlockedPassiveIds.Add(unlockId);
+            }
+
+            _passiveUnlockBuffer.Clear();
+        }
+
         for (int i = 0; i < _unresolvedItemEntries.Count; i++)
         {
             ItemStackSave unresolved = _unresolvedItemEntries[i];
@@ -126,12 +155,22 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
             data.items.Add(unresolved);
         }
 
+        for (int i = 0; i < _unresolvedPassiveUnlockIds.Count; i++)
+        {
+            string unresolvedId = _unresolvedPassiveUnlockIds[i];
+            if (string.IsNullOrWhiteSpace(unresolvedId) || !capturedPassiveIds.Add(unresolvedId))
+                continue;
+
+            data.unlockedPassiveIds.Add(unresolvedId);
+        }
+
         return data;
     }
 
     public void ApplyFromSave(SaveData data)
     {
         _unresolvedItemEntries.Clear();
+        _unresolvedPassiveUnlockIds.Clear();
 
         if (data == null)
             return;
@@ -147,6 +186,12 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
 
             soulEnhancements.Clear();
             ApplyEnhancements(data.enhancements);
+
+            if (passiveUnlocks != null)
+            {
+                passiveUnlocks.Clear();
+                ApplyPassiveUnlocks(data.unlockedPassiveIds);
+            }
         }
         finally
         {
@@ -258,6 +303,30 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
         }
     }
 
+    private void ApplyPassiveUnlocks(List<string> savedUnlockIds)
+    {
+        if (passiveUnlocks == null || savedUnlockIds == null)
+            return;
+
+        HashSet<string> appliedIds = new HashSet<string>();
+        for (int i = 0; i < savedUnlockIds.Count; i++)
+        {
+            string unlockId = savedUnlockIds[i];
+            if (string.IsNullOrWhiteSpace(unlockId) || !appliedIds.Add(unlockId))
+                continue;
+
+            if (!passiveUnlocks.TryGetPassive(unlockId, out PassiveEngravingData passive))
+            {
+                WarnUnknownPassive(unlockId);
+                _unresolvedPassiveUnlockIds.Add(unlockId);
+                continue;
+            }
+
+            if (!passiveUnlocks.IsUnlocked(passive))
+                passiveUnlocks.Unlock(passive);
+        }
+    }
+
     private bool HasDependencies()
     {
         if (inventory != null && soulEnhancements != null)
@@ -284,6 +353,17 @@ public sealed class GamePersistenceCoordinator : MonoBehaviour
             return;
 
         Debug.LogWarning("[GamePersistenceCoordinator] Unknown saved itemCode skipped: " + itemCode, this);
+    }
+
+    private void WarnUnknownPassive(string unlockId)
+    {
+        if (!_unknownPassiveWarnings.Add(unlockId))
+            return;
+
+        Debug.LogWarning(
+            "[GamePersistenceCoordinator] Unresolved saved passive unlockId preserved " +
+            "(not catalogued or duplicated): " + unlockId,
+            this);
     }
 
     private static bool IsPersistentItemType(ItemType itemType)

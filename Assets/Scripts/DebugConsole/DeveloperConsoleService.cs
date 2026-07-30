@@ -15,7 +15,8 @@ public sealed class DeveloperConsoleService
     private const string EnhancePositiveCountUsage = "Usage: /enhance <form> <stat> [positiveCount]";
     private const string EnhanceCommonUsage = "Usage: /enhancecommon <stat> <form=count> [form=count ...]";
     private const string EngravingUsage = "Usage: /engraving <give <form> <itemCode> | equip <slot> <poolIndex> | unequip <slot> | show>";
-    private const string PassiveUsage = "Usage: /passive show";
+    private const string PassiveUsage =
+        "Usage: /passive <show | list [form] | unlock <id> | lock <id>>";
     private const string DropQueryUsage = "Usage: /dropquery <category> [count=20]";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
@@ -29,7 +30,7 @@ public sealed class DeveloperConsoleService
     private static readonly string[] s_DoorOpenArgs = { "normal", "elite" };
     private static readonly string[] s_FormArgs = { "set" };
     private static readonly string[] s_EngravingArgs = { "give", "equip", "unequip", "show" };
-    private static readonly string[] s_PassiveArgs = { "show" };
+    private static readonly string[] s_PassiveArgs = { "show", "list", "unlock", "lock" };
     private static readonly string[] s_ComboArgs = { "show", "add" };
     private static readonly string[] s_AilmentArgs = { "poison", "bleed" };
     private static readonly string[] s_DropQueryTypes = BuildDropQueryTypes();
@@ -138,6 +139,7 @@ public sealed class DeveloperConsoleService
         _subArgumentProviders["form"] = ProvideFormSubArgumentSuggestions;
         _subArgumentProviders["give"] = ProvideGiveItemCodeSuggestions;
         _subArgumentProviders["enhance"] = ProvideEnhanceStatSuggestions;
+        _subArgumentProviders["passive"] = ProvidePassiveSubArgumentSuggestions;
     }
 
     private static void ProvideFloorSuggestions(string currentArg, List<string> output, int maxCount)
@@ -210,6 +212,25 @@ public sealed class DeveloperConsoleService
             return;
 
         FilterSuggestions(DeveloperConsoleSoulStatResolver.StatTokens, currentArg, output, maxCount);
+    }
+
+    private void ProvidePassiveSubArgumentSuggestions(
+        string subCommand,
+        string currentArg,
+        List<string> output,
+        int maxCount)
+    {
+        _destinationIdBuffer.Clear();
+
+        if (string.Equals(subCommand, "list", StringComparison.OrdinalIgnoreCase))
+            _executor?.GetFormIds(_destinationIdBuffer);
+        else if (string.Equals(subCommand, "unlock", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(subCommand, "lock", StringComparison.OrdinalIgnoreCase))
+            _executor?.GetPassiveIds(_destinationIdBuffer);
+        else
+            return;
+
+        FilterSuggestions(_destinationIdBuffer, currentArg, output, maxCount);
     }
 
     private static void FilterSuggestions(IReadOnlyList<string> candidates, string prefix, List<string> output, int maxCount)
@@ -495,6 +516,18 @@ public sealed class DeveloperConsoleService
         string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length == 1 && string.Equals(parts[0], "show", StringComparison.OrdinalIgnoreCase))
             return _executor.ExecutePassiveShow();
+
+        if ((parts.Length == 1 || parts.Length == 2) &&
+            string.Equals(parts[0], "list", StringComparison.OrdinalIgnoreCase))
+        {
+            return _executor.ExecutePassiveList(parts.Length == 2 ? parts[1] : null);
+        }
+
+        if (parts.Length == 2 && string.Equals(parts[0], "unlock", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecutePassiveUnlock(parts[1]);
+
+        if (parts.Length == 2 && string.Equals(parts[0], "lock", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecutePassiveLock(parts[1]);
 
         return DeveloperConsoleCommandResult.Error(PassiveUsage);
     }

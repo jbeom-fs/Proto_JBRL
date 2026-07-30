@@ -71,6 +71,9 @@ public sealed class SaveService
         if (data.enhancements == null)
             data.enhancements = new System.Collections.Generic.List<EnhancementSave>();
 
+        if (data.unlockedPassiveIds == null)
+            data.unlockedPassiveIds = new System.Collections.Generic.List<string>();
+
         return true;
     }
 

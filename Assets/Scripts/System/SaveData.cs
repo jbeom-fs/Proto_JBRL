@@ -9,6 +9,7 @@ public sealed class SaveData
     public int version = CurrentVersion;
     public List<ItemStackSave> items = new List<ItemStackSave>();
     public List<EnhancementSave> enhancements = new List<EnhancementSave>();
+    public List<string> unlockedPassiveIds = new List<string>();
 }
 
 [Serializable]

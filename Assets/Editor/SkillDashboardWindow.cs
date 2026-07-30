@@ -1739,7 +1739,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         AddOrphanResults(skills, passiveEngravings, itemDatabases, context);
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
-        AddIconResults(skills, passiveEngravings);
+        AddIconResults(skills, passiveEngravings, formIndex);
         AddSkillFormResults(skills, formIndex);
     }
 
@@ -1871,6 +1871,7 @@ public sealed class SkillDashboardWindow : EditorWindow
                 continue;
 
             WeaponData weapon = playerForm.DefaultWeapon;
+            AddPassiveCatalogAssignments(index, weapon, playerForm.FormId);
             if (weapon.skills != null)
             {
                 for (int slotIndex = 0; slotIndex < weapon.skills.Length; slotIndex++)
@@ -1932,6 +1933,32 @@ public sealed class SkillDashboardWindow : EditorWindow
         }
 
         return index;
+    }
+
+    private static void AddPassiveCatalogAssignments(
+        SkillFormIndex index,
+        WeaponData weapon,
+        PlayerFormId form)
+    {
+        if (weapon == null || weapon.passiveEngravings == null)
+            return;
+
+        for (int i = 0; i < weapon.passiveEngravings.Count; i++)
+        {
+            PassiveEngravingData passive = weapon.passiveEngravings[i];
+            if (passive == null)
+                continue;
+
+            if (!index.PassiveCatalogForms.TryGetValue(
+                    passive,
+                    out HashSet<PlayerFormId> catalogForms))
+            {
+                catalogForms = new HashSet<PlayerFormId>();
+                index.PassiveCatalogForms.Add(passive, catalogForms);
+            }
+
+            catalogForms.Add(form);
+        }
     }
 
     private static void AddWeaponFormAssignment(
@@ -2535,7 +2562,8 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private void AddIconResults(
         List<SkillData> skills,
-        List<PassiveEngravingData> passiveEngravings)
+        List<PassiveEngravingData> passiveEngravings,
+        SkillFormIndex formIndex)
     {
         for (int i = 0; i < skills.Count; i++)
         {
@@ -2544,11 +2572,59 @@ public sealed class SkillDashboardWindow : EditorWindow
                 AddIconResult(skill, skill.icon);
         }
 
+        Dictionary<string, PassiveEngravingData> passiveById =
+            new Dictionary<string, PassiveEngravingData>(StringComparer.Ordinal);
         for (int i = 0; i < passiveEngravings.Count; i++)
         {
             PassiveEngravingData passive = passiveEngravings[i];
-            if (passive != null)
-                AddIconResult(passive, passive.icon);
+            if (passive == null)
+                continue;
+
+            AddIconResult(passive, passive.icon);
+
+            if (!formIndex.PassiveCatalogForms.TryGetValue(
+                    passive,
+                    out HashSet<PlayerFormId> catalogForms) ||
+                catalogForms.Count == 0)
+            {
+                AddResult(
+                    ResultSeverity.Info,
+                    "Passive '" + passive.name +
+                    "' is not registered in any player-form passive catalog.",
+                    passive);
+            }
+            else if (!catalogForms.Contains(passive.owningForm))
+            {
+                AddResult(
+                    ResultSeverity.Warning,
+                    "Passive '" + passive.name + "' owningForm is " +
+                    passive.owningForm + ", but registered catalog form(s): " +
+                    string.Join(", ", catalogForms) + ".",
+                    passive);
+            }
+
+            if (string.IsNullOrWhiteSpace(passive.unlockId))
+            {
+                AddResult(
+                    ResultSeverity.Warning,
+                    "Missing passive unlockId on '" + passive.name + "'.",
+                    passive);
+                continue;
+            }
+
+            if (passiveById.TryGetValue(
+                    passive.unlockId,
+                    out PassiveEngravingData existingPassive))
+            {
+                AddResult(
+                    ResultSeverity.Error,
+                    "Duplicate passive unlockId '" + passive.unlockId + "' on '" +
+                    existingPassive.name + "' and '" + passive.name + "'.",
+                    passive);
+                continue;
+            }
+
+            passiveById.Add(passive.unlockId, passive);
         }
     }
 
@@ -3140,6 +3216,9 @@ public sealed class SkillDashboardWindow : EditorWindow
             new List<SkillFormConflict>();
         public readonly HashSet<string> ConflictKeys =
             new HashSet<string>(StringComparer.Ordinal);
+        public readonly Dictionary<PassiveEngravingData, HashSet<PlayerFormId>>
+            PassiveCatalogForms =
+                new Dictionary<PassiveEngravingData, HashSet<PlayerFormId>>();
         public int DirectInferredCount;
         public int RecastInferredCount;
         public int WeaponInferredCount;

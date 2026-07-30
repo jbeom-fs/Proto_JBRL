@@ -16,6 +16,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
     [SerializeField] private PlayerController player;
     [SerializeField] private PlayerInventory playerInventory;
     [SerializeField] private PlayerSoulEnhancements playerSoulEnhancements;
+    [SerializeField] private PlayerPassiveUnlocks playerPassiveUnlocks;
     [SerializeField] private EngravingLoadout engravingLoadout;
     [SerializeField] private PlayerCombatController playerCombatController;
     [SerializeField] private PlayerFormController playerFormController;
@@ -23,6 +24,10 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
     private readonly List<string> _itemCodeFilterBuffer = new List<string>(32);
     private readonly List<ItemData> _dropQueryItemBuffer = new List<ItemData>(64);
+    private readonly List<PassiveEngravingData> _passiveCatalogBuffer =
+        new List<PassiveEngravingData>(16);
+    private readonly HashSet<string> _passiveIdFilter =
+        new HashSet<string>(System.StringComparer.Ordinal);
     private readonly Dictionary<string, int> _dropQueryCounts =
         new Dictionary<string, int>(System.StringComparer.Ordinal);
     private SoulEnhancementTable _soulEnhancementTable;
@@ -362,10 +367,106 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         if (!TryResolveEngravingContext(out EngravingLoadout loadout, out PlayerCombatController combat))
             return DeveloperConsoleCommandResult.Error("EngravingLoadout or PlayerCombatController is not active.");
 
+        PlayerPassiveUnlocks unlocks = ResolvePlayerPassiveUnlocks();
+        if (unlocks == null)
+            return DeveloperConsoleCommandResult.Error("PlayerPassiveUnlocks is not active.");
+
         PlayerFormId form = combat.CurrentFormId;
         PassiveEngravingData passive = loadout.GetPassive(form);
         return DeveloperConsoleCommandResult.Success(
-            "Passive " + form + ": " + GetPassiveName(passive) + ".");
+            "Passive " + form + ": " + GetPassiveId(passive) + " / " +
+            GetPassiveName(passive) + " | unlocked=" + FormatUnlocked(unlocks.IsUnlocked(passive)) + ".");
+    }
+
+    public DeveloperConsoleCommandResult ExecutePassiveList(string formToken)
+    {
+        PlayerPassiveUnlocks unlocks = ResolvePlayerPassiveUnlocks();
+        if (unlocks == null)
+            return DeveloperConsoleCommandResult.Error("PlayerPassiveUnlocks is not active.");
+
+        PlayerFormId form;
+        if (string.IsNullOrWhiteSpace(formToken))
+        {
+            PlayerCombatController combat = ResolvePlayerCombatController();
+            if (combat == null)
+                return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+
+            form = combat.CurrentFormId;
+        }
+        else if (!System.Enum.TryParse(formToken, true, out form) ||
+                 !System.Enum.IsDefined(typeof(PlayerFormId), form))
+        {
+            return DeveloperConsoleCommandResult.Error("Unknown form: " + formToken);
+        }
+
+        _passiveCatalogBuffer.Clear();
+        unlocks.GetCatalog(form, _passiveCatalogBuffer);
+
+        StringBuilder builder = new StringBuilder();
+        builder.Append("Passive catalog ");
+        builder.Append(form);
+        builder.Append(": ");
+        if (_passiveCatalogBuffer.Count == 0)
+        {
+            builder.Append("(empty)");
+        }
+        else
+        {
+            for (int i = 0; i < _passiveCatalogBuffer.Count; i++)
+            {
+                if (i > 0)
+                    builder.Append(", ");
+
+                PassiveEngravingData passive = _passiveCatalogBuffer[i];
+                builder.Append('[');
+                builder.Append(i);
+                builder.Append("] ");
+                builder.Append(GetPassiveId(passive));
+                builder.Append(" / ");
+                builder.Append(GetPassiveName(passive));
+                builder.Append(" / unlocked=");
+                builder.Append(FormatUnlocked(unlocks.IsUnlocked(passive)));
+            }
+        }
+
+        _passiveCatalogBuffer.Clear();
+        return DeveloperConsoleCommandResult.Success(builder.ToString());
+    }
+
+    public DeveloperConsoleCommandResult ExecutePassiveUnlock(string unlockId)
+    {
+        PlayerPassiveUnlocks unlocks = ResolvePlayerPassiveUnlocks();
+        if (unlocks == null)
+            return DeveloperConsoleCommandResult.Error("PlayerPassiveUnlocks is not active.");
+
+        if (!unlocks.TryGetPassive(unlockId, out PassiveEngravingData passive))
+            return DeveloperConsoleCommandResult.Error("Unknown or duplicate passive unlockId: " + unlockId);
+
+        if (unlocks.IsUnlocked(passive))
+            return DeveloperConsoleCommandResult.Success("Passive already unlocked: " + unlockId + ".");
+
+        if (!unlocks.Unlock(passive))
+            return DeveloperConsoleCommandResult.Error("Failed to unlock passive: " + unlockId + ".");
+
+        return DeveloperConsoleCommandResult.Success("Unlocked passive: " + unlockId + ".");
+    }
+
+    public DeveloperConsoleCommandResult ExecutePassiveLock(string unlockId)
+    {
+        PlayerPassiveUnlocks unlocks = ResolvePlayerPassiveUnlocks();
+        if (unlocks == null)
+            return DeveloperConsoleCommandResult.Error("PlayerPassiveUnlocks is not active.");
+
+        if (!unlocks.TryGetPassive(unlockId, out PassiveEngravingData passive))
+            return DeveloperConsoleCommandResult.Error("Unknown or duplicate passive unlockId: " + unlockId);
+
+        if (!unlocks.IsUnlocked(passive))
+            return DeveloperConsoleCommandResult.Success("Passive already locked: " + unlockId + ".");
+
+        if (!unlocks.Lock(passive))
+            return DeveloperConsoleCommandResult.Error("Cannot lock the free default passive: " + unlockId + ".");
+
+        return DeveloperConsoleCommandResult.Success("Locked passive: " + unlockId + ".");
     }
 
     public DeveloperConsoleCommandResult ExecuteDropQuery(string itemTypeToken, int count)
@@ -606,6 +707,32 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         ResolvePlayerInventory()?.GetDatabaseItemCodes(output);
     }
 
+    public void GetPassiveIds(List<string> output)
+    {
+        if (output == null)
+            return;
+
+        PlayerPassiveUnlocks unlocks = ResolvePlayerPassiveUnlocks();
+        if (unlocks == null)
+            return;
+
+        _passiveIdFilter.Clear();
+        foreach (PlayerFormId form in System.Enum.GetValues(typeof(PlayerFormId)))
+        {
+            _passiveCatalogBuffer.Clear();
+            unlocks.GetCatalog(form, _passiveCatalogBuffer);
+            for (int i = 0; i < _passiveCatalogBuffer.Count; i++)
+            {
+                string unlockId = _passiveCatalogBuffer[i].unlockId;
+                if (!string.IsNullOrWhiteSpace(unlockId) && _passiveIdFilter.Add(unlockId))
+                    output.Add(unlockId);
+            }
+        }
+
+        _passiveCatalogBuffer.Clear();
+        _passiveIdFilter.Clear();
+    }
+
     public void GetItemCodes(ItemType type, List<string> output)
     {
         if (output == null)
@@ -693,6 +820,28 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
 
         playerSoulEnhancements = UnityEngine.Object.FindAnyObjectByType<PlayerSoulEnhancements>();
         return playerSoulEnhancements;
+    }
+
+    private PlayerPassiveUnlocks ResolvePlayerPassiveUnlocks()
+    {
+        if (playerPassiveUnlocks != null)
+            return playerPassiveUnlocks;
+
+        if (PlayerPassiveUnlocks.Active != null)
+        {
+            playerPassiveUnlocks = PlayerPassiveUnlocks.Active;
+            return playerPassiveUnlocks;
+        }
+
+        if (player != null && player.TryGetComponent(out playerPassiveUnlocks))
+            return playerPassiveUnlocks;
+
+        PlayerController activePlayer = PlayerController.Active;
+        if (activePlayer != null && activePlayer.TryGetComponent(out playerPassiveUnlocks))
+            return playerPassiveUnlocks;
+
+        playerPassiveUnlocks = UnityEngine.Object.FindAnyObjectByType<PlayerPassiveUnlocks>();
+        return playerPassiveUnlocks;
     }
 
     private PlayerCombatController ResolvePlayerCombatController()
@@ -840,6 +989,19 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             ? passive.name
             : passive.passiveName;
         return passiveName;
+    }
+
+    private static string GetPassiveId(PassiveEngravingData passive)
+    {
+        if (passive == null || string.IsNullOrWhiteSpace(passive.unlockId))
+            return "(no id)";
+
+        return passive.unlockId;
+    }
+
+    private static string FormatUnlocked(bool unlocked)
+    {
+        return unlocked ? "yes" : "no";
     }
 
     private static string GetEnemyDisplayName(EnemyController enemy)

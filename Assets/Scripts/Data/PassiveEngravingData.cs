@@ -9,6 +9,9 @@ using UnityEngine;
 public sealed class PassiveEngravingData : ScriptableObject
 {
     [Header("Passive Engraving")]
+    [Tooltip("영속 해금에 사용하는 폼 무관 전역 고유 ID입니다. 한 번 정한 값은 절대 변경하지 마세요.")]
+    public string unlockId;
+
     [Tooltip("표시 이름. 비어 있으면 에셋 이름을 사용합니다.")]
     public string passiveName;
 
