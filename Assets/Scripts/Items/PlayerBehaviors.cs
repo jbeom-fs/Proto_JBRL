@@ -16,6 +16,32 @@ public sealed class PlayerBehaviors : MonoBehaviour
     public IReadOnlyList<AilmentApplication> AttackAilments =>
         _runtime != null ? _runtime.AttackAilments : Array.Empty<AilmentApplication>();
 
+    public float GetLifestealBonusPct(float hpRatio)
+    {
+        return _runtime != null
+            ? _runtime.GetLifestealBonusPct(hpRatio)
+            : 0f;
+    }
+
+    public bool TryGetLifestealShieldParameters(
+        out float conversionPct,
+        out float capPct,
+        out float duration)
+    {
+        if (_runtime != null)
+        {
+            return _runtime.TryGetLifestealShieldParameters(
+                out conversionPct,
+                out capPct,
+                out duration);
+        }
+
+        conversionPct = 0f;
+        capPct = 0f;
+        duration = 0f;
+        return false;
+    }
+
     private void Awake()
     {
         _inventory = GetComponent<PlayerInventory>();

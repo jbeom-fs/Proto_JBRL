@@ -153,6 +153,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private float _daggerBasicAttackMarkerBuffTimer;
     private float _daggerBasicAttackMarkerDuration;
     private float _lifestealPool;
+    private float _lifestealShieldPool;
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
     private bool _isInventorySubscribed;
@@ -652,7 +653,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (actualDamage <= 0 || !IsAlive)
             return;
 
-        float pct = Mathf.Clamp01(_soulBonus.Get(SoulStatType.Lifesteal));
+        float hpRatio = MaxHp > 0 ? CurrentHp / (float)MaxHp : 0f;
+        float passiveBonusPct = _relicBehaviors != null
+            ? _relicBehaviors.GetLifestealBonusPct(hpRatio)
+            : 0f;
+        float pct = Mathf.Clamp01(
+            _soulBonus.Get(SoulStatType.Lifesteal) +
+            passiveBonusPct / 100f);
         if (pct <= 0f)
             return;
 
@@ -662,7 +669,37 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
 
         _lifestealPool -= heal;
-        RestoreHp(heal);
+        int room = Mathf.Max(0, MaxHp - CurrentHp);
+        int actualHeal = Mathf.Min(heal, room);
+        if (actualHeal > 0)
+            RestoreHp(actualHeal);
+
+        int overheal = heal - actualHeal;
+        if (overheal <= 0 ||
+            _relicBehaviors == null ||
+            !_relicBehaviors.TryGetLifestealShieldParameters(
+                out float conversionPct,
+                out float capPct,
+                out float shieldDuration))
+        {
+            return;
+        }
+
+        _lifestealShieldPool +=
+            overheal * Mathf.Max(0f, conversionPct) / 100f;
+        int convertedShield = Mathf.FloorToInt(_lifestealShieldPool);
+        if (convertedShield <= 0)
+            return;
+
+        _lifestealShieldPool -= convertedShield;
+        int shieldCap = Mathf.Max(
+            0,
+            Mathf.FloorToInt(
+                MaxHp * Mathf.Max(0f, capPct) / 100f));
+        int shieldRoom = Mathf.Max(0, shieldCap - CurrentShield);
+        int shieldToAdd = Mathf.Min(convertedShield, shieldRoom);
+        if (shieldToAdd > 0)
+            _shield.Add(shieldToAdd, shieldDuration);
     }
 
     private void Update()

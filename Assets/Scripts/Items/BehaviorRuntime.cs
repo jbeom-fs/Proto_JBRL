@@ -40,6 +40,29 @@ public sealed class BehaviorRuntime
         public float SpawnRadius { get; }
     }
 
+    private readonly struct LifestealEngineEntry
+    {
+        public LifestealEngineEntry(BehaviorEffect behavior, int stackCount)
+        {
+            BasePct = behavior.value * stackCount;
+            LowHealthThresholdPct = behavior.lowHealthThresholdPct;
+            LostHealthPctPerBonusPct =
+                behavior.lostHealthPctPerLifestealPct;
+            ShieldConversionPct = behavior.overhealShieldConversionPct;
+            ShieldCapPct = behavior.lifestealShieldCapPct;
+            ShieldDuration = behavior.lifestealShieldDuration;
+            StackCount = stackCount;
+        }
+
+        public float BasePct { get; }
+        public float LowHealthThresholdPct { get; }
+        public float LostHealthPctPerBonusPct { get; }
+        public float ShieldConversionPct { get; }
+        public float ShieldCapPct { get; }
+        public float ShieldDuration { get; }
+        public int StackCount { get; }
+    }
+
     private readonly Action<int> _healCallback;
     private readonly Action<int, float> _shieldCallback;
     private readonly Action<SkillData, Vector3, Vector2, int?> _procCallback;
@@ -51,6 +74,8 @@ public sealed class BehaviorRuntime
     private readonly List<ProcEntry> _onCancelProcs = new List<ProcEntry>();
     private readonly List<Vector3> _pendingKillPositions = new List<Vector3>(8);
     private readonly List<AilmentApplication> _attackAilments = new List<AilmentApplication>();
+    private readonly List<LifestealEngineEntry> _lifestealEngines =
+        new List<LifestealEngineEntry>();
 
     public BehaviorRuntime(
         Action<int> healCallback,
@@ -64,6 +89,52 @@ public sealed class BehaviorRuntime
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
 
+    public float GetLifestealBonusPct(float hpRatio)
+    {
+        float hpPct = Mathf.Clamp01(hpRatio) * 100f;
+        float totalPct = 0f;
+        for (int i = 0; i < _lifestealEngines.Count; i++)
+        {
+            LifestealEngineEntry entry = _lifestealEngines[i];
+            totalPct += entry.BasePct;
+
+            float thresholdPct = Mathf.Clamp(
+                entry.LowHealthThresholdPct,
+                0f,
+                100f);
+            float stepPct = entry.LostHealthPctPerBonusPct;
+            if (hpPct >= thresholdPct || stepPct <= 0f)
+                continue;
+
+            totalPct += Mathf.Floor(
+                (thresholdPct - hpPct) / stepPct) * entry.StackCount;
+        }
+
+        return totalPct;
+    }
+
+    public bool TryGetLifestealShieldParameters(
+        out float conversionPct,
+        out float capPct,
+        out float duration)
+    {
+        if (_lifestealEngines.Count == 0)
+        {
+            conversionPct = 0f;
+            capPct = 0f;
+            duration = 0f;
+            return false;
+        }
+
+        // Current content assumes one engine per loadout. If multiple exist,
+        // lifesteal bonuses stack but shield parameters use first scan entry.
+        LifestealEngineEntry first = _lifestealEngines[0];
+        conversionPct = first.ShieldConversionPct;
+        capPct = first.ShieldCapPct;
+        duration = first.ShieldDuration;
+        return true;
+    }
+
     public void Rescan(
         IReadOnlyList<InventoryItemStack> items,
         IReadOnlyList<PassiveEngravingData> equippedPassives)
@@ -76,6 +147,7 @@ public sealed class BehaviorRuntime
         _onCancelProcs.Clear();
         _pendingKillPositions.Clear();
         _attackAilments.Clear();
+        _lifestealEngines.Clear();
 
         if (items != null)
         {
@@ -203,7 +275,7 @@ public sealed class BehaviorRuntime
                     AddTriggeredBehavior(behavior, stackCount, _onCancel, _onCancelProcs);
                     break;
                 case BehaviorTrigger.Passive:
-                    AddPassiveAttackAilment(behavior, stackCount);
+                    AddPassiveBehavior(behavior, stackCount);
                     break;
             }
         }
@@ -232,8 +304,15 @@ public sealed class BehaviorRuntime
         }
     }
 
-    private void AddPassiveAttackAilment(BehaviorEffect behavior, int stackCount)
+    private void AddPassiveBehavior(BehaviorEffect behavior, int stackCount)
     {
+        if (behavior.action == BehaviorAction.LifestealEngine)
+        {
+            _lifestealEngines.Add(
+                new LifestealEngineEntry(behavior, stackCount));
+            return;
+        }
+
         AilmentType type;
         switch (behavior.action)
         {

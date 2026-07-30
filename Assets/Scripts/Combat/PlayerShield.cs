@@ -21,6 +21,17 @@ public sealed class PlayerShield
         OnChanged?.Invoke();
     }
 
+    public void Add(int amount, float duration)
+    {
+        if (amount <= 0)
+            return;
+
+        _amount += amount;
+        _infinite = duration <= 0f;
+        _remaining = _infinite ? 0f : duration;
+        OnChanged?.Invoke();
+    }
+
     public int Absorb(int damage)
     {
         if (damage <= 0 || _amount <= 0)

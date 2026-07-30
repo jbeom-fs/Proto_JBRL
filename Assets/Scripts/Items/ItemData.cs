@@ -147,6 +147,13 @@ public sealed class ItemData
                     ? (int[])behavior.comboTierDamages.Clone()
                     : Array.Empty<int>(),
                 value = behavior.value,
+                lowHealthThresholdPct = behavior.lowHealthThresholdPct,
+                lostHealthPctPerLifestealPct =
+                    behavior.lostHealthPctPerLifestealPct,
+                overhealShieldConversionPct =
+                    behavior.overhealShieldConversionPct,
+                lifestealShieldCapPct = behavior.lifestealShieldCapPct,
+                lifestealShieldDuration = behavior.lifestealShieldDuration,
                 duration = behavior.duration,
                 procSkill = behavior.procSkill,
                 procOrigin = behavior.procOrigin,
