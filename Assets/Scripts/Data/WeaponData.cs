@@ -47,6 +47,10 @@ public class WeaponData : ScriptableObject
     [Header("Skills (Q / W / E / R)")]
     public SkillData[] skills = new SkillData[4];
 
-    [Header("Passive Engravings (기본 패시브 시드)")]
+    [Header("Passive Engravings")]
+    [Tooltip("무료 기본 패시브. 항상 해금되며 런 시작 시 기본으로 적용됩니다.")]
+    public PassiveEngravingData defaultPassive;
+
+    [Tooltip("Soul Altar에서 구매할 수 있는 유료 패시브 후보 목록입니다. 기본 패시브는 포함하지 않습니다.")]
     public List<PassiveEngravingData> passiveEngravings = new List<PassiveEngravingData>();
 }

@@ -72,7 +72,14 @@ public sealed class PlayerPassiveUnlocks : MonoBehaviour
 
     public void GetCatalog(PlayerFormId form, List<PassiveEngravingData> output)
     {
-        if (output == null || !TryGetCatalog(form, out List<PassiveEngravingData> catalog))
+        if (output == null || !TryGetWeapon(form, out WeaponData weapon))
+            return;
+
+        if (weapon.defaultPassive != null)
+            output.Add(weapon.defaultPassive);
+
+        List<PassiveEngravingData> catalog = weapon.passiveEngravings;
+        if (catalog == null)
             return;
 
         for (int i = 0; i < catalog.Count; i++)
@@ -91,38 +98,44 @@ public sealed class PlayerPassiveUnlocks : MonoBehaviour
 
         for (int formIndex = 0; formIndex < s_FormIds.Length; formIndex++)
         {
-            if (!TryGetCatalog(s_FormIds[formIndex], out List<PassiveEngravingData> catalog))
+            if (!TryGetWeapon(s_FormIds[formIndex], out WeaponData weapon))
+                continue;
+
+            if (!TryMatchPassiveByUnlockId(
+                    weapon.defaultPassive,
+                    unlockId,
+                    ref passive))
+            {
+                return false;
+            }
+
+            List<PassiveEngravingData> catalog = weapon.passiveEngravings;
+            if (catalog == null)
                 continue;
 
             for (int passiveIndex = 0; passiveIndex < catalog.Count; passiveIndex++)
             {
                 PassiveEngravingData candidate = catalog[passiveIndex];
-                if (candidate == null ||
-                    !string.Equals(candidate.unlockId, unlockId, StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                if (passive != null && passive != candidate)
-                {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    if (_duplicateIdWarnings.Add(unlockId))
-                    {
-                        Debug.LogWarning(
-                            "[PlayerPassiveUnlocks] Duplicate passive unlockId in form catalogs: " +
-                            unlockId + ".",
-                            this);
-                    }
-#endif
-                    passive = null;
+                if (!TryMatchPassiveByUnlockId(candidate, unlockId, ref passive))
                     return false;
-                }
-
-                passive = candidate;
             }
         }
 
         return passive != null;
+    }
+
+    public bool TryGetWeapon(PlayerFormId form, out WeaponData weapon)
+    {
+        weapon = null;
+        if (formDatabase == null ||
+            !formDatabase.TryGet(form, out PlayerFormData formData) ||
+            formData == null)
+        {
+            return false;
+        }
+
+        weapon = formData.DefaultWeapon;
+        return weapon != null;
     }
 
     public void Clear()
@@ -152,7 +165,14 @@ public sealed class PlayerPassiveUnlocks : MonoBehaviour
 
         for (int formIndex = 0; formIndex < s_FormIds.Length; formIndex++)
         {
-            if (!TryGetCatalog(s_FormIds[formIndex], out List<PassiveEngravingData> catalog))
+            if (!TryGetWeapon(s_FormIds[formIndex], out WeaponData weapon))
+                continue;
+
+            if (weapon.defaultPassive == passive)
+                return true;
+
+            List<PassiveEngravingData> catalog = weapon.passiveEngravings;
+            if (catalog == null)
                 continue;
 
             for (int passiveIndex = 0; passiveIndex < catalog.Count; passiveIndex++)
@@ -167,28 +187,38 @@ public sealed class PlayerPassiveUnlocks : MonoBehaviour
 
     private bool IsDefaultPassive(PassiveEngravingData passive)
     {
-        if (passive == null ||
-            !TryGetCatalog(passive.owningForm, out List<PassiveEngravingData> catalog) ||
-            catalog.Count == 0)
-        {
-            return false;
-        }
-
-        return catalog[0] == passive;
+        return passive != null &&
+               TryGetWeapon(passive.owningForm, out WeaponData weapon) &&
+               weapon.defaultPassive == passive;
     }
 
-    private bool TryGetCatalog(PlayerFormId form, out List<PassiveEngravingData> catalog)
+    private bool TryMatchPassiveByUnlockId(
+        PassiveEngravingData candidate,
+        string unlockId,
+        ref PassiveEngravingData passive)
     {
-        catalog = null;
-        if (formDatabase == null ||
-            !formDatabase.TryGet(form, out PlayerFormData formData) ||
-            formData == null ||
-            formData.DefaultWeapon == null)
+        if (candidate == null ||
+            !string.Equals(candidate.unlockId, unlockId, StringComparison.Ordinal))
         {
+            return true;
+        }
+
+        if (passive != null && passive != candidate)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (_duplicateIdWarnings.Add(unlockId))
+            {
+                Debug.LogWarning(
+                    "[PlayerPassiveUnlocks] Duplicate passive unlockId in form catalogs: " +
+                    unlockId + ".",
+                    this);
+            }
+#endif
+            passive = null;
             return false;
         }
 
-        catalog = formData.DefaultWeapon.passiveEngravings;
-        return catalog != null;
+        passive = candidate;
+        return true;
     }
 }

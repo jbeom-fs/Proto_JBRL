@@ -1739,6 +1739,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         AddOrphanResults(skills, passiveEngravings, itemDatabases, context);
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
+        AddDefaultPassiveResults(weapons);
         AddIconResults(skills, passiveEngravings, formIndex);
         AddSkillFormResults(skills, formIndex);
     }
@@ -1940,25 +1941,39 @@ public sealed class SkillDashboardWindow : EditorWindow
         WeaponData weapon,
         PlayerFormId form)
     {
-        if (weapon == null || weapon.passiveEngravings == null)
+        if (weapon == null)
+            return;
+
+        AddPassiveCatalogAssignment(index, weapon.defaultPassive, form);
+        if (weapon.passiveEngravings == null)
             return;
 
         for (int i = 0; i < weapon.passiveEngravings.Count; i++)
         {
-            PassiveEngravingData passive = weapon.passiveEngravings[i];
-            if (passive == null)
-                continue;
-
-            if (!index.PassiveCatalogForms.TryGetValue(
-                    passive,
-                    out HashSet<PlayerFormId> catalogForms))
-            {
-                catalogForms = new HashSet<PlayerFormId>();
-                index.PassiveCatalogForms.Add(passive, catalogForms);
-            }
-
-            catalogForms.Add(form);
+            AddPassiveCatalogAssignment(
+                index,
+                weapon.passiveEngravings[i],
+                form);
         }
+    }
+
+    private static void AddPassiveCatalogAssignment(
+        SkillFormIndex index,
+        PassiveEngravingData passive,
+        PlayerFormId form)
+    {
+        if (passive == null)
+            return;
+
+        if (!index.PassiveCatalogForms.TryGetValue(
+                passive,
+                out HashSet<PlayerFormId> catalogForms))
+        {
+            catalogForms = new HashSet<PlayerFormId>();
+            index.PassiveCatalogForms.Add(passive, catalogForms);
+        }
+
+        catalogForms.Add(form);
     }
 
     private static void AddWeaponFormAssignment(
@@ -2556,6 +2571,37 @@ public sealed class SkillDashboardWindow : EditorWindow
                     "Engraving-like drop itemCode '" + drop.Code + "' in " + location +
                     " rolls up to " + effectiveMax + " (>1). Set min=max=1.",
                     drop.Database);
+            }
+        }
+    }
+
+    private void AddDefaultPassiveResults(List<WeaponData> weapons)
+    {
+        for (int weaponIndex = 0; weaponIndex < weapons.Count; weaponIndex++)
+        {
+            WeaponData weapon = weapons[weaponIndex];
+            if (weapon == null ||
+                weapon.defaultPassive == null ||
+                weapon.passiveEngravings == null)
+            {
+                continue;
+            }
+
+            for (int passiveIndex = 0;
+                 passiveIndex < weapon.passiveEngravings.Count;
+                 passiveIndex++)
+            {
+                if (weapon.passiveEngravings[passiveIndex] != weapon.defaultPassive)
+                    continue;
+
+                AddResult(
+                    ResultSeverity.Warning,
+                    "Weapon '" + weapon.name + "' default passive '" +
+                    weapon.defaultPassive.name +
+                    "' is also registered in passiveEngravings at index " +
+                    passiveIndex + ". Form selection will show a duplicate card.",
+                    weapon);
+                break;
             }
         }
     }

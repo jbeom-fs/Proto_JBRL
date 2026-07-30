@@ -35,4 +35,5 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  defaultPassive: {fileID: 0}
   passiveEngravings: []

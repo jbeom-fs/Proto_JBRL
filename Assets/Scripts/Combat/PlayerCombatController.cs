@@ -2092,7 +2092,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             engravingLoadout.EnsureSeeded(form, skills);
             engravingLoadout.EnsurePassiveSeeded(
                 form,
-                weapon != null ? weapon.passiveEngravings : null);
+                weapon != null ? weapon.defaultPassive : null);
         }
 
         for (int i = 0; i < _skillSlots.Length; i++)

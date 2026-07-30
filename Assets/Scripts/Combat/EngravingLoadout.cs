@@ -67,13 +67,15 @@ public sealed class EngravingLoadout : MonoBehaviour
         return _states.TryGetValue(form, out FormState state) ? state.Slots[slot] : null;
     }
 
-    public void EnsurePassiveSeeded(PlayerFormId form, IReadOnlyList<PassiveEngravingData> seeds)
+    public void EnsurePassiveSeeded(
+        PlayerFormId form,
+        PassiveEngravingData defaultPassive)
     {
         FormState state = GetOrCreate(form);
         if (state.PassiveSeeded)
             return;
 
-        state.PassiveEngraving = seeds != null && seeds.Count > 0 ? seeds[0] : null;
+        state.PassiveEngraving = defaultPassive;
 
         state.PassiveSeeded = true;
         OnPassiveChanged?.Invoke();

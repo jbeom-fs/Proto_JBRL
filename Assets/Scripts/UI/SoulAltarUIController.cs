@@ -37,8 +37,6 @@ public sealed class SoulAltarUIController : MonoBehaviour
     };
 
     private readonly List<SoulStatGrowth> _growthBuffer = new List<SoulStatGrowth>(8);
-    private readonly List<PassiveEngravingData> _passiveCatalogBuffer =
-        new List<PassiveEngravingData>(8);
     private string[] _sectionHeaderTexts;
     private bool _subscribed;
     private bool _warnedMissingReferences;
@@ -139,21 +137,23 @@ public sealed class SoulAltarUIController : MonoBehaviour
             return;
         }
 
-        _passiveCatalogBuffer.Clear();
-        passiveUnlocks.GetCatalog(form, _passiveCatalogBuffer);
+        if (!passiveUnlocks.TryGetWeapon(form, out WeaponData weapon) ||
+            weapon.passiveEngravings == null)
+        {
+            return;
+        }
 
         bool targetFound = false;
         int unlockedCandidateCount = 0;
-        for (int i = 1; i < _passiveCatalogBuffer.Count; i++)
+        for (int i = 0; i < weapon.passiveEngravings.Count; i++)
         {
-            PassiveEngravingData candidate = _passiveCatalogBuffer[i];
+            PassiveEngravingData candidate = weapon.passiveEngravings[i];
             if (candidate == passive)
                 targetFound = true;
             if (passiveUnlocks.IsUnlocked(candidate))
                 unlockedCandidateCount++;
         }
 
-        _passiveCatalogBuffer.Clear();
         if (!targetFound || passiveUnlocks.IsUnlocked(passive))
             return;
 
@@ -310,11 +310,15 @@ public sealed class SoulAltarUIController : MonoBehaviour
             return;
         }
 
-        _passiveCatalogBuffer.Clear();
-        passiveUnlocks.GetCatalog(section.form, _passiveCatalogBuffer);
+        if (!passiveUnlocks.TryGetWeapon(section.form, out WeaponData weapon) ||
+            weapon.passiveEngravings == null)
+        {
+            HideRows(section.passiveRows);
+            return;
+        }
 
         int rowCount = section.passiveRows?.Length ?? 0;
-        int candidateCount = Mathf.Max(0, _passiveCatalogBuffer.Count - 1);
+        int candidateCount = weapon.passiveEngravings.Count;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (candidateCount > rowCount)
         {
@@ -327,9 +331,9 @@ public sealed class SoulAltarUIController : MonoBehaviour
 #endif
 
         int unlockedCandidateCount = 0;
-        for (int i = 1; i < _passiveCatalogBuffer.Count; i++)
+        for (int i = 0; i < candidateCount; i++)
         {
-            if (passiveUnlocks.IsUnlocked(_passiveCatalogBuffer[i]))
+            if (passiveUnlocks.IsUnlocked(weapon.passiveEngravings[i]))
                 unlockedCandidateCount++;
         }
 
@@ -342,14 +346,19 @@ public sealed class SoulAltarUIController : MonoBehaviour
             if (row == null)
                 continue;
 
-            int catalogIndex = i + 1;
-            if (catalogIndex >= _passiveCatalogBuffer.Count)
+            if (i >= candidateCount)
             {
                 row.Hide();
                 continue;
             }
 
-            PassiveEngravingData passive = _passiveCatalogBuffer[catalogIndex];
+            PassiveEngravingData passive = weapon.passiveEngravings[i];
+            if (passive == null)
+            {
+                row.Hide();
+                continue;
+            }
+
             row.Bind(
                 section.form,
                 passive,
@@ -358,8 +367,6 @@ public sealed class SoulAltarUIController : MonoBehaviour
                 shardCount,
                 passiveUnlocks.IsUnlocked(passive));
         }
-
-        _passiveCatalogBuffer.Clear();
     }
 
     private int FindSectionIndex(PlayerFormId form)
