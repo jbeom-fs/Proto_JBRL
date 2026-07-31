@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-07-30
+> 작성 기준일: 2026-07-31
+> 기준 커밋: master HEAD `ddd081cd` — **DoT 모델 스택 소모형 전환**(§7-9 전면 개정): duration 폐기·**스택이 곧 수명**(틱마다 `DamagePerStack × 스택` 후 스택 1 차감 → 총 피해 = 삼각수 `틱뎀 × N(N+1)/2`, 축적 보상이 수식에서 파생), 틱당 피해를 **타입별 고정값**으로 프로필 이관(`EnemyAilmentProfileDatabase` SO + `EnemyPoolManager` 단일 결선 주입), 스킬 저작값은 **스택 수만**(혼합 스택 차감 문제 소멸), 소울 `AilmentDamage` = **부여 시점 스냅샷 1회**(`b4510c5f`). **Dagger 패시브 3축 저작**(§7-8b 확장): **표식폭발**(기본, `BehaviorTrigger.OnMarkerDetonate` 신설 + 기폭 지점 광역 proc, `IsProcCast` 게이트 4경로로 무한 연쇄 봉인) / **과중독 폭발**(`BehaviorAction.AilmentOverload` — 독 임계 도달 시 전량 소모, `잔여 총량 × (1+보너스율)`로 손익분기 개념 소멸) / **처형**(`BehaviorAction.ExecuteThreshold` — 일반몹 즉사 + 엘리트·보스 HP 90%부터 연속 램프 +10%→+55%, 보스 판정은 런타임 플래그로 `BossEncounterTable` 단일 진실 유지). `AilmentDeliveryContext` → **`CombatEffectContext`** 리네임(§11b). **Skill Dashboard Active/Passive 탭 분리**(패시브 조망·아이콘 편집·생성, `0b6c6437`) + **Altar Dagger 해금 행 결선**(행 0개라 인게임 구매 불가였음 + 행 부족 경고 신설, `ddd081cd`). 🔑 **전 폼 규칙: 패시브는 폼선택 1택·런 중 변경 불가이므로 모든 패시브가 보스전에서 작동해야 한다**(전염 안 폐기 근거). 이전: 패시브 축 전면 재설계·Sword 3종·Resources 철거(`407dda19`)
+>
+> <details><summary>이전 기준(2026-07-30, `407dda19`)</summary>
+>
 > 기준 커밋: master HEAD `407dda19`(+P4 워킹트리) — **패시브 각인 축 전면 재설계**: 유물과 어휘·런타임 완전 중복(같은 `BehaviorEffect[]`·같은 `AddBehaviors` 합류) 진단에 따라 드랍·각인대 교체·슬롯 증설을 폐기하고 **"런 시작 시 폼선택에서 1개 고르는 근간, 런 중 변경 불가"**로 전환(§7-8b 전면 개정). 폼당 1개 고정 + `unlockId` 해금 집합 영속(신규 세이브 키 `unlockedPassiveIds`) + Town Altar 후보별 해금 구매 + 폼선택 카드 1택(잠금=회색 오버레이+자물쇠, 내용 노출). **Sword 패시브 3종 재저작**(3축=콤보/피흡/캔슬): 콤보 폭발(티어별 고정딜 proc + proc 콤보 적립 차단 일괄 규칙) / 생명 흡수(자체 피흡+저체력 강화+과회복 쉴드 전환) / 전투의 흐름(캔슬 시 공격력 버프, `PlayerAttackBuff` 신설). **쉴드 소스 분리**(`ShieldSource` 4종 독립 타이머 — 덮어쓰기 봉인) + 버프 HUD 아이콘. **Resources 폴더 철거 정책 확정**(SO=`Scriptable/` 하위+SerializeField 결선만, `Resolve` 폴백 제거, 전역 `Resources.Load` 0건). `WeaponData.defaultPassive` 명시화(카탈로그 [0] 위치 규칙 소멸). 이전: Skill Dashboard 2차·Sword 아이콘 전량·슬롯 툴팁(`e5daa575`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-07-29, `e5daa575`)</summary>
 >
@@ -1188,32 +1194,72 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 관련 인프라 규칙: **proc으로 시전된 스킬은 콤보를 쌓지 않는다**(일괄 규칙 — InstantArea·Projectile 경로 `IsProcCast` 게이트, 피흡은 proc 데미지에도 적용) / proc 데미지 오버라이드는 `SkillExecutionContext.SkillDamageOverride`→`ResolveSkillDamage`(SkillData 에셋 변이 금지) / `comboTierDamages` 빈 배열=티어 게이트·오버라이드 없는 기존 proc(하위호환) / 티어별 고정딜을 두는 이유=기존 콤보 배율이 soulScale 비례라 **소울 미투자자에게 죽은 드랍**이 되기 때문(자체 계수 필수 원칙).
 
+**Dagger 3종(2026-07-31 저작, 3축=표식폭발/상태이상/처형)**:
+
+Dagger 킷 실측 = **부여(Q Blink·W Projectile·R 평타버프) → 기폭(E Dash) → 기폭 시 E 쿨 리셋 → 연쇄 기폭**. Sword가 "쌓아서 터뜨린다"면 Dagger는 **"심어놓고 회수한다"**. 자원 없음(전 스킬 `resourceType=None`), 평타 0.22초 **단일 타겟**, 회복·방어 수단 킷에 0.
+
+| 패시브 | 축 | 효과 | 핵심 수치(전부 에셋 튜닝) |
+|------|----|------|------|
+| **표식폭발**(기본) | 표식 | 표식 기폭 시 **기폭 지점**에 광역 폭발 proc(`Dagger_MarkerExplosion_Proc`, InstantArea+Custom 5셀). 기존 기폭 추가딜 위에 얹힘 | proc damage 10. 3축 중 **유일한 군중 대응 수단** |
+| **과중독 폭발** | 상태이상 | 독 스택이 임계 도달 시 **전량 소모** + 즉발 피해. 단일 대상, 전파 없음 | 임계 10스택 / 보너스 30% → `DamagePerStack × N(N+1)/2 × 1.3` |
+| **처형** | 처형 | 일반몹 HP 임계 이하 **즉사** / 엘리트·보스는 즉사 대신 **HP 비례 연속 램프 증폭** | 즉사 20% / 램프 시작 90%·시작 +10%·구간 10%당 +5%(HP 75%=+17.5%, 30%=+40%, 0%=+55%) |
+
+- **생존 축을 넣지 않은 근거**: `SoulStatType.Lifesteal`이 Sword/Dagger 전용으로 이미 존재해 생존 레이어가 소울·유물에 있다. Sword의 생명 흡수는 필수가 아니라 선택이었다.
+- **표식폭발 proc에 독 미저작** — 독은 상태이상 축이 독점해야 두 축이 화면에서 구분된다.
+- **과중독 공식 선택 근거**: 전량 소모형이라 "틱뎀 × 배율" 방식은 배율이 남은 틱 수를 못 넘으면 순손실이 된다(지속 5초·틱 1초면 5배가 본전). **잔여 총량 기준**으로 바꾸면 항상 100% 회수 + 보너스가 덤이라 **손익분기 개념 자체가 소멸**하고 보너스율만 튜닝 대상으로 남는다.
+- **처형 즉사는 남은 HP만큼 피해를 넣어 정상 사망 경로를 경유**한다(HP 직접 0 대입 금지 — 드랍·`OnDied`·처치 카운트가 전부 그 파이프에 걸림). 재귀 차단 = 판정은 `ApplyCombatImpact`에서만, 마무리 피해는 내부 오버로드 직행. **DoT 틱은 처형 제외**.
+- ⚠️ **보스 판정**: `EnemyData`에 보스 플래그가 없다(`IsElite`만 존재, 보스는 `BossEncounterTable`이 단일 진실). **`EnemyData`에 `isBoss`를 추가하지 말 것**(이중 진실 desync) — 보스 스폰 경로에서 런타임 플래그를 세운다(`_holdsEliteKey` 패턴 미러). **순서 함정**: `Initialize`가 플래그를 false로 되돌리므로 **스폰 후에** 마킹해야 한다.
+- ⚠️ **과중독 임계 > 프로필 최대 스택이면 영원히 발동하지 않는다**(스택이 캡에서 멈춤, 에러·경고 없이 죽음) → Skill Dashboard 검증 1종 보유.
+
+> 🔑 **전 폼 공통 규칙 — 모든 패시브는 보스전에서 작동해야 한다.**
+> 패시브는 폼선택 1택·런 중 변경 불가이므로, 보스전 무효 패시브는 "고르면 런 후반이 손해"인 죽은 선택지가 된다(드랍이라면 상황별 강약이 빌드 다양성이 되지만 1택 구조에서는 아니다). Sword 3종이 전부 보스전에서 작동하는 것은 우연이 아니었다.
+> 이 기준으로 **전염 안**(중독된 적 사망 시 주변에 스택 전파)이 폐기됐다 — 사망 + 주변 적 두 조건이 필요해 단일 대상 전투에서 완전히 정지한다. 대체안인 과중독 폭발은 단일 대상이라 보스전에서 재축적→재폭발이 반복되어 오히려 유리하다.
+
+**Altar 해금 행 결선 주의** — `SoulAltarUIController.AltarSection.passiveRows`는 **씬 사전 배치 고정 배열**이라 카탈로그 후보가 늘어도 행이 자동 생성되지 않는다. 결선을 빼먹으면 해당 폼의 패시브가 **Altar에 아예 뜨지 않아 인게임 획득이 불가능**해진다(2026-07-31 Dagger에서 실제 발생). 행 부족 경고를 신설했다(후보 > 씬 행이면 폼별 1회, 에디터 한정). **타 폼 패시브를 저작할 때마다 씬 행 배치·결선이 동반되어야 한다.**
+
 **폐기 목록**(코드·데이터에서 제거됨): `PassiveSlots[4]`·`PassivePool`·equip/unequip/arrangement API·각인대 패시브 탭·`PlayerPassiveSlotUnlocks`(슬롯 수 해금)·`SaveData.passiveUnlocks`(구 키 — 신규 키와 별개, 구 세이브의 해당 키는 무시됨)·던전 드랍(ItemDatabase PassiveEngraving 엔트리 0, `DroppedItem`은 해당 타입 픽업 무시)·구 에셋 `Sword_Passive_00/01/02`.
 
-### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축)
+### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축) — 2026-07-31 모델 전환
 
-플레이어가 적에게 거는 지속 피해. Soul 강화 마지막 스탯 `AilmentDamage`(Dagger)의 기반 시스템 (2026-07-06, S1~S4).
+> ⚠️ **2026-07-31에 스택 소모형으로 전환됐습니다.** 구 모델(지속시간 기반 고정 틱 + 만료 시 전량 일괄 소멸)은 폐기. 이 절은 현행만 기술합니다.
+
+플레이어가 적에게 거는 지속 피해. Soul 강화 스탯 `AilmentDamage`(Dagger)의 기반 시스템.
+
+**핵심 모델 — 스택이 곧 수명**: 틱마다 `DamagePerStack × 현재 스택` 피해를 넣고 **직후 스택 1개를 차감**합니다. 스택이 0이 되면 소멸하며, 별도 지속시간 개념이 없습니다.
+
+```
+틱뎀 5 · 10스택 → 50(→9) → 45(→8) → 40(→7) → … → 5(→0)
+총 피해 = 틱뎀 × N(N+1)/2   (삼각수)
+```
+
+이 모델에서 **설계 없이 파생되는 성질 3개**:
+1. **총 피해가 스택에 제곱 비례** — 10스택 275 / 5스택 75. 두 배로 쌓으면 약 네 배라 축적 보상이 수식에서 나옵니다. 앞쪽 틱이 가장 아파 선딜 체감도 유리.
+2. **프로필이 수명을 정함** — 독 1.0초×10스택=10초 / 출혈 0.5초×5스택=2.5초. "독=장기 누적 / 출혈=단기 폭발" 의도가 별도 수치 없이 파생됩니다.
+3. **유지에 지속 재부여 필요** — 독 기준 초당 1스택 이상. 상태이상 축 패시브를 쓰려면 독을 자주 거는 킷이 필요하다는 요구가 구조에서 나옵니다.
 
 **데이터 → 송출 → 수신 → 증폭 → 표시** 파이프라인:
 
 | 조각 | 구현 |
 |------|------|
-| 데이터 | `SkillData.ailments`(`AilmentApplication[]{type, tickDamage, duration}`) — 한 공격이 복수 DoT 동시 부여 가능, 빈 배열=없음. `AilmentType`(Poison/Bleed) |
-| 송출(적중 경로) | `ApplyCombatImpact(..., ailments, ailmentDamageMultiplier)` — 멜리(AttackExecutor)/투사체(ProjectileFireRequest)/대시(DashDamageRequest)에 slow와 동승. **탄 평타(basicAttackSkillData)도 데이터를 따름**(slow/마커와 동일 규약 — 향후 Passive 각인 "평타에 독 부여" 대비) |
+| 데이터 | `SkillData.ailments`(`AilmentApplication[]{type, stacks}`) — 한 공격이 복수 DoT 동시 부여 가능, 빈 배열=없음. `AilmentType`(Poison/Bleed). **스킬이 저작하는 값은 "몇 스택을 거는가"뿐** — 틱당 피해는 타입별 고정(아래 프로필). 총 피해가 스택에 제곱 비례하므로 스킬 간 차등은 스택 수만으로 충분 |
+| 프로필 | **`EnemyAilmentProfileDatabase`(SO)** — 타입별 `(틱간격 / 최대스택 / 틱당피해)`. 현행 Poison(1.0s, 10, 5) / Bleed(0.5s, 5, 5). 결선 = **`EnemyPoolManager` 단일 지점 → 풀 생성 시 `EnemyController.ConfigureAilments()` 주입**(적 프리팹 9개 개별 결선 회피). `Resources.Load`·폴백 없음, 미결선 시 명시적 `LogError` |
+| 송출(적중 경로) | `ApplyCombatImpact(..., ailments, CombatEffectContext)` — 멜리(AttackExecutor)/투사체(ProjectileFireRequest)/대시(DashDamageRequest)에 slow와 동승. **탄 평타(basicAttackSkillData)도 데이터를 따름**(slow/마커와 동일 규약 — Passive 각인 "평타에 독 부여" 대비). 운반 구조체는 배율 외에 과중독 폭발·처형 설정도 함께 나릅니다(§11b) |
 | 송출(비데미지 경로) | **Blink** = 블링크 대상 적 단건 `ApplyAilments` / **무데미지 Dash**(데미지 플래그 둘 다 off + ailments 있음) = path 스윕으로 DoT만 — `ApplyCombatImpact` 미경유(방어 감산 `Max(1,…)`의 최소 1뎀 함정 회피), 흡혈·콤보·OnEnemyHit 미발동. Buff는 지원 제외 |
-| 수신 | `EnemyAilments`(순수 C#, `Action<int>` 콜백 주입) — 타입별 버킷 `{totalTickDamage, stacks, remainingDuration, tickTimer}`. **재부여=스택 가산**(틱뎀 합산+지속 리필, 캡 도달 시 리필만), 프로파일: 독=1.0s틱/캡10(장기 누적) · 출혈=0.5s틱/캡5(단기 폭발) — 차별화는 수치뿐, 메커니즘 분기 코드 없음. 히치 프레임 다중 틱 while 처리 |
+| 수신 | `EnemyAilments`(순수 C#, 프로필 SO + `Action<int>` 콜백 주입) — 타입별 버킷 **`{Stacks, TickTimer, DamagePerStack}`**. **재부여=스택 가산**(캡 초과분은 무시), **틱 위상은 최초 부여(0→1 전이) 시점 기준이며 재부여가 갱신하지 않음**. 히치 프레임 다중 틱 while 처리. 차별화는 프로필 수치뿐, 메커니즘 분기 코드 없음 |
 | 틱 적용 | `EnemyController.ApplyAilmentTickDamage` — **방어 무시**(min 1만), HP바 갱신, HP 0 → 기존 `Die()` 파이프라인(드랍·이벤트) 재사용. 틱은 크리/흡혈/콤보 전부 비대상. **틱 순간 1회 flash**(2026-07-10): 색=먼저 걸린 상태이상(`TryGetFirstActiveType`, 독=녹/출혈=적 — 테이블 `flashColor`), 동시 부여는 출혈→독 적용 순서 고정으로 선행 판정 결정적, 같은 프레임 이중 틱 `frameCount` 가드. **적 피격 flash는 제거**(HP바가 피격 피드백 — 플레이어 쪽 `Play()` 무손상) |
-| 증폭 | `PlayerCombatController.AilmentDamageMultiplier`(=1+`Get(AilmentDamage)`/100) — **부여 시점 스냅샷**: 공격자가 배율을 파이프에 실어 보내고 적은 플레이어 무참조. 부여 후 폼전환·강화 변경 무영향. **마커 기폭뎀도 같은 배율 선증폭** 후 `RollCritDamage`(범용 효과뎀 배율 — DoT 각인 없어도 死스탯 아님) |
+| 증폭 | `PlayerCombatController.AilmentDamageMultiplier`(=1+`Get(AilmentDamage)`/100) — **부여 시점 스냅샷 1회**: `DamagePerStack = 프로필 틱뎀 × 배율`을 버킷에 저장하고 틱·폭발이 그 값을 그대로 씁니다. 공격자가 배율을 파이프에 실어 보내고 적은 플레이어 무참조. 던전 내 배율 불변(Altar=마을 전용)이라 스냅샷이 어긋날 일 없음. ⚠️**틱·폭발 계산에서 재적용 금지**(제곱이 됨). **마커 기폭뎀도 같은 배율 선증폭** 후 `RollCritDamage` — 이쪽은 DoT 스택이 아닌 독립 저작값이라 명시 곱이 규칙과 모순되지 않음. 일반 규칙: **"생 수치 → 실효 수치 변환은 딱 한 번"** |
 | 표시 | `EnemyAilmentIndicator`(적 프리팹 8종 부착, EnemyHealthBar 미러) — 상태 4종(독/출혈/슬로우/스턴) 폴링, **적용 순서 왼쪽 압축 정렬**(off→on 엣지 리스트, 재부여=순서 유지, 셋 변경 시만 재배치) + 독·출혈 **스택 숫자**. 비주얼은 `AilmentStatusSlot` 공용 프리팹 1개(`AilmentStatusSlotView` — SetIcon 긴변 fit 정규화/SetStackCount/SetVisible, 크기·정렬·오프셋 전부 프리팹 저작) — 코드 조립 UI 소멸(2026-07-10). 위치 = `EnemyHealthBar.TopAnchorY` + iconGap — HP바가 위치의 단일 진실. ⚠️앵커 배치는 첫 LateUpdate 1회(Awake 금지 — 콜라이더 radius가 `EnemyController.Awake`에서 조정되는 순서 함정) |
-| 표시 소스 | `StatusEffectIconTable`(SO, `Resources/UI/`) — 타입 4종의 **아이콘 + flashColor + slotPrefab** 단일 소스. 적 인디케이터·**플레이어 HUD(`PlayerStatusEffectUI.SetIcon`)**·틱 flash(`HitFlashFeedback.Flash(type)`) 전부 수급, SerializeField 우선+Resources 폴백 |
+| 표시 소스 | `StatusEffectIconTable`(SO, `Scriptable/UI/`) — 타입별 **아이콘 + flashColor + slotPrefab** 단일 소스. 적 인디케이터·**플레이어 HUD(`PlayerStatusEffectUI.SetIcon`)**·틱 flash(`HitFlashFeedback.Flash(type)`) 전부 수급. **SerializeField 명시 결선만**(2026-07-30 Resources 철거로 폴백 제거) |
 
-**데이터**: `SoulEnhancementTable` Dagger(form 2)/AilmentDamage(stat 9) perLevel 10 / maxLevel 10 → 만렙 틱뎀 2배. 폼 게이팅은 데이터 자동(비-Dagger = 테이블 엔트리 없음 = 배율 1.0).
+**데이터**: `SoulEnhancementTable` Dagger(form 2)/AilmentDamage(stat 9) perLevel 10 / maxLevel 10 → 만렙 배율 2배. 폼 게이팅은 데이터 자동(비-Dagger = 테이블 엔트리 없음 = 배율 1.0).
 
-**콘솔**: `/ailment <poison|bleed> [tickDamage=2] [duration=5]` — 플레이어 최근접 생존 적에게 부여(검증용).
+**콘솔**: `/ailment <poison|bleed> [stacks=1]` — 플레이어 최근접 생존 적에게 부여(검증용). ⚠️**배율 1 고정** — 소울 증폭 검증에 쓸 수 없고, 스킬로 건 스택과 섞으면 `DamagePerStack`이 덮어써져 **기존 스택까지 약화**된다. 소울 스케일링 확인은 실제 스킬로 할 것.
 
-**~~알려진 잠재 함정~~ → 픽스됨(2026-07-10)**: Tick 콜백 중 `Clear()` 발생 시 로컬 버킷 write-back이 덮는 문제 — `_version` 가드(Clear마다 증가, 콜백 후 불일치면 write-back 중단)로 원천 차단. 사망 외 시점 Clear 호출자가 생겨도 안전.
+**`_version` 가드(2026-07-10 도입, 전환 후에도 유지)**: 콜백 중 `Clear()`가 발생하면 로컬 버킷 write-back이 이를 덮는 문제 — Clear마다 버전 증가, 콜백 후 불일치면 write-back 중단. **틱 경로와 과중독 폭발 경로 양쪽에 필요**(폭발이 적을 죽이는 것은 정상 경로이며, 그 안에서 `Die()`→`ResetStatusEffects()`→`Clear()`가 돈다).
 
-**표시 후속 완료(2026-07-10)**: ~~틴트(B안)~~→틱 동기 flash로 대체 구현 / 스택 숫자 표시 / 슬로우·스턴 아이콘 + **적 스턴 상태 축 신설**(§8-7). 남은 기획: 각인 Active/Passive 분류(Passive=평타 부착형 — 기획만). 스택 소멸은 **전량 일괄(버킷 단일 duration)이 의도** — 개별 감쇠는 데이터 모델 변경 건.
+**모델 전환 시 소멸한 항목**: `AilmentApplication.tickDamage`/`duration`(스킬별 틱뎀 저작 → 프로필 고정, 지속 → 스택 수) / 버킷 `TotalTickDamage`·`RemainingDuration` / "스택 소멸 = 전량 일괄" 규약(이제 틱마다 1씩 감소) / 하드코딩 프로필 배열(SO 이관). ⚠️`BehaviorEffect`의 `AttackPoison`/`AttackBleed`도 `value`가 **틱뎀이 아니라 스택 수**로 의미가 바뀌었다.
+
+**표시 후속 완료(2026-07-10)**: 틱 동기 flash / 스택 숫자 표시 / 슬로우·스턴 아이콘 + **적 스턴 상태 축 신설**(§8-7). 스택 숫자는 이제 **틱마다 감소**하는 것이 정상 동작(폴링 구조라 UI 코드 변경 불필요).
 
 ---
 
@@ -2495,10 +2541,17 @@ Relic이 평면 스탯(§11b-6)을 넘어 **이벤트 발동형 효과**를 갖�
 BehaviorEffect { trigger, skillTypeFilter(비트마스크), action, value, duration,
                  procSkill(SkillData 참조), procOrigin, procDirection, procSpawnRadius }
 트리거: OnKill / OnSkillUsed(+필터) / OnSkillCanceled(필터 무시) / Passive(수식형 — 항시 조회)
-액션:   Heal / AttackPoison / AttackBleed / CastSkill
-유효 조합: {OnKill,OnSkillUsed,OnSkillCanceled}×{Heal,CastSkill} / Passive×{AttackPoison,AttackBleed}
+        / OnMarkerDetonate(필터 무시 — 2026-07-31, Dagger 표식 기폭)
+액션:   Heal / AttackPoison / AttackBleed / CastSkill / Shield / AttackBuff
+        / LifestealEngine / AilmentOverload / ExecuteThreshold  (뒤 3종 = Passive 전용 상시 수치형)
+유효 조합: {OnKill,OnSkillUsed,OnSkillCanceled,OnMarkerDetonate}×{Heal,CastSkill,Shield,AttackBuff}
+          / Passive×{AttackPoison,AttackBleed,LifestealEngine,AilmentOverload,ExecuteThreshold}
           — 검증=Dashboard 경고 소유(런타임은 조용히 무시)
+          ⚠️Item Dashboard 트리거 조합 검증은 아직 신규 액션 5종 미포함(부채)
 ```
+- **`OnMarkerDetonate`(2026-07-31)** — `DaggerMarkerRegistry.Detonate`가 true를 반환한 직후 발행. **위치는 데미지 처리 전에 캡처**(적이 죽어 풀로 반환되면 `transform.position`이 바뀐다), 기존 기폭 추가딜을 먼저 해결해 **proc 선킬이 이를 막지 못하게** 순서 고정. 필터를 읽지 않는 이유 = 스킬이 아니라 **기폭이라는 사건**에 반응하므로, 필터를 살리면 저작자가 0을 넣었을 때 조용히 죽는 함정이 생긴다.
+- ⚠️ **proc 무한 연쇄 차단** — proc으로 시전된 스킬이 표식을 부여하거나 기폭하면 즉시 무한 루프다(기폭 → proc → 표식 부여 → 대시로 또 기폭). `IsProcCast` 게이트를 **4경로**에 건다: Blink 부여 / Buff 평타 표식버프 / Dash 기폭 / Projectile 부여(비동기 히트라 **콜백 생성 차단 + 히트 시 재확인** 이중).
+- **`CombatEffectContext`(2026-07-31, 구 `AilmentDeliveryContext`)** — `{AilmentDamageMultiplier, AilmentOverloadSettings, ExecuteThresholdSettings}`. 적은 플레이어를 참조하지 않는다는 원칙 때문에 플레이어 소유 설정을 **부여 시점에 동승**시키는 자리이며, 이후 패시브가 파라미터를 늘리지 않고 합류하도록 구조체로 만들었다. 전 ailment 운반 경로(AttackExecutor/SkillExecutor/Projectile/Dash/Zone/콘솔)가 이를 나른다.
 - 필터 = `(mask & (1 << (int)executionType)) != 0` — 복수 타입(Dash|Blink)·전체(-1) 표현. ⚠️MaskField↔비트 정합은 SkillExecutionType 연속값(0~5) 전제. **OnSkillCanceled는 필터 무시**(아무 캔슬 발동).
 
 **구조** — `BehaviorRuntime`(순수 C#: 인벤 스캔→트리거별 버킷, value×stack 합산) + `PlayerBehaviors`(어댑터: CombatEventChannel `OnEnemyKilled`/`OnSkillUsed`/`OnSkillCanceled`+OnInventoryChanged 구독, 콜백 주입). **캔슬 트리거(2026-07-21 `2a73260b`)**: `HandleCancel`+`_onCancel` 버킷, `PlayerBehaviors`가 `EnemyPoolManager.HasActiveEnemies` 게이트(적 없으면 미발동=안전방 파밍 차단). 수명주기=기존 Relic 아이템 파이프 승계(런소멸/영속제외), 비영속. **추후 패시브 각인이 두 번째 behavior 소스로 병합 예정**(Rescan 소스 확장).
@@ -3003,11 +3056,13 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 ### 새 적 DoT 타입 추가 (§7-9)
 
 ```
-// ① AilmentType enum 에 값 append (EnemyAilments.cs — 기존 값 순서 유지)
-// ② EnemyAilments.s_Profiles 에 프로파일 추가 (tickInterval, maxStacks) + AilmentTypeCount 갱신
+// ① AilmentType enum 에 값 append (EnemyAilments.cs — 기존 값 순서 유지) + AilmentTypeCount 갱신
+// ② EnemyAilmentProfileDatabase 에 프로필 필드 추가 (tickInterval, maxStacks, damagePerStack)
+//    + TryGetProfile/TryValidate switch 케이스 — 에셋(Scriptable/EnemyAilmentProfiles)에도 값 기입
 // ③ StatusEffectIconType enum append + StatusEffectIconTable 에셋에 아이콘·flashColor 엔트리 추가
 // ④ EnemyAilmentIndicator 에 상태 인덱스 추가 (슬롯 Instantiate + 폴링 판정 — 압축 정렬·프리팹 비주얼은 공용이라 무수정)
-// ⑤ 스킬 에셋의 ailments 배열에 새 타입 기입 — 송출 배선은 공용이라 코드 무수정
+// ⑤ 스킬 에셋의 ailments 배열에 새 타입 기입(stacks 만) — 송출 배선은 공용이라 코드 무수정
+// ⚠️ 틱당 피해는 스킬이 아니라 ② 프로필이 소유한다. 스킬 간 차등은 stacks 로만 표현
 ```
 
 ### 새 이벤트 추가
