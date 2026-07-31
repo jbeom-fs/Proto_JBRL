@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: sword_passive_combo_explosion
   passiveName: "\uCF64\uBCF4 \uD3ED\uBC1C"
-  icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
+  icon: {fileID: 21300000, guid: 4d56c2b4721d7b1499ea4cf05835a733, type: 3}
   description: "\uCF64\uBCF4 \uD2F0\uC5B4 1 \uC774\uC0C1\uC5D0\uC11C \uC2A4\uD0AC
     \uC0AC\uC6A9 \uC2DC \n20 / 35 / 55 / 80 \uB370\uBBF8\uC9C0\uC758 \uD3ED\uBC1C
     \uBC1C\uC0DD "

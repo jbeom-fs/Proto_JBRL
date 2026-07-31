@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: sword_passive_cancel_buff
   passiveName: "\uC804\uD22C\uC758 \uD750\uB984"
-  icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
-  description: "\uC2A4\uD0AC \uD6C4\uB51C\uC744 \uCE94\uC2AC\uD558\uBA74 5\uCD08 \uB3D9\uC548 \uACF5\uACA9\uB825\uC774 10 \uC99D\uAC00\uD569\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 5f1bcdcb5e18ef64a91f6773ee22a3ea, type: 3}
+  description: "\uC2A4\uD0AC \uD6C4\uB51C\uC744 \uCE94\uC2AC\uD558\uBA74 5\uCD08
+    \uB3D9\uC548 \uACF5\uACA9\uB825\uC774 10 \uC99D\uAC00\uD569\uB2C8\uB2E4."
   owningForm: 1
   grade: 1
   behaviors:
