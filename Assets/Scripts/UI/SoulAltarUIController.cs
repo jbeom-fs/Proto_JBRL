@@ -328,9 +328,8 @@ public sealed class SoulAltarUIController : MonoBehaviour
             _passiveCapacityWarnings.Add(section.form))
         {
             Debug.LogWarning(
-                "[SoulAltarUIController] " + section.form +
-                " passive unlock row capacity exceeded: candidates " +
-                candidateCount + ", rows " + rowCount + ".",
+                "[SoulAltarUIController] " + section.form + " 섹션 패시브 행 부족: 후보 " +
+                candidateCount + "개, 씬 " + rowCount + "개. 씬 행 추가와 sections 재결선 필요.",
                 this);
         }
 #endif

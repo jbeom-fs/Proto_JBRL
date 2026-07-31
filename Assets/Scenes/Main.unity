@@ -91337,6 +91337,8 @@ RectTransform:
   - {fileID: 1361640526}
   - {fileID: 813337305}
   - {fileID: 136074335}
+  - {fileID: 2803000031}
+  - {fileID: 2803000041}
   - {fileID: 1066977943}
   - {fileID: 920540208}
   - {fileID: 1182440108}
@@ -154527,7 +154529,9 @@ MonoBehaviour:
     rows:
     - {fileID: 813337306}
     - {fileID: 136074336}
-    passiveRows: []
+    passiveRows:
+    - {fileID: 2803000032}
+    - {fileID: 2803000042}
   - form: 3
     headerRoot: {fileID: 1066977942}
     headerText: {fileID: 1066977945}
@@ -160707,6 +160711,72 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
   m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
+--- !u!1001 &2803000030
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1775165695}
+    m_Modifications:
+    - target: {fileID: 400000, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+      propertyPath: m_Name
+      value: PassiveUnlockRow_Dagger_01
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+--- !u!224 &2803000031 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 400001, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+  m_PrefabInstance: {fileID: 2803000030}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2803000032 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 400005, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+  m_PrefabInstance: {fileID: 2803000030}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
+--- !u!1001 &2803000040
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1775165695}
+    m_Modifications:
+    - target: {fileID: 400000, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+      propertyPath: m_Name
+      value: PassiveUnlockRow_Dagger_02
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+--- !u!224 &2803000041 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 400001, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+  m_PrefabInstance: {fileID: 2803000040}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2803000042 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 400005, guid: c9e34f75942d4a02a79583f2d4a542c1, type: 3}
+  m_PrefabInstance: {fileID: 2803000040}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
 --- !u!1 &2901000000
 GameObject:
