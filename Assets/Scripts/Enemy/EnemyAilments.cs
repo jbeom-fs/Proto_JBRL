@@ -14,6 +14,50 @@ public struct AilmentApplication
     [Min(1)] public int stacks;
 }
 
+public readonly struct AilmentOverloadSettings
+{
+    public AilmentOverloadSettings(
+        AilmentType type,
+        int thresholdStacks,
+        float bonusRate)
+    {
+        Enabled = true;
+        Type = type;
+        ThresholdStacks = thresholdStacks;
+        BonusRate = bonusRate;
+    }
+
+    public bool Enabled { get; }
+    public AilmentType Type { get; }
+    public int ThresholdStacks { get; }
+    public float BonusRate { get; }
+
+    public bool ShouldTrigger(AilmentType type, int stacks)
+    {
+        return Enabled &&
+               Type == type &&
+               ThresholdStacks > 0 &&
+               stacks >= ThresholdStacks;
+    }
+}
+
+public readonly struct AilmentDeliveryContext
+{
+    public AilmentDeliveryContext(
+        float damageMultiplier,
+        AilmentOverloadSettings overload)
+    {
+        DamageMultiplier = damageMultiplier;
+        Overload = overload;
+    }
+
+    public float DamageMultiplier { get; }
+    public AilmentOverloadSettings Overload { get; }
+
+    public static AilmentDeliveryContext Default =>
+        new AilmentDeliveryContext(1f, default);
+}
+
 public sealed class EnemyAilments
 {
     private const int AilmentTypeCount = 2;
@@ -54,10 +98,13 @@ public sealed class EnemyAilments
         }
     }
 
-    public void Apply(AilmentType type, int stacks, float damageMultiplier)
+    public void Apply(
+        AilmentType type,
+        int stacks,
+        in AilmentDeliveryContext context)
     {
         if (stacks <= 0 ||
-            damageMultiplier <= 0f ||
+            context.DamageMultiplier <= 0f ||
             _profiles == null ||
             !TryGetIndex(type, out int index) ||
             !_profiles.TryGetProfile(
@@ -78,11 +125,33 @@ public sealed class EnemyAilments
             bucket.TickTimer = profile.TickInterval;
 
         bucket.Stacks += acceptedStacks;
-        bucket.DamagePerStack = profile.DamagePerStack * damageMultiplier;
+        bucket.DamagePerStack =
+            profile.DamagePerStack * context.DamageMultiplier;
         _buckets[index] = bucket;
 
         if (wasInactive)
             AppendActiveType(type);
+
+        AilmentOverloadSettings overload = context.Overload;
+        if (!overload.ShouldTrigger(type, bucket.Stacks))
+            return;
+
+        float stackCount = bucket.Stacks;
+        float remainingDotTotal =
+            bucket.DamagePerStack *
+            stackCount *
+            (stackCount + 1f) *
+            0.5f;
+        float overloadDamage =
+            remainingDotTotal * (1f + overload.BonusRate);
+        int versionBeforeOverload = _version;
+        _applyTickDamage?.Invoke(
+            Mathf.Max(1, Mathf.RoundToInt(overloadDamage)));
+        if (_version != versionBeforeOverload)
+            return;
+
+        _buckets[index] = default;
+        RemoveActiveType(type);
     }
 
     public void Tick(float dt)

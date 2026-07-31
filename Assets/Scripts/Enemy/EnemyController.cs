@@ -148,12 +148,15 @@ public class EnemyController : MonoBehaviour, IDamageable
         _warnedMissingAilmentProfiles = false;
     }
 
-    public void ApplyAilment(AilmentType type, int stacks)
+    public void ApplyAilment(
+        AilmentType type,
+        int stacks,
+        in AilmentDeliveryContext context)
     {
         if (IsDead || !IsAlive)
             return;
 
-        _ailments?.Apply(type, stacks, 1f);
+        _ailments?.Apply(type, stacks, in context);
     }
 
     public void ApplyStun(float duration)
@@ -164,16 +167,21 @@ public class EnemyController : MonoBehaviour, IDamageable
         _stunRemaining = Mathf.Max(_stunRemaining, duration);
     }
 
-    public void ApplyAilments(AilmentApplication[] ailments, float damageMultiplier)
+    public void ApplyAilments(
+        AilmentApplication[] ailments,
+        in AilmentDeliveryContext context)
     {
         if (IsDead || !IsAlive || ailments == null || ailments.Length == 0)
             return;
 
-        ApplyAilmentsOfType(ailments, AilmentType.Bleed, damageMultiplier);
-        ApplyAilmentsOfType(ailments, AilmentType.Poison, damageMultiplier);
+        ApplyAilmentsOfType(ailments, AilmentType.Bleed, in context);
+        ApplyAilmentsOfType(ailments, AilmentType.Poison, in context);
     }
 
-    private void ApplyAilmentsOfType(AilmentApplication[] ailments, AilmentType type, float damageMultiplier)
+    private void ApplyAilmentsOfType(
+        AilmentApplication[] ailments,
+        AilmentType type,
+        in AilmentDeliveryContext context)
     {
         for (int i = 0; i < ailments.Length; i++)
         {
@@ -181,7 +189,7 @@ public class EnemyController : MonoBehaviour, IDamageable
             if (entry.type != type)
                 continue;
 
-            _ailments?.Apply(entry.type, entry.stacks, damageMultiplier);
+            _ailments?.Apply(entry.type, entry.stacks, in context);
         }
     }
 
@@ -305,7 +313,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         float slowPercentage,
         float slowDuration,
         AilmentApplication[] ailments,
-        float ailmentDamageMultiplier)
+        AilmentDeliveryContext ailmentContext)
     {
         if (IsDead) return 0;
 
@@ -314,7 +322,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         ApplyKnockback(attackerPosition, knockbackForce, knockbackDuration);
         ApplySlow(slowPercentage, slowDuration);
-        ApplyAilments(ailments, ailmentDamageMultiplier);
+        ApplyAilments(ailments, in ailmentContext);
         return actualDamage;
     }
 

@@ -42,6 +42,16 @@ public sealed class PlayerBehaviors : MonoBehaviour
         return false;
     }
 
+    public bool TryGetAilmentOverloadSettings(
+        out AilmentOverloadSettings settings)
+    {
+        if (_runtime != null)
+            return _runtime.TryGetAilmentOverloadSettings(out settings);
+
+        settings = default;
+        return false;
+    }
+
     private void Awake()
     {
         _inventory = GetComponent<PlayerInventory>();
@@ -61,6 +71,7 @@ public sealed class PlayerBehaviors : MonoBehaviour
             combatChannel.OnEnemyKilled += HandleEnemyKilled;
             combatChannel.OnSkillUsed += HandleSkillUsed;
             combatChannel.OnSkillCanceled += HandleSkillCanceled;
+            combatChannel.OnMarkerDetonated += HandleMarkerDetonated;
             combatChannel.OnLoadoutChanged += HandleLoadoutChanged;
         }
 
@@ -79,6 +90,7 @@ public sealed class PlayerBehaviors : MonoBehaviour
             combatChannel.OnEnemyKilled -= HandleEnemyKilled;
             combatChannel.OnSkillUsed -= HandleSkillUsed;
             combatChannel.OnSkillCanceled -= HandleSkillCanceled;
+            combatChannel.OnMarkerDetonated -= HandleMarkerDetonated;
             combatChannel.OnLoadoutChanged -= HandleLoadoutChanged;
         }
 
@@ -142,6 +154,14 @@ public sealed class PlayerBehaviors : MonoBehaviour
             return;
 
         _runtime.HandleCancel(transform.position, ResolveAimDirection());
+    }
+
+    private void HandleMarkerDetonated(Vector3 detonationPosition)
+    {
+        _runtime.HandleMarkerDetonate(
+            transform.position,
+            detonationPosition,
+            ResolveAimDirection());
     }
 
     private void LateUpdate()

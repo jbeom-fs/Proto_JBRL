@@ -153,7 +153,7 @@ public sealed class ProjectileFireService
             request.SlowDuration,
             request.StunDuration,
             request.Ailments,
-            request.AilmentDamageMultiplier,
+            request.AilmentContext,
             request.OnEnemyHit,
             request.DaggerMarkerDuration,
             request.IsCrit,

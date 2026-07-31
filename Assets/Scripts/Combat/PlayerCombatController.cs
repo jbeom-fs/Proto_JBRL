@@ -567,6 +567,17 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             ? _relicBehaviors.AttackAilments
             : Array.Empty<AilmentApplication>();
 
+    public AilmentDeliveryContext CreateAilmentDeliveryContext(
+        float damageMultiplier)
+    {
+        AilmentOverloadSettings overload = default;
+        _relicBehaviors?.TryGetAilmentOverloadSettings(out overload);
+        return new AilmentDeliveryContext(damageMultiplier, overload);
+    }
+
+    public AilmentDeliveryContext CurrentAilmentDeliveryContext =>
+        CreateAilmentDeliveryContext(AilmentDamageMultiplier);
+
     private float EffectiveReloadTime()
     {
         if (currentWeapon == null)
@@ -864,7 +875,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             currentWeapon.slowPercentage,
             currentWeapon.slowDuration,
             ResolveBasicAttackAilments(),
-            AilmentDamageMultiplier,
+            CurrentAilmentDeliveryContext,
             hitRadius);
 
         ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
@@ -1342,7 +1353,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void HandleDaggerProjectileEnemyHit(EnemyController enemy, ProjectileController projectile)
     {
-        if (enemy == null || projectile == null)
+        if (enemy == null || projectile == null || projectile.IsProcCast)
             return;
 
         _daggerMarkers.Apply(enemy, projectile.DaggerMarkerDuration);
@@ -1357,6 +1368,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (!_daggerMarkers.Detonate(enemy))
             return;
 
+        Vector3 detonationPosition = enemy.transform.position;
         int detonationDamage = skill.markerDetonationDamage > 0
             ? skill.markerDetonationDamage
             : skill.damage;
@@ -1371,12 +1383,15 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 0f,
                 0f,
                 null,
-                1f);
+                AilmentDeliveryContext.Default);
             ReportLifestealDamage(actualDamage);
             if (actualDamage > 0)
                 RegisterComboHit();
             LogDamageDealt(actualDamage, didCrit);
         }
+
+        // Resolve authored single-target damage first so a proc kill cannot suppress it.
+        combatChannel?.RaiseMarkerDetonated(detonationPosition);
 
         if (skill.resetCooldownOnMarkerDetonate && !_daggerDashCooldownResetThisDash)
         {

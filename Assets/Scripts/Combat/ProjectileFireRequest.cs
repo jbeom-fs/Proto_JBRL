@@ -29,7 +29,8 @@ public sealed class ProjectileFireRequest
     public float SlowPercentage;
     public float SlowDuration;
     public AilmentApplication[] Ailments;
-    public float AilmentDamageMultiplier = 1f;
+    public AilmentDeliveryContext AilmentContext =
+        AilmentDeliveryContext.Default;
     public float StunDuration;
     public Action<EnemyController, ProjectileController> OnEnemyHit;
     public float DaggerMarkerDuration;

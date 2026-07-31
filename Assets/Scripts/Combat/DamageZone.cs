@@ -88,13 +88,15 @@ public sealed class DamageZone : MonoBehaviour
                     _payload.SlowPercentage,
                     _payload.SlowDuration,
                     _payload.Ailments,
-                    _payload.AilmentMultiplier);
+                    _payload.AilmentContext);
                 continue;
             }
 
             // damage == 0 uses status-only APIs to avoid ApplyCombatImpact's minimum damage.
             enemy.ApplySlowEffect(_payload.SlowPercentage, _payload.SlowDuration);
-            enemy.ApplyAilments(_payload.Ailments, _payload.AilmentMultiplier);
+            AilmentDeliveryContext ailmentContext =
+                _payload.AilmentContext;
+            enemy.ApplyAilments(_payload.Ailments, in ailmentContext);
         }
     }
 

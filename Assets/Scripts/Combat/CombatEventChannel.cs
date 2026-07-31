@@ -14,6 +14,7 @@ public class CombatEventChannel : ScriptableObject
     public event Action<PlayerCombatController> OnPlayerDied;
     public event Action<SkillData>       OnSkillUsed;
     public event Action<SkillData, SkillData> OnSkillCanceled;
+    public event Action<Vector3>         OnMarkerDetonated;
     public event Action                  OnLoadoutChanged;
 
     public void RaiseEnemyKilled(EnemyController enemy)     => OnEnemyKilled?.Invoke(enemy);
@@ -23,5 +24,7 @@ public class CombatEventChannel : ScriptableObject
     public void RaiseSkillUsed(SkillData skill)             => OnSkillUsed?.Invoke(skill);
     public void RaiseSkillCanceled(SkillData canceled, SkillData canceling) =>
         OnSkillCanceled?.Invoke(canceled, canceling);
+    public void RaiseMarkerDetonated(Vector3 detonationPosition) =>
+        OnMarkerDetonated?.Invoke(detonationPosition);
     public void RaiseLoadoutChanged()                       => OnLoadoutChanged?.Invoke();
 }

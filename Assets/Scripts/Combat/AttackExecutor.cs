@@ -54,7 +54,7 @@ public class AttackExecutor
         float slowPercentage,
         float slowDuration,
         AilmentApplication[] ailments,
-        float ailmentDamageMultiplier,
+        AilmentDeliveryContext ailmentContext,
         float hitRadius,
         CustomShapeMatcher? customShape = null)
     {
@@ -86,7 +86,7 @@ public class AttackExecutor
                     slowPercentage,
                     slowDuration,
                     ailments,
-                    ailmentDamageMultiplier);
+                    ailmentContext);
         }
         else
         {
@@ -103,7 +103,7 @@ public class AttackExecutor
                 slowPercentage,
                 slowDuration,
                 ailments,
-                ailmentDamageMultiplier);
+                ailmentContext);
         }
 
         _isAttackAlreadyProcessed = true;
@@ -198,7 +198,7 @@ public class AttackExecutor
         float slowPercentage,
         float slowDuration,
         AilmentApplication[] ailments,
-        float ailmentDamageMultiplier)
+        AilmentDeliveryContext ailmentContext)
     {
         if (target == null || !target.IsAlive) return;
 
@@ -212,7 +212,7 @@ public class AttackExecutor
                 slowPercentage,
                 slowDuration,
                 ailments,
-                ailmentDamageMultiplier);
+                ailmentContext);
             _damageDealtThisAttack += actualDamage;
             _hitEnemiesThisAttack.Add(enemy);
             return;

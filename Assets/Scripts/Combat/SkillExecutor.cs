@@ -154,7 +154,7 @@ public sealed class SkillExecutor
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
             ResolveAttackAilments(context),
-            ResolveAilmentMultiplier(context),
+            ResolveAilmentContext(context),
             context.HitRadius,
             customShape);
         NotifyInstantAreaHit(targets, customShape, context.CasterPosition);
@@ -230,7 +230,7 @@ public sealed class SkillExecutor
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
             ResolveAttackAilments(context),
-            ResolveAilmentMultiplier(context),
+            ResolveAilmentContext(context),
             context.HitRadius,
             customShape);
         NotifyInstantAreaHit(targets, customShape, origin);
@@ -357,7 +357,7 @@ public sealed class SkillExecutor
             skill.slowPercentage,
             skill.slowDuration,
             ResolveAttackAilments(context),
-            ResolveAilmentMultiplier(context),
+            ResolveAilmentContext(context),
             skill.zoneRadius,
             skill.zoneTickInterval);
         if (!DamageZoneSpawner.Instance.SpawnZone(
@@ -402,9 +402,11 @@ public sealed class SkillExecutor
         else
             context.CasterTransform.position = blinkPosition;
 
-        if (skill.appliesDaggerMarker)
+        if (!context.IsProcCast && skill.appliesDaggerMarker)
             DaggerMarkerRegistry.Instance.Apply(target, skill.markerDuration);
-        target.ApplyAilments(skill.ailments, ResolveAilmentMultiplier(context));
+        AilmentDeliveryContext ailmentContext =
+            ResolveAilmentContext(context);
+        target.ApplyAilments(skill.ailments, in ailmentContext);
 
         PlayConfiguredAnimation(context, skill, (targetPosition - start).normalized);
         return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
@@ -453,7 +455,7 @@ public sealed class SkillExecutor
             return SkillExecutionResult.Failure;
 
         SkillData skill = context.Skill;
-        if (skill.appliesDaggerMarker)
+        if (!context.IsProcCast && skill.appliesDaggerMarker)
             context.CasterCombat.BeginDaggerBasicAttackMarkerBuff(skill);
 
         PlayConfiguredAnimation(context, skill, ResolveExecutionDirection(context));
@@ -500,8 +502,10 @@ public sealed class SkillExecutor
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
             Ailments = hasDashDamage ? ResolveAttackAilments(context) : skill.ailments,
-            AilmentDamageMultiplier = ResolveAilmentMultiplier(context),
-            OnEnemyHit = skill.detonatesDaggerMarker && context.CasterCombat != null
+            AilmentContext = ResolveAilmentContext(context),
+            OnEnemyHit = !context.IsProcCast &&
+                         skill.detonatesDaggerMarker &&
+                         context.CasterCombat != null
                 ? context.CasterCombat.PrepareDaggerDashHitCallback(skill, context.SlotIndex)
                 : null
         };
@@ -543,17 +547,22 @@ public sealed class SkillExecutor
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
             Ailments = ResolveAttackAilments(context),
-            AilmentDamageMultiplier = ResolveAilmentMultiplier(context),
-            OnEnemyHit = skill.appliesDaggerMarker && context.CasterCombat != null
+            AilmentContext = ResolveAilmentContext(context),
+            OnEnemyHit = !context.IsProcCast &&
+                         skill.appliesDaggerMarker &&
+                         context.CasterCombat != null
                 ? context.CasterCombat.DaggerProjectileEnemyHitCallback
                 : null,
             DaggerMarkerDuration = skill.markerDuration
         };
     }
 
-    private static float ResolveAilmentMultiplier(SkillExecutionContext context)
+    private static AilmentDeliveryContext ResolveAilmentContext(
+        SkillExecutionContext context)
     {
-        return context.CasterCombat != null ? context.CasterCombat.AilmentDamageMultiplier : 1f;
+        return context.CasterCombat != null
+            ? context.CasterCombat.CurrentAilmentDeliveryContext
+            : AilmentDeliveryContext.Default;
     }
 
     private static int ResolveSkillDamage(SkillExecutionContext context)

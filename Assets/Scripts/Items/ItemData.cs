@@ -154,6 +154,11 @@ public sealed class ItemData
                     behavior.overhealShieldConversionPct,
                 lifestealShieldCapPct = behavior.lifestealShieldCapPct,
                 lifestealShieldDuration = behavior.lifestealShieldDuration,
+                ailmentOverloadType = behavior.ailmentOverloadType,
+                ailmentOverloadThreshold =
+                    behavior.ailmentOverloadThreshold,
+                ailmentOverloadBonusPct =
+                    behavior.ailmentOverloadBonusPct,
                 duration = behavior.duration,
                 procSkill = behavior.procSkill,
                 procOrigin = behavior.procOrigin,

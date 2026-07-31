@@ -70,6 +70,19 @@ public sealed class BehaviorRuntime
         public int StackCount { get; }
     }
 
+    private readonly struct AilmentOverloadEntry
+    {
+        public AilmentOverloadEntry(BehaviorEffect behavior)
+        {
+            Settings = new AilmentOverloadSettings(
+                behavior.ailmentOverloadType,
+                behavior.ailmentOverloadThreshold,
+                behavior.ailmentOverloadBonusPct / 100f);
+        }
+
+        public AilmentOverloadSettings Settings { get; }
+    }
+
     private readonly Action<int> _healCallback;
     private readonly Action<ShieldSource, int, float> _shieldCallback;
     private readonly Action<int, float> _attackBuffCallback;
@@ -77,13 +90,19 @@ public sealed class BehaviorRuntime
     private readonly List<TriggerEntry> _onKill = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onSkillUsed = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onCancel = new List<TriggerEntry>();
+    private readonly List<TriggerEntry> _onMarkerDetonate =
+        new List<TriggerEntry>();
     private readonly List<ProcEntry> _onKillProcs = new List<ProcEntry>();
     private readonly List<ProcEntry> _onSkillUsedProcs = new List<ProcEntry>();
     private readonly List<ProcEntry> _onCancelProcs = new List<ProcEntry>();
+    private readonly List<ProcEntry> _onMarkerDetonateProcs =
+        new List<ProcEntry>();
     private readonly List<Vector3> _pendingKillPositions = new List<Vector3>(8);
     private readonly List<AilmentApplication> _attackAilments = new List<AilmentApplication>();
     private readonly List<LifestealEngineEntry> _lifestealEngines =
         new List<LifestealEngineEntry>();
+    private readonly List<AilmentOverloadEntry> _ailmentOverloads =
+        new List<AilmentOverloadEntry>();
 
     public BehaviorRuntime(
         Action<int> healCallback,
@@ -145,6 +164,20 @@ public sealed class BehaviorRuntime
         return true;
     }
 
+    public bool TryGetAilmentOverloadSettings(
+        out AilmentOverloadSettings settings)
+    {
+        if (_ailmentOverloads.Count == 0)
+        {
+            settings = default;
+            return false;
+        }
+
+        // Current loadout supports one equipped passive per form.
+        settings = _ailmentOverloads[0].Settings;
+        return true;
+    }
+
     public void Rescan(
         IReadOnlyList<InventoryItemStack> items,
         IReadOnlyList<PassiveEngravingData> equippedPassives)
@@ -152,12 +185,15 @@ public sealed class BehaviorRuntime
         _onKill.Clear();
         _onSkillUsed.Clear();
         _onCancel.Clear();
+        _onMarkerDetonate.Clear();
         _onKillProcs.Clear();
         _onSkillUsedProcs.Clear();
         _onCancelProcs.Clear();
+        _onMarkerDetonateProcs.Clear();
         _pendingKillPositions.Clear();
         _attackAilments.Clear();
         _lifestealEngines.Clear();
+        _ailmentOverloads.Clear();
 
         if (items != null)
         {
@@ -270,6 +306,27 @@ public sealed class BehaviorRuntime
             ExecuteProc(_onCancelProcs[i], playerPosition, playerPosition, aimDirection, false);
     }
 
+    public void HandleMarkerDetonate(
+        Vector3 playerPosition,
+        Vector3 detonationPosition,
+        Vector2 aimDirection)
+    {
+        // Marker detonation is an event, not a skill use.
+        // skillTypeFilter intentionally does not apply on this trigger.
+        for (int i = 0; i < _onMarkerDetonate.Count; i++)
+            Execute(_onMarkerDetonate[i]);
+
+        for (int i = 0; i < _onMarkerDetonateProcs.Count; i++)
+        {
+            ExecuteProc(
+                _onMarkerDetonateProcs[i],
+                playerPosition,
+                detonationPosition,
+                aimDirection,
+                true);
+        }
+    }
+
     private void AddBehaviors(
         IReadOnlyList<BehaviorEffect> behaviors,
         int stackCount,
@@ -310,6 +367,14 @@ public sealed class BehaviorRuntime
                         _onCancel,
                         _onCancelProcs);
                     break;
+                case BehaviorTrigger.OnMarkerDetonate:
+                    AddTriggeredBehavior(
+                        behavior,
+                        stackCount,
+                        shieldSource,
+                        _onMarkerDetonate,
+                        _onMarkerDetonateProcs);
+                    break;
                 case BehaviorTrigger.Passive:
                     AddPassiveBehavior(behavior, stackCount);
                     break;
@@ -349,6 +414,12 @@ public sealed class BehaviorRuntime
         {
             _lifestealEngines.Add(
                 new LifestealEngineEntry(behavior, stackCount));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.AilmentOverload)
+        {
+            _ailmentOverloads.Add(new AilmentOverloadEntry(behavior));
             return;
         }
 

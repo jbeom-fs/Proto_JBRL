@@ -6,7 +6,8 @@ public enum BehaviorTrigger
     OnKill,
     OnSkillUsed,
     Passive,
-    OnSkillCanceled
+    OnSkillCanceled,
+    OnMarkerDetonate
 }
 
 public enum BehaviorAction
@@ -17,7 +18,8 @@ public enum BehaviorAction
     CastSkill,
     Shield,
     LifestealEngine,
-    AttackBuff
+    AttackBuff,
+    AilmentOverload
 }
 
 public enum ProcOriginMode
@@ -58,6 +60,14 @@ public sealed class BehaviorEffect
     public float lifestealShieldCapPct;
     [Tooltip("LifestealEngine 전용. 피흡 쉴드 지속시간(초)입니다. 0 이하면 무한입니다.")]
     public float lifestealShieldDuration;
+    [Tooltip("AilmentOverload target ailment type.")]
+    public AilmentType ailmentOverloadType = AilmentType.Poison;
+    [Tooltip("AilmentOverload explosion threshold in stacks.")]
+    [Min(1)]
+    public int ailmentOverloadThreshold = 10;
+    [Tooltip("AilmentOverload bonus damage percentage.")]
+    [Min(0f)]
+    public float ailmentOverloadBonusPct = 30f;
     public float duration;
     public SkillData procSkill;
     public ProcOriginMode procOrigin;
