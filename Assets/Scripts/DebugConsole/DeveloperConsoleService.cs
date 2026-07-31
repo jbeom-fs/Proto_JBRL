@@ -19,7 +19,7 @@ public sealed class DeveloperConsoleService
         "Usage: /passive <show | list [form] | unlock <id> | lock <id>>";
     private const string DropQueryUsage = "Usage: /dropquery <category> [count=20]";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
-    private const string AilmentUsage = "Usage: /ailment <poison|bleed> [tickDamage=2] [duration=5]";
+    private const string AilmentUsage = "Usage: /ailment <poison|bleed> [stacks=1]";
     private const string StunUsage = "Usage: /stun [duration=2]";
     private const string ShieldUsage = "Usage: /shield <positiveAmount> [duration=5; <=0 is infinite]";
     private const string ToastUsage = "Usage: /toast <duration> <message...>";
@@ -578,19 +578,16 @@ public sealed class DeveloperConsoleService
         if (_executor == null)
             return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
 
-        if (!TryReadAilmentArguments(arguments, out string typeToken, out string tickDamageText, out string durationText))
+        if (!TryReadAilmentArguments(arguments, out string typeToken, out string stacksText))
             return DeveloperConsoleCommandResult.Error(AilmentUsage);
 
         if (!TryResolveAilmentType(typeToken, out AilmentType type))
             return DeveloperConsoleCommandResult.Error("Unknown ailment: " + typeToken + ". " + AilmentUsage);
 
-        if (!TryParsePositiveOptionalFloat(tickDamageText, 2f, out float tickDamage))
+        if (!TryParsePositiveOptionalCount(stacksText, out int stacks))
             return DeveloperConsoleCommandResult.Error(AilmentUsage);
 
-        if (!TryParsePositiveOptionalFloat(durationText, 5f, out float duration))
-            return DeveloperConsoleCommandResult.Error(AilmentUsage);
-
-        return _executor.ExecuteAilment(type, tickDamage, duration);
+        return _executor.ExecuteAilment(type, stacks);
     }
 
     private DeveloperConsoleCommandResult ExecuteStun(string arguments)
@@ -772,25 +769,21 @@ public sealed class DeveloperConsoleService
     private static bool TryReadAilmentArguments(
         string arguments,
         out string typeToken,
-        out string tickDamageText,
-        out string durationText)
+        out string stacksText)
     {
         typeToken = string.Empty;
-        tickDamageText = string.Empty;
-        durationText = string.Empty;
+        stacksText = string.Empty;
 
         if (string.IsNullOrWhiteSpace(arguments))
             return false;
 
         string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 1 || parts.Length > 3)
+        if (parts.Length < 1 || parts.Length > 2)
             return false;
 
         typeToken = parts[0];
-        if (parts.Length >= 2)
-            tickDamageText = parts[1];
-        if (parts.Length == 3)
-            durationText = parts[2];
+        if (parts.Length == 2)
+            stacksText = parts[1];
 
         return !string.IsNullOrWhiteSpace(typeToken);
     }

@@ -46,6 +46,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private bool _holdsEliteKey;
     private Vector3 _lastSafePosition;
     private bool _warnedMissingHitFlash;
+    private bool _warnedMissingAilmentProfiles;
     private int _lastAilmentFlashFrame = -1;
     private EnemyAilments _ailments;
     private readonly List<SlowEffect> _activeSlows = new();
@@ -84,7 +85,6 @@ public class EnemyController : MonoBehaviour, IDamageable
         _ailmentIndicator = GetComponent<EnemyAilmentIndicator>();
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
-        _ailments = new EnemyAilments(ApplyAilmentTickDamage);
         _lastSafePosition = transform.position;
         ApplyStationaryPhysicsSettings();
         if (data != null)
@@ -101,6 +101,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     /// <summary>프리팹 풀에서 꺼낼 때 데이터를 주입합니다.</summary>
     public void Initialize(EnemyData enemyData)
     {
+        WarnIfAilmentsNotConfigured();
         DaggerMarkerRegistry.Instance.Clear(this);
         data       = enemyData;
         if (_inventory == null)
@@ -134,12 +135,25 @@ public class EnemyController : MonoBehaviour, IDamageable
         ApplyDamageReturningActual(damage);
     }
 
-    public void ApplyAilment(AilmentType type, float tickDamage, float duration)
+    public void ConfigureAilments(EnemyAilmentProfileDatabase profiles)
+    {
+        if (profiles == null)
+        {
+            _ailments = null;
+            WarnIfAilmentsNotConfigured();
+            return;
+        }
+
+        _ailments = new EnemyAilments(profiles, ApplyAilmentTickDamage);
+        _warnedMissingAilmentProfiles = false;
+    }
+
+    public void ApplyAilment(AilmentType type, int stacks)
     {
         if (IsDead || !IsAlive)
             return;
 
-        _ailments?.Apply(type, tickDamage, duration);
+        _ailments?.Apply(type, stacks, 1f);
     }
 
     public void ApplyStun(float duration)
@@ -167,8 +181,19 @@ public class EnemyController : MonoBehaviour, IDamageable
             if (entry.type != type)
                 continue;
 
-            _ailments?.Apply(entry.type, entry.tickDamage * damageMultiplier, entry.duration);
+            _ailments?.Apply(entry.type, entry.stacks, damageMultiplier);
         }
+    }
+
+    private void WarnIfAilmentsNotConfigured()
+    {
+        if (_ailments != null || _warnedMissingAilmentProfiles)
+            return;
+
+        Debug.LogError(
+            "[EnemyController] Enemy ailments were not configured. Inject EnemyAilmentProfileDatabase through EnemyPoolManager.",
+            this);
+        _warnedMissingAilmentProfiles = true;
     }
 
     public int GetAilmentStacks(AilmentType type)

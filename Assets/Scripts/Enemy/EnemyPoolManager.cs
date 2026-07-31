@@ -13,6 +13,7 @@ public class EnemyPoolManager : MonoBehaviour
 
     public static EnemyPoolManager Instance { get; private set; }
 
+    [SerializeField] private EnemyAilmentProfileDatabase ailmentProfiles;
     [SerializeField] private PoolEntry[] entries;
 
     private readonly Dictionary<EnemyData, EnemyController> _prefabs = new();
@@ -35,7 +36,26 @@ public class EnemyPoolManager : MonoBehaviour
         }
 
         Instance = this;
+        ValidateAilmentProfiles();
         BuildPools();
+    }
+
+    private void ValidateAilmentProfiles()
+    {
+        if (ailmentProfiles == null)
+        {
+            Debug.LogError(
+                "[EnemyPoolManager] EnemyAilmentProfileDatabase is not assigned. Enemy ailments are disabled.",
+                this);
+            return;
+        }
+
+        if (!ailmentProfiles.TryValidate(out string error))
+        {
+            Debug.LogError(
+                "[EnemyPoolManager] Invalid EnemyAilmentProfileDatabase: " + error,
+                ailmentProfiles);
+        }
     }
 
     private void BuildPools()
@@ -104,6 +124,7 @@ public class EnemyPoolManager : MonoBehaviour
         }
 
         EnemyController enemy = Instantiate(prefab, transform);
+        enemy.ConfigureAilments(ailmentProfiles);
         enemy.gameObject.SetActive(false);
         return enemy;
     }

@@ -1089,7 +1089,6 @@ public sealed class ItemDashboardWindow : EditorWindow
             SerializedProperty action = behavior.FindPropertyRelative("action");
             SerializedProperty skillTypeFilter = behavior.FindPropertyRelative("skillTypeFilter");
             SerializedProperty value = behavior.FindPropertyRelative("value");
-            SerializedProperty duration = behavior.FindPropertyRelative("duration");
             SerializedProperty procSkill = behavior.FindPropertyRelative("procSkill");
             SerializedProperty procOrigin = behavior.FindPropertyRelative("procOrigin");
             SerializedProperty procDirection = behavior.FindPropertyRelative("procDirection");
@@ -1124,7 +1123,12 @@ public sealed class ItemDashboardWindow : EditorWindow
             BehaviorAction selectedAction = (BehaviorAction)nextAction;
             int nextValue = value != null ? value.intValue : 0;
             if (selectedAction != BehaviorAction.CastSkill)
-                nextValue = EditorGUILayout.IntField("value", nextValue);
+            {
+                string valueLabel = IsAttackAilmentAction(selectedAction)
+                    ? "stacks"
+                    : "value";
+                nextValue = EditorGUILayout.IntField(valueLabel, nextValue);
+            }
             SkillData nextProcSkill = procSkill != null ? procSkill.objectReferenceValue as SkillData : null;
             int nextProcOrigin = procOrigin != null ? procOrigin.enumValueIndex : 0;
             int nextProcDirection = procDirection != null ? procDirection.enumValueIndex : 0;
@@ -1140,9 +1144,6 @@ public sealed class ItemDashboardWindow : EditorWindow
                 if ((ProcOriginMode)nextProcOrigin == ProcOriginMode.RandomInRadius)
                     nextProcSpawnRadius = EditorGUILayout.FloatField("procSpawnRadius", nextProcSpawnRadius);
             }
-            float nextDuration = duration != null ? duration.floatValue : 0f;
-            if (IsAttackAilmentAction(selectedAction))
-                nextDuration = EditorGUILayout.FloatField("duration", nextDuration);
             bool changed = EditorGUI.EndChangeCheck();
             EditorGUILayout.EndVertical();
 
@@ -1154,7 +1155,6 @@ public sealed class ItemDashboardWindow : EditorWindow
             SetInt(skillTypeFilter, nextFilter);
             if (selectedAction != BehaviorAction.CastSkill)
                 SetInt(value, nextValue);
-            SetFloat(duration, nextDuration);
             SetObject(procSkill, nextProcSkill);
             SetEnum(procOrigin, nextProcOrigin);
             SetEnum(procDirection, nextProcDirection);
@@ -1742,7 +1742,6 @@ public sealed class ItemDashboardWindow : EditorWindow
         row.HasUnfilteredOnSkillUsedBehavior = false;
         row.HasNonPositiveBehaviorValue = false;
         row.HasInvalidBehaviorCombination = false;
-        row.HasNonPositiveAttackAilmentDuration = false;
         row.HasMissingProcSkill = false;
         row.HasUnsupportedProcSkill = false;
         row.HasOnSkillUsedHitPosition = false;
@@ -1756,7 +1755,6 @@ public sealed class ItemDashboardWindow : EditorWindow
             BehaviorAction action = (BehaviorAction)GetInt(behavior.FindPropertyRelative("action"));
             int skillTypeFilter = GetInt(behavior.FindPropertyRelative("skillTypeFilter"));
             int value = GetInt(behavior.FindPropertyRelative("value"));
-            float duration = GetFloat(behavior.FindPropertyRelative("duration"));
             SkillData procSkill = GetObject<SkillData>(behavior.FindPropertyRelative("procSkill"));
             ProcOriginMode procOrigin = (ProcOriginMode)GetInt(behavior.FindPropertyRelative("procOrigin"));
             ProcDirectionMode procDirection = (ProcDirectionMode)GetInt(behavior.FindPropertyRelative("procDirection"));
@@ -1768,8 +1766,6 @@ public sealed class ItemDashboardWindow : EditorWindow
                 row.HasNonPositiveBehaviorValue = true;
             if (!IsValidBehaviorCombination(trigger, action))
                 row.HasInvalidBehaviorCombination = true;
-            if (IsAttackAilmentAction(action) && duration <= 0f)
-                row.HasNonPositiveAttackAilmentDuration = true;
             if (action == BehaviorAction.CastSkill)
             {
                 if (procSkill == null)
@@ -1885,9 +1881,6 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (row.HasInvalidBehaviorCombination)
             AddWarning(row, WarningSeverity.Error, "[Error] behaviorEffects trigger/action 조합이 유효하지 않음: " + location, row.Database);
-
-        if (row.HasNonPositiveAttackAilmentDuration)
-            AddWarning(row, WarningSeverity.Warning, "[Warn] 공격 ailment behavior의 duration이 0 이하: " + location, row.Database);
 
         if (row.HasMissingProcSkill)
             AddWarning(row, WarningSeverity.Error, "[Error] CastSkill behavior의 procSkill 참조가 null: " + location, row.Database);
@@ -3156,7 +3149,6 @@ public sealed class ItemDashboardWindow : EditorWindow
         public bool HasUnfilteredOnSkillUsedBehavior;
         public bool HasNonPositiveBehaviorValue;
         public bool HasInvalidBehaviorCombination;
-        public bool HasNonPositiveAttackAilmentDuration;
         public bool HasMissingProcSkill;
         public bool HasUnsupportedProcSkill;
         public bool HasOnSkillUsedHitPosition;

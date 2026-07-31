@@ -368,8 +368,7 @@ public sealed class BehaviorRuntime
         _attackAilments.Add(new AilmentApplication
         {
             type = type,
-            tickDamage = behavior.value * stackCount,
-            duration = behavior.duration
+            stacks = behavior.value * stackCount
         });
     }
 

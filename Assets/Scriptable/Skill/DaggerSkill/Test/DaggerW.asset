@@ -41,8 +41,7 @@ MonoBehaviour:
   slowDuration: 0
   ailments:
   - type: 1
-    tickDamage: 5
-    duration: 5
+    stacks: 1
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
   projectileSpeed: 18
   projectileLifetime: 2.5

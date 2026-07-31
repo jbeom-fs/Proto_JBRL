@@ -147,7 +147,7 @@ public class SkillData : ScriptableObject
     [Min(0f)]
     public float slowDuration = 0f;
 
-    [Tooltip("DoT applications applied on hit. Empty means no ailment.")]
+    [Tooltip("Ailment stacks applied on hit. Empty means no ailment.")]
     public AilmentApplication[] ailments;
 
     [Space(8)]

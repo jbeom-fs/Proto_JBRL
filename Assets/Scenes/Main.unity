@@ -90627,6 +90627,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45800b0224eaf31498b783d5d167c41f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPoolManager
+  ailmentProfiles: {fileID: 11400000, guid: f3093bda842a4e87acfc25dae68ca9e8, type: 2}
   entries:
   - data: {fileID: 11400000, guid: 65c75f48657fab74f84a6900002dcdf0, type: 2}
     prefab: {fileID: 2665095285417421368, guid: 72c0494fbc76c6148abd0ba0434dde45, type: 3}

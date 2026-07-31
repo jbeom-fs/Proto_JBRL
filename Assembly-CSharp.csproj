@@ -52,6 +52,7 @@
     <Compile Include="Assets\Scripts\System\GamePersistenceCoordinator.cs" />
     <Compile Include="Assets\Scripts\Combat\SkillHitFlashRenderer.cs" />
     <Compile Include="Assets\Scripts\UI\FormSelectCardUI.cs" />
+    <Compile Include="Assets\Scripts\Data\EnemyAilmentProfileDatabase.cs" />
     <Compile Include="Assets\Scripts\UI\ArenaHealthBarPanel.cs" />
     <Compile Include="Assets\Scripts\Combat\ProjectileFireRequest.cs" />
     <Compile Include="Assets\Scripts\Data\StatusEffectIconTable.cs" />

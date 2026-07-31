@@ -11,48 +11,32 @@ public enum AilmentType
 public struct AilmentApplication
 {
     public AilmentType type;
-    public float tickDamage;
-    public float duration;
+    [Min(1)] public int stacks;
 }
 
 public sealed class EnemyAilments
 {
     private const int AilmentTypeCount = 2;
 
-    private static readonly AilmentProfile[] s_Profiles =
-    {
-        new AilmentProfile(1.0f, 10),
-        new AilmentProfile(0.5f, 5)
-    };
-
     private readonly Action<int> _applyTickDamage;
+    private readonly EnemyAilmentProfileDatabase _profiles;
     private readonly Bucket[] _buckets = new Bucket[AilmentTypeCount];
     private readonly AilmentType[] _activeOrder = new AilmentType[AilmentTypeCount];
     private int _activeOrderCount;
     private int _version;
 
-    private readonly struct AilmentProfile
-    {
-        public readonly float TickInterval;
-        public readonly int MaxStacks;
-
-        public AilmentProfile(float tickInterval, int maxStacks)
-        {
-            TickInterval = tickInterval;
-            MaxStacks = maxStacks;
-        }
-    }
-
     private struct Bucket
     {
-        public float TotalTickDamage;
         public int Stacks;
-        public float RemainingDuration;
         public float TickTimer;
+        public float DamagePerStack;
     }
 
-    public EnemyAilments(Action<int> applyTickDamage)
+    public EnemyAilments(
+        EnemyAilmentProfileDatabase profiles,
+        Action<int> applyTickDamage)
     {
+        _profiles = profiles;
         _applyTickDamage = applyTickDamage;
     }
 
@@ -70,28 +54,34 @@ public sealed class EnemyAilments
         }
     }
 
-    public void Apply(AilmentType type, float tickDamage, float duration)
+    public void Apply(AilmentType type, int stacks, float damageMultiplier)
     {
-        if (tickDamage <= 0f || duration <= 0f || !TryGetIndex(type, out int index))
-            return;
-
-        AilmentProfile profile = s_Profiles[index];
-        Bucket bucket = _buckets[index];
-        bool wasInactive = bucket.Stacks == 0;
-
-        if (bucket.Stacks == 0)
-            bucket.TickTimer = profile.TickInterval;
-
-        if (bucket.Stacks < profile.MaxStacks)
+        if (stacks <= 0 ||
+            damageMultiplier <= 0f ||
+            _profiles == null ||
+            !TryGetIndex(type, out int index) ||
+            !_profiles.TryGetProfile(
+                type,
+                out EnemyAilmentProfileDatabase.Profile profile) ||
+            !profile.IsValid)
         {
-            bucket.TotalTickDamage += tickDamage;
-            bucket.Stacks += 1;
+            return;
         }
 
-        bucket.RemainingDuration = Mathf.Max(bucket.RemainingDuration, duration);
+        Bucket bucket = _buckets[index];
+        bool wasInactive = bucket.Stacks == 0;
+        int acceptedStacks = Mathf.Min(stacks, profile.MaxStacks - bucket.Stacks);
+        if (acceptedStacks <= 0)
+            return;
+
+        if (wasInactive)
+            bucket.TickTimer = profile.TickInterval;
+
+        bucket.Stacks += acceptedStacks;
+        bucket.DamagePerStack = profile.DamagePerStack * damageMultiplier;
         _buckets[index] = bucket;
 
-        if (wasInactive && bucket.Stacks > 0)
+        if (wasInactive)
             AppendActiveType(type);
     }
 
@@ -106,25 +96,34 @@ public sealed class EnemyAilments
             if (bucket.Stacks <= 0)
                 continue;
 
-            float activeDelta = Mathf.Min(dt, bucket.RemainingDuration);
-            bucket.RemainingDuration -= dt;
-            bucket.TickTimer -= activeDelta;
-
-            AilmentProfile profile = s_Profiles[i];
-            int versionBeforeTick = _version;
-            while (bucket.TickTimer <= 0f)
+            if (_profiles == null ||
+                !_profiles.TryGetProfile(
+                    (AilmentType)i,
+                    out EnemyAilmentProfileDatabase.Profile profile) ||
+                !profile.IsValid)
             {
-                _applyTickDamage?.Invoke(Mathf.Max(1, Mathf.RoundToInt(bucket.TotalTickDamage)));
+                continue;
+            }
+
+            bucket.TickTimer -= dt;
+            int versionBeforeTick = _version;
+            while (bucket.TickTimer <= 0f && bucket.Stacks > 0)
+            {
+                float tickDamage = bucket.DamagePerStack * bucket.Stacks;
+                _applyTickDamage?.Invoke(
+                    Mathf.Max(1, Mathf.RoundToInt(tickDamage)));
                 if (_version != versionBeforeTick)
                     return;
 
-                bucket.TickTimer += profile.TickInterval;
-            }
+                bucket.Stacks--;
+                if (bucket.Stacks == 0)
+                {
+                    bucket = default;
+                    RemoveActiveType((AilmentType)i);
+                    break;
+                }
 
-            if (bucket.RemainingDuration <= 0f)
-            {
-                bucket = default;
-                RemoveActiveType((AilmentType)i);
+                bucket.TickTimer += profile.TickInterval;
             }
 
             _buckets[i] = bucket;

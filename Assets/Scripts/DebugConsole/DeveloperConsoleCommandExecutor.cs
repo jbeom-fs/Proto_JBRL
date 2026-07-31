@@ -581,7 +581,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Added " + amount + " combo stack(s). " + FormatComboState(combat));
     }
 
-    public DeveloperConsoleCommandResult ExecuteAilment(AilmentType type, float tickDamage, float duration)
+    public DeveloperConsoleCommandResult ExecuteAilment(AilmentType type, int stacks)
     {
         PlayerController activePlayer = PlayerController.Active;
         if (activePlayer == null)
@@ -591,10 +591,10 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         if (target == null)
             return DeveloperConsoleCommandResult.Error("No alive enemy found.");
 
-        target.ApplyAilment(type, tickDamage, duration);
-        int stacks = target.GetAilmentStacks(type);
+        target.ApplyAilment(type, stacks);
+        int activeStacks = target.GetAilmentStacks(type);
         return DeveloperConsoleCommandResult.Success(
-            "Applied " + GetAilmentToken(type) + " to " + GetEnemyDisplayName(target) + " (stacks " + stacks + ").");
+            "Applied " + GetAilmentToken(type) + " to " + GetEnemyDisplayName(target) + " (stacks " + activeStacks + ").");
     }
 
     public DeveloperConsoleCommandResult ExecuteStun(float duration)

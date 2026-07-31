@@ -1419,3 +1419,58 @@ public sealed class SkillDataEditor : Editor
             EditorGUILayout.HelpBox(label + " should be greater than 0.", MessageType.Warning);
     }
 }
+
+[CustomPropertyDrawer(typeof(AilmentApplication))]
+public sealed class AilmentApplicationDrawer : PropertyDrawer
+{
+    public override void OnGUI(
+        Rect position,
+        SerializedProperty property,
+        GUIContent label)
+    {
+        EditorGUI.BeginProperty(position, label, property);
+
+        Rect line = new Rect(
+            position.x,
+            position.y,
+            position.width,
+            EditorGUIUtility.singleLineHeight);
+        property.isExpanded = EditorGUI.Foldout(
+            line,
+            property.isExpanded,
+            label,
+            true);
+        if (property.isExpanded)
+        {
+            int previousIndent = EditorGUI.indentLevel;
+            EditorGUI.indentLevel = previousIndent + 1;
+
+            line.y += EditorGUIUtility.singleLineHeight +
+                      EditorGUIUtility.standardVerticalSpacing;
+            EditorGUI.PropertyField(
+                line,
+                property.FindPropertyRelative("type"));
+
+            line.y += EditorGUIUtility.singleLineHeight +
+                      EditorGUIUtility.standardVerticalSpacing;
+            EditorGUI.PropertyField(
+                line,
+                property.FindPropertyRelative("stacks"));
+
+            EditorGUI.indentLevel = previousIndent;
+        }
+
+        EditorGUI.EndProperty();
+    }
+
+    public override float GetPropertyHeight(
+        SerializedProperty property,
+        GUIContent label)
+    {
+        if (!property.isExpanded)
+            return EditorGUIUtility.singleLineHeight;
+
+        return EditorGUIUtility.singleLineHeight * 3f +
+               EditorGUIUtility.standardVerticalSpacing * 2f;
+    }
+}
