@@ -41,21 +41,54 @@ public readonly struct AilmentOverloadSettings
     }
 }
 
-public readonly struct AilmentDeliveryContext
+public readonly struct ExecuteThresholdSettings
 {
-    public AilmentDeliveryContext(
-        float damageMultiplier,
-        AilmentOverloadSettings overload)
+    public ExecuteThresholdSettings(
+        float hpThresholdRatio,
+        float eliteBossStartHpRatio,
+        float eliteBossStartBonusRate,
+        float eliteBossIntervalHpRatio,
+        float eliteBossBonusPerIntervalRate)
     {
-        DamageMultiplier = damageMultiplier;
-        Overload = overload;
+        HpThresholdRatio = hpThresholdRatio;
+        EliteBossStartHpRatio = eliteBossStartHpRatio;
+        EliteBossStartBonusRate = eliteBossStartBonusRate;
+        EliteBossIntervalHpRatio = eliteBossIntervalHpRatio;
+        EliteBossBonusPerIntervalRate =
+            eliteBossBonusPerIntervalRate;
     }
 
-    public float DamageMultiplier { get; }
-    public AilmentOverloadSettings Overload { get; }
+    public float HpThresholdRatio { get; }
+    public float EliteBossStartHpRatio { get; }
+    public float EliteBossStartBonusRate { get; }
+    public float EliteBossIntervalHpRatio { get; }
+    public float EliteBossBonusPerIntervalRate { get; }
+    public bool EliteBossRampEnabled =>
+        EliteBossStartHpRatio > 0f &&
+        EliteBossIntervalHpRatio > 0f;
+    public bool Enabled =>
+        HpThresholdRatio > 0f ||
+        EliteBossStartHpRatio > 0f;
+}
 
-    public static AilmentDeliveryContext Default =>
-        new AilmentDeliveryContext(1f, default);
+public readonly struct CombatEffectContext
+{
+    public CombatEffectContext(
+        float ailmentDamageMultiplier,
+        AilmentOverloadSettings ailmentOverload,
+        ExecuteThresholdSettings executeThreshold)
+    {
+        AilmentDamageMultiplier = ailmentDamageMultiplier;
+        AilmentOverload = ailmentOverload;
+        ExecuteThreshold = executeThreshold;
+    }
+
+    public float AilmentDamageMultiplier { get; }
+    public AilmentOverloadSettings AilmentOverload { get; }
+    public ExecuteThresholdSettings ExecuteThreshold { get; }
+
+    public static CombatEffectContext Default =>
+        new CombatEffectContext(1f, default, default);
 }
 
 public sealed class EnemyAilments
@@ -101,10 +134,10 @@ public sealed class EnemyAilments
     public void Apply(
         AilmentType type,
         int stacks,
-        in AilmentDeliveryContext context)
+        in CombatEffectContext context)
     {
         if (stacks <= 0 ||
-            context.DamageMultiplier <= 0f ||
+            context.AilmentDamageMultiplier <= 0f ||
             _profiles == null ||
             !TryGetIndex(type, out int index) ||
             !_profiles.TryGetProfile(
@@ -126,13 +159,15 @@ public sealed class EnemyAilments
 
         bucket.Stacks += acceptedStacks;
         bucket.DamagePerStack =
-            profile.DamagePerStack * context.DamageMultiplier;
+            profile.DamagePerStack *
+            context.AilmentDamageMultiplier;
         _buckets[index] = bucket;
 
         if (wasInactive)
             AppendActiveType(type);
 
-        AilmentOverloadSettings overload = context.Overload;
+        AilmentOverloadSettings overload =
+            context.AilmentOverload;
         if (!overload.ShouldTrigger(type, bucket.Stacks))
             return;
 

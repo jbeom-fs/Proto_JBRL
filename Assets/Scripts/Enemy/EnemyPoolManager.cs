@@ -97,6 +97,7 @@ public class EnemyPoolManager : MonoBehaviour
 
         _activeData[enemy] = data;
         enemy.ClearEliteKeyHolder();
+        enemy.ClearBossEncounterFlag();
         enemy.ClearDropInventory();
         enemy.OnDeathFinished -= Release;
         enemy.OnDeathFinished += Release;
@@ -137,6 +138,7 @@ public class EnemyPoolManager : MonoBehaviour
         _activeData.Remove(enemy);
         enemy.OnDeathFinished -= Release;
         enemy.ClearEliteKeyHolder();
+        enemy.ClearBossEncounterFlag();
         enemy.ClearDropInventory();
         enemy.transform.SetParent(transform);
 
@@ -167,6 +169,7 @@ public class EnemyPoolManager : MonoBehaviour
             _activeData.Remove(enemy);
             enemy.OnDeathFinished -= Release;
             enemy.ClearEliteKeyHolder();
+            enemy.ClearBossEncounterFlag();
             enemy.ClearDropInventory();
             enemy.transform.SetParent(transform);
             enemy.gameObject.SetActive(false);

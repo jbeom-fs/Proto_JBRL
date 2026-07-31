@@ -154,7 +154,7 @@ public sealed class SkillExecutor
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
             ResolveAttackAilments(context),
-            ResolveAilmentContext(context),
+            ResolveCombatEffectContext(context),
             context.HitRadius,
             customShape);
         NotifyInstantAreaHit(targets, customShape, context.CasterPosition);
@@ -230,7 +230,7 @@ public sealed class SkillExecutor
             context.Skill.slowPercentage,
             context.Skill.slowDuration,
             ResolveAttackAilments(context),
-            ResolveAilmentContext(context),
+            ResolveCombatEffectContext(context),
             context.HitRadius,
             customShape);
         NotifyInstantAreaHit(targets, customShape, origin);
@@ -357,7 +357,7 @@ public sealed class SkillExecutor
             skill.slowPercentage,
             skill.slowDuration,
             ResolveAttackAilments(context),
-            ResolveAilmentContext(context),
+            ResolveCombatEffectContext(context),
             skill.zoneRadius,
             skill.zoneTickInterval);
         if (!DamageZoneSpawner.Instance.SpawnZone(
@@ -404,9 +404,9 @@ public sealed class SkillExecutor
 
         if (!context.IsProcCast && skill.appliesDaggerMarker)
             DaggerMarkerRegistry.Instance.Apply(target, skill.markerDuration);
-        AilmentDeliveryContext ailmentContext =
-            ResolveAilmentContext(context);
-        target.ApplyAilments(skill.ailments, in ailmentContext);
+        CombatEffectContext effectContext =
+            ResolveCombatEffectContext(context);
+        target.ApplyAilments(skill.ailments, in effectContext);
 
         PlayConfiguredAnimation(context, skill, (targetPosition - start).normalized);
         return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
@@ -502,7 +502,7 @@ public sealed class SkillExecutor
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
             Ailments = hasDashDamage ? ResolveAttackAilments(context) : skill.ailments,
-            AilmentContext = ResolveAilmentContext(context),
+            EffectContext = ResolveCombatEffectContext(context),
             OnEnemyHit = !context.IsProcCast &&
                          skill.detonatesDaggerMarker &&
                          context.CasterCombat != null
@@ -547,7 +547,7 @@ public sealed class SkillExecutor
             SlowPercentage = skill.slowPercentage,
             SlowDuration = skill.slowDuration,
             Ailments = ResolveAttackAilments(context),
-            AilmentContext = ResolveAilmentContext(context),
+            EffectContext = ResolveCombatEffectContext(context),
             OnEnemyHit = !context.IsProcCast &&
                          skill.appliesDaggerMarker &&
                          context.CasterCombat != null
@@ -557,12 +557,12 @@ public sealed class SkillExecutor
         };
     }
 
-    private static AilmentDeliveryContext ResolveAilmentContext(
+    private static CombatEffectContext ResolveCombatEffectContext(
         SkillExecutionContext context)
     {
         return context.CasterCombat != null
-            ? context.CasterCombat.CurrentAilmentDeliveryContext
-            : AilmentDeliveryContext.Default;
+            ? context.CasterCombat.CurrentCombatEffectContext
+            : CombatEffectContext.Default;
     }
 
     private static int ResolveSkillDamage(SkillExecutionContext context)

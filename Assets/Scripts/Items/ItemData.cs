@@ -159,6 +159,16 @@ public sealed class ItemData
                     behavior.ailmentOverloadThreshold,
                 ailmentOverloadBonusPct =
                     behavior.ailmentOverloadBonusPct,
+                executeThresholdHpPct =
+                    behavior.executeThresholdHpPct,
+                executeEliteBossStartHpPct =
+                    behavior.executeEliteBossStartHpPct,
+                executeEliteBossStartBonusPct =
+                    behavior.executeEliteBossStartBonusPct,
+                executeEliteBossIntervalHpPct =
+                    behavior.executeEliteBossIntervalHpPct,
+                executeEliteBossBonusPerIntervalPct =
+                    behavior.executeEliteBossBonusPerIntervalPct,
                 duration = behavior.duration,
                 procSkill = behavior.procSkill,
                 procOrigin = behavior.procOrigin,

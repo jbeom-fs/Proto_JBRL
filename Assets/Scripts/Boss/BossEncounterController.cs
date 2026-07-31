@@ -156,6 +156,7 @@ public sealed class BossEncounterController : ArenaEncounterBase
         if (boss == null)
             return false;
 
+        boss.MarkAsBossEncounterEnemy();
         _activeBoss = boss;
         HealthBarPanel?.Attach(boss, true);
         return true;

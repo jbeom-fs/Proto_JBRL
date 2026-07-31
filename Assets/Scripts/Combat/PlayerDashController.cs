@@ -313,9 +313,9 @@ public sealed class PlayerDashController : MonoBehaviour
     {
         if (!_damageRequest.DamageOnPath && !_damageRequest.DamageOnContact)
         {
-            AilmentDeliveryContext ailmentContext =
-                _damageRequest.AilmentContext;
-            enemy.ApplyAilments(_damageRequest.Ailments, in ailmentContext);
+            CombatEffectContext effectContext =
+                _damageRequest.EffectContext;
+            enemy.ApplyAilments(_damageRequest.Ailments, in effectContext);
             return;
         }
 
@@ -328,7 +328,7 @@ public sealed class PlayerDashController : MonoBehaviour
             _damageRequest.SlowPercentage,
             _damageRequest.SlowDuration,
             _damageRequest.Ailments,
-            _damageRequest.AilmentContext);
+            _damageRequest.EffectContext);
         _damageRequest.CasterCombat?.ReportLifestealDamage(actualDamage);
         if (actualDamage > 0)
             _damageRequest.CasterCombat?.RegisterComboHit();
@@ -355,7 +355,7 @@ public struct DashDamageRequest
     public float SlowPercentage;
     public float SlowDuration;
     public AilmentApplication[] Ailments;
-    public AilmentDeliveryContext AilmentContext;
+    public CombatEffectContext EffectContext;
     public Action<EnemyController> OnEnemyHit;
 
     public bool HasAilments => Ailments != null && Ailments.Length > 0;

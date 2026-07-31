@@ -44,6 +44,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private float _deathTimer;
     private bool _deathFinished;
     private bool _holdsEliteKey;
+    private bool _isBoss;
     private Vector3 _lastSafePosition;
     private bool _warnedMissingHitFlash;
     private bool _warnedMissingAilmentProfiles;
@@ -63,6 +64,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     public int MaxHp => data?.maxHp ?? 0;
     public string DisplayName => data?.enemyName ?? string.Empty;
     public bool HoldsEliteKey => _holdsEliteKey;
+    public bool IsBoss => _isBoss;
     public bool IsKnockbackLocked => _knockbackLockTimer > 0f;
     public bool IsSlowed => _activeSlowPercentage > 0f;
     public bool IsStunned => _stunRemaining > 0f;
@@ -110,6 +112,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _currentHp = data.maxHp;
         IsDead = false;
         _holdsEliteKey = false;
+        _isBoss = false;
         _deathFinished = false;
         _deathTimer = 0f;
         _healthBar?.SetBarSuppressed(false);
@@ -151,7 +154,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     public void ApplyAilment(
         AilmentType type,
         int stacks,
-        in AilmentDeliveryContext context)
+        in CombatEffectContext context)
     {
         if (IsDead || !IsAlive)
             return;
@@ -169,7 +172,7 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     public void ApplyAilments(
         AilmentApplication[] ailments,
-        in AilmentDeliveryContext context)
+        in CombatEffectContext context)
     {
         if (IsDead || !IsAlive || ailments == null || ailments.Length == 0)
             return;
@@ -181,7 +184,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private void ApplyAilmentsOfType(
         AilmentApplication[] ailments,
         AilmentType type,
-        in AilmentDeliveryContext context)
+        in CombatEffectContext context)
     {
         for (int i = 0; i < ailments.Length; i++)
         {
@@ -211,9 +214,18 @@ public class EnemyController : MonoBehaviour, IDamageable
 
     private int ApplyDamageReturningActual(int damage)
     {
+        return ApplyDamageReturningActual(damage, false);
+    }
+
+    private int ApplyDamageReturningActual(
+        int damage,
+        bool bypassDefense)
+    {
         if (IsDead || !IsAlive) return 0;
 
-        int actual = Mathf.Max(1, damage - (data?.defense ?? 0));
+        int actual = bypassDefense
+            ? Mathf.Max(1, damage)
+            : Mathf.Max(1, damage - (data?.defense ?? 0));
         _currentHp = Mathf.Max(0, _currentHp - actual);
         _healthBar?.SetHp(_currentHp, data.maxHp);
 
@@ -224,6 +236,66 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         if (_currentHp == 0) Die();
         return actual;
+    }
+
+    private int ApplyExecuteThreshold(
+        int directActualDamage,
+        in CombatEffectContext context)
+    {
+        ExecuteThresholdSettings settings = context.ExecuteThreshold;
+        if (!settings.Enabled || !IsAlive || directActualDamage <= 0)
+            return 0;
+
+        int maxHp = data != null ? data.maxHp : 0;
+        if (maxHp <= 0)
+            return 0;
+
+        float currentHpRatio = _currentHp / (float)maxHp;
+
+        if (_isBoss || (data != null && data.IsElite))
+        {
+            if (!settings.EliteBossRampEnabled)
+                return 0;
+
+            float startHpRatio = Mathf.Clamp01(
+                settings.EliteBossStartHpRatio);
+            if (currentHpRatio > startHpRatio)
+                return 0;
+
+            float intervalHpRatio =
+                settings.EliteBossIntervalHpRatio;
+            if (intervalHpRatio <= 0f)
+                return 0;
+
+            float slope =
+                Mathf.Max(
+                    0f,
+                    settings.EliteBossBonusPerIntervalRate) /
+                intervalHpRatio;
+            float bonusRate = Mathf.Max(
+                0f,
+                settings.EliteBossStartBonusRate +
+                (startHpRatio - currentHpRatio) * slope);
+            int bonusDamage = Mathf.RoundToInt(
+                directActualDamage * bonusRate);
+            if (bonusDamage <= 0)
+                return 0;
+
+            return ApplyDamageReturningActual(
+                Mathf.Min(_currentHp, bonusDamage),
+                true);
+        }
+
+        if (settings.HpThresholdRatio <= 0f ||
+            currentHpRatio >
+            Mathf.Clamp01(settings.HpThresholdRatio))
+        {
+            return 0;
+        }
+
+        // Bypasses defense and reuses the normal damage/death pipeline.
+        // This helper does not re-enter ApplyCombatImpact, preventing recursion.
+        return ApplyDamageReturningActual(_currentHp, true);
     }
 
     private void ApplyAilmentTickDamage(int damage)
@@ -298,6 +370,16 @@ public class EnemyController : MonoBehaviour, IDamageable
         _holdsEliteKey = false;
     }
 
+    public void MarkAsBossEncounterEnemy()
+    {
+        _isBoss = true;
+    }
+
+    public void ClearBossEncounterFlag()
+    {
+        _isBoss = false;
+    }
+
     public void ClearDropInventory()
     {
         if (_inventory == null)
@@ -313,16 +395,21 @@ public class EnemyController : MonoBehaviour, IDamageable
         float slowPercentage,
         float slowDuration,
         AilmentApplication[] ailments,
-        AilmentDeliveryContext ailmentContext)
+        CombatEffectContext effectContext)
     {
         if (IsDead) return 0;
 
         int actualDamage = ApplyDamageReturningActual(damage);
         if (!IsAlive) return actualDamage;
 
+        actualDamage += ApplyExecuteThreshold(
+            actualDamage,
+            in effectContext);
+        if (!IsAlive) return actualDamage;
+
         ApplyKnockback(attackerPosition, knockbackForce, knockbackDuration);
         ApplySlow(slowPercentage, slowDuration);
-        ApplyAilments(ailments, in ailmentContext);
+        ApplyAilments(ailments, in effectContext);
         return actualDamage;
     }
 

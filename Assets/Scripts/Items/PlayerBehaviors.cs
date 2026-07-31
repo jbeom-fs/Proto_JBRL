@@ -52,6 +52,16 @@ public sealed class PlayerBehaviors : MonoBehaviour
         return false;
     }
 
+    public bool TryGetExecuteThresholdSettings(
+        out ExecuteThresholdSettings settings)
+    {
+        if (_runtime != null)
+            return _runtime.TryGetExecuteThresholdSettings(out settings);
+
+        settings = default;
+        return false;
+    }
+
     private void Awake()
     {
         _inventory = GetComponent<PlayerInventory>();

@@ -83,6 +83,21 @@ public sealed class BehaviorRuntime
         public AilmentOverloadSettings Settings { get; }
     }
 
+    private readonly struct ExecuteThresholdEntry
+    {
+        public ExecuteThresholdEntry(BehaviorEffect behavior)
+        {
+            Settings = new ExecuteThresholdSettings(
+                behavior.executeThresholdHpPct / 100f,
+                behavior.executeEliteBossStartHpPct / 100f,
+                behavior.executeEliteBossStartBonusPct / 100f,
+                behavior.executeEliteBossIntervalHpPct / 100f,
+                behavior.executeEliteBossBonusPerIntervalPct / 100f);
+        }
+
+        public ExecuteThresholdSettings Settings { get; }
+    }
+
     private readonly Action<int> _healCallback;
     private readonly Action<ShieldSource, int, float> _shieldCallback;
     private readonly Action<int, float> _attackBuffCallback;
@@ -103,6 +118,8 @@ public sealed class BehaviorRuntime
         new List<LifestealEngineEntry>();
     private readonly List<AilmentOverloadEntry> _ailmentOverloads =
         new List<AilmentOverloadEntry>();
+    private readonly List<ExecuteThresholdEntry> _executeThresholds =
+        new List<ExecuteThresholdEntry>();
 
     public BehaviorRuntime(
         Action<int> healCallback,
@@ -178,6 +195,20 @@ public sealed class BehaviorRuntime
         return true;
     }
 
+    public bool TryGetExecuteThresholdSettings(
+        out ExecuteThresholdSettings settings)
+    {
+        if (_executeThresholds.Count == 0)
+        {
+            settings = default;
+            return false;
+        }
+
+        // Current loadout supports one equipped passive per form.
+        settings = _executeThresholds[0].Settings;
+        return settings.Enabled;
+    }
+
     public void Rescan(
         IReadOnlyList<InventoryItemStack> items,
         IReadOnlyList<PassiveEngravingData> equippedPassives)
@@ -194,6 +225,7 @@ public sealed class BehaviorRuntime
         _attackAilments.Clear();
         _lifestealEngines.Clear();
         _ailmentOverloads.Clear();
+        _executeThresholds.Clear();
 
         if (items != null)
         {
@@ -420,6 +452,12 @@ public sealed class BehaviorRuntime
         if (behavior.action == BehaviorAction.AilmentOverload)
         {
             _ailmentOverloads.Add(new AilmentOverloadEntry(behavior));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.ExecuteThreshold)
+        {
+            _executeThresholds.Add(new ExecuteThresholdEntry(behavior));
             return;
         }
 

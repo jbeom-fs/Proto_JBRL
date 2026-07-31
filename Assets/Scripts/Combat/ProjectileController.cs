@@ -40,8 +40,8 @@ public class ProjectileController : MonoBehaviour
     private float _slowPercentage;
     private float _slowDuration;
     private AilmentApplication[] _ailments;
-    private AilmentDeliveryContext _ailmentContext =
-        AilmentDeliveryContext.Default;
+    private CombatEffectContext _effectContext =
+        CombatEffectContext.Default;
     private float _stunDuration;
     private float _lifetime = 3f;
     private ProjectileWallHitMode _wallHitMode = ProjectileWallHitMode.Destroy;
@@ -140,7 +140,7 @@ public class ProjectileController : MonoBehaviour
             0f,
             0f,
             null,
-            AilmentDeliveryContext.Default);
+            CombatEffectContext.Default);
     }
 
     public void Initialize(
@@ -159,7 +159,7 @@ public class ProjectileController : MonoBehaviour
         float slowDuration,
         float stunDuration,
         AilmentApplication[] ailments,
-        AilmentDeliveryContext ailmentContext,
+        CombatEffectContext effectContext,
         Action<EnemyController, ProjectileController> onEnemyHit = null,
         float daggerMarkerDuration = 0f,
         bool isCrit = false,
@@ -176,7 +176,7 @@ public class ProjectileController : MonoBehaviour
         _slowPercentage = Mathf.Clamp01(slowPercentage);
         _slowDuration = Mathf.Max(0f, slowDuration);
         _ailments = ailments;
-        _ailmentContext = ailmentContext;
+        _effectContext = effectContext;
         _stunDuration = Mathf.Max(0f, stunDuration);
         _onEnemyHit = onEnemyHit;
         _daggerMarkerDuration = Mathf.Max(0f, daggerMarkerDuration);
@@ -443,7 +443,7 @@ public class ProjectileController : MonoBehaviour
                 _slowPercentage,
                 _slowDuration,
                 _ailments,
-                _ailmentContext);
+                _effectContext);
             if (_owner is PlayerCombatController playerCombat)
             {
                 playerCombat.ReportLifestealDamage(actualDamage);

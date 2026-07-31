@@ -6,7 +6,7 @@ public readonly struct ZonePayload
         float slowPercentage,
         float slowDuration,
         AilmentApplication[] ailments,
-        AilmentDeliveryContext ailmentContext,
+        CombatEffectContext effectContext,
         float radius,
         float tickInterval)
     {
@@ -15,7 +15,7 @@ public readonly struct ZonePayload
         SlowPercentage = slowPercentage;
         SlowDuration = slowDuration;
         Ailments = ailments;
-        AilmentContext = ailmentContext;
+        EffectContext = effectContext;
         Radius = radius;
         TickInterval = tickInterval;
     }
@@ -25,7 +25,7 @@ public readonly struct ZonePayload
     public float SlowPercentage { get; }
     public float SlowDuration { get; }
     public AilmentApplication[] Ailments { get; }
-    public AilmentDeliveryContext AilmentContext { get; }
+    public CombatEffectContext EffectContext { get; }
     public float Radius { get; }
     public float TickInterval { get; }
 

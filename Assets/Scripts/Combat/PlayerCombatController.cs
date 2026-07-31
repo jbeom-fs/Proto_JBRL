@@ -567,16 +567,22 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             ? _relicBehaviors.AttackAilments
             : Array.Empty<AilmentApplication>();
 
-    public AilmentDeliveryContext CreateAilmentDeliveryContext(
-        float damageMultiplier)
+    public CombatEffectContext CreateCombatEffectContext(
+        float ailmentDamageMultiplier)
     {
         AilmentOverloadSettings overload = default;
         _relicBehaviors?.TryGetAilmentOverloadSettings(out overload);
-        return new AilmentDeliveryContext(damageMultiplier, overload);
+        ExecuteThresholdSettings executeThreshold = default;
+        _relicBehaviors?.TryGetExecuteThresholdSettings(
+            out executeThreshold);
+        return new CombatEffectContext(
+            ailmentDamageMultiplier,
+            overload,
+            executeThreshold);
     }
 
-    public AilmentDeliveryContext CurrentAilmentDeliveryContext =>
-        CreateAilmentDeliveryContext(AilmentDamageMultiplier);
+    public CombatEffectContext CurrentCombatEffectContext =>
+        CreateCombatEffectContext(AilmentDamageMultiplier);
 
     private float EffectiveReloadTime()
     {
@@ -875,7 +881,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             currentWeapon.slowPercentage,
             currentWeapon.slowDuration,
             ResolveBasicAttackAilments(),
-            CurrentAilmentDeliveryContext,
+            CurrentCombatEffectContext,
             hitRadius);
 
         ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
@@ -1383,7 +1389,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 0f,
                 0f,
                 null,
-                AilmentDeliveryContext.Default);
+                CurrentCombatEffectContext);
             ReportLifestealDamage(actualDamage);
             if (actualDamage > 0)
                 RegisterComboHit();

@@ -592,10 +592,10 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             return DeveloperConsoleCommandResult.Error("No alive enemy found.");
 
         PlayerCombatController combat = ResolvePlayerCombatController();
-        AilmentDeliveryContext ailmentContext = combat != null
-            ? combat.CreateAilmentDeliveryContext(1f)
-            : AilmentDeliveryContext.Default;
-        target.ApplyAilment(type, stacks, in ailmentContext);
+        CombatEffectContext effectContext = combat != null
+            ? combat.CreateCombatEffectContext(1f)
+            : CombatEffectContext.Default;
+        target.ApplyAilment(type, stacks, in effectContext);
         int activeStacks = target.GetAilmentStacks(type);
         return DeveloperConsoleCommandResult.Success(
             "Applied " + GetAilmentToken(type) + " to " + GetEnemyDisplayName(target) + " (stacks " + activeStacks + ").");
@@ -660,7 +660,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             slowPercentage,
             slowDuration,
             ailments,
-            combat.CurrentAilmentDeliveryContext,
+            combat.CurrentCombatEffectContext,
             1f,
             0.5f);
         DamageZoneSpawner.Instance.SpawnZone(

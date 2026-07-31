@@ -19,7 +19,8 @@ public enum BehaviorAction
     Shield,
     LifestealEngine,
     AttackBuff,
-    AilmentOverload
+    AilmentOverload,
+    ExecuteThreshold
 }
 
 public enum ProcOriginMode
@@ -68,6 +69,21 @@ public sealed class BehaviorEffect
     [Tooltip("AilmentOverload bonus damage percentage.")]
     [Min(0f)]
     public float ailmentOverloadBonusPct = 30f;
+    [Tooltip("ExecuteThreshold HP threshold percentage.")]
+    [Min(0f)]
+    public float executeThresholdHpPct = 20f;
+    [Tooltip("ExecuteThreshold elite/boss ramp start HP percentage.")]
+    [Min(0f)]
+    public float executeEliteBossStartHpPct = 90f;
+    [Tooltip("ExecuteThreshold elite/boss bonus percentage at ramp start.")]
+    [Min(0f)]
+    public float executeEliteBossStartBonusPct = 10f;
+    [Tooltip("ExecuteThreshold elite/boss HP interval percentage.")]
+    [Min(0f)]
+    public float executeEliteBossIntervalHpPct = 10f;
+    [Tooltip("ExecuteThreshold elite/boss bonus increase per HP interval.")]
+    [Min(0f)]
+    public float executeEliteBossBonusPerIntervalPct = 5f;
     public float duration;
     public SkillData procSkill;
     public ProcOriginMode procOrigin;
