@@ -8,12 +8,16 @@ using Object = UnityEngine.Object;
 public sealed class SkillDashboardWindow : EditorWindow
 {
     private const string SplitRatioKey = "SkillDashboard.SplitRatio";
+    private const string SelectedTabKey = "SkillDashboard.SelectedTab";
     private const string GroupFoldoutKeyPrefix = "SkillDashboard.Group.";
+    private const string PassiveGroupFoldoutKeyPrefix = "SkillDashboard.PassiveGroup.";
     private const float DefaultSplitRatio = 0.58f;
     private const float MinSplitRatio = 0.22f;
     private const float MaxSplitRatio = 0.78f;
     private const float SplitterHeight = 5f;
+    private const float TabBarHeight = 18f;
     private const float TableWidth = 1424f;
+    private const float PassiveTableWidth = 828f;
     private const float SkillHeaderHeight = 20f;
     private const float SkillRowHeight = 32f;
     private const float SkillFoldoutWidth = 16f;
@@ -27,20 +31,33 @@ public sealed class SkillDashboardWindow : EditorWindow
         Engraving
     }
 
+    private enum DashboardTab
+    {
+        Active,
+        Passive
+    }
+
     private readonly List<SkillRow> _skillRows = new List<SkillRow>(64);
+    private readonly List<PassiveRow> _passiveRows = new List<PassiveRow>(32);
     private readonly List<ValidationResult> _results = new List<ValidationResult>(64);
     private readonly HashSet<SkillData> _expandedSkills = new HashSet<SkillData>();
+    private readonly HashSet<PassiveEngravingData> _expandedPassives =
+        new HashSet<PassiveEngravingData>();
     private static readonly List<CreatedSkillUndoRecord> s_CreatedSkillUndoRecords =
         new List<CreatedSkillUndoRecord>();
     private static readonly Comparison<SkillRow> s_SkillRowFormComparer =
         CompareSkillRowsByFormAndAssetName;
+    private static readonly Comparison<PassiveRow> s_PassiveRowFormComparer =
+        ComparePassiveRowsByFormAndAssetName;
     private bool _hasScanned;
     private bool _isScopedSaveQueued;
     private string _search = string.Empty;
     private string _formInferenceSummary = string.Empty;
     private SkillKindFilter _kindFilter;
+    private DashboardTab _selectedTab;
     private bool _showInfo = true;
     private Vector2 _skillScrollPosition;
+    private Vector2 _passiveScrollPosition;
     private Vector2 _resultScrollPosition;
     private float _splitRatio = DefaultSplitRatio;
 
@@ -61,6 +78,10 @@ public sealed class SkillDashboardWindow : EditorWindow
     {
         minSize = new Vector2(1050f, 520f);
         _splitRatio = Mathf.Clamp(EditorPrefs.GetFloat(SplitRatioKey, DefaultSplitRatio), MinSplitRatio, MaxSplitRatio);
+        int storedTab = EditorPrefs.GetInt(SelectedTabKey, (int)DashboardTab.Active);
+        _selectedTab = Enum.IsDefined(typeof(DashboardTab), storedTab)
+            ? (DashboardTab)storedTab
+            : DashboardTab.Active;
         Undo.undoRedoPerformed += OnUndoRedoPerformed;
     }
 
@@ -71,6 +92,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         _isScopedSaveQueued = false;
         ClearSkillSerializedObjectCache();
         _expandedSkills.Clear();
+        _expandedPassives.Clear();
     }
 
     private void OnUndoRedoPerformed()
@@ -87,6 +109,7 @@ public sealed class SkillDashboardWindow : EditorWindow
     private void OnGUI()
     {
         DrawToolbar();
+        DrawTabBar();
 
         if (!_hasScanned)
         {
@@ -94,13 +117,18 @@ public sealed class SkillDashboardWindow : EditorWindow
             return;
         }
 
-        float availableHeight = Mathf.Max(220f, position.height - 52f);
+        float availableHeight = Mathf.Max(
+            220f,
+            position.height - 52f - TabBarHeight);
         float skillPanelHeight = Mathf.Clamp(
             availableHeight * _splitRatio,
             availableHeight * MinSplitRatio,
             availableHeight * MaxSplitRatio);
 
-        DrawSkillsPanel(skillPanelHeight);
+        if (_selectedTab == DashboardTab.Active)
+            DrawSkillsPanel(skillPanelHeight);
+        else
+            DrawPassivesPanel(skillPanelHeight);
         DrawPanelSplitter(availableHeight);
         DrawResultsPanel();
     }
@@ -115,7 +143,10 @@ public sealed class SkillDashboardWindow : EditorWindow
         if (GUILayout.Button("+ New", EditorStyles.toolbarButton, GUILayout.Width(70f)))
         {
             Rect buttonRect = GUILayoutUtility.GetLastRect();
-            PopupWindow.Show(buttonRect, new NewSkillPopup(this));
+            if (_selectedTab == DashboardTab.Active)
+                PopupWindow.Show(buttonRect, new NewSkillPopup(this));
+            else
+                PopupWindow.Show(buttonRect, new NewPassivePopup(this));
         }
 
         GUILayout.Space(6f);
@@ -125,12 +156,15 @@ public sealed class SkillDashboardWindow : EditorWindow
             GUI.skin.FindStyle("ToolbarSearchTextField"),
             GUILayout.MinWidth(160f));
 
-        GUILayout.Space(8f);
-        GUILayout.Label("Kind", GUILayout.Width(32f));
-        _kindFilter = (SkillKindFilter)EditorGUILayout.EnumPopup(
-            _kindFilter,
-            EditorStyles.toolbarPopup,
-            GUILayout.Width(100f));
+        if (_selectedTab == DashboardTab.Active)
+        {
+            GUILayout.Space(8f);
+            GUILayout.Label("Kind", GUILayout.Width(32f));
+            _kindFilter = (SkillKindFilter)EditorGUILayout.EnumPopup(
+                _kindFilter,
+                EditorStyles.toolbarPopup,
+                GUILayout.Width(100f));
+        }
 
         GUILayout.Space(8f);
         _showInfo = GUILayout.Toggle(
@@ -144,12 +178,48 @@ public sealed class SkillDashboardWindow : EditorWindow
             SaveScopedAssets();
         if (_hasScanned)
         {
-            GUILayout.Label(_skillRows.Count + " skills / " + _results.Count + " results", EditorStyles.miniLabel);
+            string itemCount = _selectedTab == DashboardTab.Active
+                ? _skillRows.Count + " skills"
+                : _passiveRows.Count + " passives";
+            GUILayout.Label(itemCount + " / " + _results.Count + " results", EditorStyles.miniLabel);
             GUILayout.Space(8f);
-            GUILayout.Label(_formInferenceSummary, EditorStyles.miniLabel);
+            if (_selectedTab == DashboardTab.Active)
+                GUILayout.Label(_formInferenceSummary, EditorStyles.miniLabel);
         }
 
         EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawTabBar()
+    {
+        EditorGUILayout.BeginHorizontal(
+            EditorStyles.toolbar,
+            GUILayout.Height(TabBarHeight));
+
+        bool activeSelected = GUILayout.Toggle(
+            _selectedTab == DashboardTab.Active,
+            "Active",
+            EditorStyles.toolbarButton,
+            GUILayout.Width(58f));
+        bool passiveSelected = GUILayout.Toggle(
+            _selectedTab == DashboardTab.Passive,
+            "Passive",
+            EditorStyles.toolbarButton,
+            GUILayout.Width(64f));
+        if (activeSelected && _selectedTab != DashboardTab.Active)
+            SetSelectedTab(DashboardTab.Active);
+        else if (passiveSelected && _selectedTab != DashboardTab.Passive)
+            SetSelectedTab(DashboardTab.Passive);
+
+        GUILayout.FlexibleSpace();
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private void SetSelectedTab(DashboardTab tab)
+    {
+        _selectedTab = tab;
+        EditorPrefs.SetInt(SelectedTabKey, (int)tab);
+        Repaint();
     }
 
     // SerializedObject/Undo paths stay separate. Global SaveAssets is forbidden; save only dirty scanned skills.
@@ -181,6 +251,7 @@ public sealed class SkillDashboardWindow : EditorWindow
 
         var assets = new HashSet<Object>();
         AddMainAssets(assets, _skillRows);
+        AddMainAssets(assets, _passiveRows);
 
         int savedCount = SaveDirtyAssets(assets, out int dirtyCount);
         Debug.Log(
@@ -190,6 +261,12 @@ public sealed class SkillDashboardWindow : EditorWindow
     }
 
     private static void AddMainAssets(HashSet<Object> assets, List<SkillRow> source)
+    {
+        for (int i = 0; i < source.Count; i++)
+            AddMainAsset(assets, source[i].Asset);
+    }
+
+    private static void AddMainAssets(HashSet<Object> assets, List<PassiveRow> source)
     {
         for (int i = 0; i < source.Count; i++)
             AddMainAsset(assets, source[i].Asset);
@@ -319,6 +396,89 @@ public sealed class SkillDashboardWindow : EditorWindow
         return skill;
     }
 
+    private void PromptCreatePassive(
+        string passiveName,
+        PlayerFormId owningForm,
+        EngravingGrade grade,
+        string unlockId)
+    {
+        string defaultName = string.IsNullOrWhiteSpace(passiveName)
+            ? owningForm + "_" + grade + "_Passive_New"
+            : passiveName;
+        string path = EditorUtility.SaveFilePanelInProject(
+            "Create Passive Engraving",
+            defaultName,
+            "asset",
+            "Select a location for the new passive engraving asset.",
+            GetDefaultPassiveCreationFolder(owningForm));
+
+        CreatePassiveAsset(path, passiveName, owningForm, grade, unlockId);
+    }
+
+    private PassiveEngravingData CreatePassiveAsset(
+        string path,
+        string passiveName,
+        PlayerFormId owningForm,
+        EngravingGrade grade,
+        string unlockId)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return null;
+
+        if (!path.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+            path += ".asset";
+
+        if (AssetDatabase.LoadMainAssetAtPath(path) != null)
+        {
+            EditorUtility.DisplayDialog(
+                "Create Passive Engraving",
+                "An asset already exists at:\n" + path,
+                "OK");
+            return null;
+        }
+
+        PassiveEngravingData passive =
+            ScriptableObject.CreateInstance<PassiveEngravingData>();
+        passive.name = Path.GetFileNameWithoutExtension(path);
+        passive.passiveName = passiveName;
+        passive.owningForm = owningForm;
+        passive.grade = grade;
+        passive.unlockId = unlockId;
+
+        try
+        {
+            Undo.IncrementCurrentGroup();
+            int undoGroup = Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("Create Passive Engraving");
+            AssetDatabase.CreateAsset(passive, path);
+            Undo.RegisterCreatedObjectUndo(passive, "Create Passive Engraving");
+            s_CreatedSkillUndoRecords.Add(new CreatedSkillUndoRecord
+            {
+                Asset = passive,
+                Path = path
+            });
+            Undo.CollapseUndoOperations(undoGroup);
+        }
+        catch (Exception exception)
+        {
+            if (passive != null && string.IsNullOrEmpty(AssetDatabase.GetAssetPath(passive)))
+                DestroyImmediate(passive);
+
+            EditorUtility.DisplayDialog(
+                "Create Passive Engraving",
+                "Failed to create passive engraving asset.\n" + exception.Message,
+                "OK");
+            return null;
+        }
+
+        Scan();
+        _expandedPassives.Add(passive);
+        EditorGUIUtility.PingObject(passive);
+        Selection.activeObject = passive;
+        Repaint();
+        return passive;
+    }
+
     private static void CleanupUndoneCreatedSkillAssets()
     {
         for (int i = s_CreatedSkillUndoRecords.Count - 1; i >= 0; i--)
@@ -380,6 +540,18 @@ public sealed class SkillDashboardWindow : EditorWindow
         return AssetDatabase.IsValidFolder(formFolder) ? formFolder : root;
     }
 
+    private static string GetDefaultPassiveCreationFolder(PlayerFormId owningForm)
+    {
+        const string root = "Assets/Scriptable/Skill";
+        string formFolder = root + "/" + owningForm;
+        string passiveFolder = formFolder + "/Passive";
+        if (AssetDatabase.IsValidFolder(passiveFolder))
+            return passiveFolder;
+        if (AssetDatabase.IsValidFolder(formFolder))
+            return formFolder;
+        return root;
+    }
+
     private void DrawSkillsPanel(float height)
     {
         EditorGUILayout.LabelField("Skills", EditorStyles.boldLabel);
@@ -424,6 +596,336 @@ public sealed class SkillDashboardWindow : EditorWindow
 
         if (AssetPreview.IsLoadingAssetPreviews())
             Repaint();
+    }
+
+    private void DrawPassivesPanel(float height)
+    {
+        EditorGUILayout.LabelField("Passives", EditorStyles.boldLabel);
+        Vector2 headerScrollPosition = new Vector2(_passiveScrollPosition.x, 0f);
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        EditorGUILayout.BeginScrollView(
+            headerScrollPosition,
+            GUIStyle.none,
+            GUIStyle.none,
+            GUILayout.Height(SkillHeaderHeight));
+        DrawPassiveHeader();
+        EditorGUILayout.EndScrollView();
+        GUILayout.Space(GUI.skin.verticalScrollbar.fixedWidth);
+        EditorGUILayout.EndHorizontal();
+
+        _passiveScrollPosition = EditorGUILayout.BeginScrollView(
+            _passiveScrollPosition,
+            true,
+            true,
+            GUILayout.Height(Mathf.Max(60f, height - SkillHeaderHeight)));
+
+        EditorGUILayout.BeginVertical(GUILayout.Width(PassiveTableWidth));
+
+        int visibleCount = 0;
+        int matchedCount = 0;
+        Array formValues = Enum.GetValues(typeof(PlayerFormId));
+        for (int i = 0; i < formValues.Length; i++)
+        {
+            DrawPassiveGroup(
+                (PlayerFormId)formValues.GetValue(i),
+                ref visibleCount,
+                ref matchedCount);
+        }
+
+        if (matchedCount == 0)
+            EditorGUILayout.HelpBox("No passives match current search.", MessageType.Info);
+
+        EditorGUILayout.EndVertical();
+        EditorGUILayout.EndScrollView();
+
+        if (AssetPreview.IsLoadingAssetPreviews())
+            Repaint();
+    }
+
+    private void DrawPassiveGroup(
+        PlayerFormId form,
+        ref int visibleCount,
+        ref int matchedCount)
+    {
+        List<PassiveRow> visibleRows = new List<PassiveRow>();
+        for (int i = 0; i < _passiveRows.Count; i++)
+        {
+            PassiveRow row = _passiveRows[i];
+            if (row.Form.Equals(form) && IsPassiveVisible(row))
+                visibleRows.Add(row);
+        }
+
+        if (visibleRows.Count == 0)
+            return;
+
+        matchedCount += visibleRows.Count;
+
+        string groupName = form.ToString();
+        string preferenceKey = PassiveGroupFoldoutKeyPrefix + groupName;
+        bool storedExpanded = EditorPrefs.GetBool(preferenceKey, true);
+        bool forceExpanded = !string.IsNullOrEmpty(_search);
+        bool displayedExpanded = forceExpanded || storedExpanded;
+        bool nextExpanded = DrawPassiveGroupHeader(
+            groupName,
+            visibleRows.Count,
+            displayedExpanded);
+        if (!forceExpanded && nextExpanded != storedExpanded)
+            EditorPrefs.SetBool(preferenceKey, nextExpanded);
+
+        if (!displayedExpanded)
+            return;
+
+        for (int i = 0; i < visibleRows.Count; i++)
+        {
+            DrawPassiveRow(visibleRows[i], visibleCount);
+            visibleCount++;
+        }
+    }
+
+    private static bool DrawPassiveGroupHeader(
+        string groupName,
+        int visibleCount,
+        bool expanded)
+    {
+        Rect groupRect = GUILayoutUtility.GetRect(
+            PassiveTableWidth,
+            SkillHeaderHeight,
+            GUILayout.Width(PassiveTableWidth),
+            GUILayout.Height(SkillHeaderHeight));
+        if (Event.current.type == EventType.Repaint)
+        {
+            Color groupColor = EditorGUIUtility.isProSkin
+                ? new Color(0.19f, 0.19f, 0.19f, 1f)
+                : new Color(0.84f, 0.84f, 0.84f, 1f);
+            EditorGUI.DrawRect(
+                ExpandRectToViewWidth(groupRect, PassiveTableWidth),
+                groupColor);
+        }
+
+        Rect foldoutRect = new Rect(
+            groupRect.x + 4f,
+            groupRect.y,
+            groupRect.width - 8f,
+            groupRect.height);
+        return EditorGUI.Foldout(
+            foldoutRect,
+            expanded,
+            groupName + " (" + visibleCount + ")",
+            true);
+    }
+
+    private static void DrawPassiveHeader()
+    {
+        Rect headerRect = EditorGUILayout.BeginHorizontal(
+            GUIStyle.none,
+            GUILayout.Width(PassiveTableWidth),
+            GUILayout.Height(SkillHeaderHeight));
+        if (Event.current.type == EventType.Repaint)
+        {
+            Color headerColor = EditorGUIUtility.isProSkin
+                ? new Color(0.22f, 0.22f, 0.22f, 1f)
+                : new Color(0.78f, 0.78f, 0.78f, 1f);
+            EditorGUI.DrawRect(
+                ExpandRectToViewWidth(headerRect, PassiveTableWidth),
+                headerColor);
+        }
+
+        GUILayout.Space(SkillFoldoutWidth);
+        GUILayout.Label("", GUILayout.Width(42f));
+        GUILayout.Label("Icon", EditorStyles.miniBoldLabel, GUILayout.Width(30f));
+        GUILayout.Label("Name", EditorStyles.miniBoldLabel, GUILayout.Width(190f));
+        GUILayout.Label("Form", EditorStyles.miniBoldLabel, GUILayout.Width(110f));
+        GUILayout.Label("Grade", EditorStyles.miniBoldLabel, GUILayout.Width(100f));
+        GUILayout.Label("UnlockId", EditorStyles.miniBoldLabel, GUILayout.Width(240f));
+        GUILayout.Label("Behaviors", EditorStyles.miniBoldLabel, GUILayout.Width(70f));
+        EditorGUILayout.EndHorizontal();
+    }
+
+    private void DrawPassiveRow(PassiveRow row, int visibleIndex)
+    {
+        Rect rowRect = EditorGUILayout.BeginHorizontal(
+            GUIStyle.none,
+            GUILayout.Width(PassiveTableWidth),
+            GUILayout.Height(SkillRowHeight));
+        if (visibleIndex % 2 == 0 && Event.current.type == EventType.Repaint)
+        {
+            Color stripeColor = EditorGUIUtility.isProSkin
+                ? new Color(1f, 1f, 1f, 0.035f)
+                : new Color(0f, 0f, 0f, 0.035f);
+            EditorGUI.DrawRect(
+                ExpandRectToViewWidth(rowRect, PassiveTableWidth),
+                stripeColor);
+        }
+
+        Rect foldoutRect = GUILayoutUtility.GetRect(
+            SkillFoldoutWidth,
+            SkillRowHeight,
+            GUILayout.Width(SkillFoldoutWidth),
+            GUILayout.Height(SkillRowHeight));
+        bool hasTarget = row.Asset != null;
+        bool isExpanded = hasTarget && _expandedPassives.Contains(row.Asset);
+        bool nextExpanded;
+        using (new EditorGUI.DisabledScope(!hasTarget))
+        {
+            nextExpanded = EditorGUI.Foldout(
+                foldoutRect,
+                isExpanded,
+                GUIContent.none,
+                false);
+        }
+
+        if (nextExpanded != isExpanded)
+        {
+            if (nextExpanded)
+                _expandedPassives.Add(row.Asset);
+            else
+                _expandedPassives.Remove(row.Asset);
+        }
+
+        using (new EditorGUI.DisabledScope(!hasTarget))
+        {
+            if (GUILayout.Button("Ping", GUILayout.Width(42f)))
+                EditorGUIUtility.PingObject(row.Asset);
+        }
+
+        Rect iconRect = GUILayoutUtility.GetRect(
+            30f,
+            SkillRowHeight,
+            GUILayout.Width(30f),
+            GUILayout.Height(SkillRowHeight));
+        Texture2D preview = row.Icon != null ? AssetPreview.GetAssetPreview(row.Icon) : null;
+        if (preview != null)
+        {
+            Rect previewRect = new Rect(
+                iconRect.x + (iconRect.width - 28f) * 0.5f,
+                iconRect.y + (iconRect.height - 28f) * 0.5f,
+                28f,
+                28f);
+            GUI.DrawTexture(previewRect, preview, ScaleMode.ScaleToFit);
+        }
+
+        GUILayout.Label(row.DisplayName, GUILayout.Width(190f));
+        GUILayout.Label(row.Form.ToString(), GUILayout.Width(110f));
+        GUILayout.Label(row.Grade.ToString(), GUILayout.Width(100f));
+        GUILayout.Label(row.UnlockId, GUILayout.Width(240f));
+        GUILayout.Label(row.BehaviorCount.ToString(), GUILayout.Width(70f));
+
+        EditorGUILayout.EndHorizontal();
+
+        if (nextExpanded)
+            DrawPassiveEditPanel(row);
+    }
+
+    private void DrawPassiveEditPanel(PassiveRow row)
+    {
+        SerializedObject passiveObject = row.SerializedObject;
+        if (passiveObject == null || passiveObject.targetObject == null)
+            return;
+
+        passiveObject.Update();
+
+        SerializedProperty passiveName = passiveObject.FindProperty("passiveName");
+        SerializedProperty description = passiveObject.FindProperty("description");
+        SerializedProperty owningForm = passiveObject.FindProperty("owningForm");
+        SerializedProperty grade = passiveObject.FindProperty("grade");
+        SerializedProperty unlockId = passiveObject.FindProperty("unlockId");
+        SerializedProperty icon = passiveObject.FindProperty("icon");
+        SerializedProperty behaviors = passiveObject.FindProperty("behaviors");
+
+        Rect panelRect = EditorGUILayout.BeginVertical(
+            GUIStyle.none,
+            GUILayout.Width(PassiveTableWidth));
+        if (Event.current.type == EventType.Repaint)
+        {
+            Color panelColor = EditorGUIUtility.isProSkin
+                ? new Color(0.16f, 0.16f, 0.16f, 1f)
+                : new Color(0.9f, 0.9f, 0.9f, 1f);
+            EditorGUI.DrawRect(
+                ExpandRectToViewWidth(panelRect, PassiveTableWidth),
+                panelColor);
+        }
+
+        GUILayout.Space(4f);
+        if (icon != null)
+        {
+            EditorGUILayout.BeginHorizontal(GUIStyle.none);
+            GUILayout.Space(SkillFoldoutWidth + 4f);
+            GUILayout.Label("Icon", GUILayout.Width(72f));
+            Rect iconRect = GUILayoutUtility.GetRect(
+                64f,
+                64f,
+                GUILayout.Width(64f),
+                GUILayout.Height(64f));
+            EditorGUI.BeginChangeCheck();
+            Sprite nextIcon = EditorGUI.ObjectField(
+                iconRect,
+                icon.objectReferenceValue,
+                typeof(Sprite),
+                false) as Sprite;
+            if (EditorGUI.EndChangeCheck())
+                icon.objectReferenceValue = nextIcon;
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        GUILayout.Space(SkillFoldoutWidth + 4f);
+        DrawSkillProperty(passiveName, "Passive Name", 330f, 90f);
+        DrawSkillProperty(owningForm, "Owning Form", 230f, 84f);
+        DrawSkillProperty(grade, "Grade", 190f, 52f);
+        EditorGUILayout.EndHorizontal();
+
+        if (description != null)
+        {
+            EditorGUILayout.BeginHorizontal(GUIStyle.none);
+            GUILayout.Space(SkillFoldoutWidth + 4f);
+            EditorGUILayout.PropertyField(
+                description,
+                new GUIContent("Description"),
+                true,
+                GUILayout.Width(760f));
+            EditorGUILayout.EndHorizontal();
+        }
+
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        GUILayout.Space(SkillFoldoutWidth + 4f);
+        using (new EditorGUI.DisabledScope(true))
+        {
+            EditorGUILayout.TextField(
+                "Unlock Id",
+                unlockId != null ? unlockId.stringValue : string.Empty,
+                GUILayout.Width(360f));
+        }
+        GUILayout.Label(
+            "세이브 해금 키 — rename 시 세이브 무효, 변경은 인스펙터에서 의도적으로만",
+            EditorStyles.miniLabel);
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.BeginHorizontal(GUIStyle.none);
+        GUILayout.Space(SkillFoldoutWidth + 4f);
+        int behaviorCount = behaviors != null && behaviors.isArray
+            ? behaviors.arraySize
+            : 0;
+        GUILayout.Label(
+            "Behaviors: " + behaviorCount,
+            EditorStyles.miniLabel,
+            GUILayout.Width(100f));
+        EditorGUILayout.HelpBox(
+            "복잡 저작은 인스펙터에서",
+            MessageType.Info);
+        if (GUILayout.Button("Ping / Inspector", GUILayout.Width(130f)))
+        {
+            Selection.activeObject = row.Asset;
+            EditorGUIUtility.PingObject(row.Asset);
+        }
+        EditorGUILayout.EndHorizontal();
+        GUILayout.Space(4f);
+        EditorGUILayout.EndVertical();
+
+        if (passiveObject.ApplyModifiedProperties())
+        {
+            RefreshPassiveRowCachedValues(row, passiveObject);
+            Repaint();
+        }
     }
 
     private void DrawSkillGroup(
@@ -502,7 +1004,12 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private static Rect ExpandRectToViewWidth(Rect rect)
     {
-        rect.width = Mathf.Max(TableWidth, EditorGUIUtility.currentViewWidth);
+        return ExpandRectToViewWidth(rect, TableWidth);
+    }
+
+    private static Rect ExpandRectToViewWidth(Rect rect, float tableWidth)
+    {
+        rect.width = Mathf.Max(tableWidth, EditorGUIUtility.currentViewWidth);
         return rect;
     }
 
@@ -1567,6 +2074,31 @@ public sealed class SkillDashboardWindow : EditorWindow
         row.AilmentCount = GetArraySize(skillObject.FindProperty("ailments"));
     }
 
+    private static void RefreshPassiveRowCachedValues(
+        PassiveRow row,
+        SerializedObject passiveObject)
+    {
+        SerializedProperty passiveName = passiveObject.FindProperty("passiveName");
+        string serializedName = GetString(passiveName);
+        row.DisplayName = string.IsNullOrWhiteSpace(serializedName)
+            ? row.Asset.name
+            : serializedName;
+
+        SerializedProperty owningForm = passiveObject.FindProperty("owningForm");
+        SerializedProperty grade = passiveObject.FindProperty("grade");
+        SerializedProperty unlockId = passiveObject.FindProperty("unlockId");
+        SerializedProperty icon = passiveObject.FindProperty("icon");
+        row.Form = owningForm != null
+            ? (PlayerFormId)owningForm.intValue
+            : default;
+        row.Grade = grade != null
+            ? (EngravingGrade)grade.intValue
+            : default;
+        row.UnlockId = GetString(unlockId);
+        row.Icon = icon != null ? icon.objectReferenceValue as Sprite : null;
+        row.BehaviorCount = GetArraySize(passiveObject.FindProperty("behaviors"));
+    }
+
     private static int GetArraySize(SerializedProperty property)
     {
         return property != null && property.isArray ? property.arraySize : 0;
@@ -1585,6 +2117,19 @@ public sealed class SkillDashboardWindow : EditorWindow
 
         return ContainsIgnoreCase(row.DisplayName, query) ||
                ContainsIgnoreCase(row.LinkedItemCodesText, query);
+    }
+
+    private bool IsPassiveVisible(PassiveRow row)
+    {
+        string query = NormalizeCode(_search);
+        if (string.IsNullOrEmpty(query))
+            return true;
+
+        return ContainsIgnoreCase(row.DisplayName, query) ||
+               ContainsIgnoreCase(row.UnlockId, query) ||
+               ContainsIgnoreCase(
+                   row.Asset != null ? row.Asset.name : string.Empty,
+                   query);
     }
 
     private static bool ContainsIgnoreCase(string value, string query)
@@ -1709,9 +2254,11 @@ public sealed class SkillDashboardWindow : EditorWindow
     {
         ClearSkillSerializedObjectCache();
         _skillRows.Clear();
+        _passiveRows.Clear();
         _results.Clear();
         _hasScanned = true;
         _expandedSkills.RemoveWhere(skill => skill == null);
+        _expandedPassives.RemoveWhere(passive => passive == null);
 
         List<SkillData> skills = LoadAssets<SkillData>("t:SkillData");
         List<PassiveEngravingData> passiveEngravings =
@@ -1730,6 +2277,8 @@ public sealed class SkillDashboardWindow : EditorWindow
         ScanContext context = BuildItemContext(itemDatabases);
         BuildSkillRows(skills, context, formIndex);
         _skillRows.Sort(s_SkillRowFormComparer);
+        BuildPassiveRows(passiveEngravings);
+        _passiveRows.Sort(s_PassiveRowFormComparer);
         _formInferenceSummary =
             "직접 " + formIndex.DirectInferredCount +
             " / recast " + formIndex.RecastInferredCount +
@@ -1743,6 +2292,32 @@ public sealed class SkillDashboardWindow : EditorWindow
         AddDefaultPassiveResults(weapons);
         AddIconResults(skills, passiveEngravings, formIndex);
         AddSkillFormResults(skills, formIndex);
+    }
+
+    private void BuildPassiveRows(List<PassiveEngravingData> passiveEngravings)
+    {
+        for (int i = 0; i < passiveEngravings.Count; i++)
+        {
+            PassiveEngravingData passive = passiveEngravings[i];
+            if (passive == null)
+                continue;
+
+            _passiveRows.Add(new PassiveRow
+            {
+                Asset = passive,
+                SerializedObject = new SerializedObject(passive),
+                Icon = passive.icon,
+                DisplayName = string.IsNullOrWhiteSpace(passive.passiveName)
+                    ? passive.name
+                    : passive.passiveName,
+                Form = passive.owningForm,
+                Grade = passive.grade,
+                UnlockId = passive.unlockId,
+                BehaviorCount = passive.behaviors != null
+                    ? passive.behaviors.Length
+                    : 0
+            });
+        }
     }
 
     private void BuildSkillRows(
@@ -1800,6 +2375,21 @@ public sealed class SkillDashboardWindow : EditorWindow
             if (formComparison != 0)
                 return formComparison;
         }
+
+        return StringComparer.Ordinal.Compare(
+            left.Asset != null ? left.Asset.name : string.Empty,
+            right.Asset != null ? right.Asset.name : string.Empty);
+    }
+
+    private static int ComparePassiveRowsByFormAndAssetName(
+        PassiveRow left,
+        PassiveRow right)
+    {
+        int formComparison = Comparer<PlayerFormId>.Default.Compare(
+            left.Form,
+            right.Form);
+        if (formComparison != 0)
+            return formComparison;
 
         return StringComparer.Ordinal.Compare(
             left.Asset != null ? left.Asset.name : string.Empty,
@@ -2151,6 +2741,16 @@ public sealed class SkillDashboardWindow : EditorWindow
 
             skillObject.Dispose();
             _skillRows[i].SerializedObject = null;
+        }
+
+        for (int i = 0; i < _passiveRows.Count; i++)
+        {
+            SerializedObject passiveObject = _passiveRows[i].SerializedObject;
+            if (passiveObject == null)
+                continue;
+
+            passiveObject.Dispose();
+            _passiveRows[i].SerializedObject = null;
         }
     }
 
@@ -3216,6 +3816,74 @@ public sealed class SkillDashboardWindow : EditorWindow
         }
     }
 
+    private sealed class NewPassivePopup : PopupWindowContent
+    {
+        private readonly SkillDashboardWindow _owner;
+        private string _passiveName = string.Empty;
+        private PlayerFormId _owningForm = PlayerFormId.Normal;
+        private EngravingGrade _grade = EngravingGrade.Faint;
+        private string _unlockId = string.Empty;
+
+        public NewPassivePopup(SkillDashboardWindow owner)
+        {
+            _owner = owner;
+        }
+
+        public override Vector2 GetWindowSize()
+        {
+            return new Vector2(340f, 178f);
+        }
+
+        public override void OnGUI(Rect rect)
+        {
+            EditorGUILayout.LabelField(
+                "Create Passive Engraving",
+                EditorStyles.boldLabel);
+            EditorGUILayout.Space(3f);
+
+            float previousLabelWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = 110f;
+            _passiveName = EditorGUILayout.TextField(
+                "Passive Name",
+                _passiveName);
+            _owningForm = (PlayerFormId)EditorGUILayout.EnumPopup(
+                "Owning Form",
+                _owningForm);
+            _grade = (EngravingGrade)EditorGUILayout.EnumPopup(
+                "Grade",
+                _grade);
+            _unlockId = EditorGUILayout.TextField(
+                "Unlock Id",
+                _unlockId);
+            EditorGUIUtility.labelWidth = previousLabelWidth;
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Create", GUILayout.Width(90f)))
+            {
+                string passiveName = _passiveName;
+                PlayerFormId owningForm = _owningForm;
+                EngravingGrade grade = _grade;
+                string unlockId = _unlockId;
+                editorWindow.Close();
+                _owner.PromptCreatePassive(
+                    passiveName,
+                    owningForm,
+                    grade,
+                    unlockId);
+                GUIUtility.ExitGUI();
+            }
+
+            if (GUILayout.Button("Cancel", GUILayout.Width(90f)))
+            {
+                editorWindow.Close();
+                GUIUtility.ExitGUI();
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
     private enum ResultSeverity
     {
         Error,
@@ -3225,7 +3893,7 @@ public sealed class SkillDashboardWindow : EditorWindow
 
     private sealed class CreatedSkillUndoRecord
     {
-        public SkillData Asset;
+        public Object Asset;
         public string Path;
     }
 
@@ -3247,6 +3915,18 @@ public sealed class SkillDashboardWindow : EditorWindow
         public int CustomCellCount;
         public int AilmentCount;
         public string LinkedItemCodesText;
+    }
+
+    private sealed class PassiveRow
+    {
+        public PassiveEngravingData Asset;
+        public SerializedObject SerializedObject;
+        public Sprite Icon;
+        public string DisplayName;
+        public PlayerFormId Form;
+        public EngravingGrade Grade;
+        public string UnlockId;
+        public int BehaviorCount;
     }
 
     private sealed class SkillFormIndex
