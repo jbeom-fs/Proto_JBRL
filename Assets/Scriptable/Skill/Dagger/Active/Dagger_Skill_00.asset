@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Dagger_Skill_00
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uC554\uC2B5"
-  icon: {fileID: 0}
-  description: "\uC801\uC5D0\uAC8C \uC21C\uAC04\uC801\uC73C\uB85C \uC811\uADFC\uD558\uBA70 \uC911\uB3C5\uACFC \uCD9C\uD608\uC744 \uB0A8\uAE41\uB2C8\uB2E4."
+  icon: {fileID: 21300000, guid: 704ce132743b77e43ab5fa96b0509b3d, type: 3}
+  description: "\uC801\uC5D0\uAC8C \uC21C\uAC04\uC801\uC73C\uB85C \uC811\uADFC\uD558\uBA70
+    \uC911\uB3C5\uACFC \uCD9C\uD608\uC744 \uB0A8\uAE41\uB2C8\uB2E4."
   executionType: 5
   resourceType: 0
   requiredAmount: 0
