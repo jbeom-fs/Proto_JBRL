@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: dagger_passive_execute_threshold
   passiveName: "\uCC98\uD615"
-  icon: {fileID: 0}
+  icon: {fileID: 4742558272408937700, guid: 7b20c08a3b7b87d4f9921dd9606ddb82, type: 3}
   description: "\uCCB4\uB825 20% \uC774\uD558\uC758 \uC77C\uBC18 \uC801\uC744 \uC989\uC2DC
     \uCC98\uCE58\uD569\uB2C8\uB2E4.\n\uC5D8\uB9AC\uD2B8\uC640 \uBCF4\uC2A4\uB294
     \uCCB4\uB825 90% \uC774\uD558\uBD80\uD130 \uBC1B\uB294 \uD53C\uD574\uAC00 10%
@@ -34,6 +34,7 @@ MonoBehaviour:
     lifestealShieldDuration: 0
     ailmentOverloadType: 0
     ailmentOverloadBonusPct: 30
+    ailmentOverloadHealPct: 0
     executeThresholdHpPct: 20
     executeEliteBossStartHpPct: 90
     executeEliteBossStartBonusPct: 10

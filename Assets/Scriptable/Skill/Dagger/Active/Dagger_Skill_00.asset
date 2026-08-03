@@ -10,62 +10,48 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
-  m_Name: DaggerSkilll_01
+  m_Name: Dagger_Skill_00
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "\uD14C\uC2A4\uD2B8\uB300\uAC70\uC2A4\uD0AC1"
-  icon: {fileID: -8527254929482053941, guid: d880c198fda860444b94e3c380494d1e, type: 3}
-  description: 
-  executionType: 0
+  skillName: "\uC554\uC2B5"
+  icon: {fileID: 0}
+  description: "\uC801\uC5D0\uAC8C \uC21C\uAC04\uC801\uC73C\uB85C \uC811\uADFC\uD558\uBA70 \uC911\uB3C5\uACFC \uCD9C\uD608\uC744 \uB0A8\uAE41\uB2C8\uB2E4."
+  executionType: 5
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
   bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 2
+  cooldown: 4
   castDelay: 0
-  recoveryDelay: 0
-  animationType: 1
+  recoveryDelay: 0.08
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 4
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 10
-  attackPattern: 6
-  patternRange: 1
+  damage: 0
+  attackPattern: 0
+  patternRange: 8
   coneHalfAngle: 45
-  customCells:
-  - {x: -2, y: -2}
-  - {x: -1, y: -2}
-  - {x: 0, y: -2}
-  - {x: 1, y: -2}
-  - {x: 2, y: -2}
-  - {x: -2, y: -1}
-  - {x: -1, y: -1}
-  - {x: 0, y: -1}
-  - {x: 1, y: -1}
-  - {x: 2, y: -1}
-  - {x: -2, y: 0}
-  - {x: -1, y: 0}
-  - {x: 1, y: 0}
-  - {x: 2, y: 0}
-  - {x: -2, y: 1}
-  - {x: -1, y: 1}
-  - {x: 0, y: 1}
-  - {x: 1, y: 1}
-  - {x: 2, y: 1}
-  - {x: -2, y: 2}
-  - {x: -1, y: 2}
-  - {x: 0, y: 2}
-  - {x: 1, y: 2}
-  - {x: 2, y: 2}
-  isMultiTarget: 1
-  canPenetrateWalls: 1
-  knockbackForce: 10
-  knockbackDuration: 0.2
+  customCells: []
+  hitSteps: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
   ailments:
+  - type: 0
+    stacks: 10
   - type: 1
     stacks: 1
+  zoneSprite: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -84,7 +70,7 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
-  appliesDaggerMarker: 0
+  appliesDaggerMarker: 1
   detonatesDaggerMarker: 0
   markerDetonationDamage: 0
   resetCooldownOnMarkerDetonate: 0

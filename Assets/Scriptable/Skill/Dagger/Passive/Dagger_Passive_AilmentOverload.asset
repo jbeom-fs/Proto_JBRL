@@ -14,8 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: dagger_passive_ailment_overload
   passiveName: "\uC0C1\uD0DC\uC774\uC0C1 \uACFC\uBD80\uD558"
-  icon: {fileID: 0}
-  description: "상태이상이 최대 중첩에 도달하면 남은 지속 피해를 30% 증폭해 즉시 터뜨리며, 출혈 폭발은 피해의 40%만큼 회복합니다."
+  icon: {fileID: 1921385171321733363, guid: caf04e4aa5e45dd41a03011e3709c334, type: 3}
+  description: "\uC0C1\uD0DC\uC774\uC0C1\uC774 \uCD5C\uB300 \uC911\uCCA9\uC5D0 \uB3C4\uB2EC\uD558\uBA74
+    \uB0A8\uC740 \uC9C0\uC18D \uD53C\uD574\uB97C 30% \uC99D\uD3ED\uD574 \uC989\uC2DC
+    \uD130\uB728\uB9AC\uBA70, \uCD9C\uD608 \uD3ED\uBC1C\uC740 \uD53C\uD574\uC758
+    40%\uB9CC\uD07C \uD68C\uBCF5\uD569\uB2C8\uB2E4."
   owningForm: 2
   grade: 0
   behaviors:

@@ -9,35 +9,37 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: DaggerR
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: Dagger R
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Dagger_Skill_02
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uC218\uD655"
   icon: {fileID: 0}
-  description: For duration, basic attack hits apply marker. TODO: assign buff VFX/animation.
-  executionType: 4
+  description: "\uB3CC\uC9C4\uD558\uBA70 \uD45C\uC2DD\uC744 \uD130\uB728\uB9BD\uB2C8\uB2E4. \uAE30\uD3ED\uC5D0 \uC131\uACF5\uD558\uBA74 \uC989\uC2DC \uB2E4\uC2DC \uC0AC\uC6A9\uD560 \uC218 \uC788\uC2B5\uB2C8\uB2E4."
+  executionType: 2
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
   bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 10
+  cooldown: 5
   castDelay: 0
-  recoveryDelay: 0.1
-  animationType: 4
+  recoveryDelay: 0.05
+  animationType: 3
   customAnimationTrigger: 
-  rotateAnimationByDirection: 0
+  rotateAnimationByDirection: 1
   animationBaseAngle: 0
-  damage: 0
+  damage: 4
   attackPattern: 0
   patternRange: 1
   coneHalfAngle: 45
+  customCells: []
   isMultiTarget: 0
   canPenetrateWalls: 0
-  knockbackForce: 0
-  knockbackDuration: 0
+  knockbackForce: 1
+  knockbackDuration: 0.08
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -50,15 +52,17 @@ MonoBehaviour:
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
-  dashDistance: 3
+  dashDistance: 4
   dashDuration: 0.12
   dashStopOnWall: 1
-  dashDamageOnPath: 0
-  dashDamageOnContact: 0
-  dashInvincibleDuringDash: 0
-  appliesDaggerMarker: 1
-  detonatesDaggerMarker: 0
-  markerDetonationDamage: 0
-  resetCooldownOnMarkerDetonate: 0
-  markerDuration: 6
+  dashDamageOnPath: 1
+  dashDamageOnContact: 1
+  dashInvincibleDuringDash: 1
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 1
+  markerDetonationDamage: 8
+  resetCooldownOnMarkerDetonate: 1
+  markerDuration: 5
   blinkBehindOffset: 0.75
+  owningForm: 2
+  grade: 1

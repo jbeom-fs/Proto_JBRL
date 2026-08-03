@@ -9,37 +9,35 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: DaggerE
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: Dagger E
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Dagger_Skill_03
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uB099\uC778"
   icon: {fileID: 0}
-  description: 
-  executionType: 2
+  description: "\uC77C\uC815 \uC2DC\uAC04 \uB3D9\uC548 \uAE30\uBCF8 \uACF5\uACA9\uC774 \uD45C\uC2DD\uC744 \uB0A8\uAE41\uB2C8\uB2E4."
+  executionType: 4
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
   bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 5
+  cooldown: 10
   castDelay: 0
-  recoveryDelay: 0.05
-  animationType: 3
+  recoveryDelay: 0.1
+  animationType: 4
   customAnimationTrigger: 
-  rotateAnimationByDirection: 1
+  rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 4
+  damage: 0
   attackPattern: 0
   patternRange: 1
   coneHalfAngle: 45
-  customCells: []
   isMultiTarget: 0
   canPenetrateWalls: 0
-  knockbackForce: 1
-  knockbackDuration: 0.08
+  knockbackForce: 0
+  knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
-  ailments: []
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -52,15 +50,17 @@ MonoBehaviour:
   projectileSpawnOffset: 0.35
   projectileBurstInterval: 0.1
   projectileBurstSpacing: 0.12
-  dashDistance: 4
+  dashDistance: 3
   dashDuration: 0.12
   dashStopOnWall: 1
-  dashDamageOnPath: 1
-  dashDamageOnContact: 1
-  dashInvincibleDuringDash: 1
-  appliesDaggerMarker: 0
-  detonatesDaggerMarker: 1
-  markerDetonationDamage: 8
-  resetCooldownOnMarkerDetonate: 1
-  markerDuration: 5
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 1
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 6
   blinkBehindOffset: 0.75
+  owningForm: 2
+  grade: 2
