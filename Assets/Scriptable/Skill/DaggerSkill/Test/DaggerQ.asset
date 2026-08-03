@@ -45,7 +45,7 @@ MonoBehaviour:
   slowDuration: 0
   ailments:
   - type: 0
-    stacks: 1
+    stacks: 10
   - type: 1
     stacks: 1
   zoneSprite: {fileID: 0}

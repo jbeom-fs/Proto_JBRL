@@ -121,6 +121,8 @@ public sealed class BehaviorRuntime
     }
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
+    // Dashboard forbids relic authoring, so this passive-only list stays stable
+    // during runs and combat contexts can safely retain its reference.
     public IReadOnlyList<AilmentOverloadSettings> AilmentOverloads =>
         _ailmentOverloads;
 
@@ -429,7 +431,8 @@ public sealed class BehaviorRuntime
             _ailmentOverloads.Add(
                 new AilmentOverloadSettings(
                     behavior.ailmentOverloadType,
-                    behavior.ailmentOverloadBonusPct / 100f));
+                    behavior.ailmentOverloadBonusPct / 100f,
+                    behavior.ailmentOverloadHealPct / 100f));
             return;
         }
 

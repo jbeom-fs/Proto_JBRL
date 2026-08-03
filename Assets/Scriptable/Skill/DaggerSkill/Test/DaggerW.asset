@@ -45,7 +45,7 @@ MonoBehaviour:
   slowDuration: 0
   ailments:
   - type: 1
-    stacks: 1
+    stacks: 5
   zoneSprite: {fileID: 0}
   zoneRadius: 1
   zoneTickInterval: 0.5

@@ -2290,7 +2290,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
         AddDefaultPassiveResults(weapons);
-        AddAilmentOverloadResults(passiveEngravings);
+        AddAilmentOverloadResults(context, passiveEngravings);
         AddIconResults(skills, passiveEngravings, formIndex);
         AddSkillFormResults(skills, formIndex);
     }
@@ -2846,8 +2846,30 @@ public sealed class SkillDashboardWindow : EditorWindow
             Engraving = engraving != null ? engraving.objectReferenceValue as EngravingData : null,
             PassiveEngraving = passiveEngraving != null
                 ? passiveEngraving.objectReferenceValue as PassiveEngravingData
-                : null
+                : null,
+            AilmentOverloadBehaviorIndex = FindBehaviorActionIndex(
+                item.FindPropertyRelative("behaviorEffects"),
+                BehaviorAction.AilmentOverload)
         };
+    }
+
+    private static int FindBehaviorActionIndex(
+        SerializedProperty behaviors,
+        BehaviorAction action)
+    {
+        if (behaviors == null || !behaviors.isArray)
+            return -1;
+
+        for (int i = 0; i < behaviors.arraySize; i++)
+        {
+            SerializedProperty behavior = behaviors.GetArrayElementAtIndex(i);
+            SerializedProperty behaviorAction =
+                behavior.FindPropertyRelative("action");
+            if (behaviorAction != null && behaviorAction.intValue == (int)action)
+                return i;
+        }
+
+        return -1;
     }
 
     private List<DropRecord> BuildDropRecords(List<EnemyDropDatabase> dropDatabases)
@@ -3195,8 +3217,24 @@ public sealed class SkillDashboardWindow : EditorWindow
     }
 
     private void AddAilmentOverloadResults(
+        ScanContext context,
         List<PassiveEngravingData> passiveEngravings)
     {
+        for (int itemIndex = 0; itemIndex < context.Items.Count; itemIndex++)
+        {
+            ItemRecord item = context.Items[itemIndex];
+            if (item.AilmentOverloadBehaviorIndex < 0)
+                continue;
+
+            AddResult(
+                ResultSeverity.Warning,
+                FormatItemPrefix(item) + " authors AilmentOverload at behaviorEffects[" +
+                item.AilmentOverloadBehaviorIndex + "]. AilmentOverload is a foundational " +
+                "form-selection build identity and must not be granted by relics acquired " +
+                "during a run.",
+                item.Database);
+        }
+
         for (int passiveIndex = 0;
              passiveIndex < passiveEngravings.Count;
              passiveIndex++)
@@ -4089,6 +4127,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         public ItemType ItemType;
         public EngravingData Engraving;
         public PassiveEngravingData PassiveEngraving;
+        public int AilmentOverloadBehaviorIndex;
     }
 
     private sealed class DropRecord

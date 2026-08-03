@@ -15,7 +15,7 @@ MonoBehaviour:
   unlockId: dagger_passive_ailment_overload
   passiveName: "\uC0C1\uD0DC\uC774\uC0C1 \uACFC\uBD80\uD558"
   icon: {fileID: 0}
-  description: "상태이상이 최대 중첩에 도달하면 남은 지속 피해를 30% 증폭해 즉시 터뜨립니다."
+  description: "상태이상이 최대 중첩에 도달하면 남은 지속 피해를 30% 증폭해 즉시 터뜨리며, 출혈 폭발은 피해의 40%만큼 회복합니다."
   owningForm: 2
   grade: 0
   behaviors:
@@ -31,6 +31,7 @@ MonoBehaviour:
     lifestealShieldDuration: 0
     ailmentOverloadType: 0
     ailmentOverloadBonusPct: 30
+    ailmentOverloadHealPct: 0
     executeThresholdHpPct: 20
     executeEliteBossStartHpPct: 90
     executeEliteBossStartBonusPct: 10
@@ -53,6 +54,7 @@ MonoBehaviour:
     lifestealShieldDuration: 0
     ailmentOverloadType: 1
     ailmentOverloadBonusPct: 30
+    ailmentOverloadHealPct: 40
     executeThresholdHpPct: 20
     executeEliteBossStartHpPct: 90
     executeEliteBossStartBonusPct: 10

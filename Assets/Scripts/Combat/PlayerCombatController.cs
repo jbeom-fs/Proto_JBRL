@@ -155,6 +155,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private float _daggerBasicAttackMarkerDuration;
     private float _lifestealPool;
     private float _lifestealShieldPool;
+    private Action<int> _ailmentOverloadHealCallback;
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
     private bool _isInventorySubscribed;
@@ -249,6 +250,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void Awake()
     {
         _resource.Initialize(maxHp);
+        _ailmentOverloadHealCallback = HealFromAilmentOverload;
         _shield.OnChanged += HandleShieldChanged;
         CachePlayerHitInfo();
         RegisterAsActive();
@@ -570,6 +572,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public CombatEffectContext CreateCombatEffectContext(
         float ailmentDamageMultiplier)
     {
+        // Dashboard blocks relic AilmentOverload authoring, keeping this shared
+        // passive settings list stable during runs without per-hit snapshots.
         IReadOnlyList<AilmentOverloadSettings> ailmentOverloads =
             _relicBehaviors != null
                 ? _relicBehaviors.AilmentOverloads
@@ -580,7 +584,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return new CombatEffectContext(
             ailmentDamageMultiplier,
             ailmentOverloads,
-            executeThreshold);
+            executeThreshold,
+            _ailmentOverloadHealCallback);
     }
 
     public CombatEffectContext CurrentCombatEffectContext =>
@@ -730,6 +735,14 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
                 shieldToAdd,
                 shieldDuration);
         }
+    }
+
+    private void HealFromAilmentOverload(int amount)
+    {
+        if (amount <= 0 || !IsAlive)
+            return;
+
+        RestoreHp(amount);
     }
 
     private void Update()

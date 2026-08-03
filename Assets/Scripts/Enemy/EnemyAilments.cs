@@ -19,16 +19,19 @@ public readonly struct AilmentOverloadSettings
 {
     public AilmentOverloadSettings(
         AilmentType type,
-        float bonusRate)
+        float bonusRate,
+        float healRate)
     {
         Enabled = true;
         Type = type;
         BonusRate = bonusRate;
+        HealRate = healRate;
     }
 
     public bool Enabled { get; }
     public AilmentType Type { get; }
     public float BonusRate { get; }
+    public float HealRate { get; }
 
     // CombatEffectContext.TryGetAilmentOverload guarantees matching type and enabled state.
     public bool ShouldTrigger(int stacks, int maxStacks)
@@ -73,13 +76,16 @@ public readonly struct CombatEffectContext
     public CombatEffectContext(
         float ailmentDamageMultiplier,
         IReadOnlyList<AilmentOverloadSettings> ailmentOverloads,
-        ExecuteThresholdSettings executeThreshold)
+        ExecuteThresholdSettings executeThreshold,
+        Action<int> healCallback)
     {
         AilmentDamageMultiplier = ailmentDamageMultiplier;
         AilmentOverloads = ailmentOverloads;
         ExecuteThreshold = executeThreshold;
+        _healCallback = healCallback;
     }
 
+    private readonly Action<int> _healCallback;
     public float AilmentDamageMultiplier { get; }
     public IReadOnlyList<AilmentOverloadSettings> AilmentOverloads { get; }
     public ExecuteThresholdSettings ExecuteThreshold { get; }
@@ -106,8 +112,14 @@ public readonly struct CombatEffectContext
         return false;
     }
 
+    public void ApplyHeal(int amount)
+    {
+        if (amount > 0)
+            _healCallback?.Invoke(amount);
+    }
+
     public static CombatEffectContext Default =>
-        new CombatEffectContext(1f, null, default);
+        new CombatEffectContext(1f, null, default, null);
 }
 
 public sealed class EnemyAilments
@@ -197,9 +209,18 @@ public sealed class EnemyAilments
             0.5f;
         float overloadDamage =
             remainingDotTotal * (1f + overload.BonusRate);
+        int appliedOverloadDamage =
+            Mathf.Max(1, Mathf.RoundToInt(overloadDamage));
         int versionBeforeOverload = _version;
-        _applyTickDamage?.Invoke(
-            Mathf.Max(1, Mathf.RoundToInt(overloadDamage)));
+        _applyTickDamage?.Invoke(appliedOverloadDamage);
+
+        int healAmount = Mathf.Max(
+            0,
+            Mathf.RoundToInt(appliedOverloadDamage * overload.HealRate));
+        // Heal before version check: lethal damage clears ailments, but still earns healing.
+        if (healAmount > 0)
+            context.ApplyHeal(healAmount);
+
         if (_version != versionBeforeOverload)
             return;
 

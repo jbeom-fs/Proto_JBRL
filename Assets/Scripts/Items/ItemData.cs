@@ -157,6 +157,8 @@ public sealed class ItemData
                 ailmentOverloadType = behavior.ailmentOverloadType,
                 ailmentOverloadBonusPct =
                     behavior.ailmentOverloadBonusPct,
+                ailmentOverloadHealPct =
+                    behavior.ailmentOverloadHealPct,
                 executeThresholdHpPct =
                     behavior.executeThresholdHpPct,
                 executeEliteBossStartHpPct =
