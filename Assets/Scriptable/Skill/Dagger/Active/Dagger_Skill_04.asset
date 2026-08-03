@@ -1,0 +1,78 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Dagger_Skill_04
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uD608\uD754"
+  icon: {fileID: 0}
+  description: "\uBC1C\uBC11\uC5D0 \uD53C\uC758 \uC7A5\uD310\uC744 \uB0A8\uACA8 \uC9C0\uC18D\uC801\uC73C\uB85C \uCD9C\uD608\uC744 \uC0C8\uAE41\uB2C8\uB2E4."
+  executionType: 3
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 8
+  castDelay: 0
+  recoveryDelay: 0.1
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 1
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 0
+  attackPattern: 0
+  patternRange: 1
+  coneHalfAngle: 45
+  customCells: []
+  hitSteps: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
+  ailments:
+  - type: 1
+    stacks: 2
+  zoneSprite: {fileID: 1760965741497715252, guid: e9b57316b26d6974c82002df435160a2, type: 3}
+  zoneRadius: 2.5
+  zoneTickInterval: 0.5
+  zoneDuration: 4
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 8
+  projectileLifetime: 3
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 0
+  projectileMaxBounceCount: 1
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  owningForm: 2
+  grade: 0

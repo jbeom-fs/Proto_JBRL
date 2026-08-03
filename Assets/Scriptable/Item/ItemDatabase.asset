@@ -292,6 +292,44 @@ MonoBehaviour:
     salvageItemCode:
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Faint_3
+    displayName: "\uD608\uD754"
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: a20207b9454042c7817312d5d13b3f01, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Faint_4
+    displayName: "\uAE09\uC18C\uCC0C\uB974\uAE30"
+    icon: {fileID: 0}
+    description:
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 5f7c03c4da6a4d8798330646ce1567f2, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode:
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Whole_1
     displayName: "\uC218\uD655"
     icon: {fileID: 0}
