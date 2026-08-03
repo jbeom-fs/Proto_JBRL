@@ -155,8 +155,6 @@ public sealed class ItemData
                 lifestealShieldCapPct = behavior.lifestealShieldCapPct,
                 lifestealShieldDuration = behavior.lifestealShieldDuration,
                 ailmentOverloadType = behavior.ailmentOverloadType,
-                ailmentOverloadThreshold =
-                    behavior.ailmentOverloadThreshold,
                 ailmentOverloadBonusPct =
                     behavior.ailmentOverloadBonusPct,
                 executeThresholdHpPct =

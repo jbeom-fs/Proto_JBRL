@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: Dagger_Passive_AilmentOverload
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: dagger_passive_ailment_overload
-  passiveName: "과중독 폭발"
+  passiveName: "\uC0C1\uD0DC\uC774\uC0C1 \uACFC\uBD80\uD558"
   icon: {fileID: 0}
-  description: "독 스택이 10에 도달하면 잔여 지속 피해를 즉시 폭발시킵니다."
+  description: "상태이상이 최대 중첩에 도달하면 남은 지속 피해를 30% 증폭해 즉시 터뜨립니다."
   owningForm: 2
   grade: 0
   behaviors:
   - trigger: 2
     action: 7
     skillTypeFilter: 0
-    comboTierDamages: []
+    comboTierDamages: 
     value: 0
     lowHealthThresholdPct: 0
     lostHealthPctPerLifestealPct: 0
@@ -30,8 +30,34 @@ MonoBehaviour:
     lifestealShieldCapPct: 0
     lifestealShieldDuration: 0
     ailmentOverloadType: 0
-    ailmentOverloadThreshold: 10
     ailmentOverloadBonusPct: 30
+    executeThresholdHpPct: 20
+    executeEliteBossStartHpPct: 90
+    executeEliteBossStartBonusPct: 10
+    executeEliteBossIntervalHpPct: 10
+    executeEliteBossBonusPerIntervalPct: 5
+    duration: 0
+    procSkill: {fileID: 0}
+    procOrigin: 0
+    procDirection: 0
+    procSpawnRadius: 0
+  - trigger: 2
+    action: 7
+    skillTypeFilter: 0
+    comboTierDamages: 
+    value: 0
+    lowHealthThresholdPct: 0
+    lostHealthPctPerLifestealPct: 0
+    overhealShieldConversionPct: 0
+    lifestealShieldCapPct: 0
+    lifestealShieldDuration: 0
+    ailmentOverloadType: 1
+    ailmentOverloadBonusPct: 30
+    executeThresholdHpPct: 20
+    executeEliteBossStartHpPct: 90
+    executeEliteBossStartBonusPct: 10
+    executeEliteBossIntervalHpPct: 10
+    executeEliteBossBonusPerIntervalPct: 5
     duration: 0
     procSkill: {fileID: 0}
     procOrigin: 0

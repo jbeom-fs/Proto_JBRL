@@ -24,6 +24,8 @@ MonoBehaviour:
   cooldown: 4
   castDelay: 0
   recoveryDelay: 0.08
+  recastStages: []
+  recastWindow: 1.5
   animationType: 4
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
@@ -33,6 +35,8 @@ MonoBehaviour:
   patternRange: 8
   coneHalfAngle: 45
   customCells: []
+  hitSteps: []
+  cancelable: 0
   isMultiTarget: 0
   canPenetrateWalls: 0
   knockbackForce: 0
@@ -44,6 +48,10 @@ MonoBehaviour:
     stacks: 1
   - type: 1
     stacks: 1
+  zoneSprite: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3

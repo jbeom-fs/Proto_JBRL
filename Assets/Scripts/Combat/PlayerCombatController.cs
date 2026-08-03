@@ -570,14 +570,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public CombatEffectContext CreateCombatEffectContext(
         float ailmentDamageMultiplier)
     {
-        AilmentOverloadSettings overload = default;
-        _relicBehaviors?.TryGetAilmentOverloadSettings(out overload);
+        IReadOnlyList<AilmentOverloadSettings> ailmentOverloads =
+            _relicBehaviors != null
+                ? _relicBehaviors.AilmentOverloads
+                : null;
         ExecuteThresholdSettings executeThreshold = default;
         _relicBehaviors?.TryGetExecuteThresholdSettings(
             out executeThreshold);
         return new CombatEffectContext(
             ailmentDamageMultiplier,
-            overload,
+            ailmentOverloads,
             executeThreshold);
     }
 

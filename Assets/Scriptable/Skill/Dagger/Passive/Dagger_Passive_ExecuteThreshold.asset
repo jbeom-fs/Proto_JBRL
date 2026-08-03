@@ -33,7 +33,6 @@ MonoBehaviour:
     lifestealShieldCapPct: 0
     lifestealShieldDuration: 0
     ailmentOverloadType: 0
-    ailmentOverloadThreshold: 10
     ailmentOverloadBonusPct: 30
     executeThresholdHpPct: 20
     executeEliteBossStartHpPct: 90

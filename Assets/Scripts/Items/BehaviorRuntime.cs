@@ -70,19 +70,6 @@ public sealed class BehaviorRuntime
         public int StackCount { get; }
     }
 
-    private readonly struct AilmentOverloadEntry
-    {
-        public AilmentOverloadEntry(BehaviorEffect behavior)
-        {
-            Settings = new AilmentOverloadSettings(
-                behavior.ailmentOverloadType,
-                behavior.ailmentOverloadThreshold,
-                behavior.ailmentOverloadBonusPct / 100f);
-        }
-
-        public AilmentOverloadSettings Settings { get; }
-    }
-
     private readonly struct ExecuteThresholdEntry
     {
         public ExecuteThresholdEntry(BehaviorEffect behavior)
@@ -116,8 +103,8 @@ public sealed class BehaviorRuntime
     private readonly List<AilmentApplication> _attackAilments = new List<AilmentApplication>();
     private readonly List<LifestealEngineEntry> _lifestealEngines =
         new List<LifestealEngineEntry>();
-    private readonly List<AilmentOverloadEntry> _ailmentOverloads =
-        new List<AilmentOverloadEntry>();
+    private readonly List<AilmentOverloadSettings> _ailmentOverloads =
+        new List<AilmentOverloadSettings>();
     private readonly List<ExecuteThresholdEntry> _executeThresholds =
         new List<ExecuteThresholdEntry>();
 
@@ -134,6 +121,8 @@ public sealed class BehaviorRuntime
     }
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
+    public IReadOnlyList<AilmentOverloadSettings> AilmentOverloads =>
+        _ailmentOverloads;
 
     public float GetLifestealBonusPct(float hpRatio)
     {
@@ -178,20 +167,6 @@ public sealed class BehaviorRuntime
         conversionPct = first.ShieldConversionPct;
         capPct = first.ShieldCapPct;
         duration = first.ShieldDuration;
-        return true;
-    }
-
-    public bool TryGetAilmentOverloadSettings(
-        out AilmentOverloadSettings settings)
-    {
-        if (_ailmentOverloads.Count == 0)
-        {
-            settings = default;
-            return false;
-        }
-
-        // Current loadout supports one equipped passive per form.
-        settings = _ailmentOverloads[0].Settings;
         return true;
     }
 
@@ -451,7 +426,10 @@ public sealed class BehaviorRuntime
 
         if (behavior.action == BehaviorAction.AilmentOverload)
         {
-            _ailmentOverloads.Add(new AilmentOverloadEntry(behavior));
+            _ailmentOverloads.Add(
+                new AilmentOverloadSettings(
+                    behavior.ailmentOverloadType,
+                    behavior.ailmentOverloadBonusPct / 100f));
             return;
         }
 

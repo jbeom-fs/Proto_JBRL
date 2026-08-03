@@ -15,6 +15,10 @@ public sealed class PlayerBehaviors : MonoBehaviour
 
     public IReadOnlyList<AilmentApplication> AttackAilments =>
         _runtime != null ? _runtime.AttackAilments : Array.Empty<AilmentApplication>();
+    public IReadOnlyList<AilmentOverloadSettings> AilmentOverloads =>
+        _runtime != null
+            ? _runtime.AilmentOverloads
+            : Array.Empty<AilmentOverloadSettings>();
 
     public float GetLifestealBonusPct(float hpRatio)
     {
@@ -39,16 +43,6 @@ public sealed class PlayerBehaviors : MonoBehaviour
         conversionPct = 0f;
         capPct = 0f;
         duration = 0f;
-        return false;
-    }
-
-    public bool TryGetAilmentOverloadSettings(
-        out AilmentOverloadSettings settings)
-    {
-        if (_runtime != null)
-            return _runtime.TryGetAilmentOverloadSettings(out settings);
-
-        settings = default;
         return false;
     }
 

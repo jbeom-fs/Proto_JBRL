@@ -2263,9 +2263,6 @@ public sealed class SkillDashboardWindow : EditorWindow
         List<SkillData> skills = LoadAssets<SkillData>("t:SkillData");
         List<PassiveEngravingData> passiveEngravings =
             LoadAssets<PassiveEngravingData>("t:PassiveEngravingData");
-        List<EnemyAilmentProfileDatabase> ailmentProfiles =
-            LoadAssets<EnemyAilmentProfileDatabase>(
-                "t:EnemyAilmentProfileDatabase");
         List<ItemDatabase> itemDatabases = LoadAssets<ItemDatabase>("t:ItemDatabase");
         List<EnemyDropDatabase> dropDatabases = LoadAssets<EnemyDropDatabase>("t:EnemyDropDatabase");
         List<PlayerFormData> playerForms = LoadAssets<PlayerFormData>("t:PlayerFormData");
@@ -2293,7 +2290,7 @@ public sealed class SkillDashboardWindow : EditorWindow
         AddItemDatabaseResults(context);
         AddDropDatabaseResults(dropRecords, context);
         AddDefaultPassiveResults(weapons);
-        AddAilmentOverloadResults(passiveEngravings, ailmentProfiles);
+        AddAilmentOverloadResults(passiveEngravings);
         AddIconResults(skills, passiveEngravings, formIndex);
         AddSkillFormResults(skills, formIndex);
     }
@@ -3198,16 +3195,8 @@ public sealed class SkillDashboardWindow : EditorWindow
     }
 
     private void AddAilmentOverloadResults(
-        List<PassiveEngravingData> passiveEngravings,
-        List<EnemyAilmentProfileDatabase> ailmentProfiles)
+        List<PassiveEngravingData> passiveEngravings)
     {
-        if (ailmentProfiles == null || ailmentProfiles.Count == 0)
-            return;
-
-        EnemyAilmentProfileDatabase profiles = ailmentProfiles[0];
-        if (profiles == null)
-            return;
-
         for (int passiveIndex = 0;
              passiveIndex < passiveEngravings.Count;
              passiveIndex++)
@@ -3216,30 +3205,33 @@ public sealed class SkillDashboardWindow : EditorWindow
             if (passive == null || passive.behaviors == null)
                 continue;
 
+            var coveredTypes = new HashSet<AilmentType>();
             for (int behaviorIndex = 0;
                  behaviorIndex < passive.behaviors.Length;
                  behaviorIndex++)
             {
                 BehaviorEffect behavior = passive.behaviors[behaviorIndex];
                 if (behavior == null ||
-                    behavior.action != BehaviorAction.AilmentOverload ||
-                    !profiles.TryGetProfile(
-                        behavior.ailmentOverloadType,
-                        out EnemyAilmentProfileDatabase.Profile profile) ||
-                    behavior.ailmentOverloadThreshold <= profile.MaxStacks)
-                {
+                    behavior.action != BehaviorAction.AilmentOverload)
                     continue;
-                }
+
+                coveredTypes.Add(behavior.ailmentOverloadType);
+            }
+
+            if (coveredTypes.Count == 0)
+                continue;
+
+            Array ailmentTypes = Enum.GetValues(typeof(AilmentType));
+            for (int typeIndex = 0; typeIndex < ailmentTypes.Length; typeIndex++)
+            {
+                var type = (AilmentType)ailmentTypes.GetValue(typeIndex);
+                if (coveredTypes.Contains(type))
+                    continue;
 
                 AddResult(
-                    ResultSeverity.Warning,
-                    "AilmentOverload threshold exceeds " +
-                    behavior.ailmentOverloadType +
-                    " max stacks: passive '" + passive.name +
-                    "', behavior " + behaviorIndex +
-                    ", threshold " +
-                    behavior.ailmentOverloadThreshold +
-                    ", max " + profile.MaxStacks + ".",
+                    ResultSeverity.Info,
+                    "AilmentOverload passive '" + passive.name +
+                    "' does not cover ailment type " + type + ".",
                     passive);
             }
         }

@@ -61,12 +61,9 @@ public sealed class BehaviorEffect
     public float lifestealShieldCapPct;
     [Tooltip("LifestealEngine 전용. 피흡 쉴드 지속시간(초)입니다. 0 이하면 무한입니다.")]
     public float lifestealShieldDuration;
-    [Tooltip("AilmentOverload target ailment type.")]
+    [Tooltip("AilmentOverload 전용. 과부하를 적용할 상태이상 타입입니다.")]
     public AilmentType ailmentOverloadType = AilmentType.Poison;
-    [Tooltip("AilmentOverload explosion threshold in stacks.")]
-    [Min(1)]
-    public int ailmentOverloadThreshold = 10;
-    [Tooltip("AilmentOverload bonus damage percentage.")]
+    [Tooltip("AilmentOverload 전용. 해당 상태이상이 프로필 최대 스택에 도달하면 폭발합니다. 폭발 보너스 피해율(%)입니다.")]
     [Min(0f)]
     public float ailmentOverloadBonusPct = 30f;
     [Tooltip("ExecuteThreshold HP threshold percentage.")]

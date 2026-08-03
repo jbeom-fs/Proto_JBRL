@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum AilmentType
@@ -18,26 +19,22 @@ public readonly struct AilmentOverloadSettings
 {
     public AilmentOverloadSettings(
         AilmentType type,
-        int thresholdStacks,
         float bonusRate)
     {
         Enabled = true;
         Type = type;
-        ThresholdStacks = thresholdStacks;
         BonusRate = bonusRate;
     }
 
     public bool Enabled { get; }
     public AilmentType Type { get; }
-    public int ThresholdStacks { get; }
     public float BonusRate { get; }
 
-    public bool ShouldTrigger(AilmentType type, int stacks)
+    // CombatEffectContext.TryGetAilmentOverload guarantees matching type and enabled state.
+    public bool ShouldTrigger(int stacks, int maxStacks)
     {
-        return Enabled &&
-               Type == type &&
-               ThresholdStacks > 0 &&
-               stacks >= ThresholdStacks;
+        return maxStacks > 0 &&
+               stacks == maxStacks;
     }
 }
 
@@ -75,20 +72,42 @@ public readonly struct CombatEffectContext
 {
     public CombatEffectContext(
         float ailmentDamageMultiplier,
-        AilmentOverloadSettings ailmentOverload,
+        IReadOnlyList<AilmentOverloadSettings> ailmentOverloads,
         ExecuteThresholdSettings executeThreshold)
     {
         AilmentDamageMultiplier = ailmentDamageMultiplier;
-        AilmentOverload = ailmentOverload;
+        AilmentOverloads = ailmentOverloads;
         ExecuteThreshold = executeThreshold;
     }
 
     public float AilmentDamageMultiplier { get; }
-    public AilmentOverloadSettings AilmentOverload { get; }
+    public IReadOnlyList<AilmentOverloadSettings> AilmentOverloads { get; }
     public ExecuteThresholdSettings ExecuteThreshold { get; }
 
+    public bool TryGetAilmentOverload(
+        AilmentType type,
+        out AilmentOverloadSettings settings)
+    {
+        if (AilmentOverloads != null)
+        {
+            // BehaviorRuntime scan order is authoritative; duplicate types use first entry.
+            for (int i = 0; i < AilmentOverloads.Count; i++)
+            {
+                AilmentOverloadSettings candidate = AilmentOverloads[i];
+                if (candidate.Type != type)
+                    continue;
+
+                settings = candidate;
+                return candidate.Enabled;
+            }
+        }
+
+        settings = default;
+        return false;
+    }
+
     public static CombatEffectContext Default =>
-        new CombatEffectContext(1f, default, default);
+        new CombatEffectContext(1f, null, default);
 }
 
 public sealed class EnemyAilments
@@ -166,9 +185,8 @@ public sealed class EnemyAilments
         if (wasInactive)
             AppendActiveType(type);
 
-        AilmentOverloadSettings overload =
-            context.AilmentOverload;
-        if (!overload.ShouldTrigger(type, bucket.Stacks))
+        if (!context.TryGetAilmentOverload(type, out AilmentOverloadSettings overload) ||
+            !overload.ShouldTrigger(bucket.Stacks, profile.MaxStacks))
             return;
 
         float stackCount = bucket.Stacks;
