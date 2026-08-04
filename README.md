@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-03
+> 작성 기준일: 2026-08-04
+> 기준 커밋: master HEAD `d1a23a88`(+워킹트리) — **Dagger 각인 12/12 완성 + 스킬 배관 3건 확장**. ①**`hitSteps`가 Projectile로 확장**(§7-10 개정) — `MultiHitSkillRunner`는 원래 실행타입 무관이었고 결합은 생성자 콜백 고정 하나뿐이라, 디스패처 + `ExecuteProjectileHit` + `HitStep{projectileCount, spreadAngle}`(0=스킬 상속)로 열렸다. **스텝마다 발수·분산각이 다른 볼리**(3-4-3 cone)가 저작 가능해졌고, crit은 **스텝당 1회**(탄 단위 롤은 기존 마탄 회귀라 배제), 재조준 없음, 스텝 자원 추가 소모 없음. 🔑 **`Burst`는 다단의 대안이 아니다** — 1방향 연발일 뿐이라 스텝별 발수 변화를 표현 못 한다. ②**`InstantArea`가 표식을 부여·기폭**(§7-8·§11b-12) — 부여는 평타 마킹과 같은 적중 목록 순회, 기폭은 `TryDetonateDaggerMarker` 추출로 Dash와 결산 로직 공유. **호출 순서 = 기폭 → 부여**(자기가 심고 자기가 터뜨리는 저작 봉인), `IsProcCast` 게이트는 **5경로**로 확대. ⚠️동기 proc이 `AttackExecutor` 적중 목록·피해 카운터를 리셋하는 **재진입**이 있어 선캐시로 차단. ③**장판 애니메이션 지원**(§7-12) — `SkillData.zoneAnimation`(AnimatorOverrideController), null이면 기존 정적 표시 그대로. **sprite는 크기 기준 겸 폴백으로 존치**(애니 재생 중 렌더러 sprite는 직전 장판 프레임이라 스케일 기준으로 못 씀). ④**Dagger 각인 6종 저작 완료**(독무·연쇄투척·표식산포 / 참수·칼날비·폭쇄) + 아이콘 8종 + 혈흔→혈무 리네임 → **12/12**. 🆕 `HandOff/KNOWN_QUIRKS.md` 신설(알고도 방치하는 사항 대장). 이전: 상태이상 과부하 타입별 분화·Dagger 각인 축 착수(`d1a23a88`)
+>
+> <details><summary>이전 기준(2026-08-03, `d1a23a88`)</summary>
+>
 > 기준 커밋: master HEAD `d1a23a88` — **상태이상 과부하 타입별 분화**(§7-9·§7-8b 개정): 임계를 절대값에서 **프로필 최대 스택 도달**로 재정의해 독 전용이던 과부하에 출혈이 자동 편입, "임계 > 캡이면 영영 미발동" 저작 함정 소멸(`15fedfa1`). 설정을 **타입별 엔트리**로 전환(`_ailmentOverloads[0]` 단일 반환 제약 해소), `CombatEffectContext`가 리스트 참조 운반 + `TryGetAilmentOverload(type)` 조회. **출혈 과부하에 회복 축 추가**(`77db5c32`) — 독=큰 폭발 / 출혈=작은 폭발+**피해의 40% 회복**, **타입 분기 코드 없이 엔트리 저작값만으로** 성격 분화. 회복 콜백은 `CombatEffectContext` 동승(시그니처 변경 0), ⚠️`_version` 검사 **앞**에 배치(폭발 킬 시 회복 유실 방지). **유물의 `AilmentOverload` 저작 봉쇄**(Dashboard Warning — 과부하는 폼선택 1택 근간 축의 정체성. 부수 효과로 설정 리스트가 런 중 불변임이 보장됨). **Dagger 각인 축 착수**(§7-8 확장): 기본 4종을 `SkillData` → `EngravingData` 전환해 각인 등록(`m_Script` guid 교체만, `.meta` 무수정으로 결선 보존, `e5b90065`) + **Faint 2종 신규**(혈흔=출혈 장판 / 급소찌르기, `d1a23a88`) → **6/12**. 🔑 **장판 저작 공식**(§7-12): `순증율 = (부여 스택 ÷ 장판 틱) − (1 ÷ 프로필 틱)` — DoT가 스택 소모형이라 부여와 동시에 차감이 진행되며, 순증율 0 이하면 어떤 지속을 줘도 폭발하지 않는다. Dagger 아이콘 패시브 3종·액티브 4종 + DaggerForm pivot 상대 이동. 이전: DoT 스택 소모형 전환·Dagger 패시브 3축(`ddd081cd`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-07-31, `ddd081cd`)</summary>
 >
@@ -1160,12 +1166,25 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **각인대 1회 사용 소멸 (2026-07-07)**: 던전 stair방 각인대는 **변경이 커밋된 채로 닫힌 세션 1회**로 소멸 — `CommitAndClose` 성공 시 UI가 `owner.NotifyConsumed()`(=`SetActive(false)`) 호출. 구경만/취소/무변경 닫기는 소멸 안 함. 희소성을 조작 단위가 아닌 **기회(세션) 단위**에 건 설계(StS 모닥불 패턴) — 세션 안에서는 자유 재배치. 다음 층 재등장은 placer 기존 경로(`OnFloorChanged`→비활성→새 stair 진입 시 재활성) 그대로, 같은 층 재등장 없음은 `IsFirstVisit` 가드가 보장. `consumeOnCommit=false`(정비실 씬 배치 인스턴스, §11e-6)면 커밋해도 비소멸(owner=null 전달). 즉시교체 UI 버튼은 **의도적 비채택** — equip=리바인드=4슬롯 쿨다운 리셋이라 전투 중 교체는 무료 쿨초기화 익스플로잇이 됨.
 
-**폼별 각인 콘텐츠 현황(2026-08-03)** — 목표는 **폼당 등급별 4종 = 12종**.
+**폼별 각인 콘텐츠 현황(2026-08-04)** — 목표는 **폼당 등급별 4종 = 12종**.
 
 | 폼 | Faint | Whole | Primordial | 비고 |
 |---|---|---|---|---|
 | **Sword** | 연격 · 전진발도 · 베어넘기기 · 올려베기 | 회전베기 · 도약참 · 기세베기 · 연격-연쇄 | 난무 · 무형참 · 종언 · 일도양단 | **12/12** — 수치 조정 이월 |
-| **Dagger** | 암습 · 단검투척 · 혈흔 · 급소찌르기 | 수확 (+독무 · 연쇄투척 · 표식산포 미저작) | 낙인 (+참수 · 칼날비 · 폭쇄 미저작) | **6/12** |
+| **Dagger** | 암습 · 단검투척 · 혈무 · 급소찌르기 | 수확 · 독무 · 연쇄투척 · 표식산포 | 낙인 · 참수 · 칼날비 · 폭쇄 | **12/12** — 수치 조정 이월 |
+
+**Dagger 12종의 축 분업(2026-08-04 완결)** — 패시브 3축이 각각 전용 액티브를 갖는다. 폼선택 1택이 실제 빌드 분기가 되는 근거다.
+
+| 패시브 축 | 전용 액티브 |
+|---|---|
+| 표식폭발 | 수확 · 표식산포 · 낙인 · 폭쇄 |
+| 상태이상 과부하 | 혈무 · 독무 · 암습 · 단검투척 · 연쇄투척 |
+| 처형 | 참수 |
+
+저작 시 확정된 설계 규칙 3개:
+- **칼날비는 표식을 남기지 않는다** — 표식폭발 패시브의 존재 근거가 "3축 중 유일한 광역"이라, 액티브 광역이 표식까지 뿌리면 그 근거가 무너진다. **광역 딜은 액티브, 광역 기폭은 패시브**의 분업.
+- **폭쇄에 쿨 리셋을 주지 않는다** — 수확의 정체성이 "기폭으로 쿨을 리셋하며 연쇄"다. 둘의 차별 축은 위치 지정 여부가 아니라 **대시 이동 + 쿨 리셋 유무**다(수확=이동하며 연쇄 / 폭쇄=제자리 광역 일괄 결산 + 긴 쿨).
+- **총 발사량과 자원은 따로 저작한다** — 연쇄투척처럼 base 3발 + 스텝 4·3발 = 10발을 쏘면서 `consumeAmount 10`을 두면 요구·소모가 정확히 맞는다. 이때 부분 탄약 사용 모드는 `발수 == consumeAmount` 조건이 깨져 자동 해제되므로, 잔탄 부족 시 부분 발사가 아니라 시전 불가가 된다(의도된 동작).
 
 읽히는 **등급 문법**(Sword 12종에서): Faint = 짧은 쿨·낮은 딜의 기본기 / Whole = **멀티히트·이동기 등장** / Primordial = 긴 쿨 결전기, 단발 초고딜(일도양단 1000, 종언 800).
 
@@ -1173,7 +1192,7 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 ⚠️ **기본 각인도 드랍 풀에 들어간다** — `DropQueryResolver.EnsureIndex`가 `ItemDatabase` 전체를 순회할 뿐 기본 보유분을 제외하는 로직이 없다. Sword Faint 4종 중 2개가 기본 보유분이라 **Faint 드랍의 50%가 중복**이다. 각인 물량 확충 후 판단할 부채.
 
-**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI→스테이징 세션 커밋)·E2(Stair방 각인대+1회 사용 소멸) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. 2026-07-22에 각인대 모달이 **액티브/패시브 탭 2단**으로 확장되었습니다(§7-8b). **남은 — E3(정식 콘텐츠 에셋: 현 Sword 3티어는 테스트에셋, 폼 컨셉 확정 대기로 보류) + 고유 메커니즘 태초 각인별 실행 로직**.
+**진행 상황**: Slice A(바인딩 seam)·B(토큰 모델/보유풀/런리셋)·C(EngravingData/등급/폼-락)·D(드랍 통합)·E1(모달 교체 UI→스테이징 세션 커밋)·E2(Stair방 각인대+1회 사용 소멸) 구현 및 Play 검증 완료. `EngravingData` CustomEditor 와 Validator 정합성 툴도 추가 완료. 2026-07-22에 각인대 모달이 **액티브/패시브 탭 2단**으로 확장되었습니다(§7-8b). **E3(정식 콘텐츠 에셋)은 Sword·Dagger 24종 저작으로 완료**(2026-08-04). **남은 — 24종 수치 튜닝 일괄 + Freischutz·Parry·Normal 각인 물량 + 고유 메커니즘 태초 각인별 실행 로직**.
 
 ### 7-8b. 패시브 각인 (PassiveEngravingData) — 2026-07-30 전면 재설계
 
@@ -1307,11 +1326,27 @@ Dagger 킷 실측 = **부여(Q Blink·W Projectile·R 평타버프) → 기폭(E
 
 | 조각 | 구현 |
 |------|------|
-| 데이터 | `hitSteps: List<HitStep>{delay, damagePct, overrideCells}` 인라인 배열(별도 SO 없음 — ailments 선례). **additive 의미론: 본체 1타 + 스텝 = 추가 후속타**(스텝 1개 = 총 2타). 빈 배열 = 기존 단타 무변경. `overrideCells` 비면 본체 형태 반복, 채우면 그 타만 다른 형태(타별 범위 상이 가능) |
+| 데이터 | `hitSteps: List<HitStep>{delay, damagePct, overrideCells, projectileCount, spreadAngle}` 인라인 배열(별도 SO 없음 — ailments 선례). **additive 의미론: 본체 1타 + 스텝 = 추가 후속타**(스텝 1개 = 총 2타). 빈 배열 = 기존 단타 무변경. `overrideCells` 비면 본체 형태 반복, 채우면 그 타만 다른 형태(타별 범위 상이 가능). 뒤 2필드는 Projectile 전용이며 **0 = 스킬 값 상속**(2026-08-04) |
 | 실행 | 본체 타는 기존 단타 코드 그대로 → 잔여 스텝은 `MultiHitSkillRunner`(순수 C#, Tick(dt), 히치 다단 while) 예약. **타마다 `BeginAttackActivation`** = 같은 적 재타격·크리 독립 롤·흡혈/콤보 타 단위 적립. 각도=시전 스냅샷, 원점=타 시점 위치. 비용·쿨=시전 1회 |
 | 계약 | 러너 활성 = `IsSkillBusy`·`BlocksPlayerMovement` 합류(시퀀스 중 이동·타 스킬 차단). 강제 중단(잔여 폐기·환불 없음) = 사망·스턴·대시·층전환·폼변경 — `canContinue` 콜백 주입 |
-| 저작 | SkillDataEditor **Hit Timeline**: Base/Step 선택·추가·삭제·Up/Down + 셀 페인터를 SerializedProperty 대상으로 일반화(본체/스텝 공용). 빈 override = 본체 형태 흐린 힌트, 클릭으로 override 시작. InstantArea 전용(Projectile은 기존 Burst가 커버) |
-| 미리보기 | 합집합 — 본체 ∪ 전 스텝 셀(비Custom 본체 = 기존 outline + 셀 오버레이). hold 중 셀 편집 실시간 감지(스냅샷 비교) |
+| 저작 | SkillDataEditor **Hit Timeline**: Base/Step 선택·추가·삭제·Up/Down + 셀 페인터를 SerializedProperty 대상으로 일반화(본체/스텝 공용). 빈 override = 본체 형태 흐린 힌트, 클릭으로 override 시작. **InstantArea·Projectile 양쪽 노출**(2026-08-04 — Projectile 스텝은 셀 페인터 대신 발수·분산각만) |
+| 미리보기 | 합집합 — 본체 ∪ 전 스텝 셀(비Custom 본체 = 기존 outline + 셀 오버레이). hold 중 셀 편집 실시간 감지(스냅샷 비교). Projectile은 base ∪ 전 스텝 **볼리 부채꼴 누적 렌더** |
+
+**①-b 다단 볼리 — Projectile 확장 (2026-08-04)**
+
+`MultiHitSkillRunner`는 원래 실행타입에 무관했다(`delay`만 읽고 주입 콜백 호출). 유일한 InstantArea 결합이 **생성자에서 콜백을 고정한 것**이었으므로, 실행타입 디스패처 + `ExecuteProjectileHit` 신설로 열렸다. 플레이어 시퀀스·proc 시퀀스(16개 풀) 전부 그대로 재사용된다.
+
+| 규칙 | 값 | 근거 |
+|---|---|---|
+| 스텝별 재조준 | 없음 — 시전 시 캡처한 `AimDirection` 재사용 | 다단 InstantArea와 동일 규약 |
+| crit 롤 | **스텝당 1회**(한 스텝의 N발은 동일 crit) | 탄 단위 롤은 `SpawnProjectile`로 롤을 내려야 해서 **기존 마탄 Spread/Circle/Burst 회귀**가 된다 |
+| 캔슬 | 남은 볼리 미발사, 발사된 탄은 진행 | 러너 폐기로 자동 성립. 회피 중단은 `canContinue`의 `!IsDashing`이 담당(`cancelable`과 무관) |
+| 자원 | 스텝은 추가 소모 없음 | 총량은 스킬 단위로 저작 |
+| 이동 봉쇄 | 시퀀스 내내 유지(수용) | `IsMultiHitActive`가 `IsSkillBusy`·`BlocksPlayerMovement`에 합류하는 기존 계약 |
+
+🔑 **`Burst`는 다단 볼리의 대안이 될 수 없다** — `projectileCount`·`burstInterval`이 있어 다단처럼 보이지만, Burst는 **하나의 방향·하나의 발수를 코루틴으로 끊어 쏘는 것**이라 3-4-3 cone처럼 스텝마다 발수와 분산각이 다른 형태를 표현하지 못한다. 데이터 필드가 존재하는 것과 그 조합으로 목표 형태가 나오는 것은 별개다.
+
+⚠️ **평타 경로도 이 블록을 공유한다** — `ExecuteBasicProjectile` → `ExecuteProjectile(context, count, resourceConsumed)`. 마탄 평타 SkillData에 `hitSteps`를 저작하면 평타가 이동 봉쇄 시퀀스를 시작하고, 평타의 "발수 1 강제"를 스텝이 무시한다. 마탄 평타 1발은 정체성이라 저작할 이유가 없어 방치했다(`KNOWN_QUIRKS` Q1).
 
 **② cancelable 피캔슬 + 캔슬 이벤트 (`6a201b2e`)**
 
@@ -1386,7 +1421,23 @@ Dagger 킷 실측 = **부여(Q Blink·W Projectile·R 평타버프) → 기폭(E
 
 ⚠️ **장판은 시전자 발밑(`CasterPosition`)에 깔린다** — 조준 지점 설치가 아니다. 원거리 설치가 필요하면 배관 신설이 선행된다.
 
-📌 **프리팹은 종류별로 만들지 않는다** — `DamageZoneSpawner`는 단일 `defaultZonePrefab`을 풀링하고 `Initialize(sprite, payload)`로 **스프라이트만 교체**한다. 독/출혈 장판 구분은 `SkillData.zoneSprite` 저작만으로 끝난다.
+📌 **프리팹은 종류별로 만들지 않는다** — `DamageZoneSpawner`는 단일 `defaultZonePrefab`을 풀링하고 `Initialize(sprite, animation, payload)`로 **비주얼만 교체**한다. 독/출혈 장판 구분은 `SkillData` 저작만으로 끝난다.
+
+**장판 애니메이션 (2026-08-04)** — `SkillData.zoneAnimation`(`AnimatorOverrideController`). **null이면 기존 정적 표시 그대로**(회귀 0).
+
+| 조각 | 구현 |
+|------|------|
+| 배타 분기 | `animation != null` → Animator 켜고 `Rebind()` + `Play("Base Layer.Zone", 0, 0f)`, sprite 대입 생략 / `null` → **Animator 끄고** 기존 sprite 경로. ⚠️양방향 배타가 필수 — Animator를 안 끄면 풀에서 재사용될 때 **이전 장판의 애니가 계속 돈다** |
+| 스케일 | **두 경로 모두 `zoneSprite` 기준으로 동일 계산.** 애니 재생 중 렌더러의 sprite는 직전 장판의 프레임이라 크기 기준으로 쓸 수 없다 → sprite는 **크기 기준 겸 폴백**으로 존치. sprite 없이 애니만 지정 시 경고 1회 + 스케일 1 |
+| 풀 리셋 | `Rebind`/`Play(0f)`를 매 `Initialize`마다 호출. `Release`가 `SetActive(false)`만 하므로 이게 없으면 이전 장판이 끝난 프레임에서 이어 재생된다 |
+| 프리팹 | Animator 1개 추가(초기 비활성 / `UpdateMode Normal` / `CullingMode AlwaysAnimate`). Normal이라 **일시정지 모달에서 장판 애니도 함께 멈춘다** |
+| 컨트롤러 | 베이스 `DamageZone.controller`(레이어 `Base Layer`, 상태 `Zone` 1개, 파라미터·트랜지션 없음) + **전용 빈 클립 `DamageZone_Placeholder.anim`**. 장판별 AOC가 이 슬롯을 오버라이드한다 |
+
+⚠️ **AOC의 베이스 컨트롤러를 반드시 `DamageZone.controller`로 둘 것.** 스프라이트를 오브젝트에 드래그하면 Unity가 클립 전용 컨트롤러를 자동 생성하는데, 그걸 베이스로 삼으면 `Zone` 상태가 없어 `Play`가 **조용히 실패**한다. 그럼에도 컨트롤러의 기본 상태가 자동 재생돼 **겉보기엔 동작하므로** 발견이 늦는다(실제로 한 번 발생). 이 경우 풀 재사용 시 첫 프레임 보장이 코드가 아니라 `Rebind` 부작용에 의존하게 된다.
+
+⚠️ **플레이스홀더를 다른 도메인 클립으로 때우지 말 것** — AOC 슬롯이 비면 Unity가 **원본 클립으로 폴백**하므로, 플레이스홀더가 남의 이펙트면 장판 자리에서 그 애니가 재생된다. 전용 빈 클립이면 같은 상황에서 "아무 일도 일어나지 않는다"가 된다.
+
+📌 **클립 저작 규격** — DamageZone 프리팹은 **자식 없는 단일 GameObject**라 SpriteRenderer가 루트에 있다. 클립 커브 경로도 루트(`path: `)여야 하므로 **프리팹 루트(또는 SpriteRenderer만 붙인 임시 오브젝트)에서 녹화**할 것. 프레임 셀 크기는 `zoneSprite`와 동일해야 하며(다르면 매 프레임 크기가 흔들린다), **시트의 0번 프레임을 `zoneSprite`로 등록**하면 기준값이 곧 애니의 한 프레임이라 불일치가 원천 차단된다. 현재 결선 = 혈무 `Blood_Swamp`(10프레임/1초 루프) · 독무 `Poison_Swamp`(동일 규격).
 
 ### 7-13. Proc 시전 — 파이프 밖 조용한 스킬 발동 (ExecuteSkillProc, 2026-07-17)
 
@@ -2607,7 +2658,11 @@ BehaviorEffect { trigger, skillTypeFilter(비트마스크), action, value, durat
           ⚠️Item Dashboard 트리거 조합 검증은 아직 신규 액션 5종 미포함(부채)
 ```
 - **`OnMarkerDetonate`(2026-07-31)** — `DaggerMarkerRegistry.Detonate`가 true를 반환한 직후 발행. **위치는 데미지 처리 전에 캡처**(적이 죽어 풀로 반환되면 `transform.position`이 바뀐다), 기존 기폭 추가딜을 먼저 해결해 **proc 선킬이 이를 막지 못하게** 순서 고정. 필터를 읽지 않는 이유 = 스킬이 아니라 **기폭이라는 사건**에 반응하므로, 필터를 살리면 저작자가 0을 넣었을 때 조용히 죽는 함정이 생긴다.
-- ⚠️ **proc 무한 연쇄 차단** — proc으로 시전된 스킬이 표식을 부여하거나 기폭하면 즉시 무한 루프다(기폭 → proc → 표식 부여 → 대시로 또 기폭). `IsProcCast` 게이트를 **4경로**에 건다: Blink 부여 / Buff 평타 표식버프 / Dash 기폭 / Projectile 부여(비동기 히트라 **콜백 생성 차단 + 히트 시 재확인** 이중).
+- ⚠️ **proc 무한 연쇄 차단** — proc으로 시전된 스킬이 표식을 부여하거나 기폭하면 즉시 무한 루프다(기폭 → proc → 표식 부여 → 대시로 또 기폭). `IsProcCast` 게이트를 **5경로**에 건다: Blink 부여 / Buff 평타 표식버프 / Dash 기폭 / Projectile 부여(비동기 히트라 **콜백 생성 차단 + 히트 시 재확인** 이중) / **InstantArea 부여·기폭**(2026-08-04).
+- **InstantArea 표식 부여·기폭(2026-08-04)** — 표식산포·폭쇄의 배관. 부여는 `AttackExecutor`의 적중 목록(`HitEnemyCount`/`GetHitEnemy`)을 순회하는 평타 마킹과 같은 형태이고, 기폭은 결산 로직을 `PCC.TryDetonateDaggerMarker(enemy, skill)`로 추출해 **Dash 경로와 공유**한다(쿨 리셋만 Dash 전용 상태에 남김 — 폭쇄는 쿨 리셋 금지 대상이라 실수요 없음). 본체·후속타 양쪽에서 호출한다.
+  - **호출 순서 = 기폭 → 부여.** 한 스킬이 둘 다 켤 수 있게 됐으므로 순서를 정하지 않으면 "자기가 심은 표식을 자기가 터뜨리는" 스킬이 저작 가능해진다. 기폭을 먼저 하면 그 캐스트가 심은 표식은 남는다.
+  - ⚠️ **재진입 주의** — 기폭이 `RaiseMarkerDetonated`를 발행하고 표식폭발 패시브가 **동기 proc**을 쏘는데, 그 proc이 InstantArea면 `BeginAttackActivation`이 `_hitEnemiesThisAttack`과 `DamageDealtThisAttack`을 **비워버린다**. 기폭 루프가 `AttackExecutor`를 직접 순회하면 1명만 터지고 나머지가 사라지고, 흡혈·콤보·로그도 0이 된다. → **적중 목록과 피해 카운터를 proc 발행 전에 선캐시**한다.
+  - 인스펙터 노출은 실행타입별 3단계: Dash = 부여+기폭+기폭 피해+쿨 리셋 / InstantArea = 부여+기폭+기폭 피해 / Projectile·Blink·Buff = 부여+지속시간(기폭은 런타임 미지원이라 숨김).
 - **`CombatEffectContext`(2026-07-31, 구 `AilmentDeliveryContext`)** — `{AilmentDamageMultiplier, AilmentOverloadSettings, ExecuteThresholdSettings}`. 적은 플레이어를 참조하지 않는다는 원칙 때문에 플레이어 소유 설정을 **부여 시점에 동승**시키는 자리이며, 이후 패시브가 파라미터를 늘리지 않고 합류하도록 구조체로 만들었다. 전 ailment 운반 경로(AttackExecutor/SkillExecutor/Projectile/Dash/Zone/콘솔)가 이를 나른다.
 - 필터 = `(mask & (1 << (int)executionType)) != 0` — 복수 타입(Dash|Blink)·전체(-1) 표현. ⚠️MaskField↔비트 정합은 SkillExecutionType 연속값(0~5) 전제. **OnSkillCanceled는 필터 무시**(아무 캔슬 발동).
 
@@ -3218,7 +3273,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 데이터·실행 구조 | WeaponData/SkillData/EnemyData(SO) + `SkillExecutor` 라우팅(InstantArea/Projectile/Dash/Blink/Buff) + `SkillSlotRuntime`(슬롯 상태) + `SkillExecutionContext` + `SkillTargetResolver`(미리보기·실행 동일 계산) + `AttackExecutor`(판정 분리, 시야 차단, 멀티/단일 타겟). 상세 §7 |
 | 자원 시스템 | MP 폐지 — `SkillResourceType`(None/Bullet/ParryStack/**Combo**) + `ISkillResourceLedger` + 실소모만 Spend(실패 시 쿨다운·소모 없음) + castDelay/recoveryDelay 이동 잠금. 게이트는 `ResolveRequiredAmount` = **max(required, consume)** 라 `consume`만 채워도 자동으로 걸리고, `consume > required` 오저작 시 무료 시전이 구조적으로 불가 |
 | 공격 패턴 | 기본 6종 + **Custom 저작 파이프라인**: customCells 그리드 페인팅(에디터) → `CustomCellFill` 셀 채움 미리보기 → 셀별 회전 `OverlapBox` 판정 + `Linecast` 벽차단. 상세 §7-5, §10-3 |
-| **Sword 콤보 축** | **멀티히트 후속타**(`hitSteps` additive, `MultiHitSkillRunner` 타 단위 판정·콤보 적립, 스텝별 형태 override+페인팅) + **cancelable 피캔슬**(성공 시전만 트리거, `RaiseSkillCanceled` seam) + **재시전 체인**(`recastStages`=SkillData 참조, 슬롯별 독립, 종료=만료·소진뿐, UI 유예 게이지+다음 단계 아이콘·미리보기) + **히트 플래시**(타별 실판정 형태 월드 고정 페이드). 상세 §7-10 (2026-07-15) |
+| **Sword 콤보 축** | **멀티히트 후속타**(`hitSteps` additive, `MultiHitSkillRunner` 타 단위 판정·콤보 적립, 스텝별 형태 override+페인팅, **2026-08-04 Projectile 다단 볼리로 확장** — 스텝별 발수·분산각) + **cancelable 피캔슬**(성공 시전만 트리거, `RaiseSkillCanceled` seam) + **재시전 체인**(`recastStages`=SkillData 참조, 슬롯별 독립, 종료=만료·소진뿐, UI 유예 게이지+다음 단계 아이콘·미리보기) + **히트 플래시**(타별 실판정 형태 월드 고정 페이드). 상세 §7-10 (2026-07-15) |
 | 조준·미리보기 | `AimDirectionUtility` 8방향+360° 통합(스킬/투사체/대시/미리보기 공유) + `ToAuthoredFacingAngle`(+Y=전방 규약→회전각 단일 격리점, 3파일 중복 통합 2026-07-14) + `SkillRangePreviewer`(패턴별/대시 벽 클리핑/기본 공격 홀드) |
 | 투사체 | `ProjectileFireService`(적·플레이어 공유, Single/Burst/Spread/Circle) + 타겟 정책(DestroyOnHit/Pierce/HitOncePerTarget) + 벽 처리(Destroy/PassThrough/Bounce) + 풀링(`ProjectilePool`) + 회전 모드·비행 애니·맵 범위 가드·Fog 통합. 상세 §7-6 |
 | 대시 | `PlayerDashController` — path/contact 독립 판정, 무적 옵션, 외부 무적 카운터, `OnEnemyHit` 콜백(마커 폭발 훅), 무데미지+ailments=DoT 스윕. 상세 §7-7 |
@@ -3266,7 +3321,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
 | 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Skill Dashboard(조망·편집·생성·삭제·검증 + 아이콘 축 + 폼별 그룹, Validator 흡수). **Sword 액티브 12종 저작·아이콘 전량 완료(2026-07-29)** — 남은 건 수치 조정과 타 폼 물량. 상세 §7-8 |
 | 패시브 각인 (2026-07-22 신설) | `PassiveEngravingData`(SkillData 비파생, `BehaviorEffect[]`) + `EngravingLoadout` 패시브 슬롯4/풀 미러(**`OnPassiveChanged` 이벤트 분리 = 쿨다운 리셋 차단**) + `BehaviorRuntime.Rescan` 2소스 병합(인벤 Relic + 장착 패시브) + 드랍 라우팅(ItemType.PassiveEngraving) + 각인대 **액티브/패시브 탭**(변경된 축만 커밋) + 인벤 조회 탭. **남은 것: Altar 슬롯 증설·영속+잠금 UI, 쉴드 서브시스템**. 상세 §7-8b |
-| 각인 콘텐츠 (2026-08-03) | **Sword 12/12** · **Dagger 6/12** — 기본 스킬 4개가 그대로 각인으로 등록되는 규약(`m_Script` guid 교체 전환, `.meta` 무수정으로 결선 보존). Dagger Faint 완성(암습·단검투척·**혈흔**(출혈 장판)·급소찌르기). 남은 6종 라인업 확정. 상세 §7-8 |
+| 각인 콘텐츠 (2026-08-04) | **Sword 12/12** · **Dagger 12/12** — 기본 스킬 4개가 그대로 각인으로 등록되는 규약(`m_Script` guid 교체 전환, `.meta` 무수정으로 결선 보존). Dagger 전 등급 완성 + 아이콘 8종, **패시브 3축이 각각 전용 액티브 보유**(표식폭발/과부하/처형). 남은 것 = 24종 수치 튜닝 일괄 + 타 폼 물량. 상세 §7-8 |
+| 스킬 배관 확장 (2026-08-04) | **Projectile 다단 볼리**(`hitSteps`에 발수·분산각, 스텝당 crit 1회, 재조준 없음 — `Burst`로는 스텝별 발수 변화를 표현 못 한다) + **InstantArea 표식 부여·기폭**(기폭 결산을 Dash와 공유, **순서=기폭→부여**, `IsProcCast` 5경로, 동기 proc 재진입 선캐시 차단) + **장판 애니메이션**(`zoneAnimation` AOC, sprite는 크기 기준 겸 폴백으로 존치). 상세 §7-10·§7-12·§11b-12 |
 | 상태이상 과부하 분화 (2026-08-03) | 임계를 **프로필 최대 스택**으로 재정의(출혈 자동 편입 + "임계>캡" 저작 함정 소멸) + **타입별 엔트리**(독=폭발 / 출혈=폭발+40% 회복, **분기 코드 0**) + 유물 저작 봉쇄(근간 축 정체성 보호 + 설정 리스트 런 중 불변 보장). 상세 §7-8b·§7-9 |
 
 **지역 전환·아레나**
