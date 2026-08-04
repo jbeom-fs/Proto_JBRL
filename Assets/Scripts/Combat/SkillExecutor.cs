@@ -36,11 +36,13 @@ public sealed class SkillExecutor
     private readonly AttackExecutor _attackExecutor;
     private readonly SkillTargetResolver _targetResolver;
     private readonly ProjectileFireService _projectileFireService;
+    private readonly Action<SkillExecutionContext, HitStep> _executeMultiHitStep;
     private readonly MultiHitSkillRunner _multiHitRunner;
     private readonly SkillInstantAreaHitHandler _onInstantAreaHit;
     private readonly HashSet<SkillExecutionType> _reportedUnsupportedTypes = new();
     private readonly HashSet<SkillData> _reportedMissingProjectilePrefabs = new();
     private readonly HashSet<PlayerCombatController> _reportedMissingDashControllers = new();
+    private readonly List<EnemyController> _instantAreaDaggerTargets = new();
     private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
     private bool _reportedProcSequenceLimit;
 
@@ -64,7 +66,8 @@ public sealed class SkillExecutor
         _attackExecutor = attackExecutor;
         _targetResolver = new SkillTargetResolver();
         _projectileFireService = new ProjectileFireService();
-        _multiHitRunner = new MultiHitSkillRunner(ExecuteInstantAreaHit, canContinueMultiHit);
+        _executeMultiHitStep = ExecuteMultiHitStep;
+        _multiHitRunner = new MultiHitSkillRunner(_executeMultiHitStep, canContinueMultiHit);
         _onInstantAreaHit = onInstantAreaHit;
     }
 
@@ -157,13 +160,17 @@ public sealed class SkillExecutor
             ResolveCombatEffectContext(context),
             context.HitRadius,
             customShape);
+        int damageDealtThisAttack = _attackExecutor.DamageDealtThisAttack;
+        CaptureInstantAreaDaggerTargets(context);
+        DetonateDaggerMarkersFromInstantArea(context);
+        ApplyDaggerMarkersFromInstantArea(context);
         NotifyInstantAreaHit(targets, customShape, context.CasterPosition);
-        context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
-        if (_attackExecutor.DamageDealtThisAttack > 0)
+        context.CasterCombat?.ReportLifestealDamage(damageDealtThisAttack);
+        if (damageDealtThisAttack > 0)
         {
             if (!context.IsProcCast)
                 context.CasterCombat?.RegisterComboHit();
-            context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
+            context.CasterCombat?.LogDamageDealt(damageDealtThisAttack, didCrit);
         }
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
@@ -233,16 +240,77 @@ public sealed class SkillExecutor
             ResolveCombatEffectContext(context),
             context.HitRadius,
             customShape);
+        int damageDealtThisAttack = _attackExecutor.DamageDealtThisAttack;
+        CaptureInstantAreaDaggerTargets(context);
+        DetonateDaggerMarkersFromInstantArea(context);
+        ApplyDaggerMarkersFromInstantArea(context);
         NotifyInstantAreaHit(targets, customShape, origin);
-        context.CasterCombat?.ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
-        if (_attackExecutor.DamageDealtThisAttack > 0)
+        context.CasterCombat?.ReportLifestealDamage(damageDealtThisAttack);
+        if (damageDealtThisAttack > 0)
         {
             if (!context.IsProcCast)
                 context.CasterCombat?.RegisterComboHit();
-            context.CasterCombat?.LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
+            context.CasterCombat?.LogDamageDealt(damageDealtThisAttack, didCrit);
         }
 
         PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
+    }
+
+    private void CaptureInstantAreaDaggerTargets(SkillExecutionContext context)
+    {
+        if (context.IsProcCast)
+            return;
+
+        SkillData skill = context.Skill;
+        if (!skill.appliesDaggerMarker && !skill.detonatesDaggerMarker)
+            return;
+
+        _instantAreaDaggerTargets.Clear();
+        for (int i = 0; i < _attackExecutor.HitEnemyCount; i++)
+            _instantAreaDaggerTargets.Add(_attackExecutor.GetHitEnemy(i));
+    }
+
+    private void DetonateDaggerMarkersFromInstantArea(SkillExecutionContext context)
+    {
+        SkillData skill = context.Skill;
+        if (context.IsProcCast ||
+            !skill.detonatesDaggerMarker ||
+            context.CasterCombat == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < _instantAreaDaggerTargets.Count; i++)
+        {
+            EnemyController enemy = _instantAreaDaggerTargets[i];
+            if (enemy != null && enemy.IsAlive)
+                context.CasterCombat.TryDetonateDaggerMarker(enemy, skill);
+        }
+    }
+
+    private void ApplyDaggerMarkersFromInstantArea(SkillExecutionContext context)
+    {
+        SkillData skill = context.Skill;
+        if (context.IsProcCast || !skill.appliesDaggerMarker)
+            return;
+
+        for (int i = 0; i < _instantAreaDaggerTargets.Count; i++)
+        {
+            EnemyController enemy = _instantAreaDaggerTargets[i];
+            if (enemy != null && enemy.IsAlive)
+                DaggerMarkerRegistry.Instance.Apply(enemy, skill.markerDuration);
+        }
+    }
+
+    private void ExecuteMultiHitStep(SkillExecutionContext context, HitStep hitStep)
+    {
+        if (context.Skill.executionType == SkillExecutionType.Projectile)
+        {
+            ExecuteProjectileHit(context, hitStep);
+            return;
+        }
+
+        ExecuteInstantAreaHit(context, hitStep);
     }
 
     private void ReportProcSequenceLimitOnce()
@@ -316,7 +384,48 @@ public sealed class SkillExecutor
             return SkillExecutionResult.Failure;
 
         PlayConfiguredAnimation(context, skill, direction);
+        if (skill.hitSteps != null && skill.hitSteps.Count > 0)
+        {
+            if (context.IsProcCast)
+            {
+                if (!_multiHitRunner.TryStartProcSequence(context))
+                    ReportProcSequenceLimitOnce();
+            }
+            else
+            {
+                _multiHitRunner.Start(context);
+            }
+        }
+
         return SkillExecutionResult.SuccessWithCost(resourceConsumed);
+    }
+
+    private void ExecuteProjectileHit(SkillExecutionContext context, HitStep hitStep)
+    {
+        SkillData skill = context.Skill;
+        int scaledDamage = Mathf.RoundToInt(
+            (context.TotalAttack + ResolveSkillDamage(context)) *
+            hitStep.damagePct / 100f);
+        bool didCrit = false;
+        int damage = context.CasterCombat != null
+            ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
+            : scaledDamage;
+        Vector2 direction = ResolveExecutionDirection(context);
+        int projectileCount = hitStep.projectileCount > 0
+            ? hitStep.projectileCount
+            : SkillProjectileUtility.GetEffectiveProjectileCount(skill);
+        float spreadAngle = hitStep.spreadAngle > 0f
+            ? hitStep.spreadAngle
+            : skill.projectileSpreadAngle;
+
+        _projectileFireService.Fire(CreateProjectileFireRequest(
+            context,
+            direction,
+            projectileCount,
+            spreadAngle,
+            damage,
+            didCrit));
+        PlayConfiguredAnimation(context, skill, direction);
     }
 
     private SkillExecutionResult ExecuteDash(SkillExecutionContext context)
@@ -513,12 +622,29 @@ public sealed class SkillExecutor
 
     private static ProjectileFireRequest CreateProjectileFireRequest(SkillExecutionContext context, Vector2 direction, int projectileCount)
     {
-        SkillData skill = context.Skill;
         bool didCrit = false;
         int skillDamage = ResolveSkillDamage(context);
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(context.TotalAttack + skillDamage, out didCrit)
             : context.TotalAttack + skillDamage;
+        return CreateProjectileFireRequest(
+            context,
+            direction,
+            projectileCount,
+            context.Skill.projectileSpreadAngle,
+            damage,
+            didCrit);
+    }
+
+    private static ProjectileFireRequest CreateProjectileFireRequest(
+        SkillExecutionContext context,
+        Vector2 direction,
+        int projectileCount,
+        float spreadAngle,
+        int damage,
+        bool didCrit)
+    {
+        SkillData skill = context.Skill;
         return new ProjectileFireRequest
         {
             ProjectilePrefab = skill.projectilePrefab,
@@ -534,7 +660,7 @@ public sealed class SkillExecutor
             Speed = skill.projectileSpeed,
             Lifetime = skill.projectileLifetime,
             ProjectileCount = Mathf.Max(1, projectileCount),
-            SpreadAngle = skill.projectileSpreadAngle,
+            SpreadAngle = spreadAngle,
             FirePattern = skill.projectileFirePattern,
             WallHitMode = skill.projectileWallHitMode,
             TargetHitMode = skill.projectileTargetHitMode,

@@ -411,32 +411,43 @@ public class SkillRangePreviewer : MonoBehaviour
             skill,
             projectilePreviewMinDistance,
             projectilePreviewMaxDistance);
+        int pointCount = 0;
 
-        switch (skill.projectileFirePattern)
+        AppendProjectileVolleyPreview(
+            direction,
+            SkillProjectileUtility.GetEffectiveProjectileCount(skill),
+            skill.projectileSpreadAngle,
+            distance,
+            skill.projectileFirePattern,
+            skill.projectileWallHitMode,
+            ref pointCount);
+
+        if (skill.hitSteps != null)
         {
-            case ProjectileFirePattern.Spread:
-                BuildProjectileSpreadPreview(
-                    direction,
-                    Mathf.Max(1, skill.projectileCount),
-                    skill.projectileSpreadAngle,
-                    distance,
-                    skill.projectileWallHitMode);
-                break;
+            for (int i = 0; i < skill.hitSteps.Count && pointCount < s_Buf.Length; i++)
+            {
+                HitStep step = skill.hitSteps[i];
+                if (step == null)
+                    continue;
 
-            case ProjectileFirePattern.Circle:
-                BuildProjectileCirclePreview(
+                int projectileCount = step.projectileCount > 0
+                    ? step.projectileCount
+                    : SkillProjectileUtility.GetEffectiveProjectileCount(skill);
+                float spreadAngle = step.spreadAngle > 0f
+                    ? step.spreadAngle
+                    : skill.projectileSpreadAngle;
+                AppendProjectileVolleyPreview(
                     direction,
-                    Mathf.Max(1, skill.projectileCount),
+                    projectileCount,
+                    spreadAngle,
                     distance,
-                    skill.projectileWallHitMode);
-                break;
-
-            case ProjectileFirePattern.Burst:
-            case ProjectileFirePattern.Single:
-            default:
-                BuildProjectileLinePreview(direction, distance, skill.projectileWallHitMode);
-                break;
+                    skill.projectileFirePattern,
+                    skill.projectileWallHitMode,
+                    ref pointCount);
+            }
         }
+
+        Apply(pointCount, false);
     }
 
     private Vector2 GetPreviewDirection()
@@ -466,30 +477,78 @@ public class SkillRangePreviewer : MonoBehaviour
         return _lastAimDirection;
     }
 
-    private void BuildProjectileLinePreview(Vector2 direction, float distance, ProjectileWallHitMode wallHitMode)
+    private void AppendProjectileVolleyPreview(
+        Vector2 direction,
+        int projectileCount,
+        float spreadAngle,
+        float distance,
+        ProjectileFirePattern firePattern,
+        ProjectileWallHitMode wallHitMode,
+        ref int pointCount)
     {
-        s_Buf[0] = Vector3.zero;
-        s_Buf[1] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
-        Apply(2, false);
+        switch (firePattern)
+        {
+            case ProjectileFirePattern.Spread:
+                AppendProjectileSpreadPreview(
+                    direction,
+                    projectileCount,
+                    spreadAngle,
+                    distance,
+                    wallHitMode,
+                    ref pointCount);
+                break;
+
+            case ProjectileFirePattern.Circle:
+                AppendProjectileCirclePreview(
+                    direction,
+                    projectileCount,
+                    distance,
+                    wallHitMode,
+                    ref pointCount);
+                break;
+
+            case ProjectileFirePattern.Burst:
+            case ProjectileFirePattern.Single:
+            default:
+                AppendProjectileLinePreview(direction, distance, wallHitMode, ref pointCount);
+                break;
+        }
     }
 
-    private void BuildProjectileSpreadPreview(
+    private void AppendProjectileLinePreview(
+        Vector2 direction,
+        float distance,
+        ProjectileWallHitMode wallHitMode,
+        ref int pointCount)
+    {
+        if (pointCount > s_Buf.Length - 2)
+            return;
+
+        s_Buf[pointCount++] = Vector3.zero;
+        s_Buf[pointCount++] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
+    }
+
+    private void AppendProjectileSpreadPreview(
         Vector2 baseDirection,
         int projectileCount,
         float spreadAngle,
         float distance,
-        ProjectileWallHitMode wallHitMode)
+        ProjectileWallHitMode wallHitMode,
+        ref int pointCount)
     {
-        int count = Mathf.Clamp(projectileCount, 1, s_Buf.Length / 2);
+        int remainingCount = (s_Buf.Length - pointCount) / 2;
+        if (remainingCount <= 0)
+            return;
+
+        int count = Mathf.Clamp(projectileCount, 1, remainingCount);
         if (count == 1)
         {
-            BuildProjectileLinePreview(baseDirection, distance, wallHitMode);
+            AppendProjectileLinePreview(baseDirection, distance, wallHitMode, ref pointCount);
             return;
         }
 
         float startAngle = -spreadAngle * 0.5f;
         float step = spreadAngle / (count - 1);
-        int pointCount = 0;
 
         for (int i = 0; i < count; i++)
         {
@@ -497,25 +556,27 @@ public class SkillRangePreviewer : MonoBehaviour
             s_Buf[pointCount++] = Vector3.zero;
             s_Buf[pointCount++] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
         }
-
-        Apply(pointCount, false);
     }
 
-    private void BuildProjectileCirclePreview(
+    private void AppendProjectileCirclePreview(
         Vector2 baseDirection,
         int projectileCount,
         float distance,
-        ProjectileWallHitMode wallHitMode)
+        ProjectileWallHitMode wallHitMode,
+        ref int pointCount)
     {
-        int count = Mathf.Clamp(projectileCount, 1, s_Buf.Length / 2);
+        int remainingCount = (s_Buf.Length - pointCount) / 2;
+        if (remainingCount <= 0)
+            return;
+
+        int count = Mathf.Clamp(projectileCount, 1, remainingCount);
         if (count == 1)
         {
-            BuildProjectileLinePreview(baseDirection, distance, wallHitMode);
+            AppendProjectileLinePreview(baseDirection, distance, wallHitMode, ref pointCount);
             return;
         }
 
         float step = 360f / count;
-        int pointCount = 0;
 
         for (int i = 0; i < count; i++)
         {
@@ -523,8 +584,6 @@ public class SkillRangePreviewer : MonoBehaviour
             s_Buf[pointCount++] = Vector3.zero;
             s_Buf[pointCount++] = ResolveProjectilePreviewEnd(direction, distance, wallHitMode);
         }
-
-        Apply(pointCount, false);
     }
 
     private Vector3 ResolveProjectilePreviewEnd(Vector2 direction, float distance, ProjectileWallHitMode wallHitMode)

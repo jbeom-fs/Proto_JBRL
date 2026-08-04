@@ -200,11 +200,13 @@ public sealed class SkillDataEditor : Editor
                 case SkillExecutionType.InstantArea:
                     DrawInstantAreaSection();
                     DrawCombatImpactSection("Combat Impact");
+                    DrawDaggerMarkerSection(true);
                     break;
 
                 case SkillExecutionType.Projectile:
                     DrawProjectileSection();
                     DrawCombatImpactSection("Projectile Combat Impact");
+                    DrawDaggerMarkerSection();
                     break;
 
                 case SkillExecutionType.Dash:
@@ -213,7 +215,7 @@ public sealed class SkillDataEditor : Editor
                         DrawCombatImpactSection("Dash Damage Impact");
                     else
                         DrawAilmentsOnlySection("Dash Ailments (no damage)");
-                    DrawDaggerMarkerSection();
+                    DrawDaggerMarkerSection(true, true);
                     break;
 
                 case SkillExecutionType.Blink:
@@ -403,14 +405,18 @@ public sealed class SkillDataEditor : Editor
 
         if (_hitSteps.arraySize > 0)
         {
-            EditorGUILayout.HelpBox(
-                "Steps are follow-up hits after the base hit (1 step = 2 hits total).",
-                MessageType.Info);
+            string helpText = GetExecutionType() == SkillExecutionType.Projectile
+                ? "Steps are follow-up projectile volleys after the base volley. Projectile Count and Spread Angle use 0 to inherit from the skill."
+                : "Steps are follow-up hits after the base hit (1 step = 2 hits total).";
+            EditorGUILayout.HelpBox(helpText, MessageType.Info);
         }
     }
 
     private void DrawBaseHitEditor()
     {
+        if (GetExecutionType() == SkillExecutionType.Projectile)
+            return;
+
         if (!IsAttackPattern(AttackPatternType.Custom))
             return;
 
@@ -430,6 +436,13 @@ public sealed class SkillDataEditor : Editor
         SerializedProperty step = _hitSteps.GetArrayElementAtIndex(stepIndex);
         DrawProperty(step.FindPropertyRelative("delay"));
         DrawProperty(step.FindPropertyRelative("damagePct"));
+
+        if (GetExecutionType() == SkillExecutionType.Projectile)
+        {
+            DrawProperty(step.FindPropertyRelative("projectileCount"));
+            DrawProperty(step.FindPropertyRelative("spreadAngle"));
+            return;
+        }
 
         SerializedProperty overrideCells = step.FindPropertyRelative("overrideCells");
         if (overrideCells == null)
@@ -474,6 +487,8 @@ public sealed class SkillDataEditor : Editor
             SerializedProperty newStep = _hitSteps.GetArrayElementAtIndex(newStepIndex);
             newStep.FindPropertyRelative("delay").floatValue = 0f;
             newStep.FindPropertyRelative("damagePct").intValue = 100;
+            newStep.FindPropertyRelative("projectileCount").intValue = 0;
+            newStep.FindPropertyRelative("spreadAngle").floatValue = 0f;
             newStep.FindPropertyRelative("overrideCells").arraySize = 0;
             _selectedHitPhaseIndex = newStepIndex + 1;
             ApplyHitStepListChangeAndExitGUI();
@@ -1016,6 +1031,8 @@ public sealed class SkillDataEditor : Editor
                 DrawProperty(_projectileCount);
                 break;
         }
+
+        DrawHitStepsEditor();
     }
 
     private void DrawDashSection()
@@ -1043,15 +1060,21 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_blinkBehindOffset);
     }
 
-    private void DrawDaggerMarkerSection()
+    private void DrawDaggerMarkerSection(
+        bool showDetonation = false,
+        bool showCooldownReset = false)
     {
         DrawSectionHeader("Dagger Marker");
         DrawProperty(_appliesDaggerMarker);
-        DrawProperty(_detonatesDaggerMarker);
-        if (IsBoolEnabled(_detonatesDaggerMarker))
+        if (showDetonation)
         {
-            DrawProperty(_markerDetonationDamage);
-            DrawProperty(_resetCooldownOnMarkerDetonate);
+            DrawProperty(_detonatesDaggerMarker);
+            if (IsBoolEnabled(_detonatesDaggerMarker))
+            {
+                DrawProperty(_markerDetonationDamage);
+                if (showCooldownReset)
+                    DrawProperty(_resetCooldownOnMarkerDetonate);
+            }
         }
         DrawProperty(_markerDuration);
     }

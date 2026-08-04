@@ -71,7 +71,21 @@ MonoBehaviour:
     - trigger: 1
       action: 0
       skillTypeFilter: -1
+      comboTierDamages: 
       value: 3
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 0}
       procOrigin: 0
@@ -256,8 +270,8 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Faint_1
     displayName: "\uC554\uC2B5"
-    icon: {fileID: 0}
-    description:
+    icon: {fileID: 21300000, guid: 704ce132743b77e43ab5fa96b0509b3d, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -270,13 +284,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 18c14bc6eb23479ea0693d47af2ed2eb, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Faint_2
     displayName: "\uB2E8\uAC80\uD22C\uCC99"
-    icon: {fileID: 0}
-    description:
+    icon: {fileID: 21300000, guid: 42004d53ad4194242b34af2f32f8b687, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -289,13 +303,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: ad364fb893314c01a2e20ae06bbd2d09, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Faint_3
     displayName: "\uD608\uD754"
-    icon: {fileID: 0}
-    description:
+    icon: {fileID: 21300000, guid: cfe2a928c3ea8554992071f6ce9621a8, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -308,13 +322,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: a20207b9454042c7817312d5d13b3f01, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Faint_4
     displayName: "\uAE09\uC18C\uCC0C\uB974\uAE30"
-    icon: {fileID: 0}
-    description:
+    icon: {fileID: 21300000, guid: 4766be36bd4183f479dd1247b307957e, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -327,13 +341,13 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 5f7c03c4da6a4d8798330646ce1567f2, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Whole_1
     displayName: "\uC218\uD655"
-    icon: {fileID: 0}
-    description:
+    icon: {fileID: 21300000, guid: 1c1cfa7dc957dff42bd8a22a6d981d21, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -346,13 +360,70 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: c4f044548540473587632ee52d73c7c4, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Whole_2
+    displayName: "\uB3C5\uBB34"
+    icon: {fileID: 21300000, guid: 0ff763341aadcc44492904084c16da4c, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: ce62becd91bf4b0e90f71ace6c54eafe, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Whole_3
+    displayName: "\uC5F0\uC1C4\uD22C\uCC99"
+    icon: {fileID: 21300000, guid: c3a98db568cebbe45be7cc93d2828884, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: b1132c35893a41a485a422ca2b118230, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Whole_4
+    displayName: "\uD45C\uC2DD\uC0B0\uD3EC"
+    icon: {fileID: 21300000, guid: c22832dc35fa0724ebfb9b618a538253, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 78288af490354d468b352b8d300c529e, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Primordial_1
     displayName: "\uB099\uC778"
-    icon: {fileID: 0}
-    description:
+    icon: {fileID: 21300000, guid: 0e5f8e0a6fed9e6489a527f22b0a9415, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -365,7 +436,64 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: c84457e2c0f04d0aa8d2270da868524c, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode:
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Primordial_2
+    displayName: "\uCC38\uC218"
+    icon: {fileID: 21300000, guid: 6c3e40be766f6e445b8c94c9c4a3bfa1, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: b26fe2a31db64a99a478bf53cb22274e, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Primordial_3
+    displayName: "\uCE7C\uB0A0\uBE44"
+    icon: {fileID: 21300000, guid: d3a7f151abbe2d549bf13f6a99302bf7, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 3c3f602b63dd44c2971596b84d052ede, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Dagger_Primordial_4
+    displayName: "\uD3ED\uC1C4"
+    icon: {fileID: 21300000, guid: 398a0dfb2b935af48bd01b2861c6c94c, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 49171de208514f1e8bd80b4ffcc2d704, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Currency
@@ -422,7 +550,21 @@ MonoBehaviour:
     - trigger: 2
       action: 1
       skillTypeFilter: 0
+      comboTierDamages: 
       value: 1
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 0}
       procOrigin: 0
@@ -431,7 +573,21 @@ MonoBehaviour:
     - trigger: 2
       action: 2
       skillTypeFilter: 4
+      comboTierDamages: 
       value: 1
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 0}
       procOrigin: 0
@@ -459,7 +615,21 @@ MonoBehaviour:
     - trigger: 0
       action: 3
       skillTypeFilter: 0
+      comboTierDamages: 
       value: 0
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 11400000, guid: e34bd2de6ac2c9442a23e7fdf8d05887, type: 2}
       procOrigin: 0
@@ -487,7 +657,21 @@ MonoBehaviour:
     - trigger: 1
       action: 3
       skillTypeFilter: 4
+      comboTierDamages: 
       value: 0
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 11400000, guid: ad364fb893314c01a2e20ae06bbd2d09, type: 2}
       procOrigin: 0
@@ -515,7 +699,21 @@ MonoBehaviour:
     - trigger: 3
       action: 0
       skillTypeFilter: 0
+      comboTierDamages: 
       value: 10
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 0}
       procOrigin: 0
@@ -543,7 +741,21 @@ MonoBehaviour:
     - trigger: 3
       action: 0
       skillTypeFilter: 0
+      comboTierDamages: 
       value: 10
+      lowHealthThresholdPct: 0
+      lostHealthPctPerLifestealPct: 0
+      overhealShieldConversionPct: 0
+      lifestealShieldCapPct: 0
+      lifestealShieldDuration: 0
+      ailmentOverloadType: 0
+      ailmentOverloadBonusPct: 30
+      ailmentOverloadHealPct: 0
+      executeThresholdHpPct: 20
+      executeEliteBossStartHpPct: 90
+      executeEliteBossStartBonusPct: 10
+      executeEliteBossIntervalHpPct: 10
+      executeEliteBossBonusPerIntervalPct: 5
       duration: 0
       procSkill: {fileID: 0}
       procOrigin: 0

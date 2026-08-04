@@ -1383,11 +1383,26 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void HandleDaggerDashEnemyHit(EnemyController enemy)
     {
         SkillData skill = _activeDaggerDashSkill;
-        if (enemy == null || skill == null || !skill.detonatesDaggerMarker)
+        if (!TryDetonateDaggerMarker(enemy, skill))
             return;
 
+        if (skill.resetCooldownOnMarkerDetonate && !_daggerDashCooldownResetThisDash)
+        {
+            if (GetSkillCooldownRemaining(_activeDaggerDashSlotIndex) > 0f)
+                ResetSkillCooldown(_activeDaggerDashSlotIndex);
+            else
+                _pendingDaggerCooldownResetSlot = _activeDaggerDashSlotIndex;
+            _daggerDashCooldownResetThisDash = true;
+        }
+    }
+
+    public bool TryDetonateDaggerMarker(EnemyController enemy, SkillData skill)
+    {
+        if (enemy == null || skill == null || !skill.detonatesDaggerMarker)
+            return false;
+
         if (!_daggerMarkers.Detonate(enemy))
-            return;
+            return false;
 
         Vector3 detonationPosition = enemy.transform.position;
         int detonationDamage = skill.markerDetonationDamage > 0
@@ -1413,15 +1428,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         // Resolve authored single-target damage first so a proc kill cannot suppress it.
         combatChannel?.RaiseMarkerDetonated(detonationPosition);
-
-        if (skill.resetCooldownOnMarkerDetonate && !_daggerDashCooldownResetThisDash)
-        {
-            if (GetSkillCooldownRemaining(_activeDaggerDashSlotIndex) > 0f)
-                ResetSkillCooldown(_activeDaggerDashSlotIndex);
-            else
-                _pendingDaggerCooldownResetSlot = _activeDaggerDashSlotIndex;
-            _daggerDashCooldownResetThisDash = true;
-        }
+        return true;
     }
 
     private void ApplyDaggerMarkersFromBasicAttack()

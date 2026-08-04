@@ -30,6 +30,15 @@ public class HitStep
 {
     public float delay;
     public int damagePct = 100;
+
+    [Tooltip("Projectile count for this follow-up step. 0 = inherit from skill.")]
+    [Min(0)]
+    public int projectileCount;
+
+    [Tooltip("Projectile spread angle for this follow-up step. 0 = inherit from skill.")]
+    [Min(0f)]
+    public float spreadAngle;
+
     public List<Vector2Int> overrideCells = new();
 }
 
@@ -237,10 +246,10 @@ public class SkillData : ScriptableObject
 
     [Space(8)]
     [Header("Dagger Marker")]
-    [Tooltip("Projectile, Blink, or buffed basic-attack hits apply a Dagger marker.")]
+    [Tooltip("InstantArea, Projectile, Blink, or buffed basic-attack hits apply a Dagger marker.")]
     public bool appliesDaggerMarker = false;
 
-    [Tooltip("Dash hits detonate Dagger markers.")]
+    [Tooltip("Dash or InstantArea hits detonate Dagger markers.")]
     public bool detonatesDaggerMarker = false;
 
     [Tooltip("Extra damage dealt when a Dagger marker detonates. 0 reuses damage.")]
