@@ -10,19 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
-  m_Name: Dagger_Skill_04
+  m_Name: Dagger_Skill_07
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "\uD53C\uC758 \uB2AA"
-  icon: {fileID: 21300000, guid: cfe2a928c3ea8554992071f6ce9621a8, type: 3}
-  description: "\uBC1C\uBC11\uC5D0 \uD53C\uC758 \uC7A5\uD310\uC744 \uB0A8\uACA8 \uC9C0\uC18D\uC801\uC73C\uB85C
-    \uCD9C\uD608\uC744 \uC0C8\uAE41\uB2C8\uB2E4."
-  executionType: 3
+  skillName: "\uC5F0\uC1C4\uD22C\uCC99"
+  icon: {fileID: 21300000, guid: c3a98db568cebbe45be7cc93d2828884, type: 3}
+  description: "\uB2E8\uAC80\uC744 \uC5F0\uC18D\uC73C\uB85C \uD758\uBFD0\uB824 \uC801\uC5D0\uAC8C
+    \uCD9C\uD608\uC744 \uBE60\uB974\uAC8C \uC313\uC2B5\uB2C8\uB2E4."
+  executionType: 1
   resourceType: 0
   requiredAmount: 0
   consumeAmount: 0
   bulletShortageMode: 0
   reloadAmount: 0
-  cooldown: 8
+  cooldown: 12
   castDelay: 0
   recoveryDelay: 0.1
   recastStages: []
@@ -33,10 +33,20 @@ MonoBehaviour:
   animationBaseAngle: 0
   damage: 0
   attackPattern: 0
-  patternRange: 1
+  patternRange: 8
   coneHalfAngle: 45
   customCells: []
-  hitSteps: []
+  hitSteps:
+  - delay: 0.15
+    damagePct: 100
+    projectileCount: 4
+    spreadAngle: 30
+    overrideCells: []
+  - delay: 0.15
+    damagePct: 100
+    projectileCount: 3
+    spreadAngle: 20
+    overrideCells: []
   cancelable: 0
   isMultiTarget: 0
   canPenetrateWalls: 0
@@ -46,17 +56,17 @@ MonoBehaviour:
   slowDuration: 0
   ailments:
   - type: 1
-    stacks: 2
-  zoneSprite: {fileID: 7904226991338124449, guid: e0988eff7699f994a9875a5d1fa85e41, type: 3}
-  zoneRadius: 2.5
+    stacks: 1
+  zoneSprite: {fileID: 0}
+  zoneRadius: 1
   zoneTickInterval: 0.5
-  zoneDuration: 4
-  projectilePrefab: {fileID: 0}
+  zoneDuration: 3
+  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
   projectileSpeed: 8
   projectileLifetime: 3
-  projectileCount: 1
-  projectileSpreadAngle: 15
-  projectileFirePattern: 0
+  projectileCount: 3
+  projectileSpreadAngle: 20
+  projectileFirePattern: 2
   projectileWallHitMode: 0
   projectileTargetHitMode: 0
   projectileMaxBounceCount: 1
@@ -76,4 +86,4 @@ MonoBehaviour:
   markerDuration: 5
   blinkBehindOffset: 0.75
   owningForm: 2
-  grade: 0
+  grade: 1
