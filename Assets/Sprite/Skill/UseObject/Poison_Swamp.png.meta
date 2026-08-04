@@ -1,0 +1,413 @@
+fileFormatVersion: 2
+guid: 55cc56e1da3f5cd458b61e59387ee4d6
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -6715772536761198756
+    second: Poison_Swamp_0
+  - first:
+      213: 7402199687048432166
+    second: Poison_Swamp_1
+  - first:
+      213: 8622862262894558042
+    second: Poison_Swamp_2
+  - first:
+      213: 5327852387340515020
+    second: Poison_Swamp_3
+  - first:
+      213: 8377203543414984051
+    second: Poison_Swamp_4
+  - first:
+      213: -4507062588122752196
+    second: Poison_Swamp_5
+  - first:
+      213: -7412094029085257003
+    second: Poison_Swamp_6
+  - first:
+      213: 2197488903814790065
+    second: Poison_Swamp_7
+  - first:
+      213: -321528580925813226
+    second: Poison_Swamp_8
+  - first:
+      213: -3214350860963425730
+    second: Poison_Swamp_9
+  - first:
+      213: -542748625405955454
+    second: Poison_Swamp_10
+  - first:
+      213: 6601411980234562671
+    second: Poison_Swamp_11
+  - first:
+      213: 1834862788911050820
+    second: Poison_Swamp_12
+  - first:
+      213: -5300258596826900186
+    second: Poison_Swamp_13
+  - first:
+      213: 3969795175323685323
+    second: Poison_Swamp_14
+  - first:
+      213: 6165908362106475038
+    second: Poison_Swamp_15
+  - first:
+      213: 6592347218904013261
+    second: Poison_Swamp_16
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Poison_Swamp_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 397
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c575602a578ccc2a0800000000000000
+      internalID: -6715772536761198756
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_1
+      rect:
+        serializedVersion: 2
+        x: 371
+        y: 397
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62a87079565e9b660800000000000000
+      internalID: 7402199687048432166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_2
+      rect:
+        serializedVersion: 2
+        x: 746
+        y: 397
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a5b73feca8f8aa770800000000000000
+      internalID: 8622862262894558042
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_3
+      rect:
+        serializedVersion: 2
+        x: 1134
+        y: 397
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc6f523a48550f940800000000000000
+      internalID: 5327852387340515020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_4
+      rect:
+        serializedVersion: 2
+        x: 1527
+        y: 397
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 37dc4680d3ec14470800000000000000
+      internalID: 8377203543414984051
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_5
+      rect:
+        serializedVersion: 2
+        x: 10
+        y: 0
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c3b9d7e9472b371c0800000000000000
+      internalID: -4507062588122752196
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_6
+      rect:
+        serializedVersion: 2
+        x: 386
+        y: 3
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5d2549260c3f22990800000000000000
+      internalID: -7412094029085257003
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_7
+      rect:
+        serializedVersion: 2
+        x: 759
+        y: 1
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1bb3eb5e38c0f7e10800000000000000
+      internalID: 2197488903814790065
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_8
+      rect:
+        serializedVersion: 2
+        x: 1149
+        y: 0
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61e08cc8573b98bf0800000000000000
+      internalID: -321528580925813226
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Poison_Swamp_9
+      rect:
+        serializedVersion: 2
+        x: 1528
+        y: 0
+        width: 396
+        height: 396
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e32ddcc1ce45463d0800000000000000
+      internalID: -3214350860963425730
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: d392ac2e0881d1046a6808393c90e25a
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":396.0,"y":396.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      Poison_Swamp_0: -6715772536761198756
+      Poison_Swamp_1: 7402199687048432166
+      Poison_Swamp_2: 8622862262894558042
+      Poison_Swamp_3: 5327852387340515020
+      Poison_Swamp_4: 8377203543414984051
+      Poison_Swamp_5: -4507062588122752196
+      Poison_Swamp_6: -7412094029085257003
+      Poison_Swamp_7: 2197488903814790065
+      Poison_Swamp_8: -321528580925813226
+      Poison_Swamp_9: -3214350860963425730
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

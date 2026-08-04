@@ -1,0 +1,13 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Blood_Swamp
+  m_Controller: {fileID: 9100000, guid: e873de7f493c4677a639b85e72ba2d43, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 634276dce185f5e448378ff2454bbfb1, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 17370c2116638344382dbb5ef5758279, type: 2}

@@ -4,9 +4,12 @@ public sealed class DamageZone : MonoBehaviour
 {
     private const int EnemyHitBufferSize = 64;
     private const float MinTickInterval = 0.01f;
+    private static readonly int s_ZoneStateHash = Animator.StringToHash("Base Layer.Zone");
+    private static bool s_ReportedMissingAnimationScaleSprite;
 
     private readonly Collider2D[] _enemyHitBuffer = new Collider2D[EnemyHitBufferSize];
     [SerializeField] private SpriteRenderer spriteRenderer;
+    [SerializeField] private Animator animator;
     private DamageZoneSpawner _owner;
     private ZonePayload _payload;
     private float _remainingDuration;
@@ -21,6 +24,7 @@ public sealed class DamageZone : MonoBehaviour
 
     public void Initialize(
         Sprite sprite,
+        AnimatorOverrideController animation,
         in ZonePayload payload)
     {
         _payload = payload;
@@ -28,17 +32,49 @@ public sealed class DamageZone : MonoBehaviour
         _radius = Mathf.Max(0f, payload.Radius);
         _tickInterval = Mathf.Max(MinTickInterval, payload.TickInterval);
         _tickTimer = _tickInterval;
-        UpdateVisual(sprite);
+        UpdateVisual(sprite, animation);
     }
 
-    private void UpdateVisual(Sprite sprite)
+    private void UpdateVisual(Sprite sprite, AnimatorOverrideController animation)
     {
-        if (spriteRenderer == null)
-            return;
+        if (animation != null)
+        {
+            if (spriteRenderer != null)
+                spriteRenderer.enabled = true;
 
-        spriteRenderer.sprite = sprite;
-        spriteRenderer.enabled = sprite != null;
+            if (animator != null)
+            {
+                animator.enabled = true;
+                if (animator.runtimeAnimatorController != animation)
+                    animator.runtimeAnimatorController = animation;
+                animator.Rebind();
+                animator.Play(s_ZoneStateHash, 0, 0f);
+            }
+        }
+        else
+        {
+            if (animator != null)
+                animator.enabled = false;
+
+            if (spriteRenderer != null)
+            {
+                spriteRenderer.sprite = sprite;
+                spriteRenderer.enabled = sprite != null;
+            }
+        }
+
         if (sprite == null)
+        {
+            if (animation != null)
+            {
+                ReportMissingAnimationScaleSpriteOnce();
+                if (spriteRenderer != null)
+                    spriteRenderer.transform.localScale = Vector3.one;
+            }
+            return;
+        }
+
+        if (spriteRenderer == null)
             return;
 
         Vector2 size = sprite.bounds.size;
@@ -46,6 +82,18 @@ public sealed class DamageZone : MonoBehaviour
         float diameter = _radius * 2f;
         float scale = longest > 0.0001f ? diameter / longest : 1f;
         spriteRenderer.transform.localScale = new Vector3(scale, scale, 1f);
+    }
+
+    private void ReportMissingAnimationScaleSpriteOnce()
+    {
+        if (s_ReportedMissingAnimationScaleSprite)
+            return;
+
+        s_ReportedMissingAnimationScaleSprite = true;
+        Debug.LogWarning(
+            "[DamageZone] zoneAnimation is assigned without zoneSprite. " +
+            "Animation scale falls back to 1 because no reference sprite is available.",
+            this);
     }
 
     private void Update()

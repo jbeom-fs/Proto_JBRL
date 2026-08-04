@@ -47,6 +47,7 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _slowDuration;
     private SerializedProperty _ailments;
     private SerializedProperty _zoneSprite;
+    private SerializedProperty _zoneAnimation;
     private SerializedProperty _zoneRadius;
     private SerializedProperty _zoneTickInterval;
     private SerializedProperty _zoneDuration;
@@ -138,6 +139,7 @@ public sealed class SkillDataEditor : Editor
         _slowDuration = serializedObject.FindProperty("slowDuration");
         _ailments = serializedObject.FindProperty("ailments");
         _zoneSprite = serializedObject.FindProperty("zoneSprite");
+        _zoneAnimation = serializedObject.FindProperty("zoneAnimation");
         _zoneRadius = serializedObject.FindProperty("zoneRadius");
         _zoneTickInterval = serializedObject.FindProperty("zoneTickInterval");
         _zoneDuration = serializedObject.FindProperty("zoneDuration");
@@ -1099,6 +1101,11 @@ public sealed class SkillDataEditor : Editor
     {
         DrawSectionHeader("Zone");
         DrawProperty(_zoneSprite);
+        DrawProperty(_zoneAnimation);
+        EditorGUILayout.HelpBox(
+            "Animation frames should use the same cell dimensions as zoneSprite. " +
+            "Using frame 0 of the sheet as zoneSprite is recommended because it defines the scale of one animation frame.",
+            MessageType.Info);
         DrawProperty(_zoneRadius);
         DrawProperty(_zoneTickInterval);
         DrawProperty(_zoneDuration);

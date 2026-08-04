@@ -31,6 +31,7 @@ public sealed class DamageZoneSpawner : MonoBehaviour
     public bool SpawnZone(
         Vector3 position,
         Sprite sprite,
+        AnimatorOverrideController animation,
         in ZonePayload payload)
     {
         if (defaultZonePrefab == null)
@@ -47,7 +48,7 @@ public sealed class DamageZoneSpawner : MonoBehaviour
 
         DamageZone zone = GetZone();
         zone.transform.position = position;
-        zone.Initialize(sprite, in payload);
+        zone.Initialize(sprite, animation, in payload);
         zone.gameObject.SetActive(true);
         _activeZones.Add(zone);
         return true;

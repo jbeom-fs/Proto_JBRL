@@ -164,6 +164,9 @@ public class SkillData : ScriptableObject
     [Tooltip("Sprite displayed by AreaOverTime zones. Null creates an invisible logical zone.")]
     public Sprite zoneSprite;
 
+    [Tooltip("Optional zone animation override. When null, zoneSprite is displayed statically.")]
+    public AnimatorOverrideController zoneAnimation;
+
     [Tooltip("World-space radius used by AreaOverTime zone detection and visual sizing.")]
     [Min(0f)]
     public float zoneRadius = 1f;

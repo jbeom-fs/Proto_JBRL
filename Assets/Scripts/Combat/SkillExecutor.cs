@@ -472,6 +472,7 @@ public sealed class SkillExecutor
         if (!DamageZoneSpawner.Instance.SpawnZone(
                 context.CasterPosition,
                 skill.zoneSprite,
+                skill.zoneAnimation,
                 in payload))
             return SkillExecutionResult.Failure;
 

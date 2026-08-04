@@ -48,6 +48,7 @@ MonoBehaviour:
   - type: 1
     stacks: 2
   zoneSprite: {fileID: 7904226991338124449, guid: e0988eff7699f994a9875a5d1fa85e41, type: 3}
+  zoneAnimation: {fileID: 22100000, guid: c24ebbf413ddd4145a5830f1416b50d4, type: 2}
   zoneRadius: 2.5
   zoneTickInterval: 0.5
   zoneDuration: 4

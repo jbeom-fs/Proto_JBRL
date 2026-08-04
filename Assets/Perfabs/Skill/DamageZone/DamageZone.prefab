@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7513635846006932945}
   - component: {fileID: 4365944774276020898}
+  - component: {fileID: 8894110672763487940}
   - component: {fileID: 3849949933637534304}
   m_Layer: 0
   m_Name: DamageZone
@@ -92,6 +93,28 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!95 &8894110672763487940
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8367578580445519589}
+  m_Enabled: 0
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: e873de7f493c4677a639b85e72ba2d43, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!114 &3849949933637534304
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105,3 +128,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DamageZone
   spriteRenderer: {fileID: 4365944774276020898}
+  animator: {fileID: 8894110672763487940}

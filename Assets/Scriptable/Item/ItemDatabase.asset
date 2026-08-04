@@ -307,7 +307,7 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Faint_3
-    displayName: "\uD608\uD754"
+    displayName: "\uD53C\uC758 \uB2AA"
     icon: {fileID: 21300000, guid: cfe2a928c3ea8554992071f6ce9621a8, type: 3}
     description: 
     itemType: 7
@@ -364,7 +364,7 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Dagger_Whole_2
-    displayName: "\uB3C5\uBB34"
+    displayName: "\uB3C5\uB2AA"
     icon: {fileID: 21300000, guid: 0ff763341aadcc44492904084c16da4c, type: 3}
     description: 
     itemType: 7

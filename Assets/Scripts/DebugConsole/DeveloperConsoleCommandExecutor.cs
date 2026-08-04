@@ -666,6 +666,7 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         DamageZoneSpawner.Instance.SpawnZone(
             combat.transform.position,
             null,
+            null,
             in payload);
         return DeveloperConsoleCommandResult.Success(
             "Spawned damage zone (damage " + tickDamage + ", duration " + duration + "s).");
