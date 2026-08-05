@@ -52,6 +52,7 @@ public sealed class FreischutzFocusRegistry
         if (isNew)
             enemy.OnDied += HandleEnemyDied;
 
+        FreischutzFocusVisualPool.Active?.Show(enemy, state.Count);
         return state.Count;
     }
 
@@ -74,6 +75,7 @@ public sealed class FreischutzFocusRegistry
             return;
 
         enemy.OnDied -= HandleEnemyDied;
+        FreischutzFocusVisualPool.Active?.Hide(enemy);
     }
 
     public void ClearAll()
