@@ -19,6 +19,7 @@ public sealed class DeveloperConsoleService
         "Usage: /passive <show | list [form] | unlock <id> | lock <id>>";
     private const string DropQueryUsage = "Usage: /dropquery <category> [count=20]";
     private const string ComboUsage = "Usage: /combo <show | add <positiveStacks>>";
+    private const string FocusUsage = "Usage: /focus <show | add <positiveStacks> | clear>";
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [stacks=1]";
     private const string StunUsage = "Usage: /stun [duration=2]";
     private const string ShieldUsage = "Usage: /shield <positiveAmount> [duration=5; <=0 is infinite]";
@@ -32,6 +33,7 @@ public sealed class DeveloperConsoleService
     private static readonly string[] s_EngravingArgs = { "give", "equip", "unequip", "show" };
     private static readonly string[] s_PassiveArgs = { "show", "list", "unlock", "lock" };
     private static readonly string[] s_ComboArgs = { "show", "add" };
+    private static readonly string[] s_FocusArgs = { "show", "add", "clear" };
     private static readonly string[] s_AilmentArgs = { "poison", "bleed" };
     private static readonly string[] s_DropQueryTypes = BuildDropQueryTypes();
 
@@ -117,6 +119,7 @@ public sealed class DeveloperConsoleService
         _commands["passive"] = ExecutePassive;
         _commands["dropquery"] = ExecuteDropQuery;
         _commands["combo"] = ExecuteCombo;
+        _commands["focus"] = ExecuteFocus;
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
         _commands["shield"] = ExecuteShield;
@@ -132,6 +135,7 @@ public sealed class DeveloperConsoleService
         _argumentProviders["passive"] = ProvidePassiveSuggestions;
         _argumentProviders["dropquery"] = ProvideDropQuerySuggestions;
         _argumentProviders["combo"] = ProvideComboSuggestions;
+        _argumentProviders["focus"] = ProvideFocusSuggestions;
         _argumentProviders["ailment"] = ProvideAilmentSuggestions;
         _argumentProviders["dooropen"] = ProvideDoorOpenSuggestions;
         _argumentProviders["tp"] = ProvideTeleportSuggestions;
@@ -172,6 +176,9 @@ public sealed class DeveloperConsoleService
 
     private static void ProvideComboSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_ComboArgs, currentArg, output, maxCount);
+
+    private static void ProvideFocusSuggestions(string currentArg, List<string> output, int maxCount)
+        => FilterSuggestions(s_FocusArgs, currentArg, output, maxCount);
 
     private static void ProvideAilmentSuggestions(string currentArg, List<string> output, int maxCount)
         => FilterSuggestions(s_AilmentArgs, currentArg, output, maxCount);
@@ -571,6 +578,32 @@ public sealed class DeveloperConsoleService
         }
 
         return DeveloperConsoleCommandResult.Error(ComboUsage);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteFocus(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        if (string.IsNullOrWhiteSpace(arguments))
+            return DeveloperConsoleCommandResult.Error(FocusUsage);
+
+        string[] parts = arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1 && string.Equals(parts[0], "show", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecuteFocusShow();
+
+        if (parts.Length == 2 && string.Equals(parts[0], "add", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!TryParsePositiveInt(parts[1], out int amount))
+                return DeveloperConsoleCommandResult.Error(FocusUsage);
+
+            return _executor.ExecuteFocusAdd(amount);
+        }
+
+        if (parts.Length == 1 && string.Equals(parts[0], "clear", StringComparison.OrdinalIgnoreCase))
+            return _executor.ExecuteFocusClear();
+
+        return DeveloperConsoleCommandResult.Error(FocusUsage);
     }
 
     private DeveloperConsoleCommandResult ExecuteAilment(string arguments)

@@ -95,6 +95,36 @@ public sealed class BehaviorRuntime
         public float BonusPct { get; }
     }
 
+    private readonly struct FocusStackEntry
+    {
+        public FocusStackEntry(BehaviorEffect behavior, int stackCount)
+        {
+            RequiredStacks = Mathf.Max(1, behavior.focusRequiredStacks);
+            DetonationDamage = behavior.value * stackCount;
+            Duration = Mathf.Max(0f, behavior.duration);
+        }
+
+        public int RequiredStacks { get; }
+        public int DetonationDamage { get; }
+        public float Duration { get; }
+    }
+
+    private readonly struct SplitShotEntry
+    {
+        public SplitShotEntry(BehaviorEffect behavior, int stackCount)
+        {
+            Count = Mathf.Max(1, behavior.splitCount);
+            AngleDeg = Mathf.Max(0f, behavior.splitAngleDeg);
+            DamagePct = behavior.value * stackCount;
+            Depth = Mathf.Clamp(behavior.splitDepth, 0, 3);
+        }
+
+        public int Count { get; }
+        public float AngleDeg { get; }
+        public int DamagePct { get; }
+        public int Depth { get; }
+    }
+
     private readonly Action<int> _healCallback;
     private readonly Action<ShieldSource, int, float> _shieldCallback;
     private readonly Action<int, float> _attackBuffCallback;
@@ -119,6 +149,10 @@ public sealed class BehaviorRuntime
         new List<ExecuteThresholdEntry>();
     private readonly List<AmmoRampEntry> _ammoRamps =
         new List<AmmoRampEntry>();
+    private readonly List<FocusStackEntry> _focusStacks =
+        new List<FocusStackEntry>();
+    private readonly List<SplitShotEntry> _splitShots =
+        new List<SplitShotEntry>();
 
     public BehaviorRuntime(
         Action<int> healCallback,
@@ -146,6 +180,79 @@ public sealed class BehaviorRuntime
                 totalPct += _ammoRamps[i].BonusPct;
 
             return totalPct;
+        }
+    }
+    public bool HasFocusStack => _focusStacks.Count > 0;
+    public int FocusRequiredStacks
+    {
+        get
+        {
+            if (_focusStacks.Count == 0)
+                return 0;
+
+            int requiredStacks = int.MaxValue;
+            for (int i = 0; i < _focusStacks.Count; i++)
+                requiredStacks = Mathf.Min(requiredStacks, _focusStacks[i].RequiredStacks);
+
+            return requiredStacks;
+        }
+    }
+    public int FocusDetonationDamage
+    {
+        get
+        {
+            int totalDamage = 0;
+            for (int i = 0; i < _focusStacks.Count; i++)
+                totalDamage += _focusStacks[i].DetonationDamage;
+
+            return totalDamage;
+        }
+    }
+    public float FocusDuration
+    {
+        get
+        {
+            float duration = 0f;
+            for (int i = 0; i < _focusStacks.Count; i++)
+                duration = Mathf.Max(duration, _focusStacks[i].Duration);
+
+            return duration;
+        }
+    }
+    public bool HasSplitShot => _splitShots.Count > 0;
+    public int SplitShotCount
+    {
+        get
+        {
+            int count = 0;
+            for (int i = 0; i < _splitShots.Count; i++)
+                count = Mathf.Max(count, _splitShots[i].Count);
+
+            return count;
+        }
+    }
+    public float SplitShotAngleDeg =>
+        _splitShots.Count > 0 ? _splitShots[0].AngleDeg : 0f;
+    public int SplitShotDamagePct
+    {
+        get
+        {
+            int totalPct = 0;
+            for (int i = 0; i < _splitShots.Count; i++)
+                totalPct += _splitShots[i].DamagePct;
+
+            return totalPct;
+        }
+    }
+    public int SplitShotDepth
+    {
+        get
+        {
+            int depth = 0;
+            for (int i = 0; i < _splitShots.Count; i++)
+                depth = Mathf.Max(depth, _splitShots[i].Depth);
+
+            return depth;
         }
     }
 
@@ -227,6 +334,8 @@ public sealed class BehaviorRuntime
         _ailmentOverloads.Clear();
         _executeThresholds.Clear();
         _ammoRamps.Clear();
+        _focusStacks.Clear();
+        _splitShots.Clear();
 
         if (items != null)
         {
@@ -469,6 +578,18 @@ public sealed class BehaviorRuntime
         if (behavior.action == BehaviorAction.AmmoRamp)
         {
             _ammoRamps.Add(new AmmoRampEntry(behavior, stackCount));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.FocusStack)
+        {
+            _focusStacks.Add(new FocusStackEntry(behavior, stackCount));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.SplitShot)
+        {
+            _splitShots.Add(new SplitShotEntry(behavior, stackCount));
             return;
         }
 

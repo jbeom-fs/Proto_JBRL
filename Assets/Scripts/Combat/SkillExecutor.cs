@@ -423,6 +423,7 @@ public sealed class SkillExecutor
             direction,
             projectileCount,
             spreadAngle,
+            scaledDamage,
             damage,
             didCrit));
         PlayConfiguredAnimation(context, skill, direction);
@@ -638,6 +639,7 @@ public sealed class SkillExecutor
             direction,
             projectileCount,
             context.Skill.projectileSpreadAngle,
+            amplifiedDamage,
             damage,
             didCrit);
     }
@@ -647,6 +649,7 @@ public sealed class SkillExecutor
         Vector2 direction,
         int projectileCount,
         float spreadAngle,
+        int baseDamage,
         int damage,
         bool didCrit)
     {
@@ -660,6 +663,7 @@ public sealed class SkillExecutor
             Caster = context.CasterCombat,
             Owner = context.CasterCombat,
             Direction = direction,
+            BaseDamage = baseDamage,
             Damage = damage,
             IsCrit = didCrit,
             IsProcCast = context.IsProcCast,
@@ -680,12 +684,15 @@ public sealed class SkillExecutor
             SlowDuration = skill.slowDuration,
             Ailments = ResolveAttackAilments(context),
             EffectContext = ResolveCombatEffectContext(context),
-            OnEnemyHit = !context.IsProcCast &&
-                         skill.appliesDaggerMarker &&
-                         context.CasterCombat != null
-                ? context.CasterCombat.DaggerProjectileEnemyHitCallback
+            OnEnemyHit = context.CasterCombat != null
+                ? context.CasterCombat.ResolveProjectileHitCallback(
+                    skill,
+                    context.IsProcCast)
                 : null,
-            DaggerMarkerDuration = skill.markerDuration
+            DaggerMarkerDuration = skill.markerDuration,
+            SplitDepth = context.CasterCombat != null
+                ? context.CasterCombat.SplitShotDepth
+                : 0
         };
     }
 

@@ -1747,7 +1747,6 @@ public sealed class ItemDashboardWindow : EditorWindow
         row.HasOnSkillUsedHitPosition = false;
         row.HasNonPositiveProcSpawnRadius = false;
         row.HasOnSkillUsedContextDirection = false;
-        row.HasAmmoRampBehavior = false;
 
         for (int i = 0; i < row.BehaviorEffectCount; i++)
         {
@@ -1767,8 +1766,6 @@ public sealed class ItemDashboardWindow : EditorWindow
                 row.HasNonPositiveBehaviorValue = true;
             if (!IsValidBehaviorCombination(trigger, action))
                 row.HasInvalidBehaviorCombination = true;
-            if (action == BehaviorAction.AmmoRamp)
-                row.HasAmmoRampBehavior = true;
             if (action == BehaviorAction.CastSkill)
             {
                 if (procSkill == null)
@@ -1795,7 +1792,7 @@ public sealed class ItemDashboardWindow : EditorWindow
     private static bool IsValidBehaviorCombination(BehaviorTrigger trigger, BehaviorAction action)
     {
         if (trigger == BehaviorTrigger.Passive)
-            return IsAttackAilmentAction(action) || action == BehaviorAction.AmmoRamp;
+            return IsAttackAilmentAction(action);
 
         return (trigger == BehaviorTrigger.OnKill ||
                 trigger == BehaviorTrigger.OnSkillUsed ||
@@ -1899,9 +1896,6 @@ public sealed class ItemDashboardWindow : EditorWindow
 
         if (row.HasOnSkillUsedContextDirection)
             AddWarning(row, WarningSeverity.Info, "[Info] OnSkillUsed/OnSkillCanceled×Context 방향은 Aim과 동일하게 동작: " + location, row.Database);
-
-        if (row.ItemType == ItemType.Relic && row.HasAmmoRampBehavior)
-            AddWarning(row, WarningSeverity.Warning, "[Warn] 유물 behaviorEffects에 AmmoRamp 저작 금지(폼 전용 근간 패시브): " + location, row.Database);
 
         if (row.BehaviorEffectCount > 0 && row.ItemType != ItemType.Relic)
             AddWarning(row, WarningSeverity.Warning, "[Warn] Relic이 아닌 아이템의 behaviorEffects는 런타임에서 미소비: " + location, row.Database);
@@ -3160,7 +3154,6 @@ public sealed class ItemDashboardWindow : EditorWindow
         public bool HasOnSkillUsedHitPosition;
         public bool HasNonPositiveProcSpawnRadius;
         public bool HasOnSkillUsedContextDirection;
-        public bool HasAmmoRampBehavior;
         public string TypeSummary;
         public string DropSummary;
 

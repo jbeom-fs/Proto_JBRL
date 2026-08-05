@@ -108,6 +108,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private readonly SkillCooldownController _cooldownController = new();
     private readonly SkillSlotRuntime[] _skillSlots = CreateSkillSlots();
     private readonly DaggerMarkerRegistry _daggerMarkers = DaggerMarkerRegistry.Instance;
+    private readonly FreischutzFocusRegistry _focusStacks = FreischutzFocusRegistry.Instance;
+    private readonly ProjectileFireService _projectileFireService = new();
     private AttackExecutor _attackExecutor;
     private SkillExecutor _skillExecutor;
     private SkillHitFlashRenderer _skillHitFlashRenderer;
@@ -159,6 +161,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Action<int> _ailmentOverloadHealCallback;
     private Action<EnemyController> _daggerDashEnemyHitCallback;
     private Action<EnemyController, ProjectileController> _daggerProjectileEnemyHitCallback;
+    private Action<EnemyController, ProjectileController> _passiveProjectileEnemyHitCallback;
+    private Action<EnemyController, ProjectileController> _daggerAndPassiveProjectileEnemyHitCallback;
     private bool _isInventorySubscribed;
     private bool _isSoulEnhancementsSubscribed;
     private readonly HashSet<SkillExecutionType> _warnedRejectedProcTypes = new HashSet<SkillExecutionType>();
@@ -265,6 +269,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             HandleInstantAreaHit);
         _daggerDashEnemyHitCallback = HandleDaggerDashEnemyHit;
         _daggerProjectileEnemyHitCallback = HandleDaggerProjectileEnemyHit;
+        _passiveProjectileEnemyHitCallback = HandlePassiveProjectileEnemyHit;
+        _daggerAndPassiveProjectileEnemyHitCallback = HandleDaggerAndPassiveProjectileEnemyHit;
         _status = new PlayerStatusEffects(v => playerMovement?.TryApplyExternalDisplacement(v));
         _status.OnApplied += HandleStatusEffectApplied;
         _status.OnEnded += HandleStatusEffectEnded;
@@ -351,7 +357,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _status?.ClearAll();
         _shield.Clear();
         _attackBuff.Clear();
-        ClearDaggerRuntimeState();
+        ClearFormRuntimeState();
     }
 
     private void HandleStatusEffectApplied(PlayerStatusEffectType type)
@@ -580,6 +586,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return 1f + bonusPct / 100f * depletionRatio;
         }
     }
+
+    public int SplitShotDepth =>
+        _relicBehaviors != null ? _relicBehaviors.SplitShotDepth : 0;
 
     public IReadOnlyList<AilmentApplication> BonusAttackAilments =>
         _relicBehaviors != null
@@ -1388,7 +1397,24 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         return _daggerDashEnemyHitCallback;
     }
 
-    public Action<EnemyController, ProjectileController> DaggerProjectileEnemyHitCallback => _daggerProjectileEnemyHitCallback;
+    public Action<EnemyController, ProjectileController> ResolveProjectileHitCallback(
+        SkillData skill,
+        bool isProcCast)
+    {
+        bool appliesDaggerMarker =
+            !isProcCast && skill != null && skill.appliesDaggerMarker;
+        bool hasAnyPassiveHitEffect = _relicBehaviors != null &&
+            (_relicBehaviors.HasFocusStack || _relicBehaviors.HasSplitShot);
+
+        if (appliesDaggerMarker && hasAnyPassiveHitEffect)
+            return _daggerAndPassiveProjectileEnemyHitCallback;
+        if (appliesDaggerMarker)
+            return _daggerProjectileEnemyHitCallback;
+        if (hasAnyPassiveHitEffect)
+            return _passiveProjectileEnemyHitCallback;
+
+        return null;
+    }
 
     public void BeginDaggerBasicAttackMarkerBuff(SkillData skill)
     {
@@ -1406,6 +1432,171 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
 
         _daggerMarkers.Apply(enemy, projectile.DaggerMarkerDuration);
+    }
+
+    private void HandlePassiveProjectileEnemyHit(
+        EnemyController enemy,
+        ProjectileController projectile)
+    {
+        if (enemy == null || projectile == null)
+            return;
+
+        if (_relicBehaviors != null && _relicBehaviors.HasFocusStack)
+            TryAddFocusStack(enemy);
+        if (_relicBehaviors != null && _relicBehaviors.HasSplitShot)
+            TrySplitProjectile(projectile);
+    }
+
+    private void HandleDaggerAndPassiveProjectileEnemyHit(
+        EnemyController enemy,
+        ProjectileController projectile)
+    {
+        HandleDaggerProjectileEnemyHit(enemy, projectile);
+        HandlePassiveProjectileEnemyHit(enemy, projectile);
+    }
+
+    private void TrySplitProjectile(ProjectileController projectile)
+    {
+        if (projectile == null ||
+            _relicBehaviors == null || !_relicBehaviors.HasSplitShot ||
+            projectile.RemainingSplitDepth <= 0 ||
+            projectile.SourcePrefab == null ||
+            projectile.RemainingLifetime <= 0f)
+        {
+            return;
+        }
+
+        int splitCount = _relicBehaviors.SplitShotCount;
+        if (splitCount <= 0)
+            return;
+
+        int splitDamage = Mathf.RoundToInt(
+            projectile.BaseDamage * _relicBehaviors.SplitShotDamagePct / 100f);
+        if (splitDamage <= 0)
+            return;
+
+        float splitAngle = _relicBehaviors.SplitShotAngleDeg;
+        float angleStep = splitCount > 1
+            ? splitAngle * 2f / (splitCount - 1)
+            : 0f;
+        ProjectileFireRequest request = new ProjectileFireRequest
+        {
+            ProjectilePrefab = projectile.SourcePrefab,
+            OriginTransform = transform,
+            OriginPositionOverride = projectile.transform.position,
+            CoroutineRunner = this,
+            Caster = this,
+            Owner = this,
+            BaseDamage = splitDamage,
+            Damage = splitDamage,
+            Speed = projectile.CurrentSpeed,
+            Lifetime = projectile.RemainingLifetime,
+            ProjectileCount = 1,
+            FirePattern = ProjectileFirePattern.Single,
+            WallHitMode = projectile.WallHitMode,
+            TargetHitMode = projectile.TargetHitMode,
+            TargetMode = projectile.CurrentTargetMode,
+            MaxBounceCount = projectile.MaxBounceCount,
+            OnEnemyHit = projectile.EnemyHitCallback,
+            DaggerMarkerDuration = projectile.DaggerMarkerDuration,
+            IsProcCast = projectile.IsProcCast,
+            SplitDepth = projectile.RemainingSplitDepth - 1
+        };
+
+        for (int i = 0; i < splitCount; i++)
+        {
+            float angleOffset = splitCount > 1
+                ? -splitAngle + angleStep * i
+                : 0f;
+            request.Direction = RotateProjectileDirection(
+                projectile.CurrentDirection,
+                angleOffset);
+            request.Damage = RollCritDamage(splitDamage, out bool didCrit);
+            request.IsCrit = didCrit;
+            _projectileFireService.Fire(request);
+        }
+    }
+
+    private static Vector2 RotateProjectileDirection(Vector2 direction, float degrees)
+    {
+        if (direction.sqrMagnitude <= 0.0001f)
+            direction = Vector2.down;
+        else
+            direction.Normalize();
+
+        float radians = degrees * Mathf.Deg2Rad;
+        float sin = Mathf.Sin(radians);
+        float cos = Mathf.Cos(radians);
+        return new Vector2(
+            direction.x * cos - direction.y * sin,
+            direction.x * sin + direction.y * cos).normalized;
+    }
+
+    private bool TryAddFocusStack(EnemyController enemy)
+    {
+        if (enemy == null || !enemy.IsAlive ||
+            _relicBehaviors == null || !_relicBehaviors.HasFocusStack)
+        {
+            return false;
+        }
+
+        int stackCount = _focusStacks.AddStack(
+            enemy,
+            _relicBehaviors.FocusDuration);
+        if (stackCount < _relicBehaviors.FocusRequiredStacks)
+            return true;
+
+        _focusStacks.Clear(enemy);
+        DetonateFocusStack(enemy, _relicBehaviors.FocusDetonationDamage);
+        return true;
+    }
+
+    private void DetonateFocusStack(EnemyController enemy, int detonationDamage)
+    {
+        if (enemy == null || !enemy.IsAlive || detonationDamage <= 0)
+            return;
+
+        int actualDamage = enemy.ApplyCombatImpact(
+            RollCritDamage(detonationDamage, out bool didCrit),
+            transform.position,
+            0f,
+            0f,
+            0f,
+            0f,
+            null,
+            CurrentCombatEffectContext);
+        ReportLifestealDamage(actualDamage);
+        LogDamageDealt(actualDamage, didCrit);
+    }
+
+    public int GetFocusStack(EnemyController enemy)
+    {
+        return _focusStacks.GetStack(enemy);
+    }
+
+    public bool AddFocusStacksForDebug(
+        EnemyController enemy,
+        int amount,
+        out int currentStack)
+    {
+        currentStack = _focusStacks.GetStack(enemy);
+        if (enemy == null || amount <= 0 ||
+            _relicBehaviors == null || !_relicBehaviors.HasFocusStack)
+        {
+            return false;
+        }
+
+        bool added = false;
+        for (int i = 0; i < amount && enemy.IsAlive; i++)
+            added |= TryAddFocusStack(enemy);
+
+        currentStack = _focusStacks.GetStack(enemy);
+        return added;
+    }
+
+    public void ClearFocusStack(EnemyController enemy)
+    {
+        _focusStacks.Clear(enemy);
     }
 
     private void HandleDaggerDashEnemyHit(EnemyController enemy)
@@ -1475,6 +1666,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private void TickDaggerState(float deltaTime)
     {
         _daggerMarkers.Tick(deltaTime);
+        _focusStacks.Tick(deltaTime);
         if (_daggerBasicAttackMarkerBuffTimer > 0f)
             _daggerBasicAttackMarkerBuffTimer = Mathf.Max(0f, _daggerBasicAttackMarkerBuffTimer - deltaTime);
     }
@@ -1693,14 +1885,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         invincibilityFlashFeedback?.StopAndReset();
     }
 
-    private void ClearDaggerRuntimeState()
+    private void ClearFormRuntimeState()
     {
+        // 폼 무관 런타임 상태 정리 지점이며, 새 폼별 상태도 여기에 합류시킨다.
         _activeDaggerDashSkill = null;
         _activeDaggerDashSlotIndex = -1;
         _daggerDashCooldownResetThisDash = false;
         _pendingDaggerCooldownResetSlot = -1;
         _daggerBasicAttackMarkerBuffTimer = 0f;
         _daggerBasicAttackMarkerDuration = 0f;
+        _focusStacks.ClearAll();
     }
 
     private SkillExecutionContext CreateSkillExecutionContext(
@@ -1884,6 +2078,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _status?.ClearAll();
         _shield.Clear();
         _attackBuff.Clear();
+        _focusStacks.ClearAll();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
         combatChannel?.RaisePlayerDied(this);
@@ -2196,6 +2391,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         _parryStack?.Reset();
         ResetCombo();
+        _focusStacks.ClearAll();
     }
 
     private static bool IsCombatBlockedByLocation()

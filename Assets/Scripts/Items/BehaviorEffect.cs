@@ -21,7 +21,9 @@ public enum BehaviorAction
     AttackBuff,
     AilmentOverload,
     ExecuteThreshold,
-    AmmoRamp
+    AmmoRamp,
+    FocusStack,
+    SplitShot
 }
 
 public enum ProcOriginMode
@@ -46,8 +48,20 @@ public sealed class BehaviorEffect
     public int skillTypeFilter;
     [Tooltip("콤보 티어별 proc 기본 데미지입니다. 길이는 ComboTierConfig.maxTier를 권장합니다. index 0 = 티어 1. 비어 있으면 티어 게이트와 오버라이드 없이 기존 동작합니다.")]
     public int[] comboTierDamages = Array.Empty<int>();
-    [Tooltip("일반 행동 값입니다. LifestealEngine은 기본 피흡률(%), AmmoRamp는 최대 피해 보너스율(%)로 사용합니다.")]
+    [Tooltip("일반 행동 값입니다. LifestealEngine은 기본 피흡률(%), AmmoRamp는 최대 피해 보너스율(%), FocusStack은 폭발 피해, SplitShot은 분열 피해율(%)로 사용합니다.")]
     public int value;
+    [Tooltip("FocusStack 전용. 폭발에 필요한 적별 투사체 명중 스택 수입니다.")]
+    [Min(1)]
+    public int focusRequiredStacks = 6;
+    [Tooltip("SplitShot 전용. 적중 시 생성할 분열탄 수입니다.")]
+    [Min(1)]
+    public int splitCount = 2;
+    [Tooltip("SplitShot 전용. 원본 진행 방향 좌우로 펼칠 각도입니다.")]
+    [Min(0f)]
+    public float splitAngleDeg = 30f;
+    [Tooltip("SplitShot 전용. 연쇄 분열 가능한 세대 깊이입니다.")]
+    [Range(0, 3)]
+    public int splitDepth = 1;
     [Tooltip("LifestealEngine 전용. 저체력 보너스가 시작되는 HP 비율(%)입니다.")]
     [Min(0f)]
     public float lowHealthThresholdPct;

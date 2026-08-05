@@ -157,7 +157,10 @@ public sealed class ProjectileFireService
             request.OnEnemyHit,
             request.DaggerMarkerDuration,
             request.IsCrit,
-            request.IsProcCast);
+            request.IsProcCast,
+            request.SplitDepth,
+            request.ProjectilePrefab,
+            request.BaseDamage);
         return true;
     }
 

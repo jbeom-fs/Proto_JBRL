@@ -21,6 +21,22 @@ public sealed class PlayerBehaviors : MonoBehaviour
             : Array.Empty<AilmentOverloadSettings>();
     public float AmmoRampBonusPct =>
         _runtime != null ? _runtime.AmmoRampBonusPct : 0f;
+    public bool HasFocusStack => _runtime != null && _runtime.HasFocusStack;
+    public int FocusRequiredStacks =>
+        _runtime != null ? _runtime.FocusRequiredStacks : 0;
+    public int FocusDetonationDamage =>
+        _runtime != null ? _runtime.FocusDetonationDamage : 0;
+    public float FocusDuration =>
+        _runtime != null ? _runtime.FocusDuration : 0f;
+    public bool HasSplitShot => _runtime != null && _runtime.HasSplitShot;
+    public int SplitShotCount =>
+        _runtime != null ? _runtime.SplitShotCount : 0;
+    public float SplitShotAngleDeg =>
+        _runtime != null ? _runtime.SplitShotAngleDeg : 0f;
+    public int SplitShotDamagePct =>
+        _runtime != null ? _runtime.SplitShotDamagePct : 0;
+    public int SplitShotDepth =>
+        _runtime != null ? _runtime.SplitShotDepth : 0;
 
     public float GetLifestealBonusPct(float hpRatio)
     {

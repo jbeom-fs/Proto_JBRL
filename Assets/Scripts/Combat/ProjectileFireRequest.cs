@@ -10,6 +10,7 @@ public sealed class ProjectileFireRequest
     public IDamageable Caster;
     public UnityEngine.Object Owner;
     public Vector2 Direction;
+    public int BaseDamage;
     public int Damage;
     public bool IsCrit;
     public bool IsProcCast;
@@ -34,4 +35,5 @@ public sealed class ProjectileFireRequest
     public float StunDuration;
     public Action<EnemyController, ProjectileController> OnEnemyHit;
     public float DaggerMarkerDuration;
+    public int SplitDepth;
 }

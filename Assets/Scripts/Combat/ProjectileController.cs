@@ -32,6 +32,7 @@ public class ProjectileController : MonoBehaviour
 
     private Vector2 _direction = Vector2.right;
     private float _speed = 6f;
+    private int _baseDamage = 1;
     private int _damage = 1;
     private bool _isCrit;
     private bool _isProcCast;
@@ -59,6 +60,8 @@ public class ProjectileController : MonoBehaviour
     private Action<ProjectileController, ProjectileReleaseReason> _releaseAction;
     private Action<EnemyController, ProjectileController> _onEnemyHit;
     private float _daggerMarkerDuration;
+    private int _remainingSplitDepth;
+    private GameObject _sourcePrefab;
     private bool _released;
     private readonly HashSet<EnemyController> _hitEnemies = new();
 
@@ -163,12 +166,16 @@ public class ProjectileController : MonoBehaviour
         Action<EnemyController, ProjectileController> onEnemyHit = null,
         float daggerMarkerDuration = 0f,
         bool isCrit = false,
-        bool isProcCast = false)
+        bool isProcCast = false,
+        int splitDepth = 0,
+        GameObject sourcePrefab = null,
+        int baseDamage = 0)
     {
         _released = false;
         _direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
         RefreshVisualRotation();
         _damage = Mathf.Max(0, damage);
+        _baseDamage = baseDamage > 0 ? baseDamage : _damage;
         _isCrit = isCrit;
         _isProcCast = isProcCast;
         _knockbackForce = Mathf.Max(0f, knockbackForce);
@@ -180,6 +187,8 @@ public class ProjectileController : MonoBehaviour
         _stunDuration = Mathf.Max(0f, stunDuration);
         _onEnemyHit = onEnemyHit;
         _daggerMarkerDuration = Mathf.Max(0f, daggerMarkerDuration);
+        _remainingSplitDepth = Mathf.Clamp(splitDepth, 0, 3);
+        _sourcePrefab = sourcePrefab;
         _speed = Mathf.Max(0f, speed);
         _lifetime = Mathf.Max(0.01f, lifetime);
         _wallHitMode = wallHitMode;
@@ -194,6 +203,18 @@ public class ProjectileController : MonoBehaviour
 
     public float DaggerMarkerDuration => _daggerMarkerDuration;
     public bool IsProcCast => _isProcCast;
+    public Vector2 CurrentDirection => _direction;
+    public int BaseDamage => _baseDamage;
+    public int CurrentDamage => _damage;
+    public float RemainingLifetime => _lifetime;
+    public int RemainingSplitDepth => _remainingSplitDepth;
+    public GameObject SourcePrefab => _sourcePrefab;
+    public float CurrentSpeed => _speed;
+    public ProjectileWallHitMode WallHitMode => _wallHitMode;
+    public TargetMode CurrentTargetMode => _targetMode;
+    public ProjectileTargetHitMode TargetHitMode => _targetHitMode;
+    public int MaxBounceCount => _maxBounceCount;
+    public Action<EnemyController, ProjectileController> EnemyHitCallback => _onEnemyHit;
 
     private void ApplyFogVisibilityForActiveProjectile()
     {

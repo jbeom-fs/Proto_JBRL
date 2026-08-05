@@ -581,6 +581,38 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Added " + amount + " combo stack(s). " + FormatComboState(combat));
     }
 
+    public DeveloperConsoleCommandResult ExecuteFocusShow()
+    {
+        if (!TryResolveFocusContext(out PlayerCombatController combat, out EnemyController target, out DeveloperConsoleCommandResult error))
+            return error;
+
+        return DeveloperConsoleCommandResult.Success(
+            "Focus " + GetEnemyDisplayName(target) + " | stacks " + combat.GetFocusStack(target) + ".");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteFocusAdd(int amount)
+    {
+        if (!TryResolveFocusContext(out PlayerCombatController combat, out EnemyController target, out DeveloperConsoleCommandResult error))
+            return error;
+
+        if (!combat.AddFocusStacksForDebug(target, amount, out int currentStack))
+            return DeveloperConsoleCommandResult.Error("FocusStack passive is not active.");
+
+        return DeveloperConsoleCommandResult.Success(
+            "Added " + amount + " focus stack(s) to " + GetEnemyDisplayName(target) +
+            " | stacks " + currentStack + ".");
+    }
+
+    public DeveloperConsoleCommandResult ExecuteFocusClear()
+    {
+        if (!TryResolveFocusContext(out PlayerCombatController combat, out EnemyController target, out DeveloperConsoleCommandResult error))
+            return error;
+
+        combat.ClearFocusStack(target);
+        return DeveloperConsoleCommandResult.Success(
+            "Cleared focus stacks from " + GetEnemyDisplayName(target) + ".");
+    }
+
     public DeveloperConsoleCommandResult ExecuteAilment(AilmentType type, int stacks)
     {
         PlayerController activePlayer = PlayerController.Active;
@@ -969,6 +1001,30 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
         }
 
         return nearest;
+    }
+
+    private bool TryResolveFocusContext(
+        out PlayerCombatController combat,
+        out EnemyController target,
+        out DeveloperConsoleCommandResult error)
+    {
+        combat = ResolvePlayerCombatController();
+        target = null;
+        if (combat == null)
+        {
+            error = DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+            return false;
+        }
+
+        target = FindNearestAliveEnemy(combat.transform.position);
+        if (target == null)
+        {
+            error = DeveloperConsoleCommandResult.Error("No alive enemy found.");
+            return false;
+        }
+
+        error = default;
+        return true;
     }
 
     private static bool IsValidEngravingSlot(int slot)
