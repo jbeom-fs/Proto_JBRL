@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-04
+> 작성 기준일: 2026-08-05
+> 기준 커밋: master HEAD `fc497627`(+워킹트리) — **마탄 평타 자원 소모 데이터 구동 전환**(§7-2·§7-10 개정). `TryBulletBasicAttack`이 발수·소모를 상수 1로 하드코딩해 **탄창 자원의 규칙 소유자가 코드(평타)와 데이터(스킬) 둘로 갈라져 있던 것**을 데이터 한쪽으로 통일했다 — `ExecuteBasicProjectile` 삭제 → 평타도 표준 `Execute(context)` 경로 / `Has(resourceType, requiredAmount)` 게이트 / `Spend(resourceType, result.ResourceConsumed)`. 신규 `SkillExecutionContext.IsBasicAttack`으로 **평타만 `hitSteps`를 건너뛴다**(스텝이 시작되면 `IsMultiHitActive` → `IsSkillBusy`·`BlocksPlayerMovement`로 평타 중 이동이 봉쇄되기 때문) → `KNOWN_QUIRKS` Q1 해소. 🔴 **선행 버그 픽스 = `FreischutzWeapon.basicAttackSkillData` 미결선** — 폼별 결선은 처음부터 없었고 씬의 전역 폴백이 우연히 마탄 평타를 가리켰을 뿐인데, `f155383b`에서 씬이 기본값으로 정리되며 그 우연이 사라졌다. 폴백 `BasicAttackAnimation`은 `executionType 0`이라 Projectile 검사에서 조기 반환 → **마탄 평타가 발사·탄 소모·쿨다운 전부 없이 조용히 아무 일도 안 하고 있었다**(로그 0). 이전: Dagger 각인 12/12 완성 + 스킬 배관 3건 확장(`d1a23a88`+워킹트리)
+>
+> <details><summary>이전 기준(2026-08-04, `d1a23a88`)</summary>
+>
 > 기준 커밋: master HEAD `d1a23a88`(+워킹트리) — **Dagger 각인 12/12 완성 + 스킬 배관 3건 확장**. ①**`hitSteps`가 Projectile로 확장**(§7-10 개정) — `MultiHitSkillRunner`는 원래 실행타입 무관이었고 결합은 생성자 콜백 고정 하나뿐이라, 디스패처 + `ExecuteProjectileHit` + `HitStep{projectileCount, spreadAngle}`(0=스킬 상속)로 열렸다. **스텝마다 발수·분산각이 다른 볼리**(3-4-3 cone)가 저작 가능해졌고, crit은 **스텝당 1회**(탄 단위 롤은 기존 마탄 회귀라 배제), 재조준 없음, 스텝 자원 추가 소모 없음. 🔑 **`Burst`는 다단의 대안이 아니다** — 1방향 연발일 뿐이라 스텝별 발수 변화를 표현 못 한다. ②**`InstantArea`가 표식을 부여·기폭**(§7-8·§11b-12) — 부여는 평타 마킹과 같은 적중 목록 순회, 기폭은 `TryDetonateDaggerMarker` 추출로 Dash와 결산 로직 공유. **호출 순서 = 기폭 → 부여**(자기가 심고 자기가 터뜨리는 저작 봉인), `IsProcCast` 게이트는 **5경로**로 확대. ⚠️동기 proc이 `AttackExecutor` 적중 목록·피해 카운터를 리셋하는 **재진입**이 있어 선캐시로 차단. ③**장판 애니메이션 지원**(§7-12) — `SkillData.zoneAnimation`(AnimatorOverrideController), null이면 기존 정적 표시 그대로. **sprite는 크기 기준 겸 폴백으로 존치**(애니 재생 중 렌더러 sprite는 직전 장판 프레임이라 스케일 기준으로 못 씀). ④**Dagger 각인 6종 저작 완료**(독무·연쇄투척·표식산포 / 참수·칼날비·폭쇄) + 아이콘 8종 + 혈흔→혈무 리네임 → **12/12**. 🆕 `HandOff/KNOWN_QUIRKS.md` 신설(알고도 방치하는 사항 대장). 이전: 상태이상 과부하 타입별 분화·Dagger 각인 축 착수(`d1a23a88`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-03, `d1a23a88`)</summary>
 >
@@ -917,14 +923,19 @@ TryBasicAttack():
   ② 현재 폼의 BasicAttackMode 로 분기:
      • Parry  → 데미지 없는 패리 시퀀스(선딜→무적→후딜). 무적 중 피해 1회 가로채기 → +ParryStack,
                 흰색 점멸. 선딜 중 피격 시 패리 취소. (BeginParryBasicAttack)
-     • Bullet → 탄 1발 확인 → 없으면 자동 재장전. 있으면 투사체 1발 발사 + 탄 1 소모
-                (basicAttackSkillData, executionType=Projectile). 발사로 탄 0 시 자동 재장전.
+     • Bullet → 평타 SkillData의 자원 규칙을 그대로 따름(코드 상수 없음):
+                Has(resourceType, requiredAmount) 미달 → 자동 재장전(TryStartReload)
+                충족 → SkillExecutor.Execute(context, IsBasicAttack=true)
+                     → Spend(resourceType, result.ResourceConsumed) → 탄 0 시 자동 재장전
+                (basicAttackSkillData, executionType=Projectile / 평타는 hitSteps를 타지 않음)
      • Damage → 기존 근접 패턴 공격:
                 SetAttackCooldown → SkillTargetResolver → AttackExecutor.ExecuteAttackWorld(...)
                 + basicAttackSkillData 로 PlaySkillAnimation
 ```
 
 > `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage/Parry 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 런타임 폼 전환 시 `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선, 비면 SerializeField fallback)로 폼별 자동 교체됨(§15 런타임 폼 전환).
+>
+> 🔴 **Bullet 폼은 무기 결선이 필수다.** 폴백(`PlayerCombatController.basicAttackSkillData`)은 씬에 하나뿐이라 Damage 폼용 애니메이션 껍데기(`executionType 0`)가 들어가 있고, Bullet 경로는 `executionType == Projectile`을 요구하므로 **조기 반환하며 발사·탄 소모·쿨다운이 전부 일어나지 않는다. 예외도 경고도 없다.** 실제로 `f155383b`~`fc497627` 구간 내내 마탄 평타가 이 상태로 죽어 있었다(2026-08-05 발견·복구). 신규 Bullet 폼을 추가할 때는 `WeaponData.basicAttackSkillData` 결선과 `resourceType = Bullet` / `requiredAmount` / `consumeAmount` 저작을 세트로 확인할 것.
 
 ### 7-3. 스킬 실행 흐름 — SkillExecutor 라우팅
 
@@ -1346,7 +1357,7 @@ Dagger 킷 실측 = **부여(Q Blink·W Projectile·R 평타버프) → 기폭(E
 
 🔑 **`Burst`는 다단 볼리의 대안이 될 수 없다** — `projectileCount`·`burstInterval`이 있어 다단처럼 보이지만, Burst는 **하나의 방향·하나의 발수를 코루틴으로 끊어 쏘는 것**이라 3-4-3 cone처럼 스텝마다 발수와 분산각이 다른 형태를 표현하지 못한다. 데이터 필드가 존재하는 것과 그 조합으로 목표 형태가 나오는 것은 별개다.
 
-⚠️ **평타 경로도 이 블록을 공유한다** — `ExecuteBasicProjectile` → `ExecuteProjectile(context, count, resourceConsumed)`. 마탄 평타 SkillData에 `hitSteps`를 저작하면 평타가 이동 봉쇄 시퀀스를 시작하고, 평타의 "발수 1 강제"를 스텝이 무시한다. 마탄 평타 1발은 정체성이라 저작할 이유가 없어 방치했다(`KNOWN_QUIRKS` Q1).
+✅ **평타 경로는 이 블록을 타지 않는다(2026-08-05 변경)** — `context.IsBasicAttack`이 true면 `hitSteps` 시작 블록을 건너뛴다. 근거는 이동 봉쇄다: 스텝이 시작되면 `IsMultiHitActive`가 `IsSkillBusy`·`BlocksPlayerMovement`에 물려 **평타 내내 이동이 잠긴다**. 같은 변경에서 `ExecuteBasicProjectile`(발수·소모를 상수 1로 강제하던 전용 진입점)이 삭제되고 평타가 표준 `Execute(context)` 경로로 합류했으므로, 평타의 발수·분산·자원은 이제 전부 SkillData 저작값이다(→ `KNOWN_QUIRKS` Q1 해소).
 
 **② cancelable 피캔슬 + 캔슬 이벤트 (`6a201b2e`)**
 

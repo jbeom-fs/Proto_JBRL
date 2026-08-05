@@ -130,6 +130,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private float _cachedHitRadius = DefaultPlayerHitRadius;
     private Vector2Int _lastAimDirection = Vector2Int.down;
     private Vector2 _aimDirectionContinuous = Vector2.down;
+    private bool _reportedNonBulletBasicAttackResource;
     private bool _isSkillCasting;
     private float _skillRecoveryTimer;
     private SkillData _recoveryCancelableSkill;
@@ -942,22 +943,33 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (!CanUseMagazine())
             return;
 
-        if (_currentBullet <= 0)
+        SkillData basicAttack = ActiveBasicAttack;
+        if (basicAttack == null || basicAttack.executionType != SkillExecutionType.Projectile)
+            return;
+
+        if (basicAttack.resourceType != SkillResourceType.Bullet &&
+            !_reportedNonBulletBasicAttackResource)
+        {
+            _reportedNonBulletBasicAttackResource = true;
+            Debug.LogWarning(
+                "[PlayerCombatController] Magazine basic attack resourceType is not Bullet; ammo may not be consumed.",
+                this);
+        }
+
+        if (!Has(basicAttack.resourceType, basicAttack.requiredAmount))
         {
             TryStartReload();
             return;
         }
 
-        SkillData basicAttack = ActiveBasicAttack;
-        if (basicAttack == null || basicAttack.executionType != SkillExecutionType.Projectile)
-            return;
-
-        SkillExecutionContext context = CreateSkillExecutionContext(basicAttack, -1);
-        if (!_skillExecutor.ExecuteBasicProjectile(context, 1))
+        SkillExecutionContext context =
+            CreateSkillExecutionContext(basicAttack, -1, isBasicAttack: true);
+        SkillExecutionResult result = _skillExecutor.Execute(context);
+        if (!result.Success)
             return;
 
         _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
-        Spend(SkillResourceType.Bullet, 1);
+        Spend(basicAttack.resourceType, result.ResourceConsumed);
         TryStartAutoReloadIfEmpty();
     }
 
@@ -1675,12 +1687,20 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _daggerBasicAttackMarkerDuration = 0f;
     }
 
-    private SkillExecutionContext CreateSkillExecutionContext(SkillData skill, int slotIndex)
+    private SkillExecutionContext CreateSkillExecutionContext(
+        SkillData skill,
+        int slotIndex,
+        bool isBasicAttack = false)
     {
         Vector2 aimDirection = RefreshAimDirection();
         Vector2Int gridFacing = GetGridAimDirection();
 
-        return CreateSkillExecutionContext(skill, slotIndex, aimDirection, gridFacing);
+        return CreateSkillExecutionContext(
+            skill,
+            slotIndex,
+            aimDirection,
+            gridFacing,
+            isBasicAttack: isBasicAttack);
     }
 
     private SkillExecutionContext CreateSkillExecutionContext(
@@ -1701,7 +1721,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         SkillData skill,
         int slotIndex,
         Vector2 aimDirection,
-        Vector2Int gridFacing)
+        Vector2Int gridFacing,
+        bool isBasicAttack = false)
     {
 
         return new SkillExecutionContext(
@@ -1714,7 +1735,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             aimDirection,
             gridFacing,
             TotalAttack,
-            hitRadius);
+            hitRadius,
+            isBasicAttack: isBasicAttack);
     }
 
     private bool CanContinueMultiHit(SkillExecutionContext context)

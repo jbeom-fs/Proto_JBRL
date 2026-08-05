@@ -122,11 +122,6 @@ public sealed class SkillExecutor
         }
     }
 
-    public bool ExecuteBasicProjectile(SkillExecutionContext context, int projectileCount)
-    {
-        return ExecuteProjectile(context, Mathf.Max(1, projectileCount), 0).Success;
-    }
-
     private SkillExecutionResult ExecuteInstantArea(SkillExecutionContext context)
     {
         List<Vector3> targets = _targetResolver.ResolveWorldTargets(context);
@@ -384,7 +379,7 @@ public sealed class SkillExecutor
             return SkillExecutionResult.Failure;
 
         PlayConfiguredAnimation(context, skill, direction);
-        if (skill.hitSteps != null && skill.hitSteps.Count > 0)
+        if (!context.IsBasicAttack && skill.hitSteps != null && skill.hitSteps.Count > 0)
         {
             if (context.IsProcCast)
             {
