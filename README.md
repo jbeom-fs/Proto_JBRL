@@ -1,7 +1,7 @@
 # JBRogLike — 아키텍처 보고서
 
 > 작성 기준일: 2026-08-05
-> 기준 커밋: master HEAD `fc497627`(+워킹트리) — **마탄 평타 자원 소모 데이터 구동 전환**(§7-2·§7-10 개정). `TryBulletBasicAttack`이 발수·소모를 상수 1로 하드코딩해 **탄창 자원의 규칙 소유자가 코드(평타)와 데이터(스킬) 둘로 갈라져 있던 것**을 데이터 한쪽으로 통일했다 — `ExecuteBasicProjectile` 삭제 → 평타도 표준 `Execute(context)` 경로 / `Has(resourceType, requiredAmount)` 게이트 / `Spend(resourceType, result.ResourceConsumed)`. 신규 `SkillExecutionContext.IsBasicAttack`으로 **평타만 `hitSteps`를 건너뛴다**(스텝이 시작되면 `IsMultiHitActive` → `IsSkillBusy`·`BlocksPlayerMovement`로 평타 중 이동이 봉쇄되기 때문) → `KNOWN_QUIRKS` Q1 해소. 🔴 **선행 버그 픽스 = `FreischutzWeapon.basicAttackSkillData` 미결선** — 폼별 결선은 처음부터 없었고 씬의 전역 폴백이 우연히 마탄 평타를 가리켰을 뿐인데, `f155383b`에서 씬이 기본값으로 정리되며 그 우연이 사라졌다. 폴백 `BasicAttackAnimation`은 `executionType 0`이라 Projectile 검사에서 조기 반환 → **마탄 평타가 발사·탄 소모·쿨다운 전부 없이 조용히 아무 일도 안 하고 있었다**(로그 0). 이전: Dagger 각인 12/12 완성 + 스킬 배관 3건 확장(`d1a23a88`+워킹트리)
+> 기준 커밋: master HEAD `893c703c` — **마탄 폼 축 대공사: 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 스택 배지**(§7-2·§7-8b·§7-10 개정). ① **평타 자원 소모 데이터 구동 전환**(`9c6748e7`) — `TryBulletBasicAttack`이 발수·소모를 상수 1로 하드코딩해 **탄창 자원의 규칙 소유자가 코드(평타)와 데이터(스킬) 둘로 갈라져 있던 것**을 데이터 한쪽으로 통일했다 — `ExecuteBasicProjectile` 삭제 → 평타도 표준 `Execute(context)` 경로 / `Has(resourceType, requiredAmount)` 게이트 / `Spend(resourceType, result.ResourceConsumed)`. 신규 `SkillExecutionContext.IsBasicAttack`으로 **평타만 `hitSteps`를 건너뛴다**(스텝이 시작되면 `IsMultiHitActive` → `IsSkillBusy`·`BlocksPlayerMovement`로 평타 중 이동이 봉쇄되기 때문) → `KNOWN_QUIRKS` Q1 해소. 🔴 **선행 버그 픽스 = `FreischutzWeapon.basicAttackSkillData` 미결선** — 폼별 결선은 처음부터 없었고 씬의 전역 폴백이 우연히 마탄 평타를 가리켰을 뿐인데, `f155383b`에서 씬이 기본값으로 정리되며 그 우연이 사라졌다. 폴백 `BasicAttackAnimation`은 `executionType 0`이라 Projectile 검사에서 조기 반환 → **마탄 평타가 발사·탄 소모·쿨다운 전부 없이 조용히 아무 일도 안 하고 있었다**(로그 0). ② **마탄 패시브 3축 완성**(`5c6b8659`·`05dc77c8`, §7-8b) — **고갈 램프**(잔탄이 적을수록 발당 피해↑, 무료 기본) / **집탄**(같은 적에 탄당 1스택, 3스택에서 단일 대상 폭발) / **분열탄**(명중한 탄이 ±30°로 2발 분열, 깊이·피해율 데이터). 🔑 **패시브 자격 2단 필터 도출** — "SkillData 저작으로 되는가 / 유물로 되는가" 중 하나라도 걸리면 패시브가 아니다. 이 기준으로 관통·벽 반사(이미 저작 가능)와 처치 시 폭발·무작위 포격(유물 `OnKill`+`CastSkill`로 가능)이 전부 탈락했다. ③ **집탄 스택 월드 배지**(`893c703c`) — 상태이상 아이콘 행에 편입하지 않고 적 머리 위 전용 배지. 앵커를 HP바와 같은 규칙(**피벗 X + `TopAnchorY`**)으로 통일해 콜라이더 오프셋이 있는 적의 X 치우침과 대형 적의 몸통 관통을 동시에 해소. ④ `Assembly-CSharp.csproj` 추적 해제(`.gitignore`가 선행 추적 때문에 안 먹고 있었음). 이전: Dagger 각인 12/12 완성 + 스킬 배관 3건 확장(`d1a23a88`+워킹트리)
 >
 > <details><summary>이전 기준(2026-08-04, `d1a23a88`)</summary>
 >
@@ -1264,6 +1264,24 @@ Dagger 킷 실측 = **부여(Q Blink·W Projectile·R 평타버프) → 기폭(E
 - ⚠️ **회복 호출은 반드시 `_version` 검사 앞에 배치**한다. 폭발이 적을 죽이면 `Die()`→`Clear()`가 `_version`을 올려 조기 반환하는데, **폭발로 마무리하는 것이 가장 흔한 상황**이라 뒤에 두면 회복이 통째로 사라진다. 플레이어 회복은 적의 생사와 무관하므로 이 위치가 안전하다.
 - ~~과중독 임계 > 프로필 최대 스택이면 영원히 발동하지 않음~~ — **2026-08-03에 임계를 캡으로 재정의하면서 저작 함정이 정의에서 소멸**했고 Dashboard 검증도 제거됐다. 대신 **타입별 엔트리 구조에서 한 타입을 빠뜨리면 조용히 무지원**이 되므로 미커버 `AilmentType` Info 검증이 신설됐다.
 
+**Freischutz 3종(2026-08-05 저작, 3축=상시 곱 / 단일 축적 스파이크 / 확산·연쇄)**
+
+Freischutz 킷 실측 = 평타 `Single` 1발(탄 1 소모) / Q `Single` 1발 / W `Spread` 3발 18° / **E `Burst` 5발 연사** / R `Spread` 6발 45°. 자원은 탄창 15·재장전 2초이고, 전 스킬이 `requiredAmount 1`이라 부분 발사 모드가 상시 활성이다. Sword가 "쌓아서 터뜨린다", Dagger가 "심어놓고 회수한다"면 Freischutz는 **"비우고 채운다"**.
+
+| 패시브 | 축 | 효과 | 핵심 수치(전부 에셋 튜닝) |
+|------|----|------|------|
+| **고갈 램프**(기본) | 자원 | 잔탄이 적을수록 **모든 투사체**의 발당 피해 증가 | 배율 = `1 + (value/100) × (1 − 잔탄/최대탄창)`, value 60 → 탄창 15 기준 15발 ×1.00 / 8발 ×1.28 / 1발 ×1.56 |
+| **집탄** | 축적 | 같은 적에게 **탄당 1스택**, 요구 스택 도달 시 그 적에게 단일 대상 폭발 | 요구 3 / 만료 4초(재적립 시 갱신) / 폭발 25 |
+| **분열탄** | 확산 | 명중한 탄이 좌우로 갈라져 계속 날아감 | 2발 ±30° / 피해 30%(세대 복리) / 깊이 1(`[Range(0,3)]`) |
+
+- 🔑 **패시브 자격 2단 필터(이번에 도출, 전 폼 공통)** — ①**`SkillData` 저작으로 이미 되는가** → 그건 각인 저작값이다 ②**유물(`ItemData.behaviorEffects`)로 이미 되는가** → 그건 유물이다(`BehaviorRuntime.AddBehaviors`가 공용 진입점이라 트리거·액션 조합이 완전히 같다). 이 필터로 후보 절반이 탈락했다: **관통·벽 반사**는 `projectileTargetHitMode`/`projectileWallHitMode`/`projectileMaxBounceCount`로 **이미 저작 가능**하고(런타임도 완비 — `Pierce`/`HitOncePerTarget`/`Bounce`), **처치 시 폭발·무작위 포격**은 `OnKill`+`CastSkill`+`ProcOriginMode`로 유물이 지금 당장 저작할 수 있다.
+- **고갈 램프** — `BehaviorAction.AmmoRamp`(전용 필드 없이 `value` 재사용). 적용 지점은 **crit 롤 직전 2곳뿐**(기본 Projectile 요청 / `hitSteps` 스텝). 확정 규칙 = **소모 전 잔탄 기준**(`Spend`가 `Execute` 성공 뒤라 자연 성립) + **발사 시점 스냅샷 1회**이므로 `Burst`·`Spread`는 한 요청이라 **전탄이 같은 배율**을 쓴다. 비탄창 폼은 배율 1.
+- **집탄** — `FreischutzFocusRegistry`(`DaggerMarkerRegistry` 미러 + `Count`). **적립 제한을 두지 않은 근거**: 발사당 1스택으로 제한하면 E(Burst 5발 연사)가 Q(1발)와 동일 취급이라 연사의 의미가 사라진다. 탄당 1스택으로 열면 **Spread의 부채꼴이 천연 게이트**가 되어(R은 45° 6발이라 원거리에서 1발만 맞는다) 다발로 몰아치려면 붙어야 하고, 히트박스가 큰 엘리트·보스에서 잘 작동해 "모든 패시브는 보스전에서 작동해야 한다" 규칙도 만족한다. 요구 3이라 E 한 번(5스택)이면 즉시 폭발하고 잔여가 남는다. **폭발 순서 = 스택 `Clear` → 피해**(폭발이 적을 죽여 `OnDied`가 레지스트리를 건드려도 안전). crit·흡혈 O, `AmmoRamp`·상태이상 증폭·쿨 리셋·마커 이벤트는 **없음**.
+- **분열탄** — 명중 콜백에서 `ProjectileFireService` 재발사. ⚠️**기준 피해는 crit 적용 전 값**(`ProjectileFireRequest.BaseDamage`)이다. 최종 피해를 기준으로 삼으면 원본 크리가 기저에 눌러앉은 채 분열탄이 자체 크리를 또 굴려 **crit이 두 번 곱해진다**. `AmmoRamp`는 기준값에 이미 포함돼 있으므로 분열 경로에서 재적용하지 않는다. 원본은 **명중 시 소멸**(관통으로 바꾸면 필터 ①을 스스로 위반). 📌 깊이를 올릴 때의 비대칭 — 탄 수는 `2ⁿ`, 피해는 `0.3ⁿ`이라 **총합은 원본의 1.5배에서 수렴**하는데 탄 수만 폭증한다(`KNOWN_QUIRKS` Q11).
+- **적중 콜백 구조** — Dagger 표식 부여는 스킬 플래그(`appliesDaggerMarker`)로 결정되지만 집탄·분열은 **패시브 활성 여부**로 결정된다. `SkillExecutor`가 조건을 직접 보던 것을 `PlayerCombatController.ResolveProjectileHitCallback(skill, isProcCast)`로 **이관**하고, 패시브 구동 두 효과를 콜백 하나로 묶어 캐시 델리게이트를 **3개(Dagger / 패시브 / 합성)로 유지**한다. 셋을 각각 조합했다면 7개가 됐다. 발사당 할당 0.
+- **표시** — 집탄만 표시가 필요하다(램프는 탄창 UI가 잔탄을 이미 보여주고, 분열은 탄이 갈라지는 것이 곧 피드백). 상태이상 아이콘 행에 **편입하지 않는다** — 그 행은 압축 정렬되는 목록이라 매 발사마다 변하는 값을 읽기 나쁘고 Dagger 표식(몸 부착)과 정보가 뭉친다. 대신 `FreischutzFocusVisualPool`(§7-8c).
+- **Altar 결선** — Freischutz 해금 행 2개(집탄·분열탄)를 씬에 배치·결선했다. `defaultPassive`(고갈 램프)는 행이 필요 없다.
+
 > 🔑 **전 폼 공통 규칙 — 모든 패시브는 보스전에서 작동해야 한다.**
 > 패시브는 폼선택 1택·런 중 변경 불가이므로, 보스전 무효 패시브는 "고르면 런 후반이 손해"인 죽은 선택지가 된다(드랍이라면 상황별 강약이 빌드 다양성이 되지만 1택 구조에서는 아니다). Sword 3종이 전부 보스전에서 작동하는 것은 우연이 아니었다.
 > 이 기준으로 **전염 안**(중독된 적 사망 시 주변에 스택 전파)이 폐기됐다 — 사망 + 주변 적 두 조건이 필요해 단일 대상 전투에서 완전히 정지한다. 대체안인 과중독 폭발은 단일 대상이라 보스전에서 재축적→재폭발이 반복되어 오히려 유리하다.
@@ -1271,6 +1289,26 @@ Dagger 킷 실측 = **부여(Q Blink·W Projectile·R 평타버프) → 기폭(E
 **Altar 해금 행 결선 주의** — `SoulAltarUIController.AltarSection.passiveRows`는 **씬 사전 배치 고정 배열**이라 카탈로그 후보가 늘어도 행이 자동 생성되지 않는다. 결선을 빼먹으면 해당 폼의 패시브가 **Altar에 아예 뜨지 않아 인게임 획득이 불가능**해진다(2026-07-31 Dagger에서 실제 발생). 행 부족 경고를 신설했다(후보 > 씬 행이면 폼별 1회, 에디터 한정). **타 폼 패시브를 저작할 때마다 씬 행 배치·결선이 동반되어야 한다.**
 
 **폐기 목록**(코드·데이터에서 제거됨): `PassiveSlots[4]`·`PassivePool`·equip/unequip/arrangement API·각인대 패시브 탭·`PlayerPassiveSlotUnlocks`(슬롯 수 해금)·`SaveData.passiveUnlocks`(구 키 — 신규 키와 별개, 구 세이브의 해당 키는 무시됨)·던전 드랍(ItemDatabase PassiveEngraving 엔트리 0, `DroppedItem`은 해당 타입 픽업 무시)·구 에셋 `Sword_Passive_00/01/02`.
+
+### 7-8c. 집탄 스택 배지 (FreischutzFocusVisualPool) — 2026-08-05
+
+적 머리 위에 집탄 스택을 아이콘 점등으로 표시한다. `DaggerMarkerVisualPool` 미러 — 정적 `Active` + `RuntimeInitializeOnLoadMethod` 폴백 + 딕셔너리/재사용 풀 + `LateUpdate` 추적, **풀 오브젝트가 적 계층 밖**이라 적 프리팹 수정이 0이고 아레나의 HP바 억제 로직과도 무관하다.
+
+- **표시 = 아이콘 점등형**(숫자 없음). `stackSprites` 배열에서 **스택 N → `sprites[N-1]`**, `Mathf.Clamp`로 범위 밖 클램프. 요구 스택이 데이터라 **코드가 배열 길이를 가정하지 않는다**. 최대 스택은 도달 즉시 폭발하므로 **실제로 보이는 단계는 요구치 − 1까지**(현재 2장).
+- 미저작 스프라이트는 **로그 없이 표시만 생략** → 코드가 에셋보다 먼저 들어갈 수 있다(`KNOWN_QUIRKS` Q15).
+- 수명은 `FreischutzFocusRegistry`가 소유한다. `AddStack → Show` / `Clear → Hide`이고 **만료·적 사망·`ClearAll`·폭발이 전부 `Clear`를 경유**하므로 별도 정리 배선이 없다.
+- 🔑 **앵커는 HP바와 같은 규칙을 써야 한다.** 처음엔 `MarkerAnchorWorld`(**콜라이더 중심**) + 고정 월드 오프셋으로 붙였다가 두 증상이 나왔다: ①`collider.offset.x ≠ 0`인 적(rush 계열)에서 `offset.x × lossyScale.x`만큼 **X가 치우침** — HP바는 `localPosition.x = 0`(**피벗**)이다 ②콜라이더 반경이 큰 엘리트·보스에서 **몸통 중앙에 박힘** — 월드 고정 상수가 적 크기를 무시한다. 최종 공식:
+
+```
+invScaleY = 1 / enemy.transform.lossyScale.y
+localY    = healthBar.TopAnchorY + badgeGap * invScaleY
+position  = enemy.transform.TransformPoint(new Vector3(0f, localY, 0f))
+```
+
+`TopAnchorY`는 **콜라이더 상단 기반**이라 적 크기를 자동 추종하고, **HP바 억제 여부와 무관하게 계산**되므로 엘리트·보스에서도 그대로 머리 위가 된다. 따라서 "HP바가 억제됐는지로 오프셋을 가르는 2단 상수" 방식은 폐기됐다(그 판정을 위해 추가했던 `EnemyHealthBar.IsBarSuppressed`도 함께 제거).
+
+- 쌓이는 순서 = **HP바 → 상태이상 아이콘 행 → 집탄 배지(최상단)**. 상태이상이 없을 때 배지가 살짝 떠 보이는 것은 수용한다(위치가 항상 같아야 눈에 익는다).
+- ⚠️ `badgeGap`은 **배지 중심까지의 거리**라 배지 자신의 크기를 고려하지 않는다. 스프라이트를 교체하면 재조정이 필요하다(`KNOWN_QUIRKS` Q14).
 
 ### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축) — 2026-07-31 모델 전환
 
