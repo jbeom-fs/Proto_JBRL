@@ -19,6 +19,8 @@ public sealed class PlayerBehaviors : MonoBehaviour
         _runtime != null
             ? _runtime.AilmentOverloads
             : Array.Empty<AilmentOverloadSettings>();
+    public float AmmoRampBonusPct =>
+        _runtime != null ? _runtime.AmmoRampBonusPct : 0f;
 
     public float GetLifestealBonusPct(float hpRatio)
     {

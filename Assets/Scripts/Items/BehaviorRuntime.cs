@@ -85,6 +85,16 @@ public sealed class BehaviorRuntime
         public ExecuteThresholdSettings Settings { get; }
     }
 
+    private readonly struct AmmoRampEntry
+    {
+        public AmmoRampEntry(BehaviorEffect behavior, int stackCount)
+        {
+            BonusPct = behavior.value * stackCount;
+        }
+
+        public float BonusPct { get; }
+    }
+
     private readonly Action<int> _healCallback;
     private readonly Action<ShieldSource, int, float> _shieldCallback;
     private readonly Action<int, float> _attackBuffCallback;
@@ -107,6 +117,8 @@ public sealed class BehaviorRuntime
         new List<AilmentOverloadSettings>();
     private readonly List<ExecuteThresholdEntry> _executeThresholds =
         new List<ExecuteThresholdEntry>();
+    private readonly List<AmmoRampEntry> _ammoRamps =
+        new List<AmmoRampEntry>();
 
     public BehaviorRuntime(
         Action<int> healCallback,
@@ -125,6 +137,17 @@ public sealed class BehaviorRuntime
     // during runs and combat contexts can safely retain its reference.
     public IReadOnlyList<AilmentOverloadSettings> AilmentOverloads =>
         _ailmentOverloads;
+    public float AmmoRampBonusPct
+    {
+        get
+        {
+            float totalPct = 0f;
+            for (int i = 0; i < _ammoRamps.Count; i++)
+                totalPct += _ammoRamps[i].BonusPct;
+
+            return totalPct;
+        }
+    }
 
     public float GetLifestealBonusPct(float hpRatio)
     {
@@ -203,6 +226,7 @@ public sealed class BehaviorRuntime
         _lifestealEngines.Clear();
         _ailmentOverloads.Clear();
         _executeThresholds.Clear();
+        _ammoRamps.Clear();
 
         if (items != null)
         {
@@ -439,6 +463,12 @@ public sealed class BehaviorRuntime
         if (behavior.action == BehaviorAction.ExecuteThreshold)
         {
             _executeThresholds.Add(new ExecuteThresholdEntry(behavior));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.AmmoRamp)
+        {
+            _ammoRamps.Add(new AmmoRampEntry(behavior, stackCount));
             return;
         }
 

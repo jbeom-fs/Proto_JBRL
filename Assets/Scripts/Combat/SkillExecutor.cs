@@ -401,6 +401,11 @@ public sealed class SkillExecutor
         int scaledDamage = Mathf.RoundToInt(
             (context.TotalAttack + ResolveSkillDamage(context)) *
             hitStep.damagePct / 100f);
+        if (context.CasterCombat != null)
+        {
+            scaledDamage = Mathf.RoundToInt(
+                scaledDamage * context.CasterCombat.AmmoRampMultiplier);
+        }
         bool didCrit = false;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
@@ -620,9 +625,14 @@ public sealed class SkillExecutor
     {
         bool didCrit = false;
         int skillDamage = ResolveSkillDamage(context);
+        int baseDamage = context.TotalAttack + skillDamage;
+        int amplifiedDamage = context.CasterCombat != null
+            ? Mathf.RoundToInt(
+                baseDamage * context.CasterCombat.AmmoRampMultiplier)
+            : baseDamage;
         int damage = context.CasterCombat != null
-            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skillDamage, out didCrit)
-            : context.TotalAttack + skillDamage;
+            ? context.CasterCombat.RollCritDamage(amplifiedDamage, out didCrit)
+            : amplifiedDamage;
         return CreateProjectileFireRequest(
             context,
             direction,

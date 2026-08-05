@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ad8ad0217784dd1b0ddd3b3219ff063, type: 3}
+  m_Name: Freischutz_Passive_AmmoRamp
+  m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
+  unlockId: freischutz_ammo_ramp
+  passiveName: 고갈 램프
+  icon: {fileID: 0}
+  description: 잔탄이 적을수록 모든 투사체의 발당 피해가 증가하며, 탄창이 빌수록 최대 60%까지 증가합니다.
+  owningForm: 3
+  grade: 0
+  behaviors:
+  - trigger: 2
+    action: 9
+    skillTypeFilter: 0
+    comboTierDamages: 
+    value: 60
+    lowHealthThresholdPct: 0
+    lostHealthPctPerLifestealPct: 0
+    overhealShieldConversionPct: 0
+    lifestealShieldCapPct: 0
+    lifestealShieldDuration: 0
+    ailmentOverloadType: 0
+    ailmentOverloadBonusPct: 30
+    ailmentOverloadHealPct: 0
+    executeThresholdHpPct: 20
+    executeEliteBossStartHpPct: 90
+    executeEliteBossStartBonusPct: 10
+    executeEliteBossIntervalHpPct: 10
+    executeEliteBossBonusPerIntervalPct: 5
+    duration: 0
+    procSkill: {fileID: 0}
+    procOrigin: 0
+    procDirection: 0
+    procSpawnRadius: 0

@@ -20,7 +20,8 @@ public enum BehaviorAction
     LifestealEngine,
     AttackBuff,
     AilmentOverload,
-    ExecuteThreshold
+    ExecuteThreshold,
+    AmmoRamp
 }
 
 public enum ProcOriginMode
@@ -45,7 +46,7 @@ public sealed class BehaviorEffect
     public int skillTypeFilter;
     [Tooltip("콤보 티어별 proc 기본 데미지입니다. 길이는 ComboTierConfig.maxTier를 권장합니다. index 0 = 티어 1. 비어 있으면 티어 게이트와 오버라이드 없이 기존 동작합니다.")]
     public int[] comboTierDamages = Array.Empty<int>();
-    [Tooltip("일반 행동 값입니다. LifestealEngine 전용 사용 시 기본 피흡률(%)입니다.")]
+    [Tooltip("일반 행동 값입니다. LifestealEngine은 기본 피흡률(%), AmmoRamp는 최대 피해 보너스율(%)로 사용합니다.")]
     public int value;
     [Tooltip("LifestealEngine 전용. 저체력 보너스가 시작되는 HP 비율(%)입니다.")]
     [Min(0f)]
