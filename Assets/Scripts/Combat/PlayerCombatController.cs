@@ -573,20 +573,21 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public float AilmentDamageMultiplier =>
         1f + Mathf.Max(0f, _soulBonus.Get(SoulStatType.AilmentDamage)) / 100f;
 
-    public float AmmoRampMultiplier
-    {
-        get
-        {
-            if (!CanUseMagazine() || maxBullet <= 0)
-                return 1f;
+    public float AmmoRampMultiplier => GetAmmoRampMultiplier(0);
 
-            float bonusPct = _relicBehaviors != null
-                ? _relicBehaviors.AmmoRampBonusPct
-                : 0f;
-            float depletionRatio = Mathf.Clamp01(
-                1f - (float)_currentBullet / maxBullet);
-            return 1f + bonusPct / 100f * depletionRatio;
-        }
+    public float GetAmmoRampMultiplier(int pendingConsume)
+    {
+        if (!CanUseMagazine() || maxBullet <= 0)
+            return 1f;
+
+        pendingConsume = Mathf.Max(0, pendingConsume);
+        int remainingBullet = Mathf.Max(0, _currentBullet - pendingConsume);
+        float bonusPct = _relicBehaviors != null
+            ? _relicBehaviors.AmmoRampBonusPct
+            : 0f;
+        float depletionRatio = Mathf.Clamp01(
+            1f - (float)remainingBullet / maxBullet);
+        return 1f + bonusPct / 100f * depletionRatio;
     }
 
     public int SplitShotDepth =>

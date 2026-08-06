@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Freischutz_Skill_10
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uC804\uD0C4\uC7A5\uC804"
+  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  description: "\uC9E7\uAC8C \uBAB8\uC744 \uB0A0\uB9AC\uBA70 \uD0C4\uCC3D\uC744 \uAC00\uB4DD \uCC44\uC6C1\uB2C8\uB2E4. \uC774\uB3D9\uD558\uB294 \uB3D9\uC548 \uD53C\uD574\uB97C \uBC1B\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
+  executionType: 2
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 15
+  cooldown: 14
+  castDelay: 0
+  recoveryDelay: 0.1
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 3
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 0
+  attackPattern: 4
+  patternRange: 10
+  coneHalfAngle: 45
+  customCells: []
+  hitSteps: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 1
+  knockbackForce: 1
+  knockbackDuration: 0.08
+  slowPercentage: 0
+  slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
+  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
+  projectileSpeed: 18
+  projectileLifetime: 3
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 1
+  projectileMaxBounceCount: 0
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 4
+  dashDuration: 0.18
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 1
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
+  owningForm: 3
+  grade: 2

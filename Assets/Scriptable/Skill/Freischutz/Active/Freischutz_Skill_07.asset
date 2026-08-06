@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Freischutz_Skill_07
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uD30C\uC0C1\uC0AC\uACA9"
+  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  description: "\uC138 \uCC28\uB840\uC5D0 \uAC78\uCCD0 \uC5F4 \uBC1C\uC744 \uD30C\uB3C4\uCC98\uB7FC \uD37C\uBD93\uC2B5\uB2C8\uB2E4."
+  executionType: 1
+  resourceType: 1
+  requiredAmount: 10
+  consumeAmount: 10
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 7
+  castDelay: 0
+  recoveryDelay: 0.2
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 1
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 4
+  attackPattern: 4
+  patternRange: 10
+  coneHalfAngle: 45
+  customCells: []
+  hitSteps:
+  - delay: 0.12
+    damagePct: 100
+    projectileCount: 4
+    spreadAngle: 28
+    overrideCells: []
+  - delay: 0.12
+    damagePct: 100
+    projectileCount: 3
+    spreadAngle: 20
+    overrideCells: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 1
+  knockbackForce: 1
+  knockbackDuration: 0.08
+  slowPercentage: 0
+  slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
+  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
+  projectileSpeed: 18
+  projectileLifetime: 3
+  projectileCount: 3
+  projectileSpreadAngle: 20
+  projectileFirePattern: 2
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 1
+  projectileMaxBounceCount: 0
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0.25
+  recoilDuration: 0.1
+  owningForm: 3
+  grade: 1

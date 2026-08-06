@@ -391,6 +391,9 @@ public sealed class SkillExecutor
         }
 
         Vector2 direction = ResolveExecutionDirection(context);
+        context.AmmoRampSnapshot = context.CasterCombat != null
+            ? context.CasterCombat.GetAmmoRampMultiplier(resourceConsumed)
+            : 1f;
         if (!_projectileFireService.Fire(CreateProjectileFireRequest(context, direction, projectileCount)))
             return SkillExecutionResult.Failure;
 
@@ -418,11 +421,8 @@ public sealed class SkillExecutor
         int scaledDamage = Mathf.RoundToInt(
             (context.TotalAttack + ResolveSkillDamage(context)) *
             hitStep.damagePct / 100f);
-        if (context.CasterCombat != null)
-        {
-            scaledDamage = Mathf.RoundToInt(
-                scaledDamage * context.CasterCombat.AmmoRampMultiplier);
-        }
+        scaledDamage = Mathf.RoundToInt(
+            scaledDamage * context.AmmoRampSnapshot);
         bool didCrit = false;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
@@ -664,7 +664,7 @@ public sealed class SkillExecutor
         int baseDamage = context.TotalAttack + skillDamage;
         int amplifiedDamage = context.CasterCombat != null
             ? Mathf.RoundToInt(
-                baseDamage * context.CasterCombat.AmmoRampMultiplier)
+                baseDamage * context.AmmoRampSnapshot)
             : baseDamage;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(amplifiedDamage, out didCrit)

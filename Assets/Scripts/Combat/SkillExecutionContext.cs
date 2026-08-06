@@ -22,6 +22,7 @@ public sealed class SkillExecutionContext
     public bool IsProcCast { get; }
     public bool IsBasicAttack { get; }
     public int? SkillDamageOverride { get; }
+    public float AmmoRampSnapshot { get; set; } = 1f;
 
     public SkillExecutionContext(
         PlayerCombatController casterCombat,
