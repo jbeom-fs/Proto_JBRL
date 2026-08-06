@@ -976,3 +976,79 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Freischutz_Faint_1
+    displayName: "\uC815\uD0C4"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: a1fb3fbe46cc40e9a30f740d4dba0011, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Freischutz_Faint_2
+    displayName: "\uC0BC\uC810\uC0AC"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: c0f53636d3d34a31ab23c2f4ca5edb12, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Freischutz_Whole_1
+    displayName: "\uC5F0\uC0AC"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 33dbd45dc8db4661b8a388b2ff7a5b15, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Freischutz_Primordial_1
+    displayName: "\uD0C4\uB9C9"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 60551841cb2a494eb0950122e708fddc, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1

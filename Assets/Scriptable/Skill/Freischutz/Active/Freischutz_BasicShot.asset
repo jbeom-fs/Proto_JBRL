@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: FreischutzBasicShot
+  m_Name: Freischutz_BasicShot
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: Freischutz Basic Shot
+  skillName: "\uB9C8\uD0C4 \uC0AC\uACA9"
   icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: Basic bullet shot.
+  description: "\uD0C4\uD658 \uD55C \uBC1C\uC744 \uC18C\uBAA8\uD574 \uBC1C\uC0AC\uD569\uB2C8\uB2E4."
   executionType: 1
   resourceType: 1
   requiredAmount: 1
