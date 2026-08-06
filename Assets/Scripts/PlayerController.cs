@@ -177,6 +177,7 @@ public class PlayerController : MonoBehaviour
         if (_dashController == null)
             _dashController = GetComponent<PlayerDashController>();
         _dashController?.CancelDash();
+        _combat?.ClearRecoil();
 
         transform.position = worldPosition;
         _lastSafePosition = transform.position;

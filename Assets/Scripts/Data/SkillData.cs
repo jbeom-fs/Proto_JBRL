@@ -272,6 +272,16 @@ public class SkillData : ScriptableObject
     [Min(0f)]
     public float blinkBehindOffset = 0.75f;
 
+    [Space(8)]
+    [Header("Recoil")]
+    [Tooltip("발사·타격 시 시전자가 조준 반대 방향으로 밀려나는 거리. 0이면 반동 없음. Projectile과 InstantArea에만 적용된다.")]
+    [Min(0f)]
+    public float recoilDistance = 0f;
+
+    [Tooltip("반동이 완료되기까지의 시간(초). 0이면 즉시 전량 적용된다.")]
+    [Min(0f)]
+    public float recoilDuration = 0.12f;
+
     public SkillAnimationType AnimationType => animationType;
     public string CustomAnimationTrigger => customAnimationTrigger;
     public bool RotateAnimationByDirection => rotateAnimationByDirection;

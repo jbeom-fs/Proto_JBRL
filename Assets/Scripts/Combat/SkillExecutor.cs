@@ -45,6 +45,7 @@ public sealed class SkillExecutor
     private readonly List<EnemyController> _instantAreaDaggerTargets = new();
     private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
     private bool _reportedProcSequenceLimit;
+    private readonly HashSet<SkillData> _reportedProcRecoilSkills = new();
 
     public SkillExecutor(AttackExecutor attackExecutor)
         : this(attackExecutor, null, null)
@@ -168,7 +169,9 @@ public sealed class SkillExecutor
             context.CasterCombat?.LogDamageDealt(damageDealtThisAttack, didCrit);
         }
 
-        PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
+        Vector2 direction = ResolveExecutionDirection(context);
+        PlayConfiguredAnimation(context, context.Skill, direction);
+        ApplyRecoil(context, direction);
         if (context.Skill.hitSteps != null && context.Skill.hitSteps.Count > 0)
         {
             if (context.IsProcCast)
@@ -248,7 +251,9 @@ public sealed class SkillExecutor
             context.CasterCombat?.LogDamageDealt(damageDealtThisAttack, didCrit);
         }
 
-        PlayConfiguredAnimation(context, context.Skill, ResolveExecutionDirection(context));
+        Vector2 direction = ResolveExecutionDirection(context);
+        PlayConfiguredAnimation(context, context.Skill, direction);
+        ApplyRecoil(context, direction);
     }
 
     private void CaptureInstantAreaDaggerTargets(SkillExecutionContext context)
@@ -321,6 +326,17 @@ public sealed class SkillExecutor
 #endif
     }
 
+    private void ReportProcRecoilOnce(SkillData skill)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (skill != null && _reportedProcRecoilSkills.Add(skill))
+        {
+            string skillName = string.IsNullOrWhiteSpace(skill.skillName) ? skill.name : skill.skillName;
+            Debug.LogWarning($"[SkillExecutor] Proc skill '{skillName}' applies recoil.");
+        }
+#endif
+    }
+
     private void NotifyInstantAreaHit(
         IReadOnlyList<Vector3> worldTargets,
         CustomShapeMatcher? customShape,
@@ -379,6 +395,7 @@ public sealed class SkillExecutor
             return SkillExecutionResult.Failure;
 
         PlayConfiguredAnimation(context, skill, direction);
+        ApplyRecoil(context, direction);
         if (!context.IsBasicAttack && skill.hitSteps != null && skill.hitSteps.Count > 0)
         {
             if (context.IsProcCast)
@@ -427,6 +444,7 @@ public sealed class SkillExecutor
             damage,
             didCrit));
         PlayConfiguredAnimation(context, skill, direction);
+        ApplyRecoil(context, direction);
     }
 
     private SkillExecutionResult ExecuteDash(SkillExecutionContext context)
@@ -582,6 +600,23 @@ public sealed class SkillExecutor
             return;
 
         context.CasterForm.PlaySkillAnimation(skill, direction);
+    }
+
+    private void ApplyRecoil(SkillExecutionContext context, Vector2 direction)
+    {
+        if (context.Skill.recoilDistance <= 0f)
+            return;
+        if (context.CasterCombat == null || context.CasterCombat.playerMovement == null)
+            return;
+        if (direction.sqrMagnitude <= 0.0001f)
+            return;
+
+        if (context.IsProcCast)
+            ReportProcRecoilOnce(context.Skill);
+
+        context.CasterCombat.AddRecoil(
+            -direction.normalized * context.Skill.recoilDistance,
+            context.Skill.recoilDuration);
     }
 
     private static DashDamageRequest CreateDashDamageRequest(SkillExecutionContext context)

@@ -142,6 +142,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private Coroutine _parryRoutine;
     private Coroutine _reloadRoutine;
     private PlayerStatusEffects _status;
+    private RecoilMotion _recoil;
     private bool _isParrySequenceActive;
     private bool _isParryStartupActive;
     private bool _isParryInvincibleWindowActive;
@@ -272,6 +273,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _passiveProjectileEnemyHitCallback = HandlePassiveProjectileEnemyHit;
         _daggerAndPassiveProjectileEnemyHitCallback = HandleDaggerAndPassiveProjectileEnemyHit;
         _status = new PlayerStatusEffects(v => playerMovement?.TryApplyExternalDisplacement(v));
+        _recoil = new RecoilMotion(v => playerMovement != null && playerMovement.TryApplyExternalDisplacement(v));
         _status.OnApplied += HandleStatusEffectApplied;
         _status.OnEnded += HandleStatusEffectEnded;
         _parryStack = new ParryStackResource(
@@ -777,7 +779,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         TickRecastChain(Time.deltaTime);
 
         if (IsDead)
+        {
+            ClearRecoil();
             return;
+        }
 
         _shield.Tick(Time.deltaTime);
         _attackBuff.Tick(Time.deltaTime);
@@ -802,6 +807,10 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         TickSkillRecovery(Time.deltaTime);
         TickDaggerState(Time.deltaTime);
         _skillExecutor?.TickMultiHit(Time.deltaTime);
+        if (IsDashing)
+            _recoil?.Clear();
+        else
+            _recoil?.Tick(Time.deltaTime);
 
         if (_inputReader == null) return;
 
@@ -1201,6 +1210,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public void ClearAllProcSkillSequences()
     {
         _skillExecutor?.ClearAllProcSequences();
+    }
+
+    public void AddRecoil(Vector2 delta, float duration)
+    {
+        _recoil?.Add(delta, duration);
+    }
+
+    public void ClearRecoil()
+    {
+        _recoil?.Clear();
     }
 
     private void WarnRejectedProcTypeOnce(SkillExecutionType executionType)

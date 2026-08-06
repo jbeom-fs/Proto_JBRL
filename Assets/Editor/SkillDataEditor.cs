@@ -41,6 +41,8 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _isMultiTarget;
     private SerializedProperty _canPenetrateWalls;
 
+    private SerializedProperty _recoilDistance;
+    private SerializedProperty _recoilDuration;
     private SerializedProperty _knockbackForce;
     private SerializedProperty _knockbackDuration;
     private SerializedProperty _slowPercentage;
@@ -133,6 +135,8 @@ public sealed class SkillDataEditor : Editor
         _isMultiTarget = serializedObject.FindProperty("isMultiTarget");
         _canPenetrateWalls = serializedObject.FindProperty("canPenetrateWalls");
 
+        _recoilDistance = serializedObject.FindProperty("recoilDistance");
+        _recoilDuration = serializedObject.FindProperty("recoilDuration");
         _knockbackForce = serializedObject.FindProperty("knockbackForce");
         _knockbackDuration = serializedObject.FindProperty("knockbackDuration");
         _slowPercentage = serializedObject.FindProperty("slowPercentage");
@@ -201,12 +205,14 @@ public sealed class SkillDataEditor : Editor
             {
                 case SkillExecutionType.InstantArea:
                     DrawInstantAreaSection();
+                    DrawRecoilSection();
                     DrawCombatImpactSection("Combat Impact");
                     DrawDaggerMarkerSection(true);
                     break;
 
                 case SkillExecutionType.Projectile:
                     DrawProjectileSection();
+                    DrawRecoilSection();
                     DrawCombatImpactSection("Projectile Combat Impact");
                     DrawDaggerMarkerSection();
                     break;
@@ -1095,6 +1101,13 @@ public sealed class SkillDataEditor : Editor
         DrawProperty(_slowPercentage);
         DrawProperty(_slowDuration);
         DrawProperty(_ailments);
+    }
+
+    private void DrawRecoilSection()
+    {
+        DrawSectionHeader("Recoil");
+        DrawProperty(_recoilDistance);
+        DrawProperty(_recoilDuration);
     }
 
     private void DrawZoneSection()
