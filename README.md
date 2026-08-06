@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-05
+> 작성 기준일: 2026-08-06
+> 기준 커밋: master HEAD `b08eafa7` — **마탄 액티브 각인 12/12 완성 + 반동(Recoil) 배관 신설 + 고갈 램프 계산 개정**(§7-6b 신설·§7-8·§7-8b 개정). ① **구조 편입**(`7277a0f8`) — `FreischutzSkill/Test/`의 plain `SkillData` 4개를 `EngravingData`로 전환하고 `Freischutz/Active/`·`Freischutz_Skill_NN` 규약으로 통일. `m_Script` guid 교체만 하고 `.asset.meta`는 무수정이라 `FreischutzWeapon.skills` 결선이 그대로 보존된다(Dagger `e5b90065` 미러). 평타는 각인이 아니므로 plain `SkillData` 유지. ② **반동 배관**(`ba57832b`, §7-6b) — `SkillData.recoilDistance`/`recoilDuration` + `RecoilMotion`(순수 C#, `Tick(dt)` + 변위 콜백 주입). 🔑 **물리(`AddForce`)는 구조적으로 성립하지 않는다** — 플레이어는 transform 권위이고 `BlocksPlayerMovement` 동안 `linearVelocity`가 매 프레임 0으로 지워지는데 그게 정확히 반동 구간이며, 던전 벽은 물리 콜라이더가 아니라 타일 걷기 판정이라 물리력은 LateUpdate 안전망에 되돌려진다. 기존 넉백 경로(`TryApplyExternalDisplacement`)를 **프레임 분할로 재사용**해 해결했고, 틱은 `PlayerCombatController.Update`에 둔다(`PlayerController.Update`는 `BlocksPlayerMovement`에서 조기 반환한다). Projectile·InstantArea의 base·`hitSteps` 4지점에 적용 → 총 후퇴 = `recoilDistance × (1 + 스텝 수)`. ③ **고갈 램프 2건 개정**(§7-8b) — 배율 기준을 소모 **전**→**후** 잔탄으로, 계산을 발사마다→**시전당 1회 스냅샷**(`SkillExecutionContext.AmmoRampSnapshot`)으로 바꿨다. 전자는 "탄창 전량 소모 단발(흑탄)이 만탄을 요구하는데 만탄이 배율 최저"라는 모순을 없애고, 후자는 `Spend`가 `Execute` 뒤에 일어나 **base보다 지연 `hitStep`이 40% 세던** 결함을 없앤다(`KNOWN_QUIRKS` Q13 해소). ④ **액티브 8종 + 아이콘 12종**(`f338c6d7`·`b08eafa7`) — 밀쳐내기·도탄 / 반동사격·파상사격·속박탄 / 흑탄·전탄장전·회탄. 🔑 **수치 기준은 "램프 미보유"**로 확정 — 램프가 소모량에 비례하므로 고소모 각인일수록 램프 빌드 이득이 커지고(평타 +4% → 흑탄 +60%) 그 편차가 곧 축 분화다. 이전: 마탄 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 배지(`893c703c`)
+>
+> <details><summary>이전 기준(2026-08-05, `893c703c`)</summary>
+>
 > 기준 커밋: master HEAD `893c703c` — **마탄 폼 축 대공사: 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 스택 배지**(§7-2·§7-8b·§7-10 개정). ① **평타 자원 소모 데이터 구동 전환**(`9c6748e7`) — `TryBulletBasicAttack`이 발수·소모를 상수 1로 하드코딩해 **탄창 자원의 규칙 소유자가 코드(평타)와 데이터(스킬) 둘로 갈라져 있던 것**을 데이터 한쪽으로 통일했다 — `ExecuteBasicProjectile` 삭제 → 평타도 표준 `Execute(context)` 경로 / `Has(resourceType, requiredAmount)` 게이트 / `Spend(resourceType, result.ResourceConsumed)`. 신규 `SkillExecutionContext.IsBasicAttack`으로 **평타만 `hitSteps`를 건너뛴다**(스텝이 시작되면 `IsMultiHitActive` → `IsSkillBusy`·`BlocksPlayerMovement`로 평타 중 이동이 봉쇄되기 때문) → `KNOWN_QUIRKS` Q1 해소. 🔴 **선행 버그 픽스 = `FreischutzWeapon.basicAttackSkillData` 미결선** — 폼별 결선은 처음부터 없었고 씬의 전역 폴백이 우연히 마탄 평타를 가리켰을 뿐인데, `f155383b`에서 씬이 기본값으로 정리되며 그 우연이 사라졌다. 폴백 `BasicAttackAnimation`은 `executionType 0`이라 Projectile 검사에서 조기 반환 → **마탄 평타가 발사·탄 소모·쿨다운 전부 없이 조용히 아무 일도 안 하고 있었다**(로그 0). ② **마탄 패시브 3축 완성**(`5c6b8659`·`05dc77c8`, §7-8b) — **고갈 램프**(잔탄이 적을수록 발당 피해↑, 무료 기본) / **집탄**(같은 적에 탄당 1스택, 3스택에서 단일 대상 폭발) / **분열탄**(명중한 탄이 ±30°로 2발 분열, 깊이·피해율 데이터). 🔑 **패시브 자격 2단 필터 도출** — "SkillData 저작으로 되는가 / 유물로 되는가" 중 하나라도 걸리면 패시브가 아니다. 이 기준으로 관통·벽 반사(이미 저작 가능)와 처치 시 폭발·무작위 포격(유물 `OnKill`+`CastSkill`로 가능)이 전부 탈락했다. ③ **집탄 스택 월드 배지**(`893c703c`) — 상태이상 아이콘 행에 편입하지 않고 적 머리 위 전용 배지. 앵커를 HP바와 같은 규칙(**피벗 X + `TopAnchorY`**)으로 통일해 콜라이더 오프셋이 있는 적의 X 치우침과 대형 적의 몸통 관통을 동시에 해소. ④ `Assembly-CSharp.csproj` 추적 해제(`.gitignore`가 선행 추적 때문에 안 먹고 있었음). 이전: Dagger 각인 12/12 완성 + 스킬 배관 3건 확장(`d1a23a88`+워킹트리)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-04, `d1a23a88`)</summary>
 >
@@ -1104,6 +1110,46 @@ ProjectileController:
 - `prewarmEntries`로 프리팹별 사전 풀 생성 수 지정
 - Get/Return은 RuntimePerfTraceLogger 활성 시 ProfilerMarker + 마이크로 타이밍 기록
 
+### 7-6b. 반동 (Recoil) — 2026-08-06
+
+**개념**: 발사·타격 시 **시전자가 조준 반대 방향으로 밀려나는** 저작 옵션. `SkillData.recoilDistance`(거리, 기본 0 = 반동 없음) / `recoilDuration`(완료까지의 시간, 기본 0.12 — **0이면 즉시 전량 적용**). **Projectile과 InstantArea에만** 적용되며 Dash·Blink·Buff·AreaOverTime은 대상이 아닙니다.
+
+**🔑 물리를 쓰지 않는 이유** — 플레이어 Rigidbody는 `Dynamic`이지만 이동 권한은 transform에 있습니다.
+
+| # | 사실 |
+|---|---|
+| 1 | `MoveWithCollision`·`TryApplyExternalDisplacement` 모두 `transform.position`을 직접 씁니다 |
+| 2 | `BlocksPlayerMovement`(스킬 시전·후딜·멀티히트) 동안 `PlayerController.Update`가 **매 프레임 `linearVelocity = zero`** — 그게 정확히 반동이 일어나는 구간입니다 |
+| 3 | 던전 벽은 물리 콜라이더가 아니라 **타일 걷기 판정**(`IsFootprintWalkable`)입니다. 물리력으로 밀면 벽 타일에 들어가고 LateUpdate 안전망(`_lastSafePosition` 복귀)이 되돌려 고무줄처럼 튕깁니다 |
+
+따라서 **기존 넉백 경로를 프레임 분할로 재사용**합니다. `TryApplyExternalDisplacement`는 `tileSize/4` 스윕 + 매 스텝 `CanMoveTo`라 벽·닫힌 문을 통과하지 않고, 막히면 그 지점까지만 부분 적용합니다(2026-07-02 문 터널링 픽스의 산물).
+
+```
+SkillExecutor.ApplyRecoil(context, direction)
+  ├ recoilDistance <= 0 / CasterCombat·playerMovement null / direction 0 → 반환
+  ├ IsProcCast 면 ReportProcRecoilOnce(skill)   // 차단하지 않고 경고만 (패널티 유물 여지)
+  └ CasterCombat.AddRecoil(-direction.normalized * recoilDistance, recoilDuration)
+
+호출 4지점 — base·스텝 모두 "공격 → 반동" 순서
+  ExecuteProjectile / ExecuteProjectileHit / ExecuteInstantArea / ExecuteInstantAreaHit
+
+RecoilMotion (순수 C#, 변위 콜백 주입 — PlayerStatusEffects 미러)
+  Add(delta, duration): duration<=0 이면 즉시 전량. 아니면
+                        _remaining += delta / _remainingTime = Max(_remainingTime, duration)
+  Tick(dt): step = _remainingTime<=dt ? _remaining : _remaining * (dt/_remainingTime)
+            _remainingTime -= dt
+            step 이 임계(0.001) 초과일 때만 _remaining 차감 + displace
+              → displace 실패(벽·문·던전데이터 없음) = 잔여 폐기
+            _remainingTime <= 0 → Clear
+```
+
+- **틱 위치** = `PlayerCombatController.Update`의 `TickMultiHit` 옆(입력 게이트보다 앞). ⚠️ `PlayerController.Update`는 `BlocksPlayerMovement`에서 조기 반환하므로 **거기 두면 반동이 필요한 구간에서 멈춥니다**
+- **폐기 트리거 3개** = 사망 / `IsDashing`(대시가 위치 권위를 가짐) / `PlayerController.TeleportTo`(층 이동·던전 이탈·아레나 복귀·Blink가 전부 이 경로)
+- **누적** — `hitSteps`마다 들어온 반동이 `_remaining`에 가산되므로 스텝 반동이 끊기지 않습니다. **총 후퇴 = `recoilDistance × (1 + 스텝 수)`**
+- **step 임계 분리** — `TryApplyExternalDisplacement`의 `false`는 "벽 차단"과 "너무 작아 못 움직임"을 겸합니다. 후자를 폐기로 처리하면 `recoilDistance/recoilDuration`이 작은 저작값이 **고fps에서만 무음으로 죽습니다**(임계가 `dt`에 반비례). 임계 미만이면 폐기 대신 건너뛰고 `_remainingTime`만 줄여 다음 step이 커지게 합니다(자기 회복). 임계 상수는 `TryApplyExternalDisplacement`와 **같은 값이어야** 의미가 있습니다
+
+**저작 예** — 반동사격(`Freischutz_Skill_06`): `recoilDistance 1.2` / `recoilDuration 0.15` + Spread 5발 + `projectileLifetime 0.3`(사거리 6). 파상사격(`_07`): `0.25` × 3스텝 = 총 0.75.
+
 ### 7-7. 대시 (PlayerDashController)
 
 ```
@@ -1159,6 +1205,21 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 - **폼-락**: `EngravingData.owningForm` 로 강제(Sword 각인은 Sword 풀에만). 폼 고유 자원(Bullet/ParryStack)이 공용을 막기 때문 — 예: Sword 폼에 마탄(Bullet) 각인을 끼우면 바인딩은 되나 탄창 0 → `CanUse` 차단 → 발동 안 됨. plain SkillData 는 "공용 스킬"로 폼 무관 통과.
 
 **데이터**: `EngravingData : SkillData` (owningForm + grade). 등급 `EngravingGrade`(희미한 Faint < 온전한 Whole < 태초의 Primordial)은 **드랍 희귀도·UI 라벨**일 뿐 코드 자동스케일 없음 — 등급 패밀리(강화판)·고유 태초 스킬 모두 개별 에셋으로 작성, 고유 메커니즘 태초는 별도 execution 로직 개별 구현.
+
+**폼별 저작 현황 (2026-08-06)**
+
+| 폼 | 액티브 | 패시브 | 위치 |
+|---|---|---|---|
+| Sword | 12 | 3 | `Skill/Sword/Active·Passive/` |
+| Dagger | 12 | 3 | `Skill/Dagger/Active·Passive/` |
+| **Freischutz** | **12** | 3 | `Skill/Freischutz/Active·Passive/` |
+| Parry | 4 (**미편입** — plain `SkillData`) | 0 | `Skill/ParrySkill/Test/` |
+| Normal | — | 0 | — |
+
+- 등급 분포는 폼당 **Faint 4 / Whole 4 / Primordial 4**로 통일. itemCode는 `Eng_<Form>_<Grade>_N`, 에셋은 `<Form>_Skill_NN`
+- **구조 편입 절차**(Dagger `e5b90065` → Freischutz `7277a0f8`) = `m_Script` guid를 `SkillData`→`EngravingData`로 교체 + `owningForm`/`grade` 추가 + `<Form>/Active/` 이동 + `ItemDatabase` 엔트리 등록. ⚠️ **`.asset.meta`는 절대 수정하지 않는다** — guid가 보존돼야 `WeaponData.skills` 결선이 살아남는다. `EngravingData`는 필드 2개만 추가한 파생이라 기존 직렬화가 그대로 역직렬화된다
+- **평타는 각인이 아니다.** `basicAttackSkillData`가 가리키는 에셋은 plain `SkillData`로 남긴다(Freischutz만 폼별 결선을 쓴다)
+- Parry는 마탄과 동일한 미편입 상태이며 같은 절차가 남아 있다
 
 **드랍 통합 (Slice D)**: 각인을 기존 itemCode 드랍 파이프라인에 **브릿지**로 편입 — `ItemType.Engraving`(=7) + `ItemData.engraving`(EngravingData 참조). 적 드랍 테이블(`EnemyDropDatabase`)은 itemCode만 다루고, 픽업 시 `DroppedItem`이 Engraving 타입이면 인벤을 우회해 `EngravingLoadout.Active.AddToPool(engraving.owningForm, …)`으로 폼 풀에 적재. **각인 수량 1 고정**(픽업이 `_amount` 의도적 무시) — 드랍 엔트리 `Max(min,max)>1`이면 `EnemyDropDatabase.OnValidate`가 경고(에디터 전용, `itemDatabaseForValidation` 참조). 티어는 데이터만으로 표현: 일반=저확률 independent / 엘리트=choiceGroup chance 1 확정 / 보스=확정 Primordial(전부 min=max=1). 던전 이탈 시 풀은 `ClearAll`로 비워지므로 인벤 누적 없음.
 
@@ -1270,12 +1331,18 @@ Freischutz 킷 실측 = 평타 `Single` 1발(탄 1 소모) / Q `Single` 1발 / W
 
 | 패시브 | 축 | 효과 | 핵심 수치(전부 에셋 튜닝) |
 |------|----|------|------|
-| **고갈 램프**(기본) | 자원 | 잔탄이 적을수록 **모든 투사체**의 발당 피해 증가 | 배율 = `1 + (value/100) × (1 − 잔탄/최대탄창)`, value 60 → 탄창 15 기준 15발 ×1.00 / 8발 ×1.28 / 1발 ×1.56 |
+| **고갈 램프**(기본) | 자원 | **소모 후** 잔탄이 적을수록 **모든 투사체**의 발당 피해 증가 | 배율 = `1 + (value/100) × (1 − (잔탄−소모)/최대탄창)`, value 60 → 탄창 15 만탄 시전 기준 소모 1 ×1.04 / 5 ×1.20 / 10 ×1.40 / 15 ×1.60 |
 | **집탄** | 축적 | 같은 적에게 **탄당 1스택**, 요구 스택 도달 시 그 적에게 단일 대상 폭발 | 요구 3 / 만료 4초(재적립 시 갱신) / 폭발 25 |
 | **분열탄** | 확산 | 명중한 탄이 좌우로 갈라져 계속 날아감 | 2발 ±30° / 피해 30%(세대 복리) / 깊이 1(`[Range(0,3)]`) |
 
 - 🔑 **패시브 자격 2단 필터(이번에 도출, 전 폼 공통)** — ①**`SkillData` 저작으로 이미 되는가** → 그건 각인 저작값이다 ②**유물(`ItemData.behaviorEffects`)로 이미 되는가** → 그건 유물이다(`BehaviorRuntime.AddBehaviors`가 공용 진입점이라 트리거·액션 조합이 완전히 같다). 이 필터로 후보 절반이 탈락했다: **관통·벽 반사**는 `projectileTargetHitMode`/`projectileWallHitMode`/`projectileMaxBounceCount`로 **이미 저작 가능**하고(런타임도 완비 — `Pierce`/`HitOncePerTarget`/`Bounce`), **처치 시 폭발·무작위 포격**은 `OnKill`+`CastSkill`+`ProcOriginMode`로 유물이 지금 당장 저작할 수 있다.
-- **고갈 램프** — `BehaviorAction.AmmoRamp`(전용 필드 없이 `value` 재사용). 적용 지점은 **crit 롤 직전 2곳뿐**(기본 Projectile 요청 / `hitSteps` 스텝). 확정 규칙 = **소모 전 잔탄 기준**(`Spend`가 `Execute` 성공 뒤라 자연 성립) + **발사 시점 스냅샷 1회**이므로 `Burst`·`Spread`는 한 요청이라 **전탄이 같은 배율**을 쓴다. 비탄창 폼은 배율 1.
+- **고갈 램프** — `BehaviorAction.AmmoRamp`(전용 필드 없이 `value` 재사용). 적용 지점은 **crit 롤 직전 2곳뿐**(기본 Projectile 요청 / `hitSteps` 스텝). 비탄창 폼은 배율 1.
+  - **확정 규칙(2026-08-06 개정) = 소모 후 잔탄 기준 + 시전당 1회 스냅샷.** `GetAmmoRampMultiplier(int pendingConsume)`가 `_currentBullet − pendingConsume`(0 클램프)으로 계산하고, `ExecuteProjectile`이 `resourceConsumed` 확정 직후·`Fire` 직전에 `SkillExecutionContext.AmmoRampSnapshot`을 **한 번** 채운다. base와 전 `hitSteps`가 그 값을 읽으므로 **시전 1회 = 배율 1회**다.
+  - **왜 소모 후인가** — `AllowsPartialBulletUse`는 **발수 == `consumeAmount`**일 때만 성립하고 `Single`은 발수가 항상 1이라, "단발 + 탄창 전량 소모"(흑탄)는 `RequireFullCost`로만 표현된다. 즉 **만탄에서만 시전 가능**한데 소모 전 기준이면 만탄이 배율 최저(×1.00)여서 **램프 축의 정점이 램프를 못 받는 모순**이 생겼다. 소모 후 기준이면 발사 직후 잔탄 0 → ×1.60 고정.
+  - **왜 스냅샷인가** — `Spend`가 `Execute` 반환 뒤라, base는 소모 전 값을 읽고 지연 `hitStep`은 소모 후 값을 읽어 **한 스킬 안에서 뒷발이 40% 셌다**(파상사격 소모 10 기준 base ×1.00 / 스텝 ×1.40). 코드상 스텝일 뿐 게임적으로는 한 스킬이므로 단일 값으로 고정했다(`KNOWN_QUIRKS` Q13 해소).
+  - 부분 발사 스킬은 `resourceConsumed`가 이미 잔탄에 맞춰 깎인 값이라 **줄어든 소모량 기준**으로 자동 계산된다.
+  - ⚠️ 스냅샷은 `ExecuteProjectile` 경로에서만 채워진다. 다른 실행 타입이 램프를 읽게 되면 기본값 `1f`가 나가므로 설정 지점을 함께 늘려야 한다.
+  - 📌 램프가 소모량에 비례하므로 **고소모 각인일수록 램프 보유/미보유 격차가 커진다**(평타 +4% / 반동사격 +20% / 파상사격 +40% / 회탄 +48% / 흑탄 +60%). 각인 수치는 **램프 미보유 기준**으로 잡는다 — 이 편차가 곧 축 분화이기 때문이다(램프 빌드는 고소모, 집탄·분열 빌드는 저소모 다발).
 - **집탄** — `FreischutzFocusRegistry`(`DaggerMarkerRegistry` 미러 + `Count`). **적립 제한을 두지 않은 근거**: 발사당 1스택으로 제한하면 E(Burst 5발 연사)가 Q(1발)와 동일 취급이라 연사의 의미가 사라진다. 탄당 1스택으로 열면 **Spread의 부채꼴이 천연 게이트**가 되어(R은 45° 6발이라 원거리에서 1발만 맞는다) 다발로 몰아치려면 붙어야 하고, 히트박스가 큰 엘리트·보스에서 잘 작동해 "모든 패시브는 보스전에서 작동해야 한다" 규칙도 만족한다. 요구 3이라 E 한 번(5스택)이면 즉시 폭발하고 잔여가 남는다. **폭발 순서 = 스택 `Clear` → 피해**(폭발이 적을 죽여 `OnDied`가 레지스트리를 건드려도 안전). crit·흡혈 O, `AmmoRamp`·상태이상 증폭·쿨 리셋·마커 이벤트는 **없음**.
 - **분열탄** — 명중 콜백에서 `ProjectileFireService` 재발사. ⚠️**기준 피해는 crit 적용 전 값**(`ProjectileFireRequest.BaseDamage`)이다. 최종 피해를 기준으로 삼으면 원본 크리가 기저에 눌러앉은 채 분열탄이 자체 크리를 또 굴려 **crit이 두 번 곱해진다**. `AmmoRamp`는 기준값에 이미 포함돼 있으므로 분열 경로에서 재적용하지 않는다. 원본은 **명중 시 소멸**(관통으로 바꾸면 필터 ①을 스스로 위반). 📌 깊이를 올릴 때의 비대칭 — 탄 수는 `2ⁿ`, 피해는 `0.3ⁿ`이라 **총합은 원본의 1.5배에서 수렴**하는데 탄 수만 폭증한다(`KNOWN_QUIRKS` Q11).
 - **적중 콜백 구조** — Dagger 표식 부여는 스킬 플래그(`appliesDaggerMarker`)로 결정되지만 집탄·분열은 **패시브 활성 여부**로 결정된다. `SkillExecutor`가 조건을 직접 보던 것을 `PlayerCombatController.ResolveProjectileHitCallback(skill, isProcCast)`로 **이관**하고, 패시브 구동 두 효과를 콜백 하나로 묶어 캐시 델리게이트를 **3개(Dagger / 패시브 / 합성)로 유지**한다. 셋을 각각 조합했다면 7개가 됐다. 발사당 할당 0.
