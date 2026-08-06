@@ -73,3 +73,5 @@ MonoBehaviour:
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
   blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12

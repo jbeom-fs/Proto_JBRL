@@ -73,6 +73,10 @@ MonoBehaviour:
       skillTypeFilter: -1
       comboTierDamages: 
       value: 3
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -552,6 +556,10 @@ MonoBehaviour:
       skillTypeFilter: 0
       comboTierDamages: 
       value: 1
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -575,6 +583,10 @@ MonoBehaviour:
       skillTypeFilter: 4
       comboTierDamages: 
       value: 1
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -617,6 +629,10 @@ MonoBehaviour:
       skillTypeFilter: 0
       comboTierDamages: 
       value: 0
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -659,6 +675,10 @@ MonoBehaviour:
       skillTypeFilter: 4
       comboTierDamages: 
       value: 0
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -701,6 +721,10 @@ MonoBehaviour:
       skillTypeFilter: 0
       comboTierDamages: 
       value: 10
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -743,6 +767,10 @@ MonoBehaviour:
       skillTypeFilter: 0
       comboTierDamages: 
       value: 10
+      focusRequiredStacks: 6
+      splitCount: 2
+      splitAngleDeg: 30
+      splitDepth: 1
       lowHealthThresholdPct: 0
       lostHealthPctPerLifestealPct: 0
       overhealShieldConversionPct: 0
@@ -978,7 +1006,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Faint_1
     displayName: "\uC815\uD0C4"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: 1084181319436299523, guid: a084f314dc25af94484408c2b86ebf97, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -997,7 +1025,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Faint_2
     displayName: "\uC0BC\uC810\uC0AC"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -2322102419707170878, guid: 8452e0c4de4a201439d61417f2c1c62c, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1016,7 +1044,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Whole_1
     displayName: "\uC5F0\uC0AC"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -6180402780968040769, guid: 6d132756f98b07d4fac8f56e5d4f5257, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1035,7 +1063,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Primordial_1
     displayName: "\uD0C4\uB9C9"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: 300673000488533197, guid: 3c9ef3781b2fdf04d853ac13f101a95e, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1054,7 +1082,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Faint_3
     displayName: "\uBC00\uCCD0\uB0B4\uAE30"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: 1026251917402538873, guid: f1d7ffd8c36d8fb4780a63eb0ff802ca, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1073,7 +1101,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Faint_4
     displayName: "\uB3C4\uD0C4"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -1776154061017883211, guid: 301fd8d635d25c14cac99d0085d0b8c8, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1092,7 +1120,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Whole_2
     displayName: "\uBC18\uB3D9\uC0AC\uACA9"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: 6657387624399327035, guid: eda035439784e634cb571285943295dc, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1111,7 +1139,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Whole_3
     displayName: "\uD30C\uC0C1\uC0AC\uACA9"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -5980326210204783065, guid: 6e6b2577d1d456647acd519bb154c6f5, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1130,7 +1158,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Whole_4
     displayName: "\uC18D\uBC15\uD0C4"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -2564809364085368566, guid: e994f8d7e6f4b32448fb7022ab2d4037, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1149,7 +1177,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Primordial_2
     displayName: "\uD751\uD0C4"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -5097151153609336578, guid: 8fe8e0b74b6e6cf42b4caae56088be7d, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1168,7 +1196,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Primordial_3
     displayName: "\uC804\uD0C4\uC7A5\uC804"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: -8287552782479802832, guid: fa7763e296318bb4eb914505945dffd5, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1187,7 +1215,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Freischutz_Primordial_4
     displayName: "\uD68C\uD0C4"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: 7085266256144940849, guid: 3f17116831417b046adcb464f2f675b7, type: 3}
     description: 
     itemType: 7
     rarity: 0

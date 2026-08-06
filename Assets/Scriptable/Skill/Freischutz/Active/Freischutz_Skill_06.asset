@@ -13,13 +13,14 @@ MonoBehaviour:
   m_Name: Freischutz_Skill_06
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uBC18\uB3D9\uC0AC\uACA9"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "\uBC00\uCC29\uD55C \uC801\uC5D0\uAC8C \uB2E4\uC12F \uBC1C\uC744 \uC3DF\uC544\uBD93\uACE0 \uADF8 \uBC18\uB3D9\uC73C\uB85C \uBB3C\uB7EC\uB0A9\uB2C8\uB2E4."
-  executionType: 1
+  icon: {fileID: 6657387624399327035, guid: eda035439784e634cb571285943295dc, type: 3}
+  description: "\uBC00\uCC29\uD55C \uC801\uC5D0\uAC8C \uB2E4\uC12F \uBC1C\uC744 \uC3DF\uC544\uBD93\uACE0
+    \uADF8 \uBC18\uB3D9\uC73C\uB85C \uBB3C\uB7EC\uB0A9\uB2C8\uB2E4."
+  executionType: 0
   resourceType: 1
-  requiredAmount: 1
+  requiredAmount: 5
   consumeAmount: 5
-  bulletShortageMode: 1
+  bulletShortageMode: 0
   reloadAmount: 0
   cooldown: 5
   castDelay: 0
@@ -31,14 +32,39 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 5
-  attackPattern: 4
+  attackPattern: 6
   patternRange: 10
   coneHalfAngle: 45
-  customCells: []
+  customCells:
+  - {x: -2, y: 1}
+  - {x: -1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: 2, y: 1}
+  - {x: -2, y: 2}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: 2, y: 2}
+  - {x: -2, y: 3}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
+  - {x: 2, y: 3}
+  - {x: -2, y: 4}
+  - {x: -1, y: 4}
+  - {x: 0, y: 4}
+  - {x: 1, y: 4}
+  - {x: 2, y: 4}
+  - {x: -2, y: 5}
+  - {x: -1, y: 5}
+  - {x: 0, y: 5}
+  - {x: 1, y: 5}
+  - {x: 2, y: 5}
   hitSteps: []
   cancelable: 0
-  isMultiTarget: 0
-  canPenetrateWalls: 1
+  isMultiTarget: 1
+  canPenetrateWalls: 0
   knockbackForce: 2
   knockbackDuration: 0.1
   slowPercentage: 0
@@ -73,7 +99,7 @@ MonoBehaviour:
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
   blinkBehindOffset: 0.75
-  recoilDistance: 1.2
+  recoilDistance: 4
   recoilDuration: 0.15
   owningForm: 3
   grade: 1

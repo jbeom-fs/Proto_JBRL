@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Freischutz_Skill_09
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uD751\uD0C4"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "\uD0C4\uCC3D\uC744 \uD1B5\uC9F8\uB85C \uD0DC\uC6CC \uB2E8 \uD55C \uBC1C\uC744 \uC3E9\uB2C8\uB2E4."
+  icon: {fileID: -5097151153609336578, guid: 8fe8e0b74b6e6cf42b4caae56088be7d, type: 3}
+  description: "\uD0C4\uCC3D\uC744 \uD1B5\uC9F8\uB85C \uD0DC\uC6CC \uB2E8 \uD55C
+    \uBC1C\uC744 \uC3E9\uB2C8\uB2E4."
   executionType: 1
   resourceType: 1
   requiredAmount: 15
@@ -30,7 +31,7 @@ MonoBehaviour:
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 30
+  damage: 200
   attackPattern: 4
   patternRange: 10
   coneHalfAngle: 45

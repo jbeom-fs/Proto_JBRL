@@ -13,8 +13,10 @@ MonoBehaviour:
   m_Name: Freischutz_Skill_10
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uC804\uD0C4\uC7A5\uC804"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "\uC9E7\uAC8C \uBAB8\uC744 \uB0A0\uB9AC\uBA70 \uD0C4\uCC3D\uC744 \uAC00\uB4DD \uCC44\uC6C1\uB2C8\uB2E4. \uC774\uB3D9\uD558\uB294 \uB3D9\uC548 \uD53C\uD574\uB97C \uBC1B\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
+  icon: {fileID: -8287552782479802832, guid: fa7763e296318bb4eb914505945dffd5, type: 3}
+  description: "\uC9E7\uAC8C \uBAB8\uC744 \uB0A0\uB9AC\uBA70 \uD0C4\uCC3D\uC744 \uAC00\uB4DD
+    \uCC44\uC6C1\uB2C8\uB2E4. \uC774\uB3D9\uD558\uB294 \uB3D9\uC548 \uD53C\uD574\uB97C
+    \uBC1B\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
   executionType: 2
   resourceType: 0
   requiredAmount: 0

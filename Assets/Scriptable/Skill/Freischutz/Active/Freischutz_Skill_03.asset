@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Freischutz_Skill_03
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uD0C4\uB9C9"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  icon: {fileID: 300673000488533197, guid: 3c9ef3781b2fdf04d853ac13f101a95e, type: 3}
   description: "\uD0C4\uCC3D\uC744 \uB113\uAC8C \uBE44\uC6CC \uC804\uBC29\uC744 \uB4A4\uB36E\uC2B5\uB2C8\uB2E4."
   executionType: 1
   resourceType: 1
@@ -24,6 +24,8 @@ MonoBehaviour:
   cooldown: 5
   castDelay: 0
   recoveryDelay: 0.25
+  recastStages: []
+  recastWindow: 1.5
   animationType: 1
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
@@ -32,12 +34,21 @@ MonoBehaviour:
   attackPattern: 4
   patternRange: 10
   coneHalfAngle: 45
+  customCells: []
+  hitSteps: []
+  cancelable: 0
   isMultiTarget: 0
   canPenetrateWalls: 1
   knockbackForce: 1
   knockbackDuration: 0.08
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
   projectileSpeed: 18
   projectileLifetime: 3
@@ -56,5 +67,13 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
   owningForm: 3
   grade: 2

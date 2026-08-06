@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Freischutz_Skill_00
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uC815\uD0C4"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  icon: {fileID: 1084181319436299523, guid: a084f314dc25af94484408c2b86ebf97, type: 3}
   description: "\uD0C4\uD658 \uD558\uB098\uB97C \uC815\uD655\uD788 \uC3D8\uC544 \uBCF4\uB0C5\uB2C8\uB2E4."
   executionType: 1
   resourceType: 1
@@ -35,17 +35,7 @@ MonoBehaviour:
   patternRange: 10
   coneHalfAngle: 45
   customCells: []
-  hitSteps:
-  - delay: 0.15
-    damagePct: 100
-    projectileCount: 1
-    spreadAngle: 15
-    overrideCells: []
-  - delay: 0.15
-    damagePct: 100
-    projectileCount: 2
-    spreadAngle: 15
-    overrideCells: []
+  hitSteps: []
   cancelable: 0
   isMultiTarget: 0
   canPenetrateWalls: 1

@@ -83203,7 +83203,7 @@ MonoBehaviour:
   comboTierConfig: {fileID: 11400000, guid: a8f47d2c1b394e56a7c8091d2e3f4a5b, type: 2}
   playerMovement: {fileID: 1562452755}
   maxHp: 1000
-  baseAttack: 100
+  baseAttack: 1
   baseDefense: 1
   currentWeapon: {fileID: 11400000, guid: 76534a25531f9ee479638279ac83fdf5, type: 2}
   basicAttackSkillData: {fileID: 11400000, guid: 5ebbea7a1b464df294f062ad5be22510, type: 2}
@@ -154093,7 +154093,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3d7831de9aaa4206ab7e91c6b3702d79, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FreischutzFocusVisualPool
   badgePrefab: {fileID: 100000, guid: 2d4d01c3fc224eb1a169dc0e13426ea4, type: 3}
   stackSprites:
@@ -160733,7 +160733,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
 --- !u!1001 &2803000020
 PrefabInstance:
@@ -160766,7 +160766,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
 --- !u!1001 &2803000030
 PrefabInstance:
@@ -160865,7 +160865,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
 --- !u!1001 &2803000060
 PrefabInstance:
@@ -160898,7 +160898,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b7f23a16d15a4077b76f24cc9e0731db, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PassiveUnlockRowUI
 --- !u!1 &2901000000
 GameObject:
