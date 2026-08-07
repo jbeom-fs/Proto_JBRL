@@ -13,18 +13,24 @@ MonoBehaviour:
   m_Name: Freischutz_Passive_FocusShot
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: freischutz_focus_shot
-  passiveName: 집탄
-  icon: {fileID: 0}
-  description: 같은 적에게 투사체를 연속으로 명중시키면 집탄 스택이 쌓이며, 가득 차면 단일 대상 폭발 피해를 줍니다.
+  passiveName: "\uC9D1\uD0C4"
+  icon: {fileID: -5368623612409073200, guid: 351494077e2bd644dbae615da01cd2e4, type: 3}
+  description: "\uAC19\uC740 \uC801\uC5D0\uAC8C \uD22C\uC0AC\uCCB4\uB97C \uC5F0\uC18D\uC73C\uB85C
+    \uBA85\uC911\uC2DC\uD0A4\uBA74 \uC9D1\uD0C4 \uC2A4\uD0DD\uC774 \uC313\uC774\uBA70,
+    \uAC00\uB4DD \uCC28\uBA74 \uB2E8\uC77C \uB300\uC0C1 \uD3ED\uBC1C \uD53C\uD574\uB97C
+    \uC90D\uB2C8\uB2E4."
   owningForm: 3
   grade: 0
   behaviors:
   - trigger: 2
     action: 10
     skillTypeFilter: 0
-    comboTierDamages:
+    comboTierDamages: 
     value: 25
     focusRequiredStacks: 3
+    splitCount: 2
+    splitAngleDeg: 30
+    splitDepth: 1
     lowHealthThresholdPct: 0
     lostHealthPctPerLifestealPct: 0
     overhealShieldConversionPct: 0

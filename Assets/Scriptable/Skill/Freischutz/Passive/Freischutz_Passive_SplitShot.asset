@@ -13,16 +13,17 @@ MonoBehaviour:
   m_Name: Freischutz_Passive_SplitShot
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: freischutz_split_shot
-  passiveName: 분열탄
-  icon: {fileID: 0}
-  description: 적에게 명중한 투사체가 좌우로 갈라져 주변 적을 공격합니다.
+  passiveName: "\uBD84\uC5F4\uD0C4"
+  icon: {fileID: -9067455530218314514, guid: 2cbe3091ae2baca4db99f633b1957d64, type: 3}
+  description: "\uC801\uC5D0\uAC8C \uBA85\uC911\uD55C \uD22C\uC0AC\uCCB4\uAC00 \uC88C\uC6B0\uB85C
+    \uAC08\uB77C\uC838 \uC8FC\uBCC0 \uC801\uC744 \uACF5\uACA9\uD569\uB2C8\uB2E4."
   owningForm: 3
   grade: 0
   behaviors:
   - trigger: 2
     action: 11
     skillTypeFilter: 0
-    comboTierDamages:
+    comboTierDamages: 
     value: 30
     focusRequiredStacks: 6
     splitCount: 2

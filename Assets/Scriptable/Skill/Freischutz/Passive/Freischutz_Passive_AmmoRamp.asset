@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: Freischutz_Passive_AmmoRamp
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: freischutz_ammo_ramp
-  passiveName: 고갈 램프
-  icon: {fileID: 0}
-  description: 잔탄이 적을수록 모든 투사체의 발당 피해가 증가하며, 탄창이 빌수록 최대 60%까지 증가합니다.
+  passiveName: "\uACE0\uAC08"
+  icon: {fileID: 7493013260867380109, guid: 6f22267fed6966d47a0743a1f7a859de, type: 3}
+  description: "\uC794\uD0C4\uC774 \uC801\uC744\uC218\uB85D \uBAA8\uB4E0 \uD22C\uC0AC\uCCB4\uC758
+    \uBC1C\uB2F9 \uD53C\uD574\uAC00 \uC99D\uAC00\uD558\uBA70, \uD0C4\uCC3D\uC774
+    \uBE4C\uC218\uB85D \uCD5C\uB300 60%\uAE4C\uC9C0 \uC99D\uAC00\uD569\uB2C8\uB2E4."
   owningForm: 3
   grade: 0
   behaviors:
@@ -24,6 +26,10 @@ MonoBehaviour:
     skillTypeFilter: 0
     comboTierDamages: 
     value: 60
+    focusRequiredStacks: 6
+    splitCount: 2
+    splitAngleDeg: 30
+    splitDepth: 1
     lowHealthThresholdPct: 0
     lostHealthPctPerLifestealPct: 0
     overhealShieldConversionPct: 0
