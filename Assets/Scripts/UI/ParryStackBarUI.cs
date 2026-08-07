@@ -31,7 +31,7 @@ public sealed class ParryStackBarUI : MonoBehaviour
         if (combat == null || stackSlider == null)
             return;
 
-        bool visible = combat.CurrentBasicAttackMode == PlayerBasicAttackMode.Parry;
+        bool visible = combat.CurrentDodgeMode == PlayerDodgeMode.Parry;
         SetVisible(visible);
         if (!visible)
             return;

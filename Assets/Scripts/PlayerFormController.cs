@@ -312,10 +312,17 @@ public sealed class PlayerFormController : MonoBehaviour
         return token;
     }
 
-    private void PlayTriggerAnimation(int triggerHash, bool hasTrigger, Vector2 direction)
+    private void PlayTriggerAnimation(
+        int triggerHash,
+        bool hasTrigger,
+        Vector2 direction,
+        bool supportsParryFacing = false)
     {
         ResetDashVisualRotation();
-        ApplyFacing(direction);
+        if (supportsParryFacing)
+            ApplyAttackFacing(direction);
+        else
+            ApplyFacing(direction);
 
         if (hasTrigger)
             SetTrigger(triggerHash);
@@ -324,14 +331,18 @@ public sealed class PlayerFormController : MonoBehaviour
     private void PlayAttackAnimation(Vector2 direction)
     {
         ResetDashVisualRotation();
+        ApplyAttackFacing(direction);
 
+        if (_hasAttackTrigger)
+            SetTrigger(AttackTriggerHash);
+    }
+
+    private void ApplyAttackFacing(Vector2 direction)
+    {
         if (_hasParryFacing)
             ApplyParryFacing(direction);
         else
             ApplyFacing(direction);
-
-        if (_hasAttackTrigger)
-            SetTrigger(AttackTriggerHash);
     }
 
     private void ApplyParryFacing(Vector2 direction)
@@ -339,20 +350,23 @@ public sealed class PlayerFormController : MonoBehaviour
         if (animator == null)
             return;
 
-        bool hasAimDirection = direction.sqrMagnitude > FacingDeadZone * FacingDeadZone;
-        if (!hasAimDirection)
+        bool isSideFacing =
+            direction.sqrMagnitude > FacingDeadZone * FacingDeadZone &&
+            Mathf.Abs(direction.x) > FacingDeadZone;
+        animator.SetInteger(
+            ParryFacingHash,
+            isSideFacing ? ParryFacingSide : ParryFacingFront);
+
+        if (spriteRenderer == null)
+            return;
+
+        if (!isSideFacing)
         {
-            animator.SetInteger(ParryFacingHash, ParryFacingFront);
-            if (spriteRenderer != null)
-                spriteRenderer.flipX = false;
+            spriteRenderer.flipX = false;
             return;
         }
 
-        animator.SetInteger(ParryFacingHash, ParryFacingSide);
-        if (spriteRenderer == null || CurrentForm == null || !CurrentForm.UseHorizontalFlipForFacing)
-            return;
-
-        if (Mathf.Abs(direction.x) <= FacingDeadZone)
+        if (CurrentForm == null || !CurrentForm.UseHorizontalFlipForFacing)
             return;
 
         spriteRenderer.flipX = ResolveFlipX(direction);
@@ -365,7 +379,7 @@ public sealed class PlayerFormController : MonoBehaviour
 
         int triggerHash = Animator.StringToHash(triggerName);
         if (HasTrigger(triggerHash))
-            PlayTriggerAnimation(triggerHash, true, direction);
+            PlayTriggerAnimation(triggerHash, true, direction, supportsParryFacing: true);
     }
 
     private void SetTrigger(int triggerHash)

@@ -20,5 +20,6 @@ MonoBehaviour:
   useHorizontalFlipForFacing: 1
   rotateDashAnimationByDirection: 0
   dashBaseAngle: 0
-  basicAttackMode: 1
+  basicAttackMode: 0
+  dodgeMode: 1
   defaultWeapon: {fileID: 11400000, guid: 2e0541ebeb850ba42860fab7419d8403, type: 2}

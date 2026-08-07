@@ -93,6 +93,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 #pragma warning restore 0414
 
     [Header("Parry Basic Attack")]
+    [SerializeField, Min(0f)] private float parryCooldown = 0.3f;
+    [SerializeField] private SkillData parryAnimationSkillData;
     [SerializeField, Min(0f)] private float parryStartupDelay = 0.08f;
     [SerializeField, Min(0f)] private float parryInvincibleDuration = 0.2f;
     [SerializeField, Min(0f)] private float parryRecoveryDelay = 0.18f;
@@ -194,6 +196,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             : PlayerFormId.Normal;
     public bool IsReloading => _isReloading;
     public PlayerBasicAttackMode CurrentBasicAttackMode => GetCurrentBasicAttackMode();
+    public PlayerDodgeMode CurrentDodgeMode => GetCurrentDodgeMode();
     public bool IsDamageInvincible => _damageInvincibleTimer > 0f || HasExternalInvincibility;
     public bool HasExternalInvincibility => _externalInvincibilityCount > 0;
     public bool IsDashing => _dashController != null && _dashController.IsDashing;
@@ -891,13 +894,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (IsSkillBusy) return;
         if (!_cooldownController.IsAttackReady || currentWeapon == null) return;
 
-        if (IsCurrentFormParryMode())
-        {
-            _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
-            BeginParryBasicAttack();
-            return;
-        }
-
         if (IsCurrentFormBulletMode())
         {
             TryBulletBasicAttack();
@@ -959,7 +955,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private bool IsCurrentFormParryMode()
     {
-        return GetCurrentBasicAttackMode() == PlayerBasicAttackMode.Parry;
+        return GetCurrentDodgeMode() == PlayerDodgeMode.Parry;
     }
 
     private bool IsCurrentFormBulletMode()
@@ -971,6 +967,12 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         PlayerFormData form = _formController != null ? _formController.CurrentForm : null;
         return form != null ? form.BasicAttackMode : PlayerBasicAttackMode.Damage;
+    }
+
+    private PlayerDodgeMode GetCurrentDodgeMode()
+    {
+        PlayerFormData form = _formController != null ? _formController.CurrentForm : null;
+        return form != null ? form.DodgeMode : PlayerDodgeMode.Dash;
     }
 
     private void TryBulletBasicAttack()
@@ -1013,9 +1015,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (_parryRoutine != null)
             StopCoroutine(_parryRoutine);
 
-        SkillData basicAttack = ActiveBasicAttack;
-        if (basicAttack != null)
-            _formController?.PlaySkillAnimation(basicAttack, CurrentAimDirection);
+        if (parryAnimationSkillData != null)
+            _formController?.PlaySkillAnimation(parryAnimationSkillData, CurrentAimDirection);
 
         _parryRoutine = StartCoroutine(ParryBasicAttackRoutine());
     }
@@ -1089,13 +1090,23 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private void TryUseDodge()
     {
-        if (dodgeSkill == null) return;
         if (_dodgeCooldownTimer > 0f) return;
         if (IsDead) return;
         if (IsDashing) return;
         if (IsStunned) return;
         if (DungeonManager.Instance != null && DungeonManager.Instance.IsTransitioning) return;
         if (IsCombatBlockedByLocation()) return;
+
+        if (IsCurrentFormParryMode())
+        {
+            if (IsSkillBusy) return;
+
+            _dodgeCooldownTimer = Mathf.Max(0f, parryCooldown) * EffectiveSkillCooldownMultiplier();
+            BeginParryBasicAttack();
+            return;
+        }
+
+        if (dodgeSkill == null) return;
 
         bool cancelsActiveSkill = CanCancelActiveSkill();
         if (IsSkillBusy && !cancelsActiveSkill) return;

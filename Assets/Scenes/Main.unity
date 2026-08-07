@@ -83221,6 +83221,8 @@ MonoBehaviour:
   parryStackDecayAmount: 1
   comboWindow: 2
   comboMaxStack: 20
+  parryCooldown: 0.3
+  parryAnimationSkillData: {fileID: 11400000, guid: b871ab967b924993af95ef4ad65796b6, type: 2}
   parryStartupDelay: 0.08
   parryInvincibleDuration: 0.2
   parryRecoveryDelay: 0.18

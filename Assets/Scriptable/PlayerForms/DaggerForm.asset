@@ -21,4 +21,5 @@ MonoBehaviour:
   rotateDashAnimationByDirection: 0
   dashBaseAngle: 0
   basicAttackMode: 0
+  dodgeMode: 0
   defaultWeapon: {fileID: 11400000, guid: 6a741af1948e433daf0c51edef4272ef, type: 2}

@@ -3,8 +3,15 @@ using UnityEngine;
 public enum PlayerBasicAttackMode
 {
     Damage = 0,
+    // Reserved legacy value. Keep Bullet at 2 for existing serialized form assets.
     Parry = 1,
     Bullet = 2
+}
+
+public enum PlayerDodgeMode
+{
+    Dash = 0,
+    Parry = 1
 }
 
 [CreateAssetMenu(fileName = "NewPlayerForm", menuName = "JBRogLike/Player/Form")]
@@ -24,6 +31,7 @@ public sealed class PlayerFormData : ScriptableObject
 
     [Header("Future Extensions")]
     [SerializeField] private PlayerBasicAttackMode basicAttackMode = PlayerBasicAttackMode.Damage;
+    [SerializeField] private PlayerDodgeMode dodgeMode = PlayerDodgeMode.Dash;
     [SerializeField] private WeaponData defaultWeapon;
     [SerializeField] private bool usesCombo;
 
@@ -36,6 +44,7 @@ public sealed class PlayerFormData : ScriptableObject
     public bool RotateDashAnimationByDirection => rotateDashAnimationByDirection;
     public float DashBaseAngle => dashBaseAngle;
     public PlayerBasicAttackMode BasicAttackMode => basicAttackMode;
+    public PlayerDodgeMode DodgeMode => dodgeMode;
     public WeaponData DefaultWeapon => defaultWeapon;
     public bool UsesCombo => usesCombo;
 }

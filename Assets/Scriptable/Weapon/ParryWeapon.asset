@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: ParryWeapon
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   weaponName: "\uD328\uB9AC"
-  damage: 0
+  damage: 5
   attackCooldown: 0.3
-  attackPattern: 0
-  basicAttackSkillData: {fileID: 0}
-  patternRange: 12
+  attackPattern: 5
+  basicAttackSkillData: {fileID: 11400000, guid: 5ebbea7a1b464df294f062ad5be22510, type: 2}
+  patternRange: 2
   basicAttackMultiTarget: 0
   knockbackForce: 0
   knockbackDuration: 0
