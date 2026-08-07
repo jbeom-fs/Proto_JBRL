@@ -37,6 +37,20 @@ public sealed class PlayerBehaviors : MonoBehaviour
         _runtime != null ? _runtime.SplitShotDamagePct : 0;
     public int SplitShotDepth =>
         _runtime != null ? _runtime.SplitShotDepth : 0;
+    public float ParryStackRampBonusPct =>
+        _runtime != null ? _runtime.ParryStackRampBonusPct : 0f;
+    public bool HasGlassCannon =>
+        _runtime != null && _runtime.HasGlassCannon;
+    public float GlassCannonOutgoingDamageMultiplier =>
+        _runtime != null ? _runtime.GlassCannonOutgoingDamageMultiplier : 1f;
+    public float GlassCannonIncomingDamageMultiplier =>
+        _runtime != null ? _runtime.GlassCannonIncomingDamageMultiplier : 1f;
+    public bool HasParryWideWindow =>
+        _runtime != null && _runtime.HasParryWideWindow;
+    public float ParryWideWindowInvincibleDuration =>
+        _runtime != null ? _runtime.ParryWideWindowInvincibleDuration : 0f;
+    public int ParryWideWindowStackGain =>
+        _runtime != null ? _runtime.ParryWideWindowStackGain : 0;
 
     public float GetLifestealBonusPct(float hpRatio)
     {

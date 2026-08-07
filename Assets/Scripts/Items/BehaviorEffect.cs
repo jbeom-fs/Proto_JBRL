@@ -23,7 +23,10 @@ public enum BehaviorAction
     ExecuteThreshold,
     AmmoRamp,
     FocusStack,
-    SplitShot
+    SplitShot,
+    ParryStackRamp,
+    GlassCannon,
+    ParryWideWindow
 }
 
 public enum ProcOriginMode

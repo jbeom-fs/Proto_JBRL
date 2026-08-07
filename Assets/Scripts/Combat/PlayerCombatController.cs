@@ -579,6 +579,16 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     public float AmmoRampMultiplier => GetAmmoRampMultiplier(0);
 
+    private float EffectiveParryInvincibleDuration =>
+        _relicBehaviors != null && _relicBehaviors.HasParryWideWindow
+            ? _relicBehaviors.ParryWideWindowInvincibleDuration
+            : Mathf.Max(0f, parryInvincibleDuration);
+
+    private int EffectiveParryStackGain =>
+        _relicBehaviors != null && _relicBehaviors.HasParryWideWindow
+            ? _relicBehaviors.ParryWideWindowStackGain
+            : Mathf.Max(0, parryStackGainPerSuccess);
+
     public float GetAmmoRampMultiplier(int pendingConsume)
     {
         if (!CanUseMagazine() || maxBullet <= 0)
@@ -592,6 +602,25 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         float depletionRatio = Mathf.Clamp01(
             1f - (float)remainingBullet / maxBullet);
         return 1f + bonusPct / 100f * depletionRatio;
+    }
+
+    private float GetParryStackRampMultiplier(SkillData skill)
+    {
+        if (skill == null ||
+            skill.resourceType != SkillResourceType.ParryStack ||
+            skill.consumeAmount <= 0)
+        {
+            return 1f;
+        }
+
+        float bonusPct = _relicBehaviors != null
+            ? _relicBehaviors.ParryStackRampBonusPct
+            : 0f;
+        if (bonusPct <= 0f)
+            return 1f;
+
+        int baseMaxStack = Mathf.Max(1, maxParryStack);
+        return 1f + bonusPct / 100f * CurrentParryStack / baseMaxStack;
     }
 
     public int SplitShotDepth =>
@@ -640,6 +669,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return baseDamage;
 
         baseDamage = ApplyComboMultiplier(baseDamage);
+        baseDamage = ApplyGlassCannonOutgoingMultiplier(baseDamage);
 
         float chance = Mathf.Clamp01(_soulBonus.Get(SoulStatType.Crit));
         if (chance <= 0f || UnityEngine.Random.value >= chance)
@@ -647,6 +677,17 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         didCrit = true;
         return Mathf.Max(1, Mathf.RoundToInt(baseDamage * EffectiveCritDamageMultiplier));
+    }
+
+    private int ApplyGlassCannonOutgoingMultiplier(int baseDamage)
+    {
+        float multiplier = _relicBehaviors != null
+            ? _relicBehaviors.GlassCannonOutgoingDamageMultiplier
+            : 1f;
+        if (Mathf.Approximately(multiplier, 1f))
+            return baseDamage;
+
+        return Mathf.Max(1, Mathf.RoundToInt(baseDamage * multiplier));
     }
 
     /// <summary>
@@ -1057,7 +1098,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         }
 
         _isParryInvincibleWindowActive = true;
-        float active = Mathf.Max(0f, parryInvincibleDuration);
+        float active = EffectiveParryInvincibleDuration;
         invincibilityFlashFeedback?.Play(active);
         while (active > 0f && !_parryIntercepted)
         {
@@ -1979,7 +2020,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         bool isBasicAttack = false)
     {
 
-        return new SkillExecutionContext(
+        var context = new SkillExecutionContext(
             this,
             _dashController,
             _formController,
@@ -1991,6 +2032,8 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             TotalAttack,
             hitRadius,
             isBasicAttack: isBasicAttack);
+        context.ParryStackRampSnapshot = GetParryStackRampMultiplier(skill);
+        return context;
     }
 
     private bool CanContinueMultiHit(SkillExecutionContext context)
@@ -2057,7 +2100,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         }
         if (IsDamageInvincible) return false;
 
-        int actual = Mathf.Max(1, incomingDamage - TotalDefense);
+        int mitigatedDamage = incomingDamage - TotalDefense;
+        float incomingMultiplier = _relicBehaviors != null
+            ? _relicBehaviors.GlassCannonIncomingDamageMultiplier
+            : 1f;
+        int actual = Mathf.Max(
+            1,
+            Mathf.RoundToInt(mitigatedDamage * incomingMultiplier));
         int toHp = _shield.IsActive ? _shield.Absorb(actual) : actual;
         _damageInvincibleTimer = damageInvincibleDuration;
 
@@ -2090,7 +2139,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         _parryIntercepted = true;
         _isParryInvincibleWindowActive = false;
-        _parryStack?.Add(parryStackGainPerSuccess);
+        _parryStack?.Add(EffectiveParryStackGain);
         invincibilityFlashFeedback?.StopAndReset();
     }
 

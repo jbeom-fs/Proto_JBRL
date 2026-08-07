@@ -139,9 +139,12 @@ public sealed class SkillExecutor
 
         bool didCrit = false;
         int skillDamage = ResolveSkillDamage(context);
+        int scaledDamage = ApplyParryStackRampSnapshot(
+            context,
+            context.TotalAttack + skillDamage);
         int damage = context.CasterCombat != null
-            ? context.CasterCombat.RollCritDamage(context.TotalAttack + skillDamage, out didCrit)
-            : context.TotalAttack + skillDamage;
+            ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
+            : scaledDamage;
         _attackExecutor.BeginAttackActivation();
         _attackExecutor.ExecuteAttackWorld(
             targets,
@@ -220,6 +223,7 @@ public sealed class SkillExecutor
         int scaledDamage = Mathf.RoundToInt(
             (context.TotalAttack + ResolveSkillDamage(context)) *
             hitStep.damagePct / 100f);
+        scaledDamage = ApplyParryStackRampSnapshot(context, scaledDamage);
         bool didCrit = false;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
@@ -423,6 +427,7 @@ public sealed class SkillExecutor
             hitStep.damagePct / 100f);
         scaledDamage = Mathf.RoundToInt(
             scaledDamage * context.AmmoRampSnapshot);
+        scaledDamage = ApplyParryStackRampSnapshot(context, scaledDamage);
         bool didCrit = false;
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(scaledDamage, out didCrit)
@@ -628,11 +633,14 @@ public sealed class SkillExecutor
         if (hasDashDamage)
         {
             int skillDamage = ResolveSkillDamage(context);
+            int scaledDamage = ApplyParryStackRampSnapshot(
+                context,
+                context.TotalAttack + skillDamage);
             damage = context.CasterCombat != null
                 ? context.CasterCombat.RollCritDamage(
-                    context.TotalAttack + skillDamage,
+                    scaledDamage,
                     out didCrit)
-                : context.TotalAttack + skillDamage;
+                : scaledDamage;
         }
 
         return new DashDamageRequest
@@ -666,6 +674,9 @@ public sealed class SkillExecutor
             ? Mathf.RoundToInt(
                 baseDamage * context.AmmoRampSnapshot)
             : baseDamage;
+        amplifiedDamage = ApplyParryStackRampSnapshot(
+            context,
+            amplifiedDamage);
         int damage = context.CasterCombat != null
             ? context.CasterCombat.RollCritDamage(amplifiedDamage, out didCrit)
             : amplifiedDamage;
@@ -742,6 +753,19 @@ public sealed class SkillExecutor
     private static int ResolveSkillDamage(SkillExecutionContext context)
     {
         return context.SkillDamageOverride ?? context.Skill.damage;
+    }
+
+    private static int ApplyParryStackRampSnapshot(
+        SkillExecutionContext context,
+        int damage)
+    {
+        float multiplier = context != null
+            ? Mathf.Max(0f, context.ParryStackRampSnapshot)
+            : 1f;
+        if (Mathf.Approximately(multiplier, 1f))
+            return damage;
+
+        return Mathf.RoundToInt(damage * multiplier);
     }
 
     private static AilmentApplication[] ResolveAttackAilments(SkillExecutionContext context)

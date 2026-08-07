@@ -125,6 +125,40 @@ public sealed class BehaviorRuntime
         public int Depth { get; }
     }
 
+    private readonly struct ParryStackRampEntry
+    {
+        public ParryStackRampEntry(BehaviorEffect behavior, int stackCount)
+        {
+            BonusPct = behavior.value * stackCount;
+        }
+
+        public float BonusPct { get; }
+    }
+
+    private readonly struct GlassCannonEntry
+    {
+        public GlassCannonEntry(BehaviorEffect behavior)
+        {
+            OutgoingDamageMultiplier = Mathf.Max(0f, behavior.value / 100f);
+            IncomingDamageMultiplier = Mathf.Max(0f, behavior.duration);
+        }
+
+        public float OutgoingDamageMultiplier { get; }
+        public float IncomingDamageMultiplier { get; }
+    }
+
+    private readonly struct ParryWideWindowEntry
+    {
+        public ParryWideWindowEntry(BehaviorEffect behavior)
+        {
+            InvincibleDuration = Mathf.Max(0f, behavior.duration);
+            StackGain = Mathf.Max(0, behavior.value);
+        }
+
+        public float InvincibleDuration { get; }
+        public int StackGain { get; }
+    }
+
     private readonly Action<int> _healCallback;
     private readonly Action<ShieldSource, int, float> _shieldCallback;
     private readonly Action<int, float> _attackBuffCallback;
@@ -153,6 +187,12 @@ public sealed class BehaviorRuntime
         new List<FocusStackEntry>();
     private readonly List<SplitShotEntry> _splitShots =
         new List<SplitShotEntry>();
+    private readonly List<ParryStackRampEntry> _parryStackRamps =
+        new List<ParryStackRampEntry>();
+    private readonly List<GlassCannonEntry> _glassCannons =
+        new List<GlassCannonEntry>();
+    private readonly List<ParryWideWindowEntry> _parryWideWindows =
+        new List<ParryWideWindowEntry>();
 
     public BehaviorRuntime(
         Action<int> healCallback,
@@ -255,6 +295,35 @@ public sealed class BehaviorRuntime
             return depth;
         }
     }
+    public float ParryStackRampBonusPct
+    {
+        get
+        {
+            float totalPct = 0f;
+            for (int i = 0; i < _parryStackRamps.Count; i++)
+                totalPct += _parryStackRamps[i].BonusPct;
+
+            return totalPct;
+        }
+    }
+    public bool HasGlassCannon => _glassCannons.Count > 0;
+    public float GlassCannonOutgoingDamageMultiplier =>
+        _glassCannons.Count > 0
+            ? _glassCannons[0].OutgoingDamageMultiplier
+            : 1f;
+    public float GlassCannonIncomingDamageMultiplier =>
+        _glassCannons.Count > 0
+            ? _glassCannons[0].IncomingDamageMultiplier
+            : 1f;
+    public bool HasParryWideWindow => _parryWideWindows.Count > 0;
+    public float ParryWideWindowInvincibleDuration =>
+        _parryWideWindows.Count > 0
+            ? _parryWideWindows[0].InvincibleDuration
+            : 0f;
+    public int ParryWideWindowStackGain =>
+        _parryWideWindows.Count > 0
+            ? _parryWideWindows[0].StackGain
+            : 0;
 
     public float GetLifestealBonusPct(float hpRatio)
     {
@@ -336,6 +405,9 @@ public sealed class BehaviorRuntime
         _ammoRamps.Clear();
         _focusStacks.Clear();
         _splitShots.Clear();
+        _parryStackRamps.Clear();
+        _glassCannons.Clear();
+        _parryWideWindows.Clear();
 
         if (items != null)
         {
@@ -590,6 +662,25 @@ public sealed class BehaviorRuntime
         if (behavior.action == BehaviorAction.SplitShot)
         {
             _splitShots.Add(new SplitShotEntry(behavior, stackCount));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.ParryStackRamp)
+        {
+            _parryStackRamps.Add(
+                new ParryStackRampEntry(behavior, stackCount));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.GlassCannon)
+        {
+            _glassCannons.Add(new GlassCannonEntry(behavior));
+            return;
+        }
+
+        if (behavior.action == BehaviorAction.ParryWideWindow)
+        {
+            _parryWideWindows.Add(new ParryWideWindowEntry(behavior));
             return;
         }
 
