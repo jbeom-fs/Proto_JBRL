@@ -290,6 +290,7 @@ public class LocationTransitionManager : MonoBehaviour
             if (combat != null)
             {
                 combat.ResetCombo();
+                combat.ResetParryStack();
                 combat.ClearAllProcSkillSequences();
                 combat.ClearShield();
             }

@@ -17,8 +17,8 @@ MonoBehaviour:
   description: 
   executionType: 0
   resourceType: 2
-  requiredAmount: 2
-  consumeAmount: 2
+  requiredAmount: 4
+  consumeAmount: 4
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0

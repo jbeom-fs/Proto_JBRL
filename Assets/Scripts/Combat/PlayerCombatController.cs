@@ -80,8 +80,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     [SerializeField, Min(1f)] private float critDamageMultiplier = 2f;
 
     [Header("Skill Resources")]
-    [SerializeField, Min(0)] private int maxParryStack = 4;
-    [SerializeField, Min(0f)] private float parryStackGraceDuration = 3f;
+    [SerializeField, Min(0)] private int maxParryStack = 20;
+    [SerializeField, Min(0f)] private float parryStackGraceDuration = 8f;
+    [SerializeField, Min(0)] private int parryStackGainPerSuccess = 2;
     [SerializeField, Min(0.01f)] private float parryStackDecayInterval = 1f;
     [SerializeField, Min(1)] private int parryStackDecayAmount = 1;
 
@@ -181,7 +182,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
-    public int MaxParryStack => maxParryStack;
+    public int MaxParryStack => _parryStack != null ? _parryStack.Max : maxParryStack;
     public int CurrentComboStack => _combo != null ? _combo.TotalStacks : 0;
     public int CurrentComboTier => _combo != null ? _combo.Tier : 0;
     public int CurrentComboProgress => _combo != null ? _combo.Progress : 0;
@@ -696,6 +697,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _combo?.Reset();
     }
 
+    public void ResetParryStack()
+    {
+        _parryStack?.Reset();
+    }
+
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     public void LogDamageDealt(int amount, bool isCrit)
     {
@@ -1067,6 +1073,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
         _isParryInvincibleWindowActive = false;
         invincibilityFlashFeedback?.StopAndReset();
+
+        if (_parryIntercepted)
+        {
+            _dodgeCooldownTimer = 0f;
+            ClearParryState();
+            yield break;
+        }
 
         float recovery = Mathf.Max(0f, parryRecoveryDelay);
         while (recovery > 0f)
@@ -2077,7 +2090,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     {
         _parryIntercepted = true;
         _isParryInvincibleWindowActive = false;
-        _parryStack?.Add(1);
+        _parryStack?.Add(parryStackGainPerSuccess);
         invincibilityFlashFeedback?.StopAndReset();
     }
 
@@ -2102,6 +2115,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _damageInvincibleTimer = 0f;
         _externalInvincibilityCount = 0;
         ResetCombo();
+        ResetParryStack();
         ClearSkillTimingState();
         ClearAllProcSkillSequences();
         ClearParryState();
@@ -2391,8 +2405,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
 
         dungeonChannel = channel;
-        dungeonChannel.OnRoomEntered += HandleRoomEntered;
-        dungeonChannel.OnRoomDoorsOpened += HandleRoomDoorsOpened;
         dungeonChannel.OnFloorChanged += HandleFloorChanged;
         _isDungeonChannelSubscribed = true;
     }
@@ -2402,25 +2414,13 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         if (!_isDungeonChannelSubscribed || dungeonChannel == null)
             return;
 
-        dungeonChannel.OnRoomEntered -= HandleRoomEntered;
-        dungeonChannel.OnRoomDoorsOpened -= HandleRoomDoorsOpened;
         dungeonChannel.OnFloorChanged -= HandleFloorChanged;
         _isDungeonChannelSubscribed = false;
     }
 
-    private void HandleRoomEntered(RoomEnteredEventArgs args)
-    {
-        _parryStack?.Reset();
-    }
-
-    private void HandleRoomDoorsOpened(RoomInfo room)
-    {
-        _parryStack?.Reset();
-    }
-
     private void HandleFloorChanged(int previousFloor, int newFloor)
     {
-        _parryStack?.Reset();
+        ResetParryStack();
         ResetCombo();
         _focusStacks.ClearAll();
     }

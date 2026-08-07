@@ -83215,8 +83215,9 @@ MonoBehaviour:
   damageInvincibleDuration: 0.2
   shieldFlashColor: {r: 1, g: 0.82, b: 0.2, a: 1}
   critDamageMultiplier: 2
-  maxParryStack: 4
-  parryStackGraceDuration: 3
+  maxParryStack: 20
+  parryStackGraceDuration: 8
+  parryStackGainPerSuccess: 2
   parryStackDecayInterval: 1
   parryStackDecayAmount: 1
   comboWindow: 2
