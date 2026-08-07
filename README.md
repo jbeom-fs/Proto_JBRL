@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-06
+> 작성 기준일: 2026-08-07
+> 기준 커밋: master HEAD `ec6b1a10` — **Parry 폼 재설계: 평타↔회피 슬롯 교체 + 패리 성공 분기 + 스택 축 ×5 + 패시브 3종**(§7-2·§7-8b·§7-11 개정, §7-11b 신설). ① **슬롯 교체**(`07d2099d`) — Parry 폼의 평타를 **근접 공격**으로, Space(회피)를 **패리**로 뒤집었다. 동기: 패리가 평타였던 구조에서는 **적이 공격하지 않으면 아무것도 할 수 없었다.** `PlayerDodgeMode { Dash, Parry }`를 `PlayerFormData`에 신설해 회피 슬롯을 폼별로 분기하고, 판정 근거를 `basicAttackMode`에서 `dodgeMode`로 이관했다(`PlayerBasicAttackMode.Parry`는 **결번 유지** — 제거하면 `Bullet=2`가 밀려 기존 폼 에셋 직렬화가 깨진다). 같은 커밋에서 평타·패리 애니 트리거를 분리(`AttackTrigger` / `ParryTrigger`)했고, `ApplyParryFacing`의 Front 분기가 **한 번도 재생되지 않던 결함**을 함께 고쳤다(조준 벡터가 0이 아니면 무조건 Side였는데 마우스 조준은 항상 0이 아니다). ② **패리 성공 분기 + 스택 ×5**(`5987bc89`, §7-11b) — 무적 루프 탈출 직후 `_parryIntercepted`로 갈라 **성공은 후딜·회피 쿨다운을 즉시 해제**(재패리 0.08s), 실패만 후딜 0.18s를 문다. 기존에는 분기가 없어 **잘한 플레이와 못한 플레이의 결과가 같았다.** 스택은 최대 20 / 정타 획득 2 / grace 8초 / 반격기 소모 2·4·10·16으로 재정의했고, 리셋을 **방 단위에서 런 단위**(사망·층이동·던전이탈)로 바꿨다 — 방 클리어마다 스택이 날아가 R(8회 축적)이 사실상 보스 전용이었다. ③ **패시브 3종**(`ec6b1a10`, §7-8b) — **반격**(스택 비례 반격기 피해, 무료 기본) / **결의**(받는 피해 ×2·주는 피해 ×1.5) / **심안**(무적창 0.32s·획득 스택 1). 🔑 **반격의 배율 분모는 소울 보너스가 빠진 `maxParryStack` 원본으로 고정**한다 — 실효 최대치를 넣으면 `ParryStackMax`를 강화할수록 같은 스택에서 배율이 떨어져(최대 70 기준 ×1.60 → ×1.17) "강화했는데 약해졌다"가 된다. `BehaviorTrigger`는 확장하지 않고 `BehaviorAction` 3종만 append(마탄 선례). ④ 마탄 패시브 아이콘 3종(`3b89cbc2`). 이전: 마탄 액티브 각인 12/12 + 반동 배관 + 고갈 램프 개정(`b08eafa7`)
+>
+> <details><summary>이전 기준(2026-08-06, `b08eafa7`)</summary>
+>
 > 기준 커밋: master HEAD `b08eafa7` — **마탄 액티브 각인 12/12 완성 + 반동(Recoil) 배관 신설 + 고갈 램프 계산 개정**(§7-6b 신설·§7-8·§7-8b 개정). ① **구조 편입**(`7277a0f8`) — `FreischutzSkill/Test/`의 plain `SkillData` 4개를 `EngravingData`로 전환하고 `Freischutz/Active/`·`Freischutz_Skill_NN` 규약으로 통일. `m_Script` guid 교체만 하고 `.asset.meta`는 무수정이라 `FreischutzWeapon.skills` 결선이 그대로 보존된다(Dagger `e5b90065` 미러). 평타는 각인이 아니므로 plain `SkillData` 유지. ② **반동 배관**(`ba57832b`, §7-6b) — `SkillData.recoilDistance`/`recoilDuration` + `RecoilMotion`(순수 C#, `Tick(dt)` + 변위 콜백 주입). 🔑 **물리(`AddForce`)는 구조적으로 성립하지 않는다** — 플레이어는 transform 권위이고 `BlocksPlayerMovement` 동안 `linearVelocity`가 매 프레임 0으로 지워지는데 그게 정확히 반동 구간이며, 던전 벽은 물리 콜라이더가 아니라 타일 걷기 판정이라 물리력은 LateUpdate 안전망에 되돌려진다. 기존 넉백 경로(`TryApplyExternalDisplacement`)를 **프레임 분할로 재사용**해 해결했고, 틱은 `PlayerCombatController.Update`에 둔다(`PlayerController.Update`는 `BlocksPlayerMovement`에서 조기 반환한다). Projectile·InstantArea의 base·`hitSteps` 4지점에 적용 → 총 후퇴 = `recoilDistance × (1 + 스텝 수)`. ③ **고갈 램프 2건 개정**(§7-8b) — 배율 기준을 소모 **전**→**후** 잔탄으로, 계산을 발사마다→**시전당 1회 스냅샷**(`SkillExecutionContext.AmmoRampSnapshot`)으로 바꿨다. 전자는 "탄창 전량 소모 단발(흑탄)이 만탄을 요구하는데 만탄이 배율 최저"라는 모순을 없애고, 후자는 `Spend`가 `Execute` 뒤에 일어나 **base보다 지연 `hitStep`이 40% 세던** 결함을 없앤다(`KNOWN_QUIRKS` Q13 해소). ④ **액티브 8종 + 아이콘 12종**(`f338c6d7`·`b08eafa7`) — 밀쳐내기·도탄 / 반동사격·파상사격·속박탄 / 흑탄·전탄장전·회탄. 🔑 **수치 기준은 "램프 미보유"**로 확정 — 램프가 소모량에 비례하므로 고소모 각인일수록 램프 빌드 이득이 커지고(평타 +4% → 흑탄 +60%) 그 편차가 곧 축 분화다. 이전: 마탄 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 배지(`893c703c`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-05, `893c703c`)</summary>
 >
@@ -927,8 +933,9 @@ SkillCooldownController
 TryBasicAttack():
   ① 가드(IsDead/Dashing/Stunned/SkillBusy) + IsAttackReady & currentWeapon 확인
   ② 현재 폼의 BasicAttackMode 로 분기:
-     • Parry  → 데미지 없는 패리 시퀀스(선딜→무적→후딜). 무적 중 피해 1회 가로채기 → +ParryStack,
-                흰색 점멸. 선딜 중 피격 시 패리 취소. (BeginParryBasicAttack)
+     • Parry  → **결번(2026-08-07)**. Parry 폼은 basicAttackMode=Damage 로 바뀌었고
+                패리 시퀀스는 회피 슬롯으로 이동했다(§7-11b). enum 값은 Bullet=2 직렬화
+                보존을 위해 남겨 둔다
      • Bullet → 평타 SkillData의 자원 규칙을 그대로 따름(코드 상수 없음):
                 Has(resourceType, requiredAmount) 미달 → 자동 재장전(TryStartReload)
                 충족 → SkillExecutor.Execute(context, IsBasicAttack=true)
@@ -939,7 +946,7 @@ TryBasicAttack():
                 + basicAttackSkillData 로 PlaySkillAnimation
 ```
 
-> `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage/Parry 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 런타임 폼 전환 시 `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선, 비면 SerializeField fallback)로 폼별 자동 교체됨(§15 런타임 폼 전환).
+> `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 런타임 폼 전환 시 `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선, 비면 SerializeField fallback)로 폼별 자동 교체됨(§15 런타임 폼 전환).
 >
 > 🔴 **Bullet 폼은 무기 결선이 필수다.** 폴백(`PlayerCombatController.basicAttackSkillData`)은 씬에 하나뿐이라 Damage 폼용 애니메이션 껍데기(`executionType 0`)가 들어가 있고, Bullet 경로는 `executionType == Projectile`을 요구하므로 **조기 반환하며 발사·탄 소모·쿨다운이 전부 일어나지 않는다. 예외도 경고도 없다.** 실제로 `f155383b`~`fc497627` 구간 내내 마탄 평타가 이 상태로 죽어 있었다(2026-08-05 발견·복구). 신규 Bullet 폼을 추가할 때는 `WeaponData.basicAttackSkillData` 결선과 `resourceType = Bullet` / `requiredAmount` / `consumeAmount` 저작을 세트로 확인할 것.
 
@@ -1206,20 +1213,20 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 
 **데이터**: `EngravingData : SkillData` (owningForm + grade). 등급 `EngravingGrade`(희미한 Faint < 온전한 Whole < 태초의 Primordial)은 **드랍 희귀도·UI 라벨**일 뿐 코드 자동스케일 없음 — 등급 패밀리(강화판)·고유 태초 스킬 모두 개별 에셋으로 작성, 고유 메커니즘 태초는 별도 execution 로직 개별 구현.
 
-**폼별 저작 현황 (2026-08-06)**
+**폼별 저작 현황 (2026-08-07)**
 
 | 폼 | 액티브 | 패시브 | 위치 |
 |---|---|---|---|
 | Sword | 12 | 3 | `Skill/Sword/Active·Passive/` |
 | Dagger | 12 | 3 | `Skill/Dagger/Active·Passive/` |
 | **Freischutz** | **12** | 3 | `Skill/Freischutz/Active·Passive/` |
-| Parry | 4 (**미편입** — plain `SkillData`) | 0 | `Skill/ParrySkill/Test/` |
+| Parry | 4 (**미편입** — plain `SkillData`) | **3** | 액티브 `Skill/ParrySkill/Test/` · 패시브 `Skill/Parry/Passive/` |
 | Normal | — | 0 | — |
 
 - 등급 분포는 폼당 **Faint 4 / Whole 4 / Primordial 4**로 통일. itemCode는 `Eng_<Form>_<Grade>_N`, 에셋은 `<Form>_Skill_NN`
 - **구조 편입 절차**(Dagger `e5b90065` → Freischutz `7277a0f8`) = `m_Script` guid를 `SkillData`→`EngravingData`로 교체 + `owningForm`/`grade` 추가 + `<Form>/Active/` 이동 + `ItemDatabase` 엔트리 등록. ⚠️ **`.asset.meta`는 절대 수정하지 않는다** — guid가 보존돼야 `WeaponData.skills` 결선이 살아남는다. `EngravingData`는 필드 2개만 추가한 파생이라 기존 직렬화가 그대로 역직렬화된다
 - **평타는 각인이 아니다.** `basicAttackSkillData`가 가리키는 에셋은 plain `SkillData`로 남긴다(Freischutz만 폼별 결선을 쓴다)
-- Parry는 마탄과 동일한 미편입 상태이며 같은 절차가 남아 있다
+- Parry 액티브는 마탄과 동일한 미편입 상태이며 같은 절차가 남아 있다. ⚠️ 편입 시 폴더를 `Parry/Active/`로 옮겨야 한다 — Skill Dashboard의 `GetDefaultSkillCreationFolder`가 `Assets/Scriptable/Skill/<owningForm>`을 문자열로 조립하므로 폴더명이 `ParrySkill`이면 **루트로 조용히 폴백**한다(마탄이 밟은 함정). 패시브는 2026-08-07에 `Parry/Passive/`로 먼저 생성해 폴더 규약을 맞춰 뒀다
 
 **드랍 통합 (Slice D)**: 각인을 기존 itemCode 드랍 파이프라인에 **브릿지**로 편입 — `ItemType.Engraving`(=7) + `ItemData.engraving`(EngravingData 참조). 적 드랍 테이블(`EnemyDropDatabase`)은 itemCode만 다루고, 픽업 시 `DroppedItem`이 Engraving 타입이면 인벤을 우회해 `EngravingLoadout.Active.AddToPool(engraving.owningForm, …)`으로 폼 풀에 적재. **각인 수량 1 고정**(픽업이 `_amount` 의도적 무시) — 드랍 엔트리 `Max(min,max)>1`이면 `EnemyDropDatabase.OnValidate`가 경고(에디터 전용, `itemDatabaseForValidation` 참조). 티어는 데이터만으로 표현: 일반=저확률 independent / 엘리트=choiceGroup chance 1 확정 / 보스=확정 Primordial(전부 min=max=1). 던전 이탈 시 풀은 `ClearAll`로 비워지므로 인벤 누적 없음.
 
@@ -1348,6 +1355,21 @@ Freischutz 킷 실측 = 평타 `Single` 1발(탄 1 소모) / Q `Single` 1발 / W
 - **적중 콜백 구조** — Dagger 표식 부여는 스킬 플래그(`appliesDaggerMarker`)로 결정되지만 집탄·분열은 **패시브 활성 여부**로 결정된다. `SkillExecutor`가 조건을 직접 보던 것을 `PlayerCombatController.ResolveProjectileHitCallback(skill, isProcCast)`로 **이관**하고, 패시브 구동 두 효과를 콜백 하나로 묶어 캐시 델리게이트를 **3개(Dagger / 패시브 / 합성)로 유지**한다. 셋을 각각 조합했다면 7개가 됐다. 발사당 할당 0.
 - **표시** — 집탄만 표시가 필요하다(램프는 탄창 UI가 잔탄을 이미 보여주고, 분열은 탄이 갈라지는 것이 곧 피드백). 상태이상 아이콘 행에 **편입하지 않는다** — 그 행은 압축 정렬되는 목록이라 매 발사마다 변하는 값을 읽기 나쁘고 Dagger 표식(몸 부착)과 정보가 뭉친다. 대신 `FreischutzFocusVisualPool`(§7-8c).
 - **Altar 결선** — Freischutz 해금 행 2개(집탄·분열탄)를 씬에 배치·결선했다. `defaultPassive`(고갈 램프)는 행이 필요 없다.
+
+**Parry 3종(2026-08-07 저작, 3축=상시 곱 / 고위험 고보상 / 방어 안정)**:
+
+| 패시브 | unlockId | 축 | 효과 |
+|------|------|----|------|
+| **반격**(무료 기본) | `parry_counter_ramp` | 상시 곱 | 반격기 피해 `1 + (value/100) × (소모 전 스택 / base 20)`, value 60 |
+| **결의** | `parry_glass_cannon` | 고위험 고보상 | 받는 피해 ×2 / 주는 피해 ×1.5 |
+| **심안** | `parry_wide_window` | 방어 안정 | 무적창 0.2→0.32s / 정타 획득 2→1 |
+
+- `BehaviorAction`에 `ParryStackRamp`·`GlassCannon`·`ParryWideWindow`를 **append**(0~11 무이동). `BehaviorTrigger`는 확장하지 않는다 — 마탄 3종이 전부 `Passive` 트리거이고 조회 지점만 코드에 박은 선례를 따랐다
+- 🔑 **반격의 분모는 소울 보너스가 빠진 `maxParryStack` 원본이다.** 실효 최대치(`_parryStack.Max`)를 넣으면 `ParryStackMax`를 강화할수록 같은 스택에서 배율이 떨어진다(최대 70 기준 20스택 ×1.60 → ×1.17). 고정하면 20 초과 스택이 배율 1.6을 넘어가 **소울 투자가 순수 이득**이 된다
+- 배율은 **시전당 1회 스냅샷**(`SkillExecutionContext.ParryStackRampSnapshot`)으로 `hitSteps` 전 타격이 같은 값을 받는다. 적용은 `RollCritDamage` 직전 1회뿐이고 확정 damage 오버로드에는 넣지 않는다(마탄 Q13 재발 방지). 게이트 = `resourceType == ParryStack && consumeAmount > 0`이라 평타는 ×1
+- 결의의 받는 피해는 `(incoming − 방어) × 2 → Max(1) → 쉴드 흡수` 순서(방어 스탯 투자 가치 보존). 🔑 **패리 인터셉트가 이 분기보다 앞에 있어 막아낸 피해에는 페널티가 곱해지지 않는다** — 잘하는 만큼 페널티가 사라지는 것이 설계 의도이며 그 순서에 의존한다. 주는 피해는 `RollCritDamage` 내부 단일 지점(콤보 후·크리 롤 전)
+- 심안은 SerializeField에 직접 대입하지 않고 `EffectiveParryInvincibleDuration`/`EffectiveParryStackGain` 조회 프로퍼티를 경유한다(씬 값 오염 방지, 해제 시 원값 복귀)
+- 아이콘 3종 미결선(아트 대기) — `Sprite/Skill/Icon/Parry/Passive/Parry_Passive_00~02.png` → 반격/결의/심안
 
 > 🔑 **전 폼 공통 규칙 — 모든 패시브는 보스전에서 작동해야 한다.**
 > 패시브는 폼선택 1택·런 중 변경 불가이므로, 보스전 무효 패시브는 "고르면 런 후반이 손해"인 죽은 선택지가 된다(드랍이라면 상황별 강약이 빌드 다양성이 되지만 1택 구조에서는 아니다). Sword 3종이 전부 보스전에서 작동하는 것은 우연이 아니었다.
@@ -1504,6 +1526,51 @@ position  = enemy.transform.TransformPoint(new Vector3(0f, localY, 0f))
 **벽 근처 대시 픽스(`654ed33f`)** — 회피 도입으로 표면화된 기존 버그:
 - 근인 ①검증 반경 불일치: 대시 경로 검증이 콜라이더 실반경(0.5)을 쓰는데 이동 판정(`CanMoveTo`)은 tileSize×0.2 — 벽에 0.2까지 붙을 수 있는데 대시는 0.5 클리어런스 요구 → 벽 0.3 이내에선 **벽 반대 방향 대시조차 첫 샘플 실패로 전면 거부**(Blink §0-0s와 동일 부류). ②`stopOnWall` 대시도 이동량 최소치 미만이면 `TryStartDash` false = 무발동.
 - 픽스: `PlayerController.MoveCollisionRadius` 노출(CanMoveTo 동일 식)로 대시 검증 반경 통일(비플레이어 폴백=콜라이더) + **stopOnWall 대시는 destination==start여도 발동** — 벽 대시 = "제자리 돌진"(duration 동안 대시 상태·무적·애니 유지, 이동만 클램프, 쿨·자원 정상 소모 = 확정 설계).
+
+> ⚠️ **회피 슬롯은 2026-08-07부터 폼별로 갈린다.** `PlayerFormData.dodgeMode`(`PlayerDodgeMode { Dash, Parry }`)가 Dash면 위 공통 대시 스킬, Parry면 패리 시퀀스가 나간다(§7-11b). `TryUseDodge`의 **Parry 분기는 `dodgeSkill == null` 가드보다 앞**에 있어야 한다 — Parry 폼은 `dodgeSkill`을 쓰지 않으므로 뒤에 두면 폴백 미결선 시 패리가 통째로 죽는다.
+
+### 7-11b. 패리 = 회피 슬롯 (Parry 폼, 2026-08-07 재설계)
+
+**동기** — 구조상 패리가 평타 슬롯이었기 때문에 Parry 폼은 **적이 공격하지 않으면 아무것도 할 수 없었다.** 평타에 딜을 주고 패리를 방어 슬롯으로 옮겨 자력 딜 라인을 만들었다.
+
+| 슬롯 | 구 | 신 |
+|---|---|---|
+| 평타 | 패리 시퀀스 | **근접 공격**(`ParryWeapon`: damage 5 / Cone / range 2 / 단일 타격) |
+| Space(회피) | 공통 무적 대시 | **패리 시퀀스** |
+
+**이동 회피 상실은 수용한다**(유저 확정) — 백스텝·패리 중 이동 허용 모두 비채택. 패리 자체가 준수한 방어이고 물러나는 연출이 오히려 조작감을 해친다는 판단.
+
+**시퀀스와 성공 분기**
+
+```
+[선딜 0.08] → [무적 0.2] ─성공─→ 후딜 생략 + _dodgeCooldownTimer = 0 → 즉시 종료
+                        └─실패─→ [후딜 0.18] → 종료 (쿨다운 유지)
+```
+
+| | 이동 복귀 | 재패리 |
+|---|---|---|
+| 성공 | 즉시 | **0.08s**(선딜만) |
+| 헛패리 | 0.46s | 0.46s |
+
+성공/실패 분기는 **이번에 처음 생겼다.** 그 전에는 무적 루프를 어떻게 빠져나오든 같은 후딜을 물어서 잘한 플레이와 못한 플레이의 결과가 같았고, 패리에 성공하고도 0.18초 동안 무방비로 굳었다(인터셉트는 `_damageInvincibleTimer`를 설정하기 전에 return하므로 i-frame도 없다). 후딜 전용 플래그는 두지 않는다 — `_parryIntercepted`만으로 분기가 성립한다.
+
+**쿨다운** — 패리는 `dodgeSkill.cooldown`이 아니라 신설 `parryCooldown`(0.3s) × `EffectiveSkillCooldownMultiplier`를 `_dodgeCooldownTimer`에 건다.
+
+**스택 축(×5 스케일)**
+
+| 항목 | 값 |
+|---|---|
+| 최대 | 20 (`ParryStackMax` perLevel 5 × maxLevel 10 → 최대 70) |
+| 정타 획득 | 2 (`parryStackGainPerSuccess`) |
+| grace / decay | 8초 / 1스택 1초 |
+| Q·W·E·R 소모 | 2 · 4 · 10 · 16 |
+| 리셋 | **사망 · 층 이동 · 던전 이탈** |
+
+해상도를 올린 이유는 반격기 소모량 축을 넓히기 위해서다(배율이 패리 1회마다 ×1.15씩 점프하던 것이 ×1.03씩 움직인다). 🔑 **리셋을 방 단위에서 런 단위로 옮긴 것이 수치 변경보다 크다** — 방 진입·문 열림에서 `Reset()`이 돌던 탓에 8회 축적이 필요한 R은 한 방 안에서 성립하지 않았고, grace를 늘려도 방 밖에서는 무의미했다. `ComboDamage`가 이미 같은 전환을 한 선례라 호출 지점을 그대로 미러했다(`Die()` / `HandleFloorChanged` / `CleanupDungeonRuntime`).
+
+**애니메이션** — 평타 `AttackTrigger` / 패리 `ParryTrigger`로 분리. `ParryAnimation.asset`(`animationType: CustomTrigger`)이 패리 전용 소스이고 `PlayerCombatController.parryAnimationSkillData`로 결선한다. `PlayCustomTriggerAnimation`은 원래 `ApplyFacing`만 탔으므로 `ApplyAttackFacing` 헬퍼로 공통화해 CustomTrigger 경로에서도 `ParryFacing`이 세팅되게 했다. ⚠️ **평타 전용 클립이 아직 없다** — `Attack_Front`/`Attack_Side` 상태가 `Parry_Front.anim`/`Parry_Side.anim`을 공유한다. 아트 입고 시 **이 두 상태의 Motion만 교체**하면 된다.
+
+> ⚠️ **알려진 회귀**: Parry 폼은 스킬 시전 중 캔슬 수단이 없다. 다른 폼은 회피로 스킬을 캔슬하고 탈출할 수 있지만(`CanCancelActiveSkill`), 패리 분기는 `IsSkillBusy`에서 즉시 return하므로 캔슬 경로에 도달조차 못 한다. 설계 검토 후 처리 예정(유저 보류).
 
 ### 7-12. 장판 — AreaOverTime 스킬 (DamageZone, 2026-07-17)
 
@@ -1951,8 +2018,9 @@ PlayerStatusBarUI:
   OnPlayerHpChanged(cur, max) → HP 슬라이더 + 텍스트 갱신
   (MP 바·OnPlayerMpChanged 는 폐지됨)
 
-폼 고유 자원 UI (구 MP 영역 재사용, 현재 폼 BasicAttackMode 기준 표시):
-  Parry  → ParryStackBarUI (ParryStack 슬라이더)
+폼 고유 자원 UI (구 MP 영역 재사용, BasicAttackMode / DodgeMode 기준 표시):
+  Parry  → ParryStackBarUI (ParryStack 슬라이더) — 2026-08-07부터 DodgeMode==Parry 로 판정
+           (게이지 분모는 MaxParryStack = 소울 보너스 포함 실효 최대치)
   Bullet → FreischutzMagazineUI (탄창 칸 Bullet/Bullet_empty + x/max·Reloading)
   Damage → 자원 UI 숨김
 ```
@@ -3345,7 +3413,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 
 1. `PlayerFormId` enum 에 새 식별자 추가
 2. `Create > JBRogLike > Player > Form` 으로 `PlayerFormData` 에셋 생성 — `animatorController` (Idle/Walk/Attack/Spin/Dash/Death 등 트리거를 가진 controller), `defaultSprite`, `defaultSpriteFacesRight`, `useHorizontalFlipForFacing`, dash 회전 옵션 입력
-3. `basicAttackMode`(Damage/Parry/Bullet) 선택 + `defaultWeapon` 에 그 폼의 loadout WeaponData(stats + skills[4], 마탄이면 탄창 필드) 연결
+3. `basicAttackMode`(Damage/Bullet — **Parry 는 결번**) + `dodgeMode`(Dash/Parry) 선택 + `defaultWeapon` 에 그 폼의 loadout WeaponData(stats + skills[4] + `defaultPassive`/`passiveEngravings`, 마탄이면 탄창 필드) 연결
 4. `SetCurrentForm(formData)` 또는 `ApplyForm` 시 Animator/sprite/trigger 갱신 + 실제 폼 변경이면 `EquipWeapon(defaultWeapon)` 로 무기·스킬 자동 장착 (loadout 단일 소스 = WeaponData, `PlayerFormData.skills` 는 폐지)
    ※ 런타임 폼 전환은 `PlayerFormController.TrySwitchForm(PlayerFormId)`(+`PlayerFormDatabase` formId→asset 매핑)로 구현됨 — 콘솔 `/form set <id>` 진입점. `Normal` 은 항상 허용, 나머지 폼은 `ItemType.Soul` + `soulFormId` 보유 여부로 게이팅. 새 Form 을 게임플레이에서 해금하려면 대응 Soul ItemData 를 추가하고 드랍/보상 파이프라인에 연결
 
@@ -3401,7 +3469,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | 폼 시스템 | `PlayerFormData`/`PlayerFormId`/`PlayerFormDatabase` + `TrySwitchForm`(Soul 보유 게이팅 + `FormSwitchResult`) + loadout 단일 소스(`WeaponData.skills[4]`+`basicAttackSkillData` 폼별 평타) + `OnLoadoutChanged`→스킬 UI 자동 갱신 + 콘솔 `/form set` |
-| 폼별 메커니즘 | **Sword**(콤보+캔슬 — 연타·체인·피캔슬, §7-10, 정체성 확정 2026-07-15. **초기 QWER 킷 저작 완료 2026-07-27**: Q 3연타 콤보/W 대시+베기(recast)/E 회전 광역(Spin·hitSteps)/R 일도양단(무거운 hitSteps·cancelable=false)) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(패리 가로채기→스택 자원, `ParryStackResource` 순수 C#) |
+| 폼별 메커니즘 | **Sword**(콤보+캔슬 — 연타·체인·피캔슬, §7-10, 정체성 확정 2026-07-15. **초기 QWER 킷 저작 완료 2026-07-27**: Q 3연타 콤보/W 대시+베기(recast)/E 회전 광역(Spin·hitSteps)/R 일도양단(무거운 hitSteps·cancelable=false)) / **Dagger**(마커 암살 루프 — `DaggerMarkerRegistry`+비주얼 풀+Q Blink/W 투척/E 폭발·쿨리셋/R 버프, DoT 소스) / **Freischutz**(탄창·재장전 3경로·부분발사) / **Parry**(**재설계 2026-08-07** — 평타=근접 딜 / Space=패리, 성공 시 후딜·쿨다운 해제로 연속 패리, 스택 축 20 기준·런 단위 리셋, `ParryStackResource` 순수 C#, §7-11b) |
 | 폼 애니메이션 | 4폼 전용 스프라이트시트→5클립+AnimatorController+에셋 결선, Parry 정면/측면 분기(`ApplyParryFacing`), 스킬 애니는 **SkillData 단일 진입점**(`PlaySkillAnimation`) |
 | 폼 자원 UI | `ParryStackBarUI` / `FreischutzMagazineUI` / `ComboCounterUI`(**정식화 2026-07-14** — x{총스택}+단계 orb 4개+유예 slider, 단계별 색) — BasicAttackMode 로 표시 분기 |
 
