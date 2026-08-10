@@ -9,16 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: ParrySkill_2
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uD328\uB9AC\uC2A4\uD0AC 1"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: 
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Parry_Skill_02
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uC0AC\uC120\uCC38"
+  icon: {fileID: -2224474878120320963, guid: 97e217bf083729f42a8239ef77b258a9, type: 3}
+  description: "\uB124 \uB300\uAC01 \uBC29\uD5A5\uC73C\uB85C \uAC80\uC555\uC744 \uBED7\uC5B4 \uD55C\uAEBC\uBC88\uC5D0 \uBCB1\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
-  requiredAmount: 4
-  consumeAmount: 4
+  requiredAmount: 10
+  consumeAmount: 10
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0
@@ -26,9 +26,9 @@ MonoBehaviour:
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 20
-  attackPattern: 4
-  patternRange: 3
+  damage: 30
+  attackPattern: 2
+  patternRange: 5
   coneHalfAngle: 45
   isMultiTarget: 1
   canPenetrateWalls: 0
@@ -54,3 +54,5 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  owningForm: 4
+  grade: 1

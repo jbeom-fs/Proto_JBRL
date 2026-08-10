@@ -2100,13 +2100,11 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         }
         if (IsDamageInvincible) return false;
 
-        int mitigatedDamage = incomingDamage - TotalDefense;
         float incomingMultiplier = _relicBehaviors != null
             ? _relicBehaviors.GlassCannonIncomingDamageMultiplier
             : 1f;
-        int actual = Mathf.Max(
-            1,
-            Mathf.RoundToInt(mitigatedDamage * incomingMultiplier));
+        int amplifiedDamage = Mathf.RoundToInt(incomingDamage * incomingMultiplier);
+        int actual = Mathf.Max(1, amplifiedDamage - TotalDefense);
         int toHp = _shield.IsActive ? _shield.Absorb(actual) : actual;
         _damageInvincibleTimer = damageInvincibleDuration;
 

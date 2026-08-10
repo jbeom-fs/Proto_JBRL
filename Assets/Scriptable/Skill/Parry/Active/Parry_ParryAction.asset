@@ -10,32 +10,44 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: ParrySkill_3
+  m_Name: Parry_ParryAction
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uD328\uB9AC\uC2A4\uD0AC 1"
-  icon: {fileID: -2224474878120320963, guid: 97e217bf083729f42a8239ef77b258a9, type: 3}
-  description: 
+  skillName: Parry Animation
+  icon: {fileID: 0}
+  description: Animation config for the Parry dodge action.
   executionType: 0
-  resourceType: 2
-  requiredAmount: 10
-  consumeAmount: 10
+  resourceType: 0
+  requiredAmount: 0
+  consumeAmount: 0
+  bulletShortageMode: 0
+  reloadAmount: 0
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0
-  animationType: 0
-  customAnimationTrigger: 
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 4
+  customAnimationTrigger: ParryTrigger
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 30
-  attackPattern: 2
-  patternRange: 5
+  damage: 0
+  attackPattern: 0
+  patternRange: 1
   coneHalfAngle: 45
-  isMultiTarget: 1
+  customCells: []
+  hitSteps: []
+  cancelable: 0
+  isMultiTarget: 0
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -54,3 +66,9 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75

@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: ParrySkill_1
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "\uD328\uB9AC\uC2A4\uD0AC 1"
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Parry_Skill_00
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uCCD0\uB0B4\uAE30"
   icon: {fileID: -3859272008004827343, guid: 8e48bf0ec9762e94aab377d59d969b45, type: 3}
-  description: 
+  description: "\uC804\uBC29\uC744 \uC9E7\uAC8C \uD6D1\uC5B4 \uBD99\uC740 \uC801\uC744 \uCCD0\uB0C5\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 2
@@ -54,3 +54,5 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  owningForm: 4
+  grade: 0

@@ -9,45 +9,33 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
-  m_Name: ParryAnimation
-  m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: Parry Animation
-  icon: {fileID: 0}
-  description: Animation config for the Parry dodge action.
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Parry_Skill_03
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "\uC6D0\uBB34"
+  icon: {fileID: 5936356172364887011, guid: e7d82edd42ae8b748b7e3716eb88f36c, type: 3}
+  description: "\uCD95\uC801\uD55C \uD328\uB9AC \uC2A4\uD0DD\uC744 \uBAA8\uB450 \uD574\uBC29\uD574 \uC8FC\uC704\uB97C \uD729\uC4F8\uC5B4 \uBCB1\uB2C8\uB2E4."
   executionType: 0
-  resourceType: 0
-  requiredAmount: 0
-  consumeAmount: 0
-  bulletShortageMode: 0
-  reloadAmount: 0
+  resourceType: 2
+  requiredAmount: 16
+  consumeAmount: 16
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0
-  recastStages: []
-  recastWindow: 1.5
-  animationType: 4
-  customAnimationTrigger: ParryTrigger
+  animationType: 0
+  customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
-  damage: 0
-  attackPattern: 0
-  patternRange: 1
+  damage: 100
+  attackPattern: 3
+  patternRange: 10
   coneHalfAngle: 45
-  customCells: []
-  hitSteps: []
-  cancelable: 0
-  isMultiTarget: 0
+  isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
-  ailments: []
-  zoneSprite: {fileID: 0}
-  zoneRadius: 1
-  zoneTickInterval: 0.5
-  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -66,9 +54,5 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
-  appliesDaggerMarker: 0
-  detonatesDaggerMarker: 0
-  markerDetonationDamage: 0
-  resetCooldownOnMarkerDetonate: 0
-  markerDuration: 5
-  blinkBehindOffset: 0.75
+  owningForm: 4
+  grade: 2
