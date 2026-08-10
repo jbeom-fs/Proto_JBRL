@@ -15,7 +15,7 @@ MonoBehaviour:
   unlockId: parry_glass_cannon
   passiveName: "결의"
   icon: {fileID: 0}
-  description: "방어 적용 후 받는 피해가 2배가 되고, 평타와 반격기 피해가 50% 증가합니다. 패리로 막은 피해에는 받는 피해 증가가 적용되지 않습니다."
+  description: "받는 피해가 2배가 되고, 평타와 반격기 피해가 50% 증가합니다. 패리로 막은 피해에는 받는 피해 증가가 적용되지 않습니다."
   owningForm: 4
   grade: 2
   behaviors:
