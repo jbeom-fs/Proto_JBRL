@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Parry_Skill_05
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "검기"
+  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  description: "검을 휘둘러 검기를 날립니다. 적을 관통합니다."
+  executionType: 1
+  resourceType: 2
+  requiredAmount: 4
+  consumeAmount: 4
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 2
+  castDelay: 0
+  recoveryDelay: 0.1
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 0
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 18
+  attackPattern: 1
+  patternRange: 1
+  coneHalfAngle: 45
+  customCells: []
+  hitSteps: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
+  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
+  projectileSpeed: 11
+  projectileLifetime: 2.5
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 1
+  projectileMaxBounceCount: 1
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0.4
+  recoilDuration: 0.1
+  owningForm: 4
+  grade: 0

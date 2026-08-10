@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Parry_Skill_11
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "역장"
+  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  description: "검압을 흩뿌려 일정 시간 주위를 베어냅니다."
+  executionType: 3
+  resourceType: 2
+  requiredAmount: 14
+  consumeAmount: 14
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 18
+  castDelay: 0
+  recoveryDelay: 0.15
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 0
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 6
+  attackPattern: 1
+  patternRange: 1
+  coneHalfAngle: 45
+  customCells: []
+  hitSteps: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0.3
+  slowDuration: 1
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 3
+  zoneTickInterval: 0.8
+  zoneDuration: 4
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 8
+  projectileLifetime: 3
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 0
+  projectileMaxBounceCount: 1
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
+  owningForm: 4
+  grade: 2

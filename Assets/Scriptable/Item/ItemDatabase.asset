@@ -1308,3 +1308,155 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Faint_3
+    displayName: "쳐올리기"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 77dfce991b9c44acbb625cbbaad97740, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Faint_4
+    displayName: "검기"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 6ec4e6b4bb8d4eff9860e2d2defd5ec8, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Whole_2
+    displayName: "파문"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 9da1cc57fd8c485c91d67810f979a38a, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Whole_3
+    displayName: "십자참"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 183f22eb0b454333802c834f29a461f6, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Whole_4
+    displayName: "억압"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 4b9854d6c57841f7894507782d13f1ef, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Primordial_2
+    displayName: "삼연격"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 98be4ff7d25c4116ac1c6fb4d2cfff47, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Primordial_3
+    displayName: "역린"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 52d2eb08c41b4f3e992cdbeb5b011613, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Primordial_4
+    displayName: "역장"
+    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    description: 
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 74f7fb10d1a84c6c89e291243d05087d, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: 
+    salvageMinAmount: 1
+    salvageMaxAmount: 1

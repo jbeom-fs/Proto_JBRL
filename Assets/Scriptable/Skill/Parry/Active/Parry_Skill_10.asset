@@ -1,0 +1,89 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
+  m_Name: Parry_Skill_10
+  m_EditorClassIdentifier: Assembly-CSharp::EngravingData
+  skillName: "역린"
+  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  description: "한 대상에게 세 번 깊게 찔러넣습니다."
+  executionType: 0
+  resourceType: 2
+  requiredAmount: 12
+  consumeAmount: 12
+  bulletShortageMode: 0
+  reloadAmount: 0
+  cooldown: 14
+  castDelay: 0
+  recoveryDelay: 0.2
+  recastStages: []
+  recastWindow: 1.5
+  animationType: 0
+  customAnimationTrigger: 
+  rotateAnimationByDirection: 0
+  animationBaseAngle: 0
+  damage: 45
+  attackPattern: 5
+  patternRange: 1
+  coneHalfAngle: 40
+  customCells: []
+  hitSteps:
+  - delay: 0.12
+    damagePct: 100
+    projectileCount: 0
+    spreadAngle: 0
+    overrideCells: []
+  - delay: 0.12
+    damagePct: 100
+    projectileCount: 0
+    spreadAngle: 0
+    overrideCells: []
+  cancelable: 0
+  isMultiTarget: 0
+  canPenetrateWalls: 0
+  knockbackForce: 0
+  knockbackDuration: 0
+  slowPercentage: 0
+  slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 8
+  projectileLifetime: 3
+  projectileCount: 1
+  projectileSpreadAngle: 15
+  projectileFirePattern: 0
+  projectileWallHitMode: 0
+  projectileTargetHitMode: 0
+  projectileMaxBounceCount: 1
+  projectileSpawnOffset: 0.35
+  projectileBurstInterval: 0.1
+  projectileBurstSpacing: 0.12
+  dashDistance: 3
+  dashDuration: 0.12
+  dashStopOnWall: 1
+  dashDamageOnPath: 0
+  dashDamageOnContact: 0
+  dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
+  owningForm: 4
+  grade: 2
