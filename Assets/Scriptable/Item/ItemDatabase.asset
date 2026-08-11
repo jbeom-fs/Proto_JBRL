@@ -1234,7 +1234,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Faint_1
     displayName: "\uCCD0\uB0B4\uAE30"
-    icon: {fileID: -3859272008004827343, guid: 8e48bf0ec9762e94aab377d59d969b45, type: 3}
+    icon: {fileID: 2881298155451844258, guid: 2025142a1d93cd24e9a5409bcd6a6e1a, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1253,7 +1253,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Faint_2
     displayName: "\uAD00\uD1B5"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    icon: {fileID: 2499948632077581500, guid: c884a582851f7e24ea571c49e2853f30, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1272,7 +1272,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Whole_1
     displayName: "\uC0AC\uC120\uCC38"
-    icon: {fileID: -2224474878120320963, guid: 97e217bf083729f42a8239ef77b258a9, type: 3}
+    icon: {fileID: 2302608974761011167, guid: f227ac54acbdd6c43a091c5f5cae5169, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1291,7 +1291,7 @@ MonoBehaviour:
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Primordial_1
     displayName: "\uC6D0\uBB34"
-    icon: {fileID: 5936356172364887011, guid: e7d82edd42ae8b748b7e3716eb88f36c, type: 3}
+    icon: {fileID: -7599723886675692660, guid: 5e51cc2fd2b78e3469ceeefdff5c8f81, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1309,8 +1309,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Faint_3
-    displayName: "쳐올리기"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uCCD0\uC62C\uB9AC\uAE30"
+    icon: {fileID: -5310593939612849322, guid: 273909216005da640963fef80e7fb590, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1328,8 +1328,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Faint_4
-    displayName: "검기"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uAC80\uAE30"
+    icon: {fileID: -6823099562555276448, guid: 93c50a8ca583d854e950e3b75c1f21a7, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1347,8 +1347,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Whole_2
-    displayName: "파문"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uD30C\uBB38"
+    icon: {fileID: -6065266457035970191, guid: 35e7103fbbedcf94fa8578a4503b388b, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1366,8 +1366,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Whole_3
-    displayName: "십자참"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uC2ED\uC790\uCC38"
+    icon: {fileID: -6162833822978641773, guid: 0383648f93438a04496872b2bf7a20ec, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1385,8 +1385,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Whole_4
-    displayName: "억압"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uC5B5\uC555"
+    icon: {fileID: -4363297155249879554, guid: 4e9d3f7e95a1bc645a0aa65e69ce1e14, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1404,8 +1404,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Primordial_2
-    displayName: "삼연격"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uC0BC\uC5F0\uACA9"
+    icon: {fileID: -8284227434491508068, guid: cea27a55e18b20545baf110f05f01b22, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1423,8 +1423,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Primordial_3
-    displayName: "역린"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uC5ED\uB9B0"
+    icon: {fileID: -2172632250303922453, guid: ac68cc4611adbaa468f1238e019c453a, type: 3}
     description: 
     itemType: 7
     rarity: 0
@@ -1442,8 +1442,8 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Primordial_4
-    displayName: "역장"
-    icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+    displayName: "\uC5ED\uC7A5"
+    icon: {fileID: -8338450049168399627, guid: 89ae3e3efd17b9d4d9e66a947318e5e3, type: 3}
     description: 
     itemType: 7
     rarity: 0
