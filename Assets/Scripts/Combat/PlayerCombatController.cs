@@ -116,7 +116,6 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private AttackExecutor _attackExecutor;
     private SkillExecutor _skillExecutor;
     private SkillHitFlashRenderer _skillHitFlashRenderer;
-    private readonly List<Vector3> _basicAttackWorldTargets = new();
     private PlayerInputReader _inputReader;
     private PlayerDashController _dashController;
     private PlayerFormController _formController;
@@ -170,6 +169,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     private bool _isInventorySubscribed;
     private bool _isSoulEnhancementsSubscribed;
     private readonly HashSet<SkillExecutionType> _warnedRejectedProcTypes = new HashSet<SkillExecutionType>();
+    private readonly HashSet<PlayerFormId> _reportedUnwiredBasicAttackForms = new HashSet<PlayerFormId>();
 
     // ── 공개 프로퍼티 ────────────────────────────────────────────────
 
@@ -228,7 +228,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public Transform   CachedPlayerTransform => _cachedTransform;
     public Collider2D  CachedHitCollider     => _cachedHitCollider;
     public float       CachedHitRadius       => _cachedHitRadius;
-    private SkillData ActiveBasicAttack =>
+    public SkillData ActiveBasicAttack =>
         currentWeapon != null && currentWeapon.basicAttackSkillData != null
             ? currentWeapon.basicAttackSkillData
             : basicAttackSkillData;
@@ -947,57 +947,29 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
             return;
         }
 
-        _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
-
         SkillData basicAttack = ActiveBasicAttack;
-        _attackExecutor.BeginAttackActivation();
-        if (basicAttack != null)
-            _formController?.PlaySkillAnimation(basicAttack, CurrentAimDirection);
-
-        SkillTargetResolver.FillWorldTargets(
-            currentWeapon.attackPattern,
-            transform.position,
-            CurrentAimDirection,
-            GetGridAimDirection(),
-            currentWeapon.patternRange,
-            45f,
-            null,
-            _basicAttackWorldTargets);
-
-        int basicDamage = RollCritDamage(TotalAttack + currentWeapon.damage, out bool didCrit);
-        _attackExecutor.ExecuteAttackWorld(
-            _basicAttackWorldTargets,
-            basicDamage,
-            currentWeapon.canPenetrateWalls,
-            currentWeapon.basicAttackMultiTarget,
-            currentWeapon.knockbackForce,
-            currentWeapon.knockbackDuration,
-            currentWeapon.slowPercentage,
-            currentWeapon.slowDuration,
-            ResolveBasicAttackAilments(),
-            CurrentCombatEffectContext,
-            hitRadius);
-
-        ReportLifestealDamage(_attackExecutor.DamageDealtThisAttack);
-        if (_attackExecutor.HitEnemyCount > 0)
+        if (basicAttack == null)
         {
-            RegisterComboHit();
-            LogDamageDealt(_attackExecutor.DamageDealtThisAttack, didCrit);
+            ReportUnwiredBasicAttackOnce();
+            return;
         }
+
+        _cooldownController.SetAttackCooldown(EffectiveAttackCooldown());
+        SkillExecutionContext context =
+            CreateSkillExecutionContext(basicAttack, -1, isBasicAttack: true);
+        _skillExecutor.Execute(context);
         ApplyDaggerMarkersFromBasicAttack();
     }
 
-    private AilmentApplication[] ResolveBasicAttackAilments()
+    private void ReportUnwiredBasicAttackOnce()
     {
-        IReadOnlyList<AilmentApplication> bonuses = BonusAttackAilments;
-        if (bonuses == null || bonuses.Count == 0)
-            return null;
+        PlayerFormId form = CurrentFormId;
+        if (!_reportedUnwiredBasicAttackForms.Add(form))
+            return;
 
-        AilmentApplication[] merged = new AilmentApplication[bonuses.Count];
-        for (int i = 0; i < bonuses.Count; i++)
-            merged[i] = bonuses[i];
-
-        return merged;
+        Debug.LogWarning(
+            $"[PlayerCombatController] Basic attack skill unwired for form {form}.",
+            this);
     }
 
     private bool IsCurrentFormParryMode()

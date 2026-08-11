@@ -16,7 +16,7 @@ MonoBehaviour:
   damage: 5
   attackCooldown: 0.3
   attackPattern: 5
-  basicAttackSkillData: {fileID: 11400000, guid: 5ebbea7a1b464df294f062ad5be22510, type: 2}
+  basicAttackSkillData: {fileID: 11400000, guid: d6663b2bb8514bdb9d8a11f2dffb8ab4, type: 2}
   patternRange: 2
   basicAttackMultiTarget: 0
   knockbackForce: 0
@@ -33,7 +33,7 @@ MonoBehaviour:
   skills:
   - {fileID: 11400000, guid: 4c984bcd7073fb34dbbf4fc27bf68f3c, type: 2}
   - {fileID: 11400000, guid: 3a2c0a246a663354289d4c23a3e6acff, type: 2}
-  - {fileID: 11400000, guid: bc3c9753d1b69ca4f8c255924954edaa, type: 2}
+  - {fileID: 11400000, guid: 98be4ff7d25c4116ac1c6fb4d2cfff47, type: 2}
   - {fileID: 11400000, guid: f394a6d69f87d174287fa3db763442d9, type: 2}
   defaultPassive: {fileID: 11400000, guid: 4e8a07a8e33a4883b20c80323350f207, type: 2}
   passiveEngravings:

@@ -16,7 +16,7 @@ MonoBehaviour:
   damage: 0
   attackCooldown: 0.3
   attackPattern: 5
-  basicAttackSkillData: {fileID: 0}
+  basicAttackSkillData: {fileID: 11400000, guid: 1f042b02f87249a18f723870b9d6e1a5, type: 2}
   patternRange: 2
   basicAttackMultiTarget: 1
   knockbackForce: 30

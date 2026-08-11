@@ -14,8 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: normal_none
   passiveName: "\uBB34\uD615"
-  icon: {fileID: 0}
-  description: "\uC544\uC9C1 \uC544\uBB34 \uD615\uD0DC\uB3C4 \uAC16\uCD94\uC9C0 \uC54A\uC740 \uC0C1\uD0DC\uC785\uB2C8\uB2E4. \uCD94\uAC00 \uD6A8\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."
+  icon: {fileID: 3081480319176766978, guid: 9e069e371cafa5c4286a838ea84c893d, type: 3}
+  description: "\uC544\uC9C1 \uC544\uBB34 \uD615\uD0DC\uB3C4 \uAC16\uCD94\uC9C0 \uC54A\uC740
+    \uC0C1\uD0DC\uC785\uB2C8\uB2E4. \uCD94\uAC00 \uD6A8\uACFC\uAC00 \uC5C6\uC2B5\uB2C8\uB2E4."
   owningForm: 0
   grade: 0
   behaviors: []

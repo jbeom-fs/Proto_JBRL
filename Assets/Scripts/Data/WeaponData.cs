@@ -12,21 +12,30 @@ public class WeaponData : ScriptableObject
     public string weaponName = "기본 검";
 
     [Header("기본 공격")]
+    // 평타는 basicAttackSkillData 구동. 이 필드는 구 직렬화 보존용.
+    [HideInInspector]
     public int            damage         = 5;
     public float          attackCooldown = 0.3f;
+    [HideInInspector]
     public AttackPatternType attackPattern  = AttackPatternType.Single;
     [Tooltip("SkillData used for this weapon's basic attack animation and projectile execution. PlayerCombatController fallback is used when empty.")]
     public SkillData basicAttackSkillData;
     [Tooltip("모든 패턴의 사정거리(칸). Line=직선N칸, Cross/Diagonal=각방향N칸, Circle=체비쇼프N, Cone=부채꼴N칸, Single=N칸 거리 1타겟")]
+    [HideInInspector]
     public int            patternRange   = 1;
     [Tooltip("true면 기본 공격이 범위 내 모든 적에게 피해를 줍니다. false면 가장 가까운 적 1명에게만 피해.")]
+    [HideInInspector]
     public bool           basicAttackMultiTarget = false;
 
     [Header("Hit Effects")]
+    [HideInInspector]
     public float knockbackForce = 0f;
+    [HideInInspector]
     public float knockbackDuration = 0f;
     [Range(0f, 1f)]
+    [HideInInspector]
     public float slowPercentage = 0f;
+    [HideInInspector]
     public float slowDuration = 0f;
 
     [Header("스탯 보정 (장착 시 플레이어에게 합산)")]
@@ -35,6 +44,7 @@ public class WeaponData : ScriptableObject
 
     [Header("벽 관통")]
     [Tooltip("false: 벽에 막힘 / true: 벽을 무시하고 유닛에게 피해")]
+    [HideInInspector]
     public bool canPenetrateWalls = false;
 
   

@@ -161,28 +161,9 @@ public class SkillRangePreviewer : MonoBehaviour
         }
         else if (_isBasicAttackPreview)
         {
-            var weapon = combat?.currentWeapon;
-            if (weapon != null && SkillTargetResolver.IsDirectional(weapon.attackPattern))
-            {
-                if (IsMouseAimPreview())
-                {
-                    Vector2 direction = GetPreviewDirection();
-                    if (!IsSamePreviewDirection(direction, _lastPreviewDirection))
-                    {
-                        _lastPreviewDirection = direction;
-                        BuildBasicAttackPreview(weapon);
-                    }
-                }
-                else
-                {
-                    Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-                    if (facing != _lastFacing)
-                    {
-                        _lastFacing = facing;
-                        BuildBasicAttackPreview(weapon);
-                    }
-                }
-            }
+            SkillData basicAttack = combat?.ActiveBasicAttack;
+            if (RequiresFacingRefresh(basicAttack))
+                RefreshDirectionalPreview(basicAttack);
         }
     }
 
@@ -277,13 +258,14 @@ public class SkillRangePreviewer : MonoBehaviour
     {
         if (combat != null && combat.IsDead) return;
 
-        var weapon = combat?.currentWeapon;
-        if (weapon == null) return;
+        SkillData basicAttack = combat?.ActiveBasicAttack;
+        if (basicAttack == null) return;
 
         _isBasicAttackPreview = true;
         _lastFacing = movement != null ? movement.FacingDirection : Vector2Int.down;
+        _lastAimDirection = GetPreviewRawDirection();
         _lastPreviewDirection = GetPreviewDirection();
-        BuildBasicAttackPreview(weapon);
+        BuildPreview(basicAttack);
         _lr.enabled = true;
     }
 
@@ -613,69 +595,6 @@ public class SkillRangePreviewer : MonoBehaviour
         s_Buf[0] = Vector3.zero;
         s_Buf[1] = ClipToWall(Vector3.zero, end);
         Apply(2, false);
-    }
-
-    private void BuildBasicAttackPreview(WeaponData weapon)
-    {
-        Vector2Int facing = movement != null ? movement.FacingDirection : Vector2Int.down;
-        bool useMouseAim = IsMouseAimPreview();
-        Vector2 previewDirection = useMouseAim ? GetPreviewDirection() : Vector2.down;
-        _previewShapeCells.Clear();
-        if (useMouseAim)
-        {
-            AttackPattern.FillTargets(
-                weapon.attackPattern,
-                Vector2Int.zero,
-                ToDungeonGridFacing(previewDirection),
-                Mathf.Max(0, weapon.patternRange),
-                45f,
-                _previewShapeCells);
-        }
-        else
-        {
-            AttackPattern.FillTargets(
-                weapon.attackPattern,
-                Vector2Int.zero,
-                SkillTargetResolver.ToGridAimDirection(facing),
-                Mathf.Max(0, weapon.patternRange),
-                45f,
-                _previewShapeCells);
-        }
-
-        switch (weapon.attackPattern)
-        {
-            case AttackPatternType.Circle:
-                BuildCircle(SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize);
-                break;
-            case AttackPatternType.Cone:
-                if (useMouseAim)
-                    BuildCone(previewDirection, SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize, 45f);
-                else
-                    BuildCone(facing, SkillTargetResolver.GetPreviewRadius(weapon.patternRange) * tileSize, 45f);
-                break;
-            case AttackPatternType.Line:
-                if (useMouseAim)
-                    BuildRectangle(previewDirection, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);
-                else
-                    BuildRectangle(facing, tileSize * 0.5f, weapon.patternRange * tileSize, tileSize);
-                break;
-            case AttackPatternType.Single:
-                if (useMouseAim)
-                    BuildRectangle(previewDirection, (weapon.patternRange - 0.5f) * tileSize, tileSize, tileSize);
-                else
-                    BuildRectangle(facing, (weapon.patternRange - 0.5f) * tileSize, tileSize, tileSize);
-                break;
-            case AttackPatternType.Cross:
-                BuildCross(weapon.patternRange);
-                break;
-            case AttackPatternType.Diagonal:
-                BuildDiagonal(weapon.patternRange);
-                break;
-            case AttackPatternType.Custom:
-                Apply(0, false);
-                SetCustomFillVisible(false);
-                break;
-        }
     }
 
     // ══════════════════════════════════════════════════════════════
