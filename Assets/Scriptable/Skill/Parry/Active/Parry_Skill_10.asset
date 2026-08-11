@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_10
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "역린"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "한 대상에게 세 번 깊게 찔러넣습니다."
+  skillName: "\uC5ED\uB9B0"
+  icon: {fileID: -2172632250303922453, guid: ac68cc4611adbaa468f1238e019c453a, type: 3}
+  description: "\uD55C \uB300\uC0C1\uC5D0\uAC8C \uC138 \uBC88 \uAE4A\uAC8C \uCC14\uB7EC\uB123\uC2B5\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 12
@@ -31,10 +31,19 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 45
-  attackPattern: 5
+  attackPattern: 6
   patternRange: 1
   coneHalfAngle: 40
-  customCells: []
+  customCells:
+  - {x: -1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
   hitSteps:
   - delay: 0.12
     damagePct: 100

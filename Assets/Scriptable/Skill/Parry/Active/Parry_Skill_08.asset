@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_08
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "억압"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "검압으로 앞을 짓눌러 적의 움직임을 늦춥니다."
+  skillName: "\uC5B5\uC555"
+  icon: {fileID: -4363297155249879554, guid: 4e9d3f7e95a1bc645a0aa65e69ce1e14, type: 3}
+  description: "\uAC80\uC555\uC73C\uB85C \uC55E\uC744 \uC9D3\uB20C\uB7EC \uC801\uC758
+    \uC6C0\uC9C1\uC784\uC744 \uB2A6\uCDA5\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 8
@@ -31,10 +32,14 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 14
-  attackPattern: 4
+  attackPattern: 6
   patternRange: 4
   coneHalfAngle: 45
-  customCells: []
+  customCells:
+  - {x: 0, y: 1}
+  - {x: 0, y: 2}
+  - {x: 0, y: 3}
+  - {x: 0, y: 4}
   hitSteps: []
   cancelable: 0
   isMultiTarget: 1

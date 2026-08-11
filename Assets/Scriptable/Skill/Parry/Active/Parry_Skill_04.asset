@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_04
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "쳐올리기"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "검을 올려쳐 붙은 적을 밀어냅니다."
+  skillName: "\uCCD0\uC62C\uB9AC\uAE30"
+  icon: {fileID: -5310593939612849322, guid: 273909216005da640963fef80e7fb590, type: 3}
+  description: "\uAC80\uC744 \uC62C\uB824\uCCD0 \uBD99\uC740 \uC801\uC744 \uBC00\uC5B4\uB0C5\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 2
@@ -31,10 +31,17 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 8
-  attackPattern: 5
+  attackPattern: 6
   patternRange: 2
   coneHalfAngle: 60
-  customCells: []
+  customCells:
+  - {x: 0, y: 1}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
   hitSteps: []
   cancelable: 0
   isMultiTarget: 1

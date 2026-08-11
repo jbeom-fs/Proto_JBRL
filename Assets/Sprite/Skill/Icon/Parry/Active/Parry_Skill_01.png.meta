@@ -1,0 +1,245 @@
+fileFormatVersion: 2
+guid: c884a582851f7e24ea571c49e2853f30
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2499948632077581500
+    second: Parry_Skill_01_0
+  - first:
+      213: -8686587998213424539
+    second: Parry_Skill_01_1
+  - first:
+      213: 7365922183437511137
+    second: Parry_Skill_01_2
+  - first:
+      213: 1677054914765874460
+    second: Parry_Skill_01_3
+  - first:
+      213: 7190151430918472622
+    second: Parry_Skill_01_4
+  - first:
+      213: 6238259607018028342
+    second: Parry_Skill_01_5
+  - first:
+      213: 4781730354491823643
+    second: Parry_Skill_01_6
+  - first:
+      213: -6689564034799358633
+    second: Parry_Skill_01_7
+  - first:
+      213: 4603162255594420664
+    second: Parry_Skill_01_8
+  - first:
+      213: 1656757830617420853
+    second: Parry_Skill_01_9
+  - first:
+      213: -2021464458094782358
+    second: Parry_Skill_01_10
+  - first:
+      213: -9157115139270278918
+    second: Parry_Skill_01_11
+  - first:
+      213: 6587929483958651865
+    second: Parry_Skill_01_12
+  - first:
+      213: 9019966352236154042
+    second: Parry_Skill_01_13
+  - first:
+      213: -6358461119007537479
+    second: Parry_Skill_01_14
+  - first:
+      213: 185304118533960547
+    second: Parry_Skill_01_15
+  - first:
+      213: -1968253151008381352
+    second: Parry_Skill_01_16
+  - first:
+      213: -3773944260166399871
+    second: Parry_Skill_01_17
+  - first:
+      213: -9041321611523841212
+    second: Parry_Skill_01_18
+  - first:
+      213: 1643294325787098570
+    second: Parry_Skill_01_19
+  - first:
+      213: 4833611316205430915
+    second: Parry_Skill_01_20
+  - first:
+      213: 8372356195165350776
+    second: Parry_Skill_01_21
+  - first:
+      213: 4214758344187872404
+    second: Parry_Skill_01_22
+  - first:
+      213: -1333842082110699196
+    second: Parry_Skill_01_23
+  - first:
+      213: -3208259308177224803
+    second: Parry_Skill_01_24
+  - first:
+      213: -4421980428898409787
+    second: Parry_Skill_01_25
+  - first:
+      213: -8060988049383101589
+    second: Parry_Skill_01_26
+  - first:
+      213: 8553536830878293304
+    second: Parry_Skill_01_27
+  - first:
+      213: -4976039397244812952
+    second: Parry_Skill_01_28
+  - first:
+      213: -8039468954506966641
+    second: Parry_Skill_01_29
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Parry_Skill_01_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 296
+        width: 1024
+        height: 990
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbc35bb190a91b220800000000000000
+      internalID: 2499948632077581500
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 32c20a81b72bd064a8046d7220fa21dc
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":1024.0,"y":990.0},"gridSpriteOffset":{"x":0.0,"y":250.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      Parry_Skill_01_0: 2499948632077581500
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

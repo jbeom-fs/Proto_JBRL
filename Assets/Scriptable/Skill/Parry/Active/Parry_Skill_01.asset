@@ -13,29 +13,47 @@ MonoBehaviour:
   m_Name: Parry_Skill_01
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uAD00\uD1B5"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "\uC9C1\uC120\uC73C\uB85C \uAC80\uC744 \uB0B4\uC9C8\uB7EC \uC55E\uC758 \uC801\uC744 \uAFF0\uB6AB\uC2B5\uB2C8\uB2E4."
+  icon: {fileID: 2499948632077581500, guid: c884a582851f7e24ea571c49e2853f30, type: 3}
+  description: "\uC9C1\uC120\uC73C\uB85C \uAC80\uC744 \uB0B4\uC9C8\uB7EC \uC55E\uC758
+    \uC801\uC744 \uAFF0\uB6AB\uC2B5\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 4
   consumeAmount: 4
+  bulletShortageMode: 0
+  reloadAmount: 0
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0
+  recastStages: []
+  recastWindow: 1.5
   animationType: 0
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 20
-  attackPattern: 4
+  attackPattern: 6
   patternRange: 3
   coneHalfAngle: 45
+  customCells:
+  - {x: 0, y: 1}
+  - {x: 0, y: 2}
+  - {x: 0, y: 3}
+  - {x: 0, y: 4}
+  hitSteps: []
+  cancelable: 0
   isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -54,5 +72,13 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
   owningForm: 4
   grade: 0

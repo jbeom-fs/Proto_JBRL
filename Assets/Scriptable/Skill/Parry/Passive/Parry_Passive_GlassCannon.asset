@@ -13,16 +13,19 @@ MonoBehaviour:
   m_Name: Parry_Passive_GlassCannon
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: parry_glass_cannon
-  passiveName: "결의"
-  icon: {fileID: 0}
-  description: "받는 피해가 2배가 되고, 평타와 반격기 피해가 50% 증가합니다. 패리로 막은 피해에는 받는 피해 증가가 적용되지 않습니다."
+  passiveName: "\uACB0\uC758"
+  icon: {fileID: 6651523475163727514, guid: bb48aa6dab2870043afd0b0b879a9483, type: 3}
+  description: "\uBC1B\uB294 \uD53C\uD574\uAC00 2\uBC30\uAC00 \uB418\uACE0, \uD3C9\uD0C0\uC640
+    \uBC18\uACA9\uAE30 \uD53C\uD574\uAC00 50% \uC99D\uAC00\uD569\uB2C8\uB2E4. \uD328\uB9AC\uB85C
+    \uB9C9\uC740 \uD53C\uD574\uC5D0\uB294 \uBC1B\uB294 \uD53C\uD574 \uC99D\uAC00\uAC00
+    \uC801\uC6A9\uB418\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4."
   owningForm: 4
   grade: 2
   behaviors:
   - trigger: 2
     action: 13
     skillTypeFilter: 0
-    comboTierDamages: []
+    comboTierDamages: 
     value: 150
     focusRequiredStacks: 6
     splitCount: 2

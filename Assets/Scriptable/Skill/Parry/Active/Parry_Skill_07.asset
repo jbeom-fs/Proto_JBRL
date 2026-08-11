@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_07
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "십자참"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "네 방향으로 십자를 그어 벱니다."
+  skillName: "\uC2ED\uC790\uCC38"
+  icon: {fileID: -6162833822978641773, guid: 0383648f93438a04496872b2bf7a20ec, type: 3}
+  description: "\uB124 \uBC29\uD5A5\uC73C\uB85C \uC2ED\uC790\uB97C \uADF8\uC5B4 \uBCB1\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 6
@@ -31,10 +31,23 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 22
-  attackPattern: 1
+  attackPattern: 6
   patternRange: 3
   coneHalfAngle: 45
-  customCells: []
+  customCells:
+  - {x: 0, y: -3}
+  - {x: 0, y: -2}
+  - {x: 0, y: -1}
+  - {x: -3, y: 0}
+  - {x: -2, y: 0}
+  - {x: -1, y: 0}
+  - {x: 0, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: 3, y: 0}
+  - {x: 0, y: 1}
+  - {x: 0, y: 2}
+  - {x: 0, y: 3}
   hitSteps: []
   cancelable: 0
   isMultiTarget: 1

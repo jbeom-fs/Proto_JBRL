@@ -13,29 +13,124 @@ MonoBehaviour:
   m_Name: Parry_Skill_03
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
   skillName: "\uC6D0\uBB34"
-  icon: {fileID: 5936356172364887011, guid: e7d82edd42ae8b748b7e3716eb88f36c, type: 3}
-  description: "\uCD95\uC801\uD55C \uD328\uB9AC \uC2A4\uD0DD\uC744 \uBAA8\uB450 \uD574\uBC29\uD574 \uC8FC\uC704\uB97C \uD729\uC4F8\uC5B4 \uBCB1\uB2C8\uB2E4."
+  icon: {fileID: -7599723886675692660, guid: 5e51cc2fd2b78e3469ceeefdff5c8f81, type: 3}
+  description: "\uCD95\uC801\uD55C \uD328\uB9AC \uC2A4\uD0DD\uC744 \uBAA8\uB450 \uD574\uBC29\uD574
+    \uC8FC\uC704\uB97C \uD729\uC4F8\uC5B4 \uBCB1\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 16
   consumeAmount: 16
+  bulletShortageMode: 0
+  reloadAmount: 0
   cooldown: 0
   castDelay: 0
   recoveryDelay: 0
+  recastStages: []
+  recastWindow: 1.5
   animationType: 0
   customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 100
-  attackPattern: 3
+  attackPattern: 6
   patternRange: 10
   coneHalfAngle: 45
+  customCells:
+  - {x: -4, y: -4}
+  - {x: -3, y: -4}
+  - {x: -2, y: -4}
+  - {x: -1, y: -4}
+  - {x: 0, y: -4}
+  - {x: 1, y: -4}
+  - {x: 2, y: -4}
+  - {x: 3, y: -4}
+  - {x: 4, y: -4}
+  - {x: -4, y: -3}
+  - {x: -3, y: -3}
+  - {x: -2, y: -3}
+  - {x: -1, y: -3}
+  - {x: 0, y: -3}
+  - {x: 1, y: -3}
+  - {x: 2, y: -3}
+  - {x: 3, y: -3}
+  - {x: 4, y: -3}
+  - {x: -4, y: -2}
+  - {x: -3, y: -2}
+  - {x: -2, y: -2}
+  - {x: -1, y: -2}
+  - {x: 0, y: -2}
+  - {x: 1, y: -2}
+  - {x: 2, y: -2}
+  - {x: 3, y: -2}
+  - {x: 4, y: -2}
+  - {x: -4, y: -1}
+  - {x: -3, y: -1}
+  - {x: -2, y: -1}
+  - {x: -1, y: -1}
+  - {x: 0, y: -1}
+  - {x: 1, y: -1}
+  - {x: 2, y: -1}
+  - {x: 3, y: -1}
+  - {x: 4, y: -1}
+  - {x: -4, y: 0}
+  - {x: -3, y: 0}
+  - {x: -2, y: 0}
+  - {x: -1, y: 0}
+  - {x: 0, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: 3, y: 0}
+  - {x: 4, y: 0}
+  - {x: -4, y: 1}
+  - {x: -3, y: 1}
+  - {x: -2, y: 1}
+  - {x: -1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: 2, y: 1}
+  - {x: 3, y: 1}
+  - {x: 4, y: 1}
+  - {x: -4, y: 2}
+  - {x: -3, y: 2}
+  - {x: -2, y: 2}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: 2, y: 2}
+  - {x: 3, y: 2}
+  - {x: 4, y: 2}
+  - {x: -4, y: 3}
+  - {x: -3, y: 3}
+  - {x: -2, y: 3}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
+  - {x: 2, y: 3}
+  - {x: 3, y: 3}
+  - {x: 4, y: 3}
+  - {x: -4, y: 4}
+  - {x: -3, y: 4}
+  - {x: -2, y: 4}
+  - {x: -1, y: 4}
+  - {x: 0, y: 4}
+  - {x: 1, y: 4}
+  - {x: 2, y: 4}
+  - {x: 3, y: 4}
+  - {x: 4, y: 4}
+  hitSteps: []
+  cancelable: 0
   isMultiTarget: 1
   canPenetrateWalls: 0
   knockbackForce: 0
   knockbackDuration: 0
   slowPercentage: 0
   slowDuration: 0
+  ailments: []
+  zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
+  zoneRadius: 1
+  zoneTickInterval: 0.5
+  zoneDuration: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
   projectileLifetime: 3
@@ -54,5 +149,13 @@ MonoBehaviour:
   dashDamageOnPath: 0
   dashDamageOnContact: 0
   dashInvincibleDuringDash: 0
+  appliesDaggerMarker: 0
+  detonatesDaggerMarker: 0
+  markerDetonationDamage: 0
+  resetCooldownOnMarkerDetonate: 0
+  markerDuration: 5
+  blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
   owningForm: 4
   grade: 2

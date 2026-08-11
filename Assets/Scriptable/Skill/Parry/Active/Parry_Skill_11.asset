@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_11
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "역장"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "검압을 흩뿌려 일정 시간 주위를 베어냅니다."
+  skillName: "\uC5ED\uC7A5"
+  icon: {fileID: -8338450049168399627, guid: 89ae3e3efd17b9d4d9e66a947318e5e3, type: 3}
+  description: "\uAC80\uC555\uC744 \uD769\uBFCC\uB824 \uC77C\uC815 \uC2DC\uAC04 \uC8FC\uC704\uB97C
+    \uBCA0\uC5B4\uB0C5\uB2C8\uB2E4."
   executionType: 3
   resourceType: 2
   requiredAmount: 14

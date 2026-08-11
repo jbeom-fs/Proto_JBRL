@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_05
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "검기"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "검을 휘둘러 검기를 날립니다. 적을 관통합니다."
+  skillName: "\uAC80\uAE30"
+  icon: {fileID: -6823099562555276448, guid: 93c50a8ca583d854e950e3b75c1f21a7, type: 3}
+  description: "\uAC80\uC744 \uD718\uB458\uB7EC \uAC80\uAE30\uB97C \uB0A0\uB9BD\uB2C8\uB2E4.
+    \uC801\uC744 \uAD00\uD1B5\uD569\uB2C8\uB2E4."
   executionType: 1
   resourceType: 2
   requiredAmount: 4
@@ -49,7 +50,7 @@ MonoBehaviour:
   zoneRadius: 1
   zoneTickInterval: 0.5
   zoneDuration: 3
-  projectilePrefab: {fileID: 2350118766386836629, guid: d04c8e4564a1c9a49b7dca1c4c082029, type: 3}
+  projectilePrefab: {fileID: 2350118766386836629, guid: b0c400be67d347a4b927a28a4412ab49, type: 3}
   projectileSpeed: 11
   projectileLifetime: 2.5
   projectileCount: 1

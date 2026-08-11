@@ -13,16 +13,20 @@ MonoBehaviour:
   m_Name: Parry_Passive_CounterRamp
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: parry_counter_ramp
-  passiveName: "반격"
-  icon: {fileID: 0}
-  description: "패리 스택을 소모하는 반격기의 피해가 소모 전 스택에 비례해 증가합니다. 기본 최대 스택 20에서 최대 60% 증가하며, 20을 넘는 스택도 계속 반영됩니다."
+  passiveName: "\uBC18\uACA9"
+  icon: {fileID: 4711208577185252828, guid: d17adc61fbb5b414e92a13c40be1346c, type: 3}
+  description: "\uD328\uB9AC \uC2A4\uD0DD\uC744 \uC18C\uBAA8\uD558\uB294 \uBC18\uACA9\uAE30\uC758
+    \uD53C\uD574\uAC00 \uC18C\uBAA8 \uC804 \uC2A4\uD0DD\uC5D0 \uBE44\uB840\uD574
+    \uC99D\uAC00\uD569\uB2C8\uB2E4. \uAE30\uBCF8 \uCD5C\uB300 \uC2A4\uD0DD 20\uC5D0\uC11C
+    \uCD5C\uB300 60% \uC99D\uAC00\uD558\uBA70, 20\uC744 \uB118\uB294 \uC2A4\uD0DD\uB3C4
+    \uACC4\uC18D \uBC18\uC601\uB429\uB2C8\uB2E4."
   owningForm: 4
   grade: 0
   behaviors:
   - trigger: 2
     action: 12
     skillTypeFilter: 0
-    comboTierDamages: []
+    comboTierDamages: 
     value: 60
     focusRequiredStacks: 6
     splitCount: 2

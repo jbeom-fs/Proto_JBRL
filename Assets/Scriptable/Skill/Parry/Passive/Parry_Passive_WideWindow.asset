@@ -13,16 +13,18 @@ MonoBehaviour:
   m_Name: Parry_Passive_WideWindow
   m_EditorClassIdentifier: Assembly-CSharp::PassiveEngravingData
   unlockId: parry_wide_window
-  passiveName: "심안"
-  icon: {fileID: 0}
-  description: "패리 무적 구간이 0.20초에서 0.32초로 늘어나고, 성공 시 획득 스택이 2에서 1로 감소합니다."
+  passiveName: "\uC2EC\uC548"
+  icon: {fileID: -6057246392332972417, guid: fb687f507fc30fe4a86de48aa19d833a, type: 3}
+  description: "\uD328\uB9AC \uBB34\uC801 \uAD6C\uAC04\uC774 0.20\uCD08\uC5D0\uC11C
+    0.32\uCD08\uB85C \uB298\uC5B4\uB098\uACE0, \uC131\uACF5 \uC2DC \uD68D\uB4DD \uC2A4\uD0DD\uC774
+    2\uC5D0\uC11C 1\uB85C \uAC10\uC18C\uD569\uB2C8\uB2E4."
   owningForm: 4
   grade: 1
   behaviors:
   - trigger: 2
     action: 14
     skillTypeFilter: 0
-    comboTierDamages: []
+    comboTierDamages: 
     value: 1
     focusRequiredStacks: 6
     splitCount: 2

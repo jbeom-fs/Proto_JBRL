@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_06
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "파문"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
-  description: "주위로 검압을 두 번 퍼뜨립니다."
+  skillName: "\uD30C\uBB38"
+  icon: {fileID: -6065266457035970191, guid: 35e7103fbbedcf94fa8578a4503b388b, type: 3}
+  description: "\uC8FC\uC704\uB85C \uAC80\uC555\uC744 \uB450 \uBC88 \uD37C\uB728\uB9BD\uB2C8\uB2E4."
   executionType: 0
   resourceType: 2
   requiredAmount: 6
@@ -31,10 +31,35 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 16
-  attackPattern: 3
+  attackPattern: 6
   patternRange: 4
   coneHalfAngle: 45
-  customCells: []
+  customCells:
+  - {x: -2, y: -2}
+  - {x: -1, y: -2}
+  - {x: 0, y: -2}
+  - {x: 1, y: -2}
+  - {x: 2, y: -2}
+  - {x: -2, y: -1}
+  - {x: -1, y: -1}
+  - {x: 0, y: -1}
+  - {x: 1, y: -1}
+  - {x: 2, y: -1}
+  - {x: -2, y: 0}
+  - {x: -1, y: 0}
+  - {x: 0, y: 0}
+  - {x: 1, y: 0}
+  - {x: 2, y: 0}
+  - {x: -2, y: 1}
+  - {x: -1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: 2, y: 1}
+  - {x: -2, y: 2}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: 2, y: 2}
   hitSteps:
   - delay: 0.25
     damagePct: 70

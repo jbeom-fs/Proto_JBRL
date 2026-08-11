@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40b479eafea449940b8fbad87c734730, type: 3}
   m_Name: Parry_Skill_09_2
   m_EditorClassIdentifier: Assembly-CSharp::SkillData
-  skillName: "삼연격 3격"
-  icon: {fileID: -243099114694839562, guid: b4dd6148361cdda489a0dc0ac45d5e69, type: 3}
+  skillName: "\uC0BC\uC5F0\uACA9 3\uACA9"
+  icon: {fileID: -8284227434491508068, guid: cea27a55e18b20545baf110f05f01b22, type: 3}
   description: 
   executionType: 0
   resourceType: 0
@@ -31,10 +31,22 @@ MonoBehaviour:
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 45
-  attackPattern: 5
+  attackPattern: 6
   patternRange: 2
   coneHalfAngle: 50
-  customCells: []
+  customCells:
+  - {x: -1, y: 1}
+  - {x: 0, y: 1}
+  - {x: 1, y: 1}
+  - {x: -1, y: 2}
+  - {x: 0, y: 2}
+  - {x: 1, y: 2}
+  - {x: -1, y: 3}
+  - {x: 0, y: 3}
+  - {x: 1, y: 3}
+  - {x: -1, y: 4}
+  - {x: 0, y: 4}
+  - {x: 1, y: 4}
   hitSteps: []
   cancelable: 0
   isMultiTarget: 1
