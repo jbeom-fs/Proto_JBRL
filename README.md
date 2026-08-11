@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-10
+> 작성 기준일: 2026-08-11
+> 기준 커밋: master HEAD `bd88df79` — **근접 평타를 SkillData 구동으로 전환 + Custom 형태 저작**(§7-1·§7-2 전면 개정, §7-8·§7-8b 갱신). ① **평타 배관 전환**(`bd88df79`) — 근접 평타 판정이 `WeaponData`(`attackPattern`/`patternRange`/`damage`/`basicAttackMultiTarget`/`knockback*`/`slow*`) 소유였고 `basicAttackSkillData`는 **애니메이션 재생 전용**이었다. 🔴 그 결과 **`WeaponData.attackPattern`의 `Custom`은 지원된 적이 없다** — 호출부가 `customCells` 자리에 `null`을 넘겨 타깃 0개로 **예외·경고 없이 아무 일도 하지 않았다**. 마탄(`9c6748e7`) 선례대로 표준 스킬 경로에 합쳐 `TryBasicAttack`을 27줄로 축소(순 28줄 삭제)하고, 폼별 평타 에셋 4종(`<Form>_BasicAttack`)을 신설·결선했다(값 이식으로 동작 보존). `coneHalfAngle`의 `45f` 하드코딩이 소멸하고 미리보기도 `ActiveBasicAttack` 공용 경로로 통합돼 **판정과 표시가 같은 에셋을 읽는다**. 🔑 **데이터 소유 경계 = `WeaponData`(무기 스탯 `bonusAttack`/`bonusDefense` + 평타 템포 `attackCooldown`) / `SkillData`(평타 액션 자체 — 형태·범위·각도·피해 계수·부가효과).** 죽은 `WeaponData` 평타 9필드는 `[HideInInspector]`로 보존(직렬화 보호 + 지원되지 않는 선택지의 제거). 🔴**낙인 회귀** — 표식 부여가 스킬은 `appliesDaggerMarker` **플래그** 구동, 평타는 **버프 타이머** 구동이라 그냥 전환하면 조용히 죽는다 → `ApplyDaggerMarkersFromBasicAttack`을 `Execute` 뒤에 존치(`_attackExecutor`가 주입된 같은 인스턴스이고 평타는 `hitSteps`를 스킵해 적중 목록이 유효). 미결선 시 폼당 1회 경고도 신설. ② **Custom 형태 저작**(동승) — Sword 15칸(7-5-3 부채) / Dagger 6칸(3×2) / Parry 9칸(3×3), Normal은 Cone 유지. `Custom`은 `patternRange`·`coneHalfAngle`을 쓰지 않고 셀 배치가 곧 사거리이며, 판정은 셀별 회전 박스 물리 쿼리라 적 중심점 규칙보다 관대하다. ③ **패리 아이콘 축 마감**(`7ed3fd57`·`ef01e593`) — 액티브 12장 + 결선 15건. 🔑 **액티브 각인 아이콘은 `SkillData.icon`과 `ItemData.icon` 양쪽에 결선해야 한다**(후자는 바닥에 떨어진 각인 `DroppedItem`이 읽는다). ④ **Normal 더미 패시브**(`f8b9641c`) — `behaviors: []` 1종으로 "5폼 전부 패시브 1개 이상" 불변식 확립(버그 수정이 아니라 정합성 작업 — Normal은 폼 선택 카드 자체가 없다). 이전: Parry 각인 12/12 + 결의 계산 순서 교정 + `.meta` churn 제거(`2da6b759`)
+>
+> <details><summary>이전 기준(2026-08-10, `2da6b759`)</summary>
+>
 > 기준 커밋: master HEAD `2da6b759` — **Parry 각인 12/12 완성 + 결의 피해 계산 순서 교정 + `.meta` churn 제거**(§7-8·§7-8b 개정). ① **S5 구조 편입**(`7a8c4258`) — `ParrySkill/Test/`의 plain `SkillData` 4개를 `EngravingData`로 전환하고 `Parry/Active/`·`Parry_Skill_NN` 규약으로 통일(쳐내기·관통·사선참·원무, 등급은 소모 스택 2·4·10·16 순서대로 2:1:1). `m_Script` guid만 교체하고 `.asset.meta`는 무수정이라 `ParryWeapon.skills` 결선이 보존된다(Dagger `e5b90065` → Freischutz `7277a0f8` 미러). 회피 슬롯 동작 설정(`ParryAnimation`)은 각인이 아니므로 plain `SkillData`로 `Parry_ParryAction` 이동만 했고, 그 결과 `ParrySkill/` 폴더가 소멸해 Skill Dashboard의 폴더명 불일치 폴백 함정이 원천 제거됐다. ② **액티브 8종 저작**(`2da6b759`) — 쳐올리기·검기 / 파문·십자참·억압 / 삼연격·역린·역장. 기존 4종이 **전부 `InstantArea`**였던 축 편중을 Projectile(검기)·AreaOverTime(역장)·`recastStages` 3단(삼연격)·`hitSteps` 다단(파문·역린)으로 해소하고 미사용 `Cross` 패턴을 편입했다 → **분포 Faint 4 / Whole 4 / Primordial 4, 4개 폼 액티브 각인 축 종료.** 🔑 **`executionType: Buff`는 범용이 아니다** — `ExecuteBuff`가 `appliesDaggerMarker` 분기 하나뿐인 Dagger 표식 전용이고 공격력 버프를 줄 필드가 없어(`AttackBuff`는 `BehaviorAction` 전용) 계획했던 "응수 자세"가 SO 범위 밖으로 판정됐다. ③ **결의 계산 순서 교정**(`ee70c2b9`) — 받는 피해 배율을 **방어 차감 이전**으로 이동(`Max(1,(R−DEF)×2)` → `Max(1, R×2−DEF)`). 감산인 방어가 곱셈 안쪽에 있어 **방어 1점이 최종 피해 2점을 막고 있었다.** 쉴드는 곱셈 밖의 풀이라 이동 대상이 아니다(HP와 같은 비율로 떨어지는 것이 페널티의 정의). ⚠️부작용으로 페널티가 상수 2배에서 `2 + DEF/(R−DEF)`로 발산한다(방어 10·원피해 25면 2.67배). ④ **`.meta` churn 제거**(`65c76b7e`) — `EliteMagmaAnimationRebindUtility`가 에디터 로드마다 36개 `spriteID`를 `GUID.Generate()`로 재발급해 누적 54회 오염시키고 있었다(참조는 `internalID` 기반이라 결선은 무사). 산출물이 이미 에셋에 직렬화 완료라 도구를 삭제했다. 이전: Parry 폼 재설계 — 슬롯 교체·성공 분기·스택 축 ×5·패시브 3종(`ec6b1a10`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-07, `ec6b1a10`)</summary>
 >
@@ -854,13 +860,15 @@ PlayerCombatController:
 
 ```
 WeaponData (ScriptableObject)
-  ├── damage, attackCooldown
-  ├── attackPattern (AttackPatternType), patternRange
-  ├── basicAttackMultiTarget
-  ├── knockbackForce/Duration · slowPercentage/Duration
-  ├── canPenetrateWalls
+  ├── attackCooldown            ← 평타 템포. 공속 소울 스탯이 여기 물린다
+  ├── bonusAttack, bonusDefense ← TotalAttack/TotalDefense에 합산
+  ├── basicAttackSkillData      ← 평타 액션 정의 (2026-08-11부터 전 폼 필수 결선)
   ├── 탄창(마탄 폼): usesMagazine, magazineSize, reloadTime, reloadAmount  ← EquipWeapon 시 주입+풀충전
-  └── skills[4] (SkillData[])   ← 폼 loadout 단일 소스 (PlayerFormData.skills 폐지)
+  ├── skills[4] (SkillData[])   ← 폼 loadout 단일 소스 (PlayerFormData.skills 폐지)
+  ├── defaultPassive, passiveEngravings
+  └── [HideInInspector] 구 평타 필드 (2026-08-11 사멸, 직렬화 보존용):
+        damage · attackPattern · patternRange · basicAttackMultiTarget ·
+        canPenetrateWalls · knockbackForce/Duration · slowPercentage/Duration
 
 SkillData (ScriptableObject)
   ├── executionType (SkillExecutionType)  ← InstantArea/Projectile/Dash/AreaOverTime/Buff
@@ -947,12 +955,20 @@ TryBasicAttack():
                 충족 → SkillExecutor.Execute(context, IsBasicAttack=true)
                      → Spend(resourceType, result.ResourceConsumed) → 탄 0 시 자동 재장전
                 (basicAttackSkillData, executionType=Projectile / 평타는 hitSteps를 타지 않음)
-     • Damage → 기존 근접 패턴 공격:
-                SetAttackCooldown → SkillTargetResolver → AttackExecutor.ExecuteAttackWorld(...)
-                + basicAttackSkillData 로 PlaySkillAnimation
+     • Damage → **평타 SkillData를 표준 경로로 실행**(2026-08-11 전환):
+                ActiveBasicAttack null 이면 폼당 1회 경고 후 반환
+                SetAttackCooldown(EffectiveAttackCooldown)  ← 템포는 WeaponData 소유
+                → SkillExecutor.Execute(context, IsBasicAttack=true)
+                → ApplyDaggerMarkersFromBasicAttack()       ← 낙인 버프 경로 존치
 ```
 
-> `basicAttackSkillData`(SkillData)는 폼에 따라 쓰임이 다릅니다: Damage 폼은 애니메이션 라우팅용, Bullet(Freischutz) 폼은 실제 발사 투사체 정의(executionType=Projectile)로 사용. 런타임 폼 전환 시 `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선, 비면 SerializeField fallback)로 폼별 자동 교체됨(§15 런타임 폼 전환).
+> `basicAttackSkillData`(SkillData)는 **전 폼에서 평타 액션의 정의**입니다(2026-08-11 통일). Damage 폼은 InstantArea, Bullet(Freischutz) 폼은 Projectile로 실행되며, 형태·범위·각도·피해 계수·부가효과가 전부 이 에셋에 있습니다. `WeaponData`는 무기 스탯(`bonusAttack`/`bonusDefense`)과 평타 템포(`attackCooldown`)만 소유합니다. 런타임 폼 전환 시 `WeaponData.basicAttackSkillData` + `PlayerCombatController.ActiveBasicAttack`(무기 우선, 비면 SerializeField fallback)로 폼별 자동 교체됨(§15 런타임 폼 전환).
+>
+> 🔑 **전환으로 열린 것**: 평타에 `Custom` 형태(셀 페인팅) · `coneHalfAngle`(구 `45f` 하드코딩) · `hitSteps` · `ailments` · `recoil` · 전용 애니 트리거를 저작할 수 있습니다. 표준 경로가 마커·흡혈·콤보·피해로그 훅을 모두 수행하므로 전환은 대부분 삭제였습니다(`TryBasicAttack` 53→27줄).
+>
+> ⚠️ **평타 에셋은 `castDelay`·`recoveryDelay`·`cancelable`을 0/false로 둘 것.** 후딜을 넣으면 `IsSkillBusy`·`BlocksPlayerMovement`가 걸려 평타 중 이동이 봉쇄됩니다.
+>
+> 🔴 **낙인(평타 표식 부여)은 조건이 비대칭이다.** 스킬 경로의 `ApplyDaggerMarkersFromInstantArea`는 `skill.appliesDaggerMarker` **플래그** 구동, 평타의 `ApplyDaggerMarkersFromBasicAttack`은 `_daggerBasicAttackMarkerBuffTimer` **버프 타이머** 구동입니다. 그래서 전환 후에도 후자를 `Execute` 뒤에 남깁니다 — `_attackExecutor`가 `SkillExecutor`에 주입된 **같은 인스턴스**이고 평타는 `IsBasicAttack`이라 `hitSteps`를 스킵(단발)하므로 적중 목록이 유효합니다. 이 호출을 지우면 Dagger 낙인이 **컴파일·테스트를 모두 통과한 채로** 사라집니다.
 >
 > 🔴 **Bullet 폼은 무기 결선이 필수다.** 폴백(`PlayerCombatController.basicAttackSkillData`)은 씬에 하나뿐이라 Damage 폼용 애니메이션 껍데기(`executionType 0`)가 들어가 있고, Bullet 경로는 `executionType == Projectile`을 요구하므로 **조기 반환하며 발사·탄 소모·쿨다운이 전부 일어나지 않는다. 예외도 경고도 없다.** 실제로 `f155383b`~`fc497627` 구간 내내 마탄 평타가 이 상태로 죽어 있었다(2026-08-05 발견·복구). 신규 Bullet 폼을 추가할 때는 `WeaponData.basicAttackSkillData` 결선과 `resourceType = Bullet` / `requiredAmount` / `consumeAmount` 저작을 세트로 확인할 것.
 
@@ -1227,17 +1243,18 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 | Dagger | 12 | 3 | `Skill/Dagger/Active·Passive/` |
 | Freischutz | 12 | 3 | `Skill/Freischutz/Active·Passive/` |
 | **Parry** | **12** | 3 | `Skill/Parry/Active·Passive/` |
-| Normal | — | 0 | — |
+| Normal | — | **1**(더미 `behaviors: []`) | `Skill/Normal/Active·Passive/` |
 
 > **4개 폼 액티브 각인 축 종료(2026-08-10).** Parry가 마지막이었다. 액티브를 쓰는 4폼 전부 12종·등급 4/4/4를 채웠고, Normal은 비전투 폼이라 액티브 대상이 아니다(패시브 더미 1종은 미저작).
 
 - 등급 분포는 폼당 **Faint 4 / Whole 4 / Primordial 4**로 통일. itemCode는 `Eng_<Form>_<Grade>_N`, 에셋은 `<Form>_Skill_NN`
 - **구조 편입 절차**(Dagger `e5b90065` → Freischutz `7277a0f8`) = `m_Script` guid를 `SkillData`→`EngravingData`로 교체 + `owningForm`/`grade` 추가 + `<Form>/Active/` 이동 + `ItemDatabase` 엔트리 등록. ⚠️ **`.asset.meta`는 절대 수정하지 않는다** — guid가 보존돼야 `WeaponData.skills` 결선이 살아남는다. `EngravingData`는 필드 2개만 추가한 파생이라 기존 직렬화가 그대로 역직렬화된다
-- **평타는 각인이 아니다.** `basicAttackSkillData`가 가리키는 에셋은 plain `SkillData`로 남긴다(Freischutz만 폼별 결선을 쓴다)
+- **평타는 각인이 아니다.** `basicAttackSkillData`가 가리키는 에셋은 plain `SkillData`로 남긴다. **2026-08-11부터 5폼 전부 폼별 결선**(`<Form>/Active/<Form>_BasicAttack`, 마탄만 `Freischutz_BasicShot`) — 전역 폴백 하나를 공유하던 상태가 해소됐다. 미결선 폼은 진입 시 경고 1회를 남긴다
 - **Parry 편입 완료(`7a8c4258`)** — 위 절차를 그대로 밟았고 `ParrySkill/` 폴더는 소멸했다. ⚠️ 폴더명은 반드시 `<owningForm>`과 일치해야 한다 — Skill Dashboard의 `GetDefaultSkillCreationFolder`가 `Assets/Scriptable/Skill/<owningForm>`을 문자열로 조립하므로 불일치 시 **루트로 조용히 폴백**한다(마탄이 밟은 함정). 회피 슬롯 패리 동작 설정(`Parry_ParryAction`)은 각인이 아니라 plain `SkillData`로 같은 폴더에 둔다
 - ⚠️ **Dashboard 생성 위치는 `<Form>/` 루트까지만 조립한다** — `Active`를 붙이지 않으므로(패시브만 `/Passive`를 본다) 신규 액티브 각인을 툴로 만들면 폼 루트에 떨어지고 `Active/`로 수동 이동해야 한다. 전 폼 공통 사항
 - 편입 대상이던 구 에셋은 **구 버전 직렬화 상태**로 남는 경우가 있다(Parry 4종 = 21키 부재). 게이트 필드가 0/빈 값이면 읽히는 경로가 없어 무해하고, 인스펙터 편집 1회로 Unity가 전체 필드셋으로 재직렬화한다. **손으로 채우지 않는다**(초기값 오기 위험 + diff 노이즈)
 - **recast 체인의 후속 단계는 각인이 아니다** — plain `SkillData`로 만들고 `ItemDatabase`에 등록하지 않으며 `resourceType 0`으로 무료다(루트가 한 번만 지불). Sword 난무 → Parry 삼연격이 같은 구조
+- 🔑 **액티브 각인 아이콘은 결선 지점이 둘이다** — `EngravingData.icon`(스킬 슬롯 HUD·슬롯 툴팁·인벤 각인 탭)과 `ItemData.icon`(**바닥에 떨어진 각인** `DroppedItem`). 한쪽만 채우면 "게임에선 정상인데 드랍만 플레이스홀더"가 되고, 정적 검사로는 잡히지 않는다(양쪽 모두 유효한 스프라이트를 가리키므로). 패시브는 `ItemDatabase` 엔트리가 없어 이 문제가 없다
 
 **드랍 통합 (Slice D)**: 각인을 기존 itemCode 드랍 파이프라인에 **브릿지**로 편입 — `ItemType.Engraving`(=7) + `ItemData.engraving`(EngravingData 참조). 적 드랍 테이블(`EnemyDropDatabase`)은 itemCode만 다루고, 픽업 시 `DroppedItem`이 Engraving 타입이면 인벤을 우회해 `EngravingLoadout.Active.AddToPool(engraving.owningForm, …)`으로 폼 풀에 적재. **각인 수량 1 고정**(픽업이 `_amount` 의도적 무시) — 드랍 엔트리 `Max(min,max)>1`이면 `EnemyDropDatabase.OnValidate`가 경고(에디터 전용, `itemDatabaseForValidation` 참조). 티어는 데이터만으로 표현: 일반=저확률 independent / 엘리트=choiceGroup chance 1 확정 / 보스=확정 Primordial(전부 min=max=1). 던전 이탈 시 풀은 `ClearAll`로 비워지므로 인벤 누적 없음.
 
@@ -1382,7 +1399,7 @@ Freischutz 킷 실측 = 평타 `Single` 1발(탄 1 소모) / Q `Single` 1발 / W
 - ⚠️ **순서 교정의 부작용 = 페널티가 상수가 아니다.** 결의 유/무 비율 = `(2R − DEF)/(R − DEF)` = `2 + DEF/(R − DEF)`. 방어 10 기준 원피해 25면 2.67배 / 50이면 2.25배 / 100이면 2.11배로, **약한 공격을 자주 맞는 구간이 가장 위험해진다.** 유리대포 강화라는 방향은 의도대로지만 강도가 상황 의존이므로 수치 튜닝 때 함께 검증해야 한다. 반격 분모 사건과 달리 방어를 올리면 절대 피해는 항상 1:1로 줄어드므로 "강화했는데 약해졌다"는 발생하지 않는다(커지는 건 비율뿐)
 - 🔑 **패리 인터셉트는 페널티 면제 분기가 아니다** — `TryApplyDamage` 진입 직후 무적창 검사가 `return false`로 빠지므로 **막아낸 공격은 피해가 0**이고 곱할 대상이 없다. 결의를 끼지 않아도 인터셉트는 동일하게 피해 0이다. 주는 피해 ×1.5는 `RollCritDamage` 내부 단일 지점(콤보 후·크리 롤 전)이라 평타·각인이 같은 배율을 받는다(DoT 틱은 이 관문을 지나지 않아 제외)
 - 심안은 SerializeField에 직접 대입하지 않고 `EffectiveParryInvincibleDuration`/`EffectiveParryStackGain` 조회 프로퍼티를 경유한다(씬 값 오염 방지, 해제 시 원값 복귀)
-- 아이콘 3종 **PNG 배치 완료 / 에셋 결선 대기**(2026-08-10) — `Sprite/Skill/Icon/Parry/Passive/Parry_Passive_00~02.png`, 인덱스는 `ParryWeapon` 배열 순서(00 반격=기본 지급 / 01 결의 / 02 심안). 현재 3종 모두 `icon: {fileID: 0}`이며, 패시브는 `ItemDatabase` 엔트리가 없어 `PassiveEngravingData.icon`이 **단일 소스**이므로 결선 전까지 Altar·폼 선택 화면에 표시되지 않는다
+- 아이콘 3종 **배치·결선 완료**(2026-08-11 `7ed3fd57`) — `Sprite/Skill/Icon/Parry/Passive/Parry_Passive_00~02.png`, 인덱스는 `ParryWeapon` 배열 순서(00 반격=기본 지급 / 01 결의 / 02 심안). 패시브는 `ItemDatabase` 엔트리가 없어 `PassiveEngravingData.icon`이 **단일 소스**다(액티브와 달리 양쪽 동기화가 필요 없다)
 - ⚠️ **심안은 순수 상향이 아니다** — 무적창 +60%(0.20→0.32s)의 대가로 정타 획득 스택이 절반(2→1)이다. 숙련도가 낮을 때 안전판이고 숙련되면 자원 효율이 떨어지는 양날 구조다
 
 > 🔑 **전 폼 공통 규칙 — 모든 패시브는 보스전에서 작동해야 한다.**
