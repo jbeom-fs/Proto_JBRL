@@ -78,6 +78,8 @@ public sealed class SkillDataEditor : Editor
     private SerializedProperty _markerDetonationDamage;
     private SerializedProperty _resetCooldownOnMarkerDetonate;
     private SerializedProperty _markerDuration;
+    private SerializedProperty _buffs;
+    private SerializedProperty _buffDuration;
     private SerializedProperty _blinkBehindOffset;
 
     private bool _reservedFoldout;
@@ -172,6 +174,8 @@ public sealed class SkillDataEditor : Editor
         _markerDetonationDamage = serializedObject.FindProperty("markerDetonationDamage");
         _resetCooldownOnMarkerDetonate = serializedObject.FindProperty("resetCooldownOnMarkerDetonate");
         _markerDuration = serializedObject.FindProperty("markerDuration");
+        _buffs = serializedObject.FindProperty("buffs");
+        _buffDuration = serializedObject.FindProperty("buffDuration");
         _blinkBehindOffset = serializedObject.FindProperty("blinkBehindOffset");
 
         RefreshLinkedItemCache();
@@ -1090,7 +1094,24 @@ public sealed class SkillDataEditor : Editor
     private void DrawBuffSection()
     {
         DrawSectionHeader("Buff");
-        EditorGUILayout.HelpBox("Buff execution succeeds immediately. Dagger marker flags currently drive timed basic-attack marker behavior.", MessageType.Info);
+        DrawProperty(_buffs);
+        DrawProperty(_buffDuration);
+
+        if (_buffs != null &&
+            !_buffs.hasMultipleDifferentValues &&
+            _buffs.arraySize > 0 &&
+            _buffDuration != null &&
+            !_buffDuration.hasMultipleDifferentValues &&
+            _buffDuration.floatValue <= 0f)
+        {
+            EditorGUILayout.HelpBox(
+                "Skill buffs require a duration greater than 0. This buff will not be granted.",
+                MessageType.Warning);
+        }
+
+        EditorGUILayout.HelpBox(
+            "Buff execution succeeds immediately. Stat buffs and Dagger marker behavior can be used together.",
+            MessageType.Info);
     }
 
     private void DrawCombatImpactSection(string title)

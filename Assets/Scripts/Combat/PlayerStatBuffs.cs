@@ -1,9 +1,17 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public enum BuffStatType
 {
     Attack
+}
+
+[Serializable]
+public struct BuffApplication
+{
+    public BuffStatType stat;
+    [Min(0f)] public float value;
 }
 
 public readonly struct BuffEntrySnapshot

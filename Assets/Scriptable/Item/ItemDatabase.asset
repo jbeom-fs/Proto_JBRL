@@ -1403,6 +1403,25 @@ MonoBehaviour:
     salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
+  - itemCode: Eng_Parry_Whole_5
+    displayName: "\uC751\uC218 \uC790\uC138"
+    icon: {fileID: 0}
+    description: ""
+    itemType: 7
+    rarity: 0
+    stackable: 0
+    maxStack: 1
+    removeOnFloorTransition: 0
+    removeOnDungeonExit: 0
+    useEffects: []
+    passiveEffects: []
+    behaviorEffects: []
+    soulFormId: 0
+    engraving: {fileID: 11400000, guid: 2c9da84a61764fe7b091592d4c92e8c1, type: 2}
+    passiveEngraving: {fileID: 0}
+    salvageItemCode: ""
+    salvageMinAmount: 1
+    salvageMaxAmount: 1
   - itemCode: Eng_Parry_Primordial_2
     displayName: "\uC0BC\uC5F0\uACA9"
     icon: {fileID: -8284227434491508068, guid: cea27a55e18b20545baf110f05f01b22, type: 3}

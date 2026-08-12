@@ -46,6 +46,9 @@ public sealed class SkillExecutor
     private readonly Collider2D[] _blinkEnemyBuffer = new Collider2D[BlinkEnemyBufferSize];
     private bool _reportedProcSequenceLimit;
     private readonly HashSet<SkillData> _reportedProcRecoilSkills = new();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private bool _reportedInvalidSkillBuffDuration;
+#endif
 
     public SkillExecutor(AttackExecutor attackExecutor)
         : this(attackExecutor, null, null)
@@ -592,8 +595,42 @@ public sealed class SkillExecutor
         if (!context.IsProcCast && skill.appliesDaggerMarker)
             context.CasterCombat.BeginDaggerBasicAttackMarkerBuff(skill);
 
+        ApplySkillBuff(context);
         PlayConfiguredAnimation(context, skill, ResolveExecutionDirection(context));
         return SkillExecutionResult.SuccessWithCost(skill.consumeAmount);
+    }
+
+    private void ApplySkillBuff(SkillExecutionContext context)
+    {
+        SkillData skill = context.Skill;
+        if (skill.buffs == null || skill.buffs.Length == 0)
+            return;
+
+        if (skill.buffDuration <= 0f)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!_reportedInvalidSkillBuffDuration)
+            {
+                _reportedInvalidSkillBuffDuration = true;
+                Debug.LogWarning(
+                    "[SkillExecutor] Skill buff ignored because buffDuration must be greater than 0: " +
+                    skill.name,
+                    skill);
+            }
+#endif
+            return;
+        }
+
+        for (int i = 0; i < skill.buffs.Length; i++)
+        {
+            BuffApplication buff = skill.buffs[i];
+            context.CasterCombat.GrantBuff(
+                skill,
+                buff.stat,
+                buff.value,
+                skill.buffDuration,
+                skill.icon);
+        }
     }
 
     private static void PlayConfiguredAnimation(SkillExecutionContext context, SkillData skill, Vector2 direction)

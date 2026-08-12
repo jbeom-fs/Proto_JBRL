@@ -267,6 +267,15 @@ public class SkillData : ScriptableObject
     public float markerDuration = 5f;
 
     [Space(8)]
+    [Header("Buff")]
+    [Tooltip("Stat buffs granted to the caster when executionType is Buff.")]
+    public BuffApplication[] buffs = Array.Empty<BuffApplication>();
+
+    [Tooltip("Buff duration in seconds. Skill buffs must be greater than 0; 0 or less is ignored.")]
+    [Min(0f)]
+    public float buffDuration = 5f;
+
+    [Space(8)]
     [Header("Blink")]
     [Tooltip("World-space offset from the target, away from caster, for Blink execution.")]
     [Min(0f)]
