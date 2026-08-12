@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-11
+> 작성 기준일: 2026-08-12
+> 기준 커밋: master HEAD `1b4ce36e` — **`Buff` 실행타입 범용화 + 소스별 스탯 버프 풀**(§7-15 신설, §7-6·§10-1-1 개정, §14 항목 해소). ① **스탯 버프 풀**(`2e9cf52d`) — `PlayerAttackBuff`(단일 풀)를 `PlayerStatBuffs`로 교체했다. 🔑 **엔트리 키 = (부여 주체 에셋, 스탯)** — 같은 키는 값 `Max` + 지속 리필, 다른 키는 **합산**. 구 풀은 값만 `Max`고 **지속을 무조건 덮어써서** 약하고 짧은 버프가 강하고 긴 버프의 지속을 자르고 무한 버프가 기존 버프를 영구화하는 결함이 있었고, 유물·패시브가 서로 `Max`로 잡아먹어 획득 축이 달라도 하나만 유효했다. 키를 소스 종류(`ShieldSource` 미러)가 아니라 에셋으로 잡은 이유는 **HUD가 버프마다 자기 아이콘을 그리기 때문**이다. 소유 경계 = 순수 C# 풀(엔트리·타이머·키·아이콘) / `PlayerCombatController`는 진입점 `GrantBuff`와 `Effective*` 접근자만. ② **HUD 버프 슬롯 1:1**(`d4677364`) — 슬롯 `i` ↔ 엔트리 `i` 고정 대응이라 만료 시 **왼쪽 압축이 자동 성립**(버프 슬롯에 `MoveToLast` 미사용), 씬 사전 배치 4칸·런타임 `Instantiate` 0. 🔴 이 과정에서 `StatusEffectIconView` 버그 2건 수정 — 센티널 `int.MinValue`가 "텍스트 없음"과 "미확정"을 겸해 무한 버프 슬롯에 이전 숫자가 되살아났고(`UnsetTenths` 분리), **fill `Image`에 스프라이트가 없어 `fillAmount`가 무시**됐다(`1b4ce36e`). 🔑 **fill 스프라이트 = 아이콘 스프라이트**(같은 그림의 검은 방사형 오버레이)라 동적 슬롯은 `SetIcon`이 양쪽에 대입해야 한다. ③ **`Buff` 실행타입 범용화**(`81b241ec`) — `SkillData.buffs`/`buffDuration` + `ExecuteBuff`의 `ApplySkillBuff`. `sourceKey = skill` / `icon = skill.icon` / 스킬 버프는 **무한 지속 금지**. 🔴 **`IsProcCast` 게이트 없음** — proc은 `OnSkillUsed`를 재발행하지 않아 연쇄가 성립하지 않는다(표식이 게이트를 건 이유는 proc된 스킬이 **자기 트리거를 다시 만들기** 때문). rider(전 실행타입 동승)는 `hitSteps`·`recastStages`가 "자기 버프를 자기 피해에 먹는가"를 순서 의존으로 만들어 보류. ④ **기세 각인**(동승) — Parry **13번째** 액티브(Whole / 스택 6 / 쿨 12 / 공격력 +3 / 6초). 🔑 **폼당 12종·4/4/4는 첫 저작 배치일 뿐 상한이 아니다** — 신규 각인은 교체가 아니라 번호를 이어 추가한다. 이전: 근접 평타를 SkillData 구동으로 전환 + Custom 형태 저작(`bd88df79`)
+>
+> <details><summary>이전 기준(2026-08-11, `bd88df79`)</summary>
+>
 > 기준 커밋: master HEAD `bd88df79` — **근접 평타를 SkillData 구동으로 전환 + Custom 형태 저작**(§7-1·§7-2 전면 개정, §7-8·§7-8b 갱신). ① **평타 배관 전환**(`bd88df79`) — 근접 평타 판정이 `WeaponData`(`attackPattern`/`patternRange`/`damage`/`basicAttackMultiTarget`/`knockback*`/`slow*`) 소유였고 `basicAttackSkillData`는 **애니메이션 재생 전용**이었다. 🔴 그 결과 **`WeaponData.attackPattern`의 `Custom`은 지원된 적이 없다** — 호출부가 `customCells` 자리에 `null`을 넘겨 타깃 0개로 **예외·경고 없이 아무 일도 하지 않았다**. 마탄(`9c6748e7`) 선례대로 표준 스킬 경로에 합쳐 `TryBasicAttack`을 27줄로 축소(순 28줄 삭제)하고, 폼별 평타 에셋 4종(`<Form>_BasicAttack`)을 신설·결선했다(값 이식으로 동작 보존). `coneHalfAngle`의 `45f` 하드코딩이 소멸하고 미리보기도 `ActiveBasicAttack` 공용 경로로 통합돼 **판정과 표시가 같은 에셋을 읽는다**. 🔑 **데이터 소유 경계 = `WeaponData`(무기 스탯 `bonusAttack`/`bonusDefense` + 평타 템포 `attackCooldown`) / `SkillData`(평타 액션 자체 — 형태·범위·각도·피해 계수·부가효과).** 죽은 `WeaponData` 평타 9필드는 `[HideInInspector]`로 보존(직렬화 보호 + 지원되지 않는 선택지의 제거). 🔴**낙인 회귀** — 표식 부여가 스킬은 `appliesDaggerMarker` **플래그** 구동, 평타는 **버프 타이머** 구동이라 그냥 전환하면 조용히 죽는다 → `ApplyDaggerMarkersFromBasicAttack`을 `Execute` 뒤에 존치(`_attackExecutor`가 주입된 같은 인스턴스이고 평타는 `hitSteps`를 스킵해 적중 목록이 유효). 미결선 시 폼당 1회 경고도 신설. ② **Custom 형태 저작**(동승) — Sword 15칸(7-5-3 부채) / Dagger 6칸(3×2) / Parry 9칸(3×3), Normal은 Cone 유지. `Custom`은 `patternRange`·`coneHalfAngle`을 쓰지 않고 셀 배치가 곧 사거리이며, 판정은 셀별 회전 박스 물리 쿼리라 적 중심점 규칙보다 관대하다. ③ **패리 아이콘 축 마감**(`7ed3fd57`·`ef01e593`) — 액티브 12장 + 결선 15건. 🔑 **액티브 각인 아이콘은 `SkillData.icon`과 `ItemData.icon` 양쪽에 결선해야 한다**(후자는 바닥에 떨어진 각인 `DroppedItem`이 읽는다). ④ **Normal 더미 패시브**(`f8b9641c`) — `behaviors: []` 1종으로 "5폼 전부 패시브 1개 이상" 불변식 확립(버그 수정이 아니라 정합성 작업 — Normal은 폼 선택 카드 자체가 없다). 이전: Parry 각인 12/12 + 결의 계산 순서 교정 + `.meta` churn 제거(`2da6b759`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-10, `2da6b759`)</summary>
 >
@@ -313,6 +319,7 @@ Assets/Scripts/
 │   │                               #   + 슬로우(_enemySlows 강도 최대값) / 스턴(_stunTimer) / 넉백(PlayerStatusEffects.TickKnockback → playerMovement.TryApplyExternalDisplacement — tileSize/4 스윕 분할 검사로 문/벽 터널링 차단)
 │   │                               #   + IsSlowed/IsStunned/MoveSpeedMultiplier · OnStatusEffectApplied/Ended(PlayerStatusEffectType)
 │   ├── PlayerStatusEffectType.cs   # 플레이어 상태이상 enum (Slow, Stun)
+│   ├── PlayerStatBuffs.cs          # 시한 스탯 버프 풀 (순수 C#, Tick(dt)) — 엔트리 키=(부여 에셋, 스탯). 같은 키=값 Max+지속 리필 / 다른 키=합산. Icon 캐리(HUD 1:1), BuffStatType은 현재 Attack만. §7-15
 │   ├── PlayerResource.cs           # HP 상태 컨테이너 (Domain) — MP 폐지. 스킬 자원은 PlayerCombatController 의 ISkillResourceLedger(Bullet/ParryStack)
 │   ├── PlayerDashController.cs     # 대시 코루틴 — 발자국 검사·외부 무적·path/contact 데미지 분리
 │   ├── SkillExecutor.cs            # 스킬 실행 라우팅 (InstantArea/Projectile/Dash 분기). Custom InstantArea는 CustomShapeMatcher를 AttackExecutor로 전달
@@ -402,7 +409,7 @@ Assets/Scripts/
 │   ├── ArenaHealthBarRowUI.cs      # 상단 HP바 행 1개 — Bind(EnemyController)+폴링(fillAmount), 사망/비활성 자동 Release. BossRow/EliteRow 프리팹으로 저작
 │   ├── ArenaAilmentStripUI.cs      # 행 하단 상태이상 스트립 — AilmentStatusTracker 공유, AilmentCanvasSlot 프리팹 인스턴스 재사용(prewarm, 파괴 없음), slotScale 차등
 │   ├── AilmentCanvasSlotView.cs    # 캔버스 상태이상 슬롯 1칸 뷰 (Image+스택 TMP — 독/출혈만 숫자). AilmentStatusSlotView(월드판) 미러
-│   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 아이콘 컨테이너 — PlayerCombatController.OnStatusEffectApplied/Ended 구독, RefreshActiveIcons 매 프레임. 아이콘은 StatusEffectIconTable 수급(실패 시 씬 결선 폴백)
+│   ├── PlayerStatusEffectUI.cs     # 슬로우/스턴 + 스탯 버프 아이콘 컨테이너 — buffSlotViews[4] 씬 사전 배치, 슬롯 i↔버프 엔트리 i 고정 대응(만료 시 자동 좌측 압축), 아이콘 null이면 테이블 AttackBuff 폴백. 아이콘은 StatusEffectIconTable 수급(실패 시 씬 결선 폴백)
 │   ├── StatusEffectIconView.cs     # 슬롯 1칸 아이콘 뷰 (icon · fill · 남은시간 텍스트, SetIcon 주입)
 │   ├── SkillSlotUI.cs              # 스킬 슬롯 1개 렌더링 (아이콘·쿨타임·자원). 시각 3축 **직교**: 쿨다운=cooldownOverlay radial fill / recast window=주황 recastWindowFillColor / **자원 부족=iconImage 회색 틴트**(2026-07-28). 틴트 판정=`HasResourceFor(표시 중인 SkillData)` — ⚠️ `CanUseSkill(int)` 재사용 금지(IsSkillBusy·IsCombatBlockedByLocation 포함이라 후딜·마을에서 4슬롯 전부 깜빡임), ⚠️ 슬롯 인덱스가 아니라 SkillData를 넘겨야 recast stage 표시와 판정이 일치. 정상색은 Initialize에서 iconImage.color 캐시. 쿨타임 표기는 **올림 정수**(Mathf.CeilToInt, `30.0s`→`30`, 0 미표시) + 캐시 단위 올림 초(`_lastDisplayedSeconds`)로 TMP 리빌드 초당 40→4회
 │   ├── SkillUIManager.cs           # 4슬롯 초기화·층 변경 갱신
@@ -999,7 +1006,12 @@ ExecuteSkillIfReady(slotIndex, expectedSkill):
                          CanOccupyPosition(이동 반경+MovementBlockerQuery 동일 규칙),
                          착지=TeleportTo() 경유(_lastSafePosition 갱신 — LateUpdate 안전망
                          스냅백 차단). 전 후보 실패 시 Failure=마커·자원·쿨 미소모 (2026-07-13)
-         Buff         → ExecuteBuff()   (현재 Dagger R 마커 버프 전용 — 범용 버프 미구현)
+         Buff         → ExecuteBuff()   (Dagger 표식 버프 + 범용 스탯 버프)
+                         ① appliesDaggerMarker → BeginDaggerBasicAttackMarkerBuff (!IsProcCast)
+                         ② ApplySkillBuff → skill.buffs 각 원소를 PlayerStatBuffs 에 부여
+                            sourceKey=skill · icon=skill.icon · duration=skill.buffDuration
+                            buffDuration ≤ 0 이면 부여 안 함 + 경고(스킬 버프 무한 금지)
+                            IsProcCast 게이트 없음 — proc은 OnSkillUsed 재발행 안 함 (§7-15)
          AreaOverTime → 미구현 (경고 로그 1회)
   ⑤ 성공 시 Spend(resourceType, result.ResourceConsumed) / ApplySkillReload /
             TryStartAutoReloadIfEmpty / slot.StartCooldown / StartSkillRecovery / RaiseSkillUsed
@@ -1335,7 +1347,7 @@ ClearAll():              런리셋 — LocationTransitionManager.CleanupDungeonR
 |------|----|------|------|
 | **콤보 폭발**(기본) | 콤보 | 티어 1↑에서 스킬 사용 시 자기중심 3×3 폭발(`Sword_ComboExplosion_Proc`, InstantArea+Custom) | `comboTierDamages [20,35,55,80]`, `skillTypeFilter 59`(Dash 제외) |
 | **생명 흡수** | 피흡 | 기본 피흡 자체 보유(소울 합산) + 저체력 강화 + 과회복→쉴드 전환 | 15% / 임계50% / 2%당+1% / 전환30% / 캡=총쉴드 MaxHp50% / 30s(0=무한) |
-| **전투의 흐름** | 캔슬 | 캔슬 성공 시 공격력 버프(`PlayerAttackBuff`, 재발동=Max+타이머 리셋 — 누적 금지) | +10 / 5s(0=무한). HUD 상태 아이콘(`StatusEffectIconType.AttackBuff`) 표시 |
+| **전투의 흐름** | 캔슬 | 캔슬 성공 시 공격력 버프(`PlayerStatBuffs`, 키=이 패시브 에셋 — 재발동=Max+지속 리필, 누적 금지) | +10 / 5s(0=무한). HUD 버프 슬롯에 **패시브 자체 아이콘** 표시(§7-15·§10-1-1) |
 
 관련 인프라 규칙: **proc으로 시전된 스킬은 콤보를 쌓지 않는다**(일괄 규칙 — InstantArea·Projectile 경로 `IsProcCast` 게이트, 피흡은 proc 데미지에도 적용) / proc 데미지 오버라이드는 `SkillExecutionContext.SkillDamageOverride`→`ResolveSkillDamage`(SkillData 에셋 변이 금지) / `comboTierDamages` 빈 배열=티어 게이트·오버라이드 없는 기존 proc(하위호환) / 티어별 고정딜을 두는 이유=기존 콤보 배율이 soulScale 비례라 **소울 미투자자에게 죽은 드랍**이 되기 때문(자체 계수 필수 원칙).
 
@@ -1675,6 +1687,42 @@ position  = enemy.transform.TransformPoint(new Vector3(0f, localY, 0f))
 - **부여 경로**: `BehaviorRuntime`가 `OnSkillCanceled` 트리거의 `Shield` 액션을 `_shieldCallback.Invoke(value, duration)`(Heal 미러, `value × stackCount`)로 → `PCC.GrantShield`. `HasActiveEnemies` 게이트(안전방 파밍 차단, 콤보 유예·캔슬 behavior 공용).
 - **UI**: HP바 위 오버레이 Image(fillAmount = `쉴드/MaxHp`, `OnPlayerShieldChanged` 이벤트 구동). ⚠️ 노란 쉴드가 붉은 HP fill 위에 겹치면 **색이 묻혀** 안 보인다 → **sprite·색 대비**(회색 채택)로 해결. 겹침 오버레이는 대비 강한 색/sprite 또는 분리 배치 필요.
 - 콘솔 `/shield <amount> [duration]`.
+
+### 7-15. 스탯 버프 — 소스별 엔트리 풀 (PlayerStatBuffs, 2026-08-12)
+
+유물·패시브·스킬이 각각 부여하는 **시한 스탯 상승**을 한 풀에서 관리합니다. 구 `PlayerAttackBuff`(단일 풀)를 대체했습니다.
+
+```
+PlayerStatBuffs (순수 C#, Tick(dt)) — MonoBehaviour 아님, 코루틴 없음
+  Entry { SourceKey(object) · Stat · Value · Remaining · Duration · Infinite · Icon }
+
+  Grant(sourceKey, stat, value, duration, icon)
+    같은 (SourceKey, Stat) 있으면 → Value = Max(기존, 신규), 지속 리필, Icon 갱신
+    없으면                        → 새 엔트리 추가
+    value ≤ 0 무시 / sourceKey == null 무시 + 경고 1회
+  GetBonus(stat)  → Stat 일치 엔트리 Value 합산
+  Tick / Clear    → 역순 만료 제거 / 사망·씬 언로드
+  EntryCount + TryGetEntry(i, out BuffEntrySnapshot)  → HUD 전용 무할당 읽기
+```
+
+🔑 **엔트리 키 = (부여 주체 에셋, 스탯)** 입니다. 소스 *종류*(`ShieldSource` 미러)가 아니라 **에셋 자신**인 이유는 HUD가 버프마다 자기 아이콘을 그리기 때문입니다 — 종류로 묶으면 서로 다른 유물 둘이 아이콘 한 칸에 뭉칩니다. 그 결과 "소스 간 합산이냐 Max냐"라는 문제가 정의에서 사라집니다.
+
+| 부여자 | SourceKey | Icon |
+|---|---|---|
+| 유물 | `ItemData` | `item.Icon` |
+| 패시브 각인 | `PassiveEngravingData` | `passive.icon` |
+| 스킬(`Buff` 실행타입) | `SkillData`/`EngravingData` | `skill.icon` |
+| 콘솔 `/buff` | `PlayerStatBuffs.ConsoleSourceKey`(정적 센티널) | `null` → 테이블 `AttackBuff` 폴백 |
+
+- **소유 경계** — 엔트리·타이머·키 조회·아이콘 캐리는 풀이 갖고, `PlayerCombatController`는 진입점 `GrantBuff(...)`(+`IsDead` 가드)와 `Effective*` 접근자만 갖습니다(`PlayerShield`·`ComboMeter`·`PlayerItemStats`와 같은 경계).
+- **키 비교는 `ReferenceEquals`** — `PassiveEngravingData`가 `ScriptableObject`라 `==` 오버로드를 타면 파괴된 오브젝트에서 예상 밖 동작이 납니다.
+- **배관** — `BehaviorRuntime.TriggerEntry`가 이미 `ShieldSource`를 나르고 있어 `SourceKey`·`Icon`을 함께 태우는 것으로 끝났습니다. `BehaviorAction.AttackBuff → BuffStatType.Attack` 매핑은 `Execute` **한 곳에서만** 합니다.
+- **스탯 축 확장 절차(고정)** — `BuffStatType` 값 1개 추가 + 해당 `Effective*` 접근자에 `GetBonus` 한 줄. 현재는 `Attack`만 등재(`TotalAttack`에 합류). ⚠️ **크리 확률·피흡은 접근자가 없습니다** — `RollCritDamage`·`ReportLifestealDamage` 본문 인라인이라 그 축을 붙일 때 프로퍼티 승격이 동반됩니다.
+- **스킬 버프**(`SkillData.buffs` / `buffDuration`) — `ExecuteBuff`의 `ApplySkillBuff`가 부여합니다. **무한 지속(`duration ≤ 0`) 금지**(무한은 유물·패시브 전용), 에디터에도 Warning HelpBox. 🔴 **`IsProcCast` 게이트 없음** — proc 실행은 `OnSkillUsed`를 재발행하지 않으므로(§7-13) 연쇄가 성립하지 않습니다. 표식이 게이트를 거는 이유는 proc된 스킬이 **자기를 부른 트리거를 다시 만들기** 때문이며, 버프는 어떤 이벤트도 발행하지 않는 종단점입니다.
+- 📌 **버프 필드는 `Buff` 실행타입 전용**입니다. 전 실행타입 rider로 열면 `hitSteps`(다단은 시간에 걸쳐 실행 → 1타와 3타의 배율이 달라짐)와 `recastStages`(단계마다 재부여 → 2·3단이 자기 버프를 먹음) 때문에 "자기 버프를 자기 피해에 먹는가"가 순서 의존이 됩니다. 승격은 `ApplySkillBuff` 호출 지점 추가만으로 가능하나, 그때 헬퍼 안으로 `CasterCombat` null 가드를 옮겨야 합니다(현재는 `ExecuteBuff` 초입 가드에 의존).
+- ⚠️ **같은 키 안에서는 약한 갱신이 지속을 자릅니다**(`/buff 30 20` → `/buff 10 5` = 값 30, 지속 5). 설계상 의도 — `Remaining`을 `Max`로 바꾸면 약한 갱신이 지속을 연장하는 반대 이상함이 생깁니다. 유물·패시브는 같은 에셋이 항상 같은 값·지속을 부여하므로 실제로는 콘솔에서만 재현됩니다.
+- 📌 `TotalAttack`은 시전 시점에 `SkillExecutionContext`로 캡처됩니다 → 버프는 **다음 시전부터** 반영됩니다(평타는 매 타격이 새 컨텍스트라 즉시).
+- 콘솔 `/buff <amount> [duration]`(기본 5초, `≤ 0` = 무한).
 
 ---
 
@@ -2058,15 +2106,25 @@ PlayerStatusBarUI:
 
 ### 10-1-1. 플레이어 상태이상 아이콘 UI (PlayerStatusEffectUI)
 
-슬로우·스턴 활성 동안 아이콘과 잔여 시간을 표시합니다.
+슬로우·스턴·**스탯 버프** 활성 동안 아이콘과 잔여 시간을 표시합니다.
 
 ```
 PlayerStatusEffectUI:
   ├── slowIconView / stunIconView (StatusEffectIconView)
+  ├── buffSlotViews[] (StatusEffectIconView × 4, 씬 사전 배치 — 런타임 Instantiate 0)
   ├── PlayerCombatController.Active 가 준비될 때까지 OnEnable + Update 에서 TryBindCombat
   ├── 구독: OnStatusEffectApplied(Slow/Stun) → SetVisible(true) + MoveToLast
   │         OnStatusEffectEnded(Slow/Stun)  → SetVisible(false)
   └── Update: 활성 상태이면 RefreshIcon → SetTime(remainingTime, ratio)
+              + RefreshBuffSlots (아래)
+
+RefreshBuffSlots — 슬롯 i ↔ 버프 엔트리 i 고정 대응:
+  ├── 엔트리 있음 → SetVisible(true, 이미 켜져 있으면 재호출 금지)
+  │                 SetIcon(snapshot.Icon ?? 테이블 AttackBuff 폴백)
+  │                 무한이면 SetTime(0, 1) / 아니면 SetTime(Remaining, Remaining/Duration)
+  ├── 엔트리 없음 → SetVisible(false)
+  ├── MoveToLast 미사용 — 만료 시 뒤 엔트리가 앞 인덱스로 당겨져 왼쪽 압축이 자동 성립
+  └── EntryCount > 슬롯 수면 초과분 미표시 + 경고 1회
 
 StatusEffectIconView (슬롯 1개):
   ├── iconImage      — 스프라이트 (StatusEffectIconTable 에서 SetIcon 으로 주입, 실패 시 씬 결선 유지)
@@ -2074,6 +2132,14 @@ StatusEffectIconView (슬롯 1개):
   ├── timeText (TMP) — remaining > 0 일 때만 "0.0" 포맷 표시
   └── MoveToLast()   — 새로 활성된 효과를 컨테이너 마지막에 정렬
 ```
+
+🔑 **`SetIcon`은 `iconImage`와 `fillImage`에 같은 스프라이트를 넣습니다.** fill은 같은 아이콘을 검게(alpha 0.55) 덮어 방사형으로 걷어내는 오버레이라 두 이미지가 같은 그림이어야 합니다. Slow/Stun은 아이콘이 고정이라 씬에 두 곳을 각각 저작해뒀지만, **버프 슬롯은 엔트리마다 아이콘이 바뀌므로 런타임 대입이 필요**합니다.
+
+🔴 **Unity `Image`는 스프라이트가 없으면 `fillAmount`를 통째로 무시합니다.** `OnPopulateMesh`가 `activeSprite == null`이면 `base.OnPopulateMesh`로 조기 반환해 단순 사각형을 그립니다 — Filled·Radial360·색이 전부 맞아도 게이지가 움직이지 않습니다(2026-08-12 실제 발생).
+
+⚠️ **`_lastDisplayedTenths` 센티널은 두 가지입니다** — `int.MinValue` = "텍스트 없음"(`SetTime`이 계산), `UnsetTenths(int.MaxValue)` = "미확정"(`SetVisible` 리셋값). 하나로 겸하면 `SetVisible(true)` 직후의 `SetTime(0, 1)`(무한 버프)이 조기 반환에 걸려 **이전 카운트다운 숫자가 남습니다**.
+
+⚠️ 상태이상 행은 `HorizontalLayoutGroup`이 아니라 **anchoredPosition 절대 배치**입니다(Slow 250 / Stun 277.5 / 버프 305·332.5·360·387.5, 27.5 등간격). 슬롯을 늘리려면 씬 좌표를 직접 잡고 `buffSlotViews`에 결선해야 합니다.
 
 상태이상 발행은 `CombatEventChannel` 이 아니라 `PlayerCombatController` 의 직접 이벤트(`OnStatusEffectApplied`/`Ended`) — UI 한 곳만 구독하면 충분하기 때문입니다.
 
@@ -3522,6 +3588,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 플레이어→적 (DoT) | **독/출혈 + AilmentDamage(S1~S4)** — `EnemyAilments` 버킷(스택 가산·프로파일 차별화) + `SkillData.ailments` 배열 송출(전 실행타입, 탄 평타 허용) + 방어 무시 틱 + 스냅샷 증폭 + 마커 기폭 선증폭 + 콘솔 `/ailment`. **Soul 스탯 10종 실작동 완성**(2026-07-06). 상세 §7-9 |
 | 플레이어→적 (스턴) | **적 스턴 축(2026-07-10 신설)** — `ApplyStun` 타이머(Max 갱신) + 이동/행동/엘리트 패턴 정지 + 콘솔 `/stun`. 스킬/각인 데이터 부여는 후속. 상세 §8-7 |
 | 상태이상 표시 (2026-07-10 완결) | `EnemyAilmentIndicator` 4종(독/출혈/슬로우/스턴) **적용 순서 압축 정렬 + 스택 숫자** + `AilmentStatusSlot` 공용 프리팹(비주얼=인스펙터 저작) + **DoT 틱 동기 flash**(색=선행 상태이상, 적 피격 flash 제거). 표시 소스=`StatusEffectIconTable`(아이콘+flashColor+slotPrefab 단일 SO) |
+| 스탯 버프 (2026-08-12) | `PlayerStatBuffs`(순수 C#) — 엔트리 키 **(부여 에셋, 스탯)**, 같은 키=값 Max+지속 리필 / 다른 키=합산. 유물·패시브·스킬(`Buff` 실행타입)·콘솔 4소스가 각각 아이콘을 캐리해 **HUD 슬롯과 1:1**. `SkillData.buffs`/`buffDuration`로 SO 저작 가능(무한 지속 금지, proc 게이트 없음). 현재 축은 `Attack` 1종이며 확장은 스탯당 `BuffStatType` 값 + `Effective*` 한 줄. 상세 §7-15 |
 
 **아이템·경제·성장**
 
@@ -3536,7 +3603,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 정비실 일시강화 (런 한정) | **런 코어**(런타임 클론, 에셋 오염 차단) + 상점 구매=코어 효과 add(Relic 파이프라인 재사용, 신규 스탯 축 0) + 누진 비용(레벨=효과 카운트) + 인벤 툴팁(코어=수치, 미작성="내용없음"). 상세 §11b-11 |
 | 영혼각인 (런 빌드) | `EngravingLoadout` 토큰 모델(폼별 슬롯4+풀+런리셋) + `EngravingData`(owningForm/grade) + 드랍 브릿지(ItemType.Engraving) + **스테이징 세션 커밋 UI**(확인/취소+이중확인, `ApplyArrangement` 일괄 커밋) + Stair방 각인대(**1회 사용 소멸**, 정비실=비소멸) + Skill Dashboard(조망·편집·생성·삭제·검증 + 아이콘 축 + 폼별 그룹, Validator 흡수). **Sword 액티브 12종 저작·아이콘 전량 완료(2026-07-29)** — 남은 건 수치 조정과 타 폼 물량. 상세 §7-8 |
 | 패시브 각인 (2026-07-22 신설) | `PassiveEngravingData`(SkillData 비파생, `BehaviorEffect[]`) + `EngravingLoadout` 패시브 슬롯4/풀 미러(**`OnPassiveChanged` 이벤트 분리 = 쿨다운 리셋 차단**) + `BehaviorRuntime.Rescan` 2소스 병합(인벤 Relic + 장착 패시브) + 드랍 라우팅(ItemType.PassiveEngraving) + 각인대 **액티브/패시브 탭**(변경된 축만 커밋) + 인벤 조회 탭. **남은 것: Altar 슬롯 증설·영속+잠금 UI, 쉴드 서브시스템**. 상세 §7-8b |
-| 각인 콘텐츠 (2026-08-04) | **Sword 12/12** · **Dagger 12/12** — 기본 스킬 4개가 그대로 각인으로 등록되는 규약(`m_Script` guid 교체 전환, `.meta` 무수정으로 결선 보존). Dagger 전 등급 완성 + 아이콘 8종, **패시브 3축이 각각 전용 액티브 보유**(표식폭발/과부하/처형). 남은 것 = 24종 수치 튜닝 일괄 + 타 폼 물량. 상세 §7-8 |
+| 각인 콘텐츠 (2026-08-12) | **Sword 12 · Dagger 12 · Freischutz 12 · Parry 13 = 45종** — 기본 스킬 4개가 그대로 각인으로 등록되는 규약(`m_Script` guid 교체 전환, `.meta` 무수정으로 결선 보존). 🔑 **폼당 12종·등급 4/4/4는 첫 저작 배치일 뿐 상한이 아니다** — 신규 각인은 기존 것을 교체하지 않고 번호를 이어서(`<Form>_Skill_12`, 13, …) 추가하며, 등급 편중 자체는 문제가 아니다(Parry Whole 5종). 드랍은 타입·폼·등급 쿼리 기반이라 `ItemDatabase` 등록만으로 자동 편입된다(같은 등급 종수가 늘면 개별 확률은 그만큼 희석). 남은 것 = **45종 수치 튜닝 일괄**(적 체력 밸런스와 동시). 상세 §7-8 |
 | 스킬 배관 확장 (2026-08-04) | **Projectile 다단 볼리**(`hitSteps`에 발수·분산각, 스텝당 crit 1회, 재조준 없음 — `Burst`로는 스텝별 발수 변화를 표현 못 한다) + **InstantArea 표식 부여·기폭**(기폭 결산을 Dash와 공유, **순서=기폭→부여**, `IsProcCast` 5경로, 동기 proc 재진입 선캐시 차단) + **장판 애니메이션**(`zoneAnimation` AOC, sprite는 크기 기준 겸 폴백으로 존치). 상세 §7-10·§7-12·§11b-12 |
 | 상태이상 과부하 분화 (2026-08-03) | 임계를 **프로필 최대 스택**으로 재정의(출혈 자동 편입 + "임계>캡" 저작 함정 소멸) + **타입별 엔트리**(독=폭발 / 출혈=폭발+40% 회복, **분기 코드 0**) + 유물 저작 봉쇄(근간 축 정체성 보호 + 설정 리스트 런 중 불변 보장). 상세 §7-8b·§7-9 |
 
@@ -3568,7 +3635,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 항목 | 우선순위 | 비고 |
 |------|----------|------|
 | AreaOverTime 스킬 핸들러 | 중간 | SkillExecutionType enum 자리 마련, SkillExecutor에 분기만 추가하면 됨 (Blink 는 구현 완료) |
-| 범용 Buff 스킬 핸들러 | 낮음 | 현재 `ExecuteBuff` 는 Dagger R 마커 버프(`appliesDaggerMarker` 분기)만 처리 — 능력치 강화·실드 등 범용 버프는 미구현 |
+| ~~범용 Buff 스킬 핸들러~~ | — | **해소(2026-08-12, §7-15)** — `SkillData.buffs`/`buffDuration` + `ApplySkillBuff`로 SO 저작만으로 스탯 버프 부여 가능. 남은 확장은 스탯 축(방어·이속·피흡·크리)이며 스탯당 `BuffStatType` 값 1개 + `Effective*` 한 줄 |
 | 폼 전환 게임플레이 진입점 | — | **완료(2026-07-16, §11a-4)** — 던전 입장 폼 선택 화면 + 시작 Sword Soul 지급 + Normal 비전투화. 남은 S3: 보스 흡수 해금 연출·Soul 드랍 랜덤 폼 보정(미보유 가중/천장)·last-form 영속 + 카드 저작물(스프라이트 3종×4폼, 유저) |
 | 드롭/경제 루프 | — | **완료** — 데이터 기반 적 드롭 + 소울 분해(§11b-3b) + **Town Soul Altar**(조각 소비→`AddLevel`, 누진비용·maxLevel 캡, §11b-9)로 닫힌 루프 완성. 남은 콘텐츠: 보스 소울/Relic 정식 데이터 결선 |
 | 신규 시스템 스탯 | — | **완료** — Crit/Lifesteal/ComboDamage/**AilmentDamage**(독/출혈 DoT, §7-9) 전부 실작동. Soul 스탯 10종 완성. **표시 고도화도 완료(2026-07-10)** — 압축 정렬·스택 숫자·슬로우/스턴 아이콘·틱 flash. **ComboDamage는 단계제 전환+HUD 정식화 완료(2026-07-14, §11b-8)**. 남은 건 DoT 콘텐츠(Dagger 각인에 ailments 데이터 작성 — E3와 동행) |

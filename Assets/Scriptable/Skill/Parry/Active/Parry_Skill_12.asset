@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccccd0e1d3084cf6bf05e80da2938ca4, type: 3}
   m_Name: Parry_Skill_12
   m_EditorClassIdentifier: Assembly-CSharp::EngravingData
-  skillName: "\uC751\uC218 \uC790\uC138"
-  icon: {fileID: 0}
-  description: "\uC790\uC138\uB97C \uACE0\uCCD0 \uC7A1\uC544 \uC7A0\uC2DC \uACF5\uACA9\uB825\uC774 \uC624\uB985\uB2C8\uB2E4."
+  skillName: "\uAE30\uC138"
+  icon: {fileID: 2705941456746581705, guid: a96ced3ea7ce23c45aa0d6b1fc886cb4, type: 3}
+  description: "\uC790\uC138\uB97C \uACE0\uCCD0 \uC7A1\uC544 \uC7A0\uC2DC \uACF5\uACA9\uB825\uC774
+    \uC624\uB985\uB2C8\uB2E4."
   executionType: 4
   resourceType: 2
   requiredAmount: 6
@@ -27,7 +28,7 @@ MonoBehaviour:
   recastStages: []
   recastWindow: 1.5
   animationType: 0
-  customAnimationTrigger:
+  customAnimationTrigger: 
   rotateAnimationByDirection: 0
   animationBaseAngle: 0
   damage: 0

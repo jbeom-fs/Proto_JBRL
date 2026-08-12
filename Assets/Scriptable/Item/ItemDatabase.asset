@@ -1404,9 +1404,9 @@ MonoBehaviour:
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Whole_5
-    displayName: "\uC751\uC218 \uC790\uC138"
-    icon: {fileID: 0}
-    description: ""
+    displayName: "\uAE30\uC138"
+    icon: {fileID: 2705941456746581705, guid: a96ced3ea7ce23c45aa0d6b1fc886cb4, type: 3}
+    description: 
     itemType: 7
     rarity: 0
     stackable: 0
@@ -1419,7 +1419,7 @@ MonoBehaviour:
     soulFormId: 0
     engraving: {fileID: 11400000, guid: 2c9da84a61764fe7b091592d4c92e8c1, type: 2}
     passiveEngraving: {fileID: 0}
-    salvageItemCode: ""
+    salvageItemCode: 
     salvageMinAmount: 1
     salvageMaxAmount: 1
   - itemCode: Eng_Parry_Primordial_2
