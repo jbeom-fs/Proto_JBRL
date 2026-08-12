@@ -16,6 +16,9 @@ public sealed class StatusEffectIconView : MonoBehaviour
     {
         if (iconImage != null)
             iconImage.sprite = sprite;
+
+        if (fillImage != null)
+            fillImage.sprite = sprite;
     }
 
     public void SetVisible(bool visible)
