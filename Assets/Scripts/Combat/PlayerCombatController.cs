@@ -179,6 +179,9 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int  MaxHp       => Mathf.Max(1, maxHp + _itemStats.MaxHpBonus);
     public int CurrentShield => _shield.CurrentAmount;
     public int CurrentAttackBuff => Mathf.RoundToInt(_statBuffs.GetBonus(BuffStatType.Attack));
+    public int BuffEntryCount => _statBuffs.EntryCount;
+    public bool TryGetBuffEntry(int index, out BuffEntrySnapshot snapshot)
+        => _statBuffs.TryGetEntry(index, out snapshot);
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;

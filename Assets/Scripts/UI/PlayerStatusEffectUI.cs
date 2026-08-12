@@ -5,14 +5,16 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
     [SerializeField] private StatusEffectIconTable iconTable;
     [SerializeField] private StatusEffectIconView slowIconView;
     [SerializeField] private StatusEffectIconView stunIconView;
-    [SerializeField] private StatusEffectIconView buffIconView;
+    [SerializeField] private StatusEffectIconView[] buffSlotViews;
 
     private PlayerCombatController _combat;
+    private Sprite _attackBuffFallbackIcon;
     private bool _iconsResolved;
     private bool _warnedMissingTable;
     private bool _warnedMissingSlowIcon;
     private bool _warnedMissingStunIcon;
     private bool _warnedMissingAttackBuffIcon;
+    private bool _warnedBuffSlotOverflow;
 
     private void OnEnable()
     {
@@ -67,8 +69,15 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
             slowIconView.SetVisible(false);
         if (stunIconView != null)
             stunIconView.SetVisible(false);
-        if (buffIconView != null)
-            buffIconView.SetVisible(false);
+        if (buffSlotViews == null)
+            return;
+
+        for (int i = 0; i < buffSlotViews.Length; i++)
+        {
+            StatusEffectIconView view = buffSlotViews[i];
+            if (view != null)
+                view.SetVisible(false);
+        }
     }
 
     private void ResolveIconsOnce()
@@ -100,18 +109,15 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
                 WarnMissingIcon(StatusEffectIconType.Stun);
         }
 
-        if (buffIconView != null)
+        if (table.TryGetIcon(
+                StatusEffectIconType.AttackBuff,
+                out Sprite attackBuffIcon))
         {
-            if (table.TryGetIcon(
-                    StatusEffectIconType.AttackBuff,
-                    out Sprite attackBuffIcon))
-            {
-                buffIconView.SetIcon(attackBuffIcon);
-            }
-            else
-            {
-                WarnMissingIcon(StatusEffectIconType.AttackBuff);
-            }
+            _attackBuffFallbackIcon = attackBuffIcon;
+        }
+        else
+        {
+            WarnMissingIcon(StatusEffectIconType.AttackBuff);
         }
     }
 
@@ -166,21 +172,53 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
         if (stunIconView != null && _combat.IsStunned)
             RefreshIcon(PlayerStatusEffectType.Stun, stunIconView);
 
-        RefreshAttackBuffIcon();
+        RefreshBuffSlots();
     }
 
-    private void RefreshAttackBuffIcon()
+    private void RefreshBuffSlots()
     {
-        if (_combat == null || buffIconView == null)
+        if (_combat == null || buffSlotViews == null)
             return;
 
-        bool visible = _combat.CurrentAttackBuff > 0;
-        if (buffIconView.gameObject.activeSelf == visible)
-            return;
+        int entryCount = _combat.BuffEntryCount;
+        if (entryCount > buffSlotViews.Length)
+            WarnBuffSlotOverflow(entryCount);
 
-        buffIconView.SetVisible(visible);
-        if (visible)
-            buffIconView.MoveToLast();
+        for (int i = 0; i < buffSlotViews.Length; i++)
+        {
+            StatusEffectIconView view = buffSlotViews[i];
+            if (view == null)
+                continue;
+
+            if (i >= entryCount ||
+                !_combat.TryGetBuffEntry(i, out BuffEntrySnapshot snapshot))
+            {
+                if (view.gameObject.activeSelf)
+                    view.SetVisible(false);
+
+                continue;
+            }
+
+            if (!view.gameObject.activeSelf)
+                view.SetVisible(true);
+
+            Sprite icon = snapshot.Icon != null
+                ? snapshot.Icon
+                : _attackBuffFallbackIcon;
+            if (icon != null)
+                view.SetIcon(icon);
+
+            if (snapshot.Infinite)
+            {
+                view.SetTime(0f, 1f);
+                continue;
+            }
+
+            float ratio = snapshot.Duration > 0f
+                ? snapshot.Remaining / snapshot.Duration
+                : 0f;
+            view.SetTime(snapshot.Remaining, ratio);
+        }
     }
 
     private void RefreshIcon(PlayerStatusEffectType type, StatusEffectIconView view)
@@ -253,6 +291,20 @@ public sealed class PlayerStatusEffectUI : MonoBehaviour
                 "[PlayerStatusEffectUI] AttackBuff icon missing. Existing scene icon sprite remains in use.",
                 this);
         }
+#endif
+    }
+
+    private void WarnBuffSlotOverflow(int entryCount)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_warnedBuffSlotOverflow)
+            return;
+
+        _warnedBuffSlotOverflow = true;
+        Debug.LogWarning(
+            "[PlayerStatusEffectUI] Active buff count exceeds configured slots: " +
+            entryCount + " active, " + buffSlotViews.Length + " visible.",
+            this);
 #endif
     }
 }

@@ -4,11 +4,13 @@ using UnityEngine.UI;
 
 public sealed class StatusEffectIconView : MonoBehaviour
 {
+    private const int UnsetTenths = int.MaxValue;
+
     [SerializeField] private Image iconImage;
     [SerializeField] private Image fillImage;
     [SerializeField] private TMP_Text timeText;
 
-    private int _lastDisplayedTenths = int.MinValue;
+    private int _lastDisplayedTenths = UnsetTenths;
 
     public void SetIcon(Sprite sprite)
     {
@@ -19,7 +21,7 @@ public sealed class StatusEffectIconView : MonoBehaviour
     public void SetVisible(bool visible)
     {
         gameObject.SetActive(visible);
-        _lastDisplayedTenths = int.MinValue;
+        _lastDisplayedTenths = UnsetTenths;
 
         if (!visible)
             SetTime(0f, 0f);

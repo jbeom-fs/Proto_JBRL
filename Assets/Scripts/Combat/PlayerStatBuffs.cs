@@ -6,6 +6,32 @@ public enum BuffStatType
     Attack
 }
 
+public readonly struct BuffEntrySnapshot
+{
+    public BuffEntrySnapshot(
+        BuffStatType stat,
+        float value,
+        float remaining,
+        float duration,
+        bool infinite,
+        Sprite icon)
+    {
+        Stat = stat;
+        Value = value;
+        Remaining = remaining;
+        Duration = duration;
+        Infinite = infinite;
+        Icon = icon;
+    }
+
+    public BuffStatType Stat { get; }
+    public float Value { get; }
+    public float Remaining { get; }
+    public float Duration { get; }
+    public bool Infinite { get; }
+    public Sprite Icon { get; }
+}
+
 public sealed class PlayerStatBuffs
 {
     private sealed class Entry
@@ -14,6 +40,7 @@ public sealed class PlayerStatBuffs
         public BuffStatType Stat;
         public float Value;
         public float Remaining;
+        public float Duration;
         public bool Infinite;
         public Sprite Icon;
     }
@@ -24,6 +51,8 @@ public sealed class PlayerStatBuffs
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private bool _warnedNullSourceKey;
 #endif
+
+    public int EntryCount => _entries.Count;
 
     public void Grant(
         object sourceKey,
@@ -55,7 +84,8 @@ public sealed class PlayerStatBuffs
 
             entry.Value = Mathf.Max(entry.Value, value);
             entry.Infinite = duration <= 0f;
-            entry.Remaining = entry.Infinite ? 0f : duration;
+            entry.Duration = entry.Infinite ? 0f : duration;
+            entry.Remaining = entry.Duration;
             entry.Icon = icon;
             return;
         }
@@ -66,9 +96,29 @@ public sealed class PlayerStatBuffs
             Stat = stat,
             Value = value,
             Infinite = duration <= 0f,
+            Duration = duration <= 0f ? 0f : duration,
             Remaining = duration <= 0f ? 0f : duration,
             Icon = icon
         });
+    }
+
+    public bool TryGetEntry(int index, out BuffEntrySnapshot snapshot)
+    {
+        if (index < 0 || index >= _entries.Count)
+        {
+            snapshot = default;
+            return false;
+        }
+
+        Entry entry = _entries[index];
+        snapshot = new BuffEntrySnapshot(
+            entry.Stat,
+            entry.Value,
+            entry.Remaining,
+            entry.Duration,
+            entry.Infinite,
+            entry.Icon);
+        return true;
     }
 
     public float GetBonus(BuffStatType stat)
