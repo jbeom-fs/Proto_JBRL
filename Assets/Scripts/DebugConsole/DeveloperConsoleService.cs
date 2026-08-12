@@ -23,6 +23,7 @@ public sealed class DeveloperConsoleService
     private const string AilmentUsage = "Usage: /ailment <poison|bleed> [stacks=1]";
     private const string StunUsage = "Usage: /stun [duration=2]";
     private const string ShieldUsage = "Usage: /shield <positiveAmount> [duration=5; <=0 is infinite]";
+    private const string BuffUsage = "Usage: /buff <positiveAmount> [duration=5; <=0 is infinite]";
     private const string ToastUsage = "Usage: /toast <duration> <message...>";
     private const string ZoneUsage = "Usage: /zone <tickDamage> [duration=5] [slowPct=0] [slowDur=duration]";
     private const string ProcUsage = "Usage: /proc <slot 0-3>";
@@ -123,6 +124,7 @@ public sealed class DeveloperConsoleService
         _commands["ailment"] = ExecuteAilment;
         _commands["stun"] = ExecuteStun;
         _commands["shield"] = ExecuteShield;
+        _commands["buff"] = ExecuteBuff;
         _commands["toast"] = ExecuteToast;
         _commands["zone"] = ExecuteZone;
         _commands["proc"] = ExecuteProc;
@@ -289,6 +291,7 @@ public sealed class DeveloperConsoleService
             "\n" + AilmentUsage +
             "\n" + StunUsage +
             "\n" + ShieldUsage +
+            "\n" + BuffUsage +
             "\nUsage: /floor add [count] | /floor sub [count] | /floor set [floor]");
     }
 
@@ -695,6 +698,30 @@ public sealed class DeveloperConsoleService
         }
 
         return _executor.ExecuteShield(amount, duration);
+    }
+
+    private DeveloperConsoleCommandResult ExecuteBuff(string arguments)
+    {
+        if (_executor == null)
+            return DeveloperConsoleCommandResult.Error("Command executor is not assigned.");
+
+        string[] parts = string.IsNullOrWhiteSpace(arguments)
+            ? Array.Empty<string>()
+            : arguments.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 1 || parts.Length > 2 ||
+            !int.TryParse(parts[0], out int amount) || amount <= 0)
+        {
+            return DeveloperConsoleCommandResult.Error(BuffUsage);
+        }
+
+        float duration = 5f;
+        if (parts.Length == 2 &&
+            !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out duration))
+        {
+            return DeveloperConsoleCommandResult.Error(BuffUsage);
+        }
+
+        return _executor.ExecuteBuff(amount, duration);
     }
 
     private DeveloperConsoleCommandResult ExecuteProc(string arguments)

@@ -97,7 +97,7 @@ public sealed class PlayerBehaviors : MonoBehaviour
             Heal,
             ExecuteProc,
             GrantShield,
-            GrantAttackBuff);
+            GrantBuff);
     }
 
     private void OnEnable()
@@ -242,11 +242,16 @@ public sealed class PlayerBehaviors : MonoBehaviour
         _combat.GrantShield(source, amount, duration);
     }
 
-    private void GrantAttackBuff(int amount, float duration)
+    private void GrantBuff(
+        object sourceKey,
+        BuffStatType stat,
+        float value,
+        float duration,
+        Sprite icon)
     {
         if (_combat == null || _combat.IsDead)
             return;
 
-        _combat.GrantAttackBuff(amount, duration);
+        _combat.GrantBuff(sourceKey, stat, value, duration, icon);
     }
 }

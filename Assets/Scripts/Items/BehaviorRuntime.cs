@@ -11,13 +11,17 @@ public sealed class BehaviorRuntime
             int skillTypeFilter,
             int value,
             float duration,
-            ShieldSource shieldSource)
+            ShieldSource shieldSource,
+            object sourceKey,
+            Sprite icon)
         {
             Action = action;
             SkillTypeFilter = skillTypeFilter;
             Value = value;
             Duration = duration;
             ShieldSource = shieldSource;
+            SourceKey = sourceKey;
+            Icon = icon;
         }
 
         public BehaviorAction Action { get; }
@@ -25,6 +29,8 @@ public sealed class BehaviorRuntime
         public int Value { get; }
         public float Duration { get; }
         public ShieldSource ShieldSource { get; }
+        public object SourceKey { get; }
+        public Sprite Icon { get; }
     }
 
     private readonly struct ProcEntry
@@ -161,7 +167,7 @@ public sealed class BehaviorRuntime
 
     private readonly Action<int> _healCallback;
     private readonly Action<ShieldSource, int, float> _shieldCallback;
-    private readonly Action<int, float> _attackBuffCallback;
+    private readonly Action<object, BuffStatType, float, float, Sprite> _buffCallback;
     private readonly Action<SkillData, Vector3, Vector2, int?> _procCallback;
     private readonly List<TriggerEntry> _onKill = new List<TriggerEntry>();
     private readonly List<TriggerEntry> _onSkillUsed = new List<TriggerEntry>();
@@ -198,12 +204,12 @@ public sealed class BehaviorRuntime
         Action<int> healCallback,
         Action<SkillData, Vector3, Vector2, int?> procCallback = null,
         Action<ShieldSource, int, float> shieldCallback = null,
-        Action<int, float> attackBuffCallback = null)
+        Action<object, BuffStatType, float, float, Sprite> buffCallback = null)
     {
         _healCallback = healCallback;
         _procCallback = procCallback;
         _shieldCallback = shieldCallback;
-        _attackBuffCallback = attackBuffCallback;
+        _buffCallback = buffCallback;
     }
 
     public IReadOnlyList<AilmentApplication> AttackAilments => _attackAilments;
@@ -424,7 +430,9 @@ public sealed class BehaviorRuntime
                 AddBehaviors(
                     item.BehaviorEffects,
                     stack.Count,
-                    ShieldSource.Relic);
+                    ShieldSource.Relic,
+                    item,
+                    item.Icon);
             }
         }
 
@@ -439,7 +447,9 @@ public sealed class BehaviorRuntime
                 AddBehaviors(
                     passive.behaviors,
                     1,
-                    ShieldSource.PassiveEngraving);
+                    ShieldSource.PassiveEngraving,
+                    passive,
+                    passive.icon);
             }
         }
     }
@@ -544,7 +554,9 @@ public sealed class BehaviorRuntime
     private void AddBehaviors(
         IReadOnlyList<BehaviorEffect> behaviors,
         int stackCount,
-        ShieldSource shieldSource)
+        ShieldSource shieldSource,
+        object sourceKey,
+        Sprite icon)
     {
         if (behaviors == null)
             return;
@@ -562,6 +574,8 @@ public sealed class BehaviorRuntime
                         behavior,
                         stackCount,
                         shieldSource,
+                        sourceKey,
+                        icon,
                         _onKill,
                         _onKillProcs);
                     break;
@@ -570,6 +584,8 @@ public sealed class BehaviorRuntime
                         behavior,
                         stackCount,
                         shieldSource,
+                        sourceKey,
+                        icon,
                         _onSkillUsed,
                         _onSkillUsedProcs);
                     break;
@@ -578,6 +594,8 @@ public sealed class BehaviorRuntime
                         behavior,
                         stackCount,
                         shieldSource,
+                        sourceKey,
+                        icon,
                         _onCancel,
                         _onCancelProcs);
                     break;
@@ -586,6 +604,8 @@ public sealed class BehaviorRuntime
                         behavior,
                         stackCount,
                         shieldSource,
+                        sourceKey,
+                        icon,
                         _onMarkerDetonate,
                         _onMarkerDetonateProcs);
                     break;
@@ -600,6 +620,8 @@ public sealed class BehaviorRuntime
         BehaviorEffect behavior,
         int stackCount,
         ShieldSource shieldSource,
+        object sourceKey,
+        Sprite icon,
         List<TriggerEntry> triggerEntries,
         List<ProcEntry> procEntries)
     {
@@ -613,7 +635,9 @@ public sealed class BehaviorRuntime
                     behavior.skillTypeFilter,
                     behavior.value * stackCount,
                     behavior.duration,
-                    shieldSource));
+                    shieldSource,
+                    sourceKey,
+                    icon));
                 break;
             case BehaviorAction.CastSkill:
                 if (behavior.procSkill != null)
@@ -718,7 +742,12 @@ public sealed class BehaviorRuntime
                     entry.Duration);
                 break;
             case BehaviorAction.AttackBuff:
-                _attackBuffCallback?.Invoke(entry.Value, entry.Duration);
+                _buffCallback?.Invoke(
+                    entry.SourceKey,
+                    BuffStatType.Attack,
+                    entry.Value,
+                    entry.Duration,
+                    entry.Icon);
                 break;
         }
     }

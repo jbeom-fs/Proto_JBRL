@@ -665,6 +665,28 @@ public sealed class DeveloperConsoleCommandExecutor : MonoBehaviour
             "Shield granted: " + combat.CurrentShield + " (" + durationText + ").");
     }
 
+    public DeveloperConsoleCommandResult ExecuteBuff(int amount, float duration)
+    {
+        PlayerCombatController combat = ResolvePlayerCombatController();
+        if (combat == null)
+        {
+            WarnMissing(nameof(PlayerCombatController));
+            return DeveloperConsoleCommandResult.Error("PlayerCombatController is not active.");
+        }
+
+        combat.GrantBuff(
+            PlayerStatBuffs.ConsoleSourceKey,
+            BuffStatType.Attack,
+            amount,
+            duration,
+            null);
+        string durationText = duration <= 0f
+            ? "infinite"
+            : duration.ToString("0.##", CultureInfo.InvariantCulture) + "s";
+        return DeveloperConsoleCommandResult.Success(
+            "Attack buff granted: " + combat.CurrentAttackBuff + " (" + durationText + ").");
+    }
+
     public DeveloperConsoleCommandResult ExecuteZone(
         int tickDamage,
         float duration,

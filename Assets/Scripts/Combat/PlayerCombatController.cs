@@ -105,7 +105,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
 
     private readonly PlayerResource _resource = new();
     private readonly PlayerShield _shield = new();
-    private readonly PlayerAttackBuff _attackBuff = new();
+    private readonly PlayerStatBuffs _statBuffs = new();
     private readonly PlayerItemStats _itemStats = new();
     private readonly SoulStatBonus _soulBonus = new SoulStatBonus();
     private readonly SkillCooldownController _cooldownController = new();
@@ -178,7 +178,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int  CurrentHp   => _resource.CurrentHp;
     public int  MaxHp       => Mathf.Max(1, maxHp + _itemStats.MaxHpBonus);
     public int CurrentShield => _shield.CurrentAmount;
-    public int CurrentAttackBuff => _attackBuff.CurrentAmount;
+    public int CurrentAttackBuff => Mathf.RoundToInt(_statBuffs.GetBonus(BuffStatType.Attack));
     public int CurrentBullet => _currentBullet;
     public int MaxBullet => maxBullet;
     public int CurrentParryStack => _parryStack != null ? _parryStack.Current : 0;
@@ -242,7 +242,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
     public int TotalAttack  => baseAttack
                                + (currentWeapon?.bonusAttack ?? 0)
                                + _itemStats.AttackBonus
-                               + _attackBuff.CurrentAmount;
+                               + CurrentAttackBuff;
 
     /// <summary>무기 보정치가 합산된 최종 방어력.</summary>
     public int TotalDefense => baseDefense + (currentWeapon?.bonusDefense ?? 0) + _itemStats.DefenseBonus;
@@ -362,7 +362,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearReloadState();
         _status?.ClearAll();
         _shield.Clear();
-        _attackBuff.Clear();
+        _statBuffs.Clear();
         ClearFormRuntimeState();
     }
 
@@ -836,7 +836,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         }
 
         _shield.Tick(Time.deltaTime);
-        _attackBuff.Tick(Time.deltaTime);
+        _statBuffs.Tick(Time.deltaTime);
 
         if (_damageInvincibleTimer > 0f)
             _damageInvincibleTimer -= Time.deltaTime;
@@ -2141,7 +2141,7 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         ClearReloadState();
         _status?.ClearAll();
         _shield.Clear();
-        _attackBuff.Clear();
+        _statBuffs.Clear();
         _focusStacks.ClearAll();
         invincibilityFlashFeedback?.StopAndReset();
         OnDied?.Invoke(this);
@@ -2205,12 +2205,17 @@ public class PlayerCombatController : MonoBehaviour, IDamageable, ISkillResource
         _shield.Grant(source, amount, duration);
     }
 
-    public void GrantAttackBuff(int amount, float duration)
+    public void GrantBuff(
+        object sourceKey,
+        BuffStatType stat,
+        float value,
+        float duration,
+        Sprite icon)
     {
         if (IsDead)
             return;
 
-        _attackBuff.Grant(amount, duration);
+        _statBuffs.Grant(sourceKey, stat, value, duration, icon);
     }
 
     public void ClearShield()
