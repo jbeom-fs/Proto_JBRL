@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-12
+> 작성 기준일: 2026-08-14
+> 기준 커밋: master HEAD `5c17fbcb` — **적 패턴 시스템 공통 승격 + 역장 장판 회전 이펙트**(§8-4-4 전면 개정, §7-12 보강). ① **역장 장판 회전 이펙트**(`b893170c`) — Parry `역장`(`Parry_Skill_11`, AreaOverTime)이 `zoneSprite`·`zoneAnimation` 미결선이라 완전 비가시였다. 🔴 결선 후 **흰 원이 회전하는** 현상 — `DamageZone.UpdateVisual`은 `animation != null` 분기에서 **`spriteRenderer.sprite`를 대입하지 않는다**(클립의 PPtr 커브가 스프라이트를 소유한다는 전제). 그런데 이번 클립은 스프라이트 스왑이 아니라 **transform 회전**만 애니메이트해서, 렌더러에 프리팹 기본값인 Unity 2D 패키지 내장 `Circle.png`가 그대로 남아 그것이 돌고 있었다. 해결 = **클립에 Sprite 트랙 1키 추가**(PPtr는 상수 보간이라 1키로 전 구간 유지, 코드 변경 0). 🔑 **단일 스프라이트 + 회전 커브는 프레임 시트의 대안이다** — 임의 프레임레이트에서 매끄럽고 텍스처가 1/8이며, 회전 대칭 형태면 이미지 1장으로 끝난다. ⚠️ `DamageZone`은 **자식 없는 단일 GameObject**라 루트 transform에 코드가 반경 맞춤 `localScale`을 대입한다 → 클립에 **scale·position 커브를 넣으면 반경이 틀어진다**(회전·색만 허용). 🔴 각도 커브의 마지막 키를 `0`으로 두면 `-315 → 0`을 **숫자 보간**해 루프마다 역방향 한 바퀴가 돈다 → 마지막 키는 `-360`(같은 방향·단조 감소, 루프 이음새 비가시), 전 키 Linear. ② **패턴 시스템 공통 승격**(`5c17fbcb`) — `ElitePattern*` 11개 파일을 `EnemyPattern*`으로 리네임하고 실행 게이트를 `Data.IsElite`에서 **패턴셋 보유 여부**로 분리했다(`isElite`는 드랍 랭크·디자인 표식으로 존속). 보스가 전용 패턴을 갖는 구조가 확정됐는데 기존 게이트는 보스에게 `isElite: true`를 강요했다. 🔴 **`weight`가 죽어 있었다** — 소비처가 `Weight <= 0` 필터 하나뿐이고 선택은 **리스트 순서상 첫 적격 패턴**이라 실질 `bool enabled`였는데, `OnValidate`는 "weight must be greater than 0 to be selectable"이라 경고해 저작자를 속이고 있었다(Magma 실측 = Jump→Dash→Projectile 고정 순환) → **가중 추첨 구현**(`EnemyDropRoller` 구간 추첨 미러). 동승 정리 = 런타임 인스턴스 캐시(시전마다 `new` 제거, `Start` 전량 리셋 감사 동반)·쿨다운 `Dictionary` → 인덱스 배열·페이즈용 `SetPatternSet` 진입점. 🔑 **`CanAttack`의 엘리트 특례는 삭제가 아니라 조건 치환**이었다 — Magma가 `behaviorType: Ranged` + 패턴셋 보유라 분기가 실제로 작동 중이었고, 지웠으면 없던 기본 원거리 공격이 생기는 동작 변경이 된다. 🔴 첫 구현이 Editor 어셈블리를 검증하지 않아 `EnemyDashboardWindow`가 삭제된 프로퍼티를 참조한 채 남았고(컴파일 차단), `EnemyDataEditor`의 `FindProperty("elitePatternSet")`도 함께 죽었다 — **`[FormerlySerializedAs]`는 역직렬화에만 작용하고 `FindProperty` 경로에는 영향이 없다.** ③ **보스 구조 설계 확정**(문서) — 보스 다종화 전제(테이블 풀화 + `BossArenaSpace` 번들), 폼 해금 2경로(최종=Soul 즉시 / 중간=조각 누적), 페이즈는 **옵션**(배열 원소 1개 = 페이즈 없음), 페이즈·공간은 `BossEncounterEntry` 소유. 이전: `Buff` 실행타입 범용화 + 소스별 스탯 버프 풀(`1b4ce36e`)
+>
+> <details><summary>이전 기준(2026-08-12, `1b4ce36e`)</summary>
+>
 > 기준 커밋: master HEAD `1b4ce36e` — **`Buff` 실행타입 범용화 + 소스별 스탯 버프 풀**(§7-15 신설, §7-6·§10-1-1 개정, §14 항목 해소). ① **스탯 버프 풀**(`2e9cf52d`) — `PlayerAttackBuff`(단일 풀)를 `PlayerStatBuffs`로 교체했다. 🔑 **엔트리 키 = (부여 주체 에셋, 스탯)** — 같은 키는 값 `Max` + 지속 리필, 다른 키는 **합산**. 구 풀은 값만 `Max`고 **지속을 무조건 덮어써서** 약하고 짧은 버프가 강하고 긴 버프의 지속을 자르고 무한 버프가 기존 버프를 영구화하는 결함이 있었고, 유물·패시브가 서로 `Max`로 잡아먹어 획득 축이 달라도 하나만 유효했다. 키를 소스 종류(`ShieldSource` 미러)가 아니라 에셋으로 잡은 이유는 **HUD가 버프마다 자기 아이콘을 그리기 때문**이다. 소유 경계 = 순수 C# 풀(엔트리·타이머·키·아이콘) / `PlayerCombatController`는 진입점 `GrantBuff`와 `Effective*` 접근자만. ② **HUD 버프 슬롯 1:1**(`d4677364`) — 슬롯 `i` ↔ 엔트리 `i` 고정 대응이라 만료 시 **왼쪽 압축이 자동 성립**(버프 슬롯에 `MoveToLast` 미사용), 씬 사전 배치 4칸·런타임 `Instantiate` 0. 🔴 이 과정에서 `StatusEffectIconView` 버그 2건 수정 — 센티널 `int.MinValue`가 "텍스트 없음"과 "미확정"을 겸해 무한 버프 슬롯에 이전 숫자가 되살아났고(`UnsetTenths` 분리), **fill `Image`에 스프라이트가 없어 `fillAmount`가 무시**됐다(`1b4ce36e`). 🔑 **fill 스프라이트 = 아이콘 스프라이트**(같은 그림의 검은 방사형 오버레이)라 동적 슬롯은 `SetIcon`이 양쪽에 대입해야 한다. ③ **`Buff` 실행타입 범용화**(`81b241ec`) — `SkillData.buffs`/`buffDuration` + `ExecuteBuff`의 `ApplySkillBuff`. `sourceKey = skill` / `icon = skill.icon` / 스킬 버프는 **무한 지속 금지**. 🔴 **`IsProcCast` 게이트 없음** — proc은 `OnSkillUsed`를 재발행하지 않아 연쇄가 성립하지 않는다(표식이 게이트를 건 이유는 proc된 스킬이 **자기 트리거를 다시 만들기** 때문). rider(전 실행타입 동승)는 `hitSteps`·`recastStages`가 "자기 버프를 자기 피해에 먹는가"를 순서 의존으로 만들어 보류. ④ **기세 각인**(동승) — Parry **13번째** 액티브(Whole / 스택 6 / 쿨 12 / 공격력 +3 / 6초). 🔑 **폼당 12종·4/4/4는 첫 저작 배치일 뿐 상한이 아니다** — 신규 각인은 교체가 아니라 번호를 이어 추가한다. 이전: 근접 평타를 SkillData 구동으로 전환 + Custom 형태 저작(`bd88df79`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-11, `bd88df79`)</summary>
 >
@@ -122,7 +128,7 @@
 | 적 전투 | 근접 접촉 피해 + Contact Special(Rush 돌진 / Jump 도약 + 착지 임팩트) + 원거리 투사체 (Single/Burst/Spread/Circle) + 벽 반사 + Elite 패턴 사이클 — Rush/Jump/Projectile/Elite 임팩트는 `EnemyAttackImpactData`(knockback·slow·stun) 적용 |
 | 아이템 / 인벤토리 | `ItemDatabase` ScriptableObject + `ItemData` (Key·Currency·Consumable·Equipment·Relic·Material·Soul·Engraving) + `useEffects`/`passiveEffects` + `soulFormId` + `engraving` + `removeOnFloorTransition`/`removeOnDungeonExit` 플래그. `PlayerInventory`(InventoryItemStack 리스트, 스택/논-스택, 층/던전 이탈 시 자동 정리) — 적이 `EnemyInventory.AddDropItem` 으로 사망 시 `DropItemSpawner.SpawnDrops` → `DroppedItem.OnTriggerEnter2D` 에서 `PlayerInventory.AddItem` 또는 영혼각인 풀 적재로 픽업. Consumable 은 슬롯 클릭으로 `HealHp` 사용, Relic 은 소지 중 평면 스탯 패시브를 `PlayerItemStats` 로 합산, Soul 은 `PlayerInventory.OwnsSoulForm` 을 통해 Form 보유권으로 판정 |
 | Elite Floor / Elite Key | 층이 `% 10 == 5` 이면 MST leaf 가장 깊은 방을 Elite Room 으로 자동 지정, Elite Door 로 봉인. 같은 층의 일반 방 적 중 결정론적으로 1마리가 `elite_key` 를 드랍하며 플레이어가 습득하면 PlayerInventory 에 들어가고 Elite Door 접촉 시 자동 개방·열쇠 1개 소모 |
-| Elite 적 | `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner`(MonoBehaviour)가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·사거리 조건 만족 패턴 1개를 실행. 패턴 종류: Projectile / Dash / Jump (ScriptableObject 변형) |
+| 패턴 적 (엘리트·보스) | `EnemyData.patternSet` 부착 시 `EnemyPatternRunner`(MonoBehaviour)가 매 Tick 쿨다운·사거리 조건을 만족하는 후보를 모아 **weight 가중 추첨**으로 1개를 실행. 패턴 종류: Projectile / Dash / Jump (ScriptableObject 변형). `isElite` 는 실행 조건이 아니라 드랍 랭크·디자인 표식 |
 | 시야 | Fog of War (Bresenham 시야 차단, 미탐사/탐사/현재시야 3단계) |
 | 진행 방식 | 계단을 통한 층 이동 (무한 층 구조) |
 | 입력 키 | `PlayerInputKeySettings` ScriptableObject — `controlScheme`(Classic/ActionMouseAim) + 이동/액션/스킬 키를 에셋 1개로 일괄 설정. ActionMouseAim 은 마우스 버튼 바인딩(`InputBinding`/`PointerButton`) 지원. 중복 키·`Key.None` 자동 경고 |
@@ -210,7 +216,7 @@
 - **입력 키 데이터 드리븐**: `PlayerInputKeySettings` ScriptableObject 1개가 `controlScheme`(Classic/ActionMouseAim) + 이동/액션/스킬 키(키보드 + 마우스 버튼)를 보유, `PlayerInputReader` 가 매 프레임 참조 — 에셋 교체·프리셋 전환만으로 조작 변경, OnValidate 단계에서 `Key.None` / 중복 키·마우스 버튼 자동 경고
 - **아이템 데이터 드리븐**: `ItemDatabase` ScriptableObject 가 `itemCode` 키로 `ItemData` (DisplayName/Icon/ItemType/Stackable/MaxStack/useEffects/passiveEffects/soulFormId)를 보관, `EnemyInventory.AddDropItem(itemCode)` → `DropItemSpawner.SpawnDrops` → `DroppedItem.Initialize` 파이프라인이 코드 수정 없이 새 아이템을 지원. Consumable 즉시 효과는 `ItemEffectApplier`, Relic 평면 스탯은 `PlayerItemStats`, Soul 기반 Form 보유권은 `PlayerInventory.OwnsSoulForm` 이 담당
 - **Elite Floor 자동화**: `floor % 10 == 5` 인 층에서 `DungeonGenerator.AssignEliteRoom` 이 시작 방에서 MST 깊이 최대 leaf(동률 시 거리 최대)를 Elite Room 으로 선정, `DungeonTilemapRenderer.PlaceEliteDoors` 가 perimeter 의 corridor-인접 셀에 `eliteDoorTile` 배치 — `RoomSpawner.PrepareEliteKeyPlan` 이 결정론적 RNG (`EliteKeyDomain`) 로 같은 층의 일반 방 적 1마리에 `elite_key` 드랍 부여, 플레이어가 키 보유 상태로 Elite Door 접촉 시 `TryOpenEliteDoorWithKey(PlayerInventory, ItemData)` 가 한 셀 카빙 + 인벤토리에서 키 1개 제거
-- **Elite 적 패턴 시스템**: `EnemyData.isElite=true` + `elitePatternSet` 부착 시 `ElitePatternRunner` (MonoBehaviour) 가 매 Tick `ElitePatternSet.Patterns` 를 순회해 쿨다운·`MinRange`/`MaxRange`·weight 조건을 만족하는 첫 패턴을 실행. 패턴 종류는 `EliteProjectilePatternData` / `EliteDashPatternData` / `EliteJumpPatternData` ScriptableObject 변형이며 각각 windup·animation key·EnemyAttackImpactData 를 보유. 기존 Contact Special(Rush/Jump)와는 독립된 사이클 — Special 은 모든 Contact 적의 1개 고정 공격, Elite Pattern 은 Elite 전용 다중 패턴 풀
+- **적 패턴 시스템(엘리트·보스 공용)**: `EnemyData.patternSet` 부착 시 `EnemyPatternRunner` (MonoBehaviour) 가 매 Tick 쿨다운·`MinRange`/`MaxRange` 조건을 만족하는 후보를 모아 **`weight` 비례 추첨**으로 1개를 실행. 패턴 종류는 `EnemyProjectilePatternData` / `EnemyDashPatternData` / `EnemyJumpPatternData` ScriptableObject 변형이며 각각 windup·animation key·EnemyAttackImpactData 를 보유. 런타임 인스턴스는 패턴당 1개를 캐시해 재사용하며, `SetPatternSet(set)` 이 보스 페이즈용 교체 진입점이다. 기존 Contact Special(Rush/Jump)와는 독립된 사이클 — Special 은 모든 Contact 적의 1개 고정 공격, Enemy Pattern 은 패턴셋 보유 적의 다중 패턴 풀
 - **인벤토리 데이터 드리븐**: `PlayerInventory`(MonoBehaviour) 가 `InventoryItemStack` 리스트를 보유, stackable/maxStack 정책을 자동 적용. `ItemData.removeOnFloorTransition`/`removeOnDungeonExit` 플래그로 층/던전 이탈 시 자동 정리. `OnInventoryChanged` 는 UI 갱신과 Relic 패시브 재계산의 단일 트리거이며, Elite Key 도 일반 ItemData 한 항목으로 통합 (과거의 `PlayerEliteKeyInventory` 는 제거됨). `OwnsSoulForm(formId)` 는 ItemType.Soul + soulFormId + count>0 조합으로 Form 소유 여부를 판정
 - **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene / EngravingLoadout) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
@@ -265,7 +271,7 @@ Assets/Scripts/
 │                                    #   (EnemyAttackImpactData struct: knockback/slow/stun — rushImpact/jumpImpact/projectileImpact 공용)
 │                                    #   (isStationary: AI 이동/분리/넉백 위치 변화 정지 + Rigidbody FreezeAll, immuneToKnockback: 데미지·상태이상은 적용되나 임펄스만 무시)
 │                                    #   (minFloor/maxFloor: 등장 가능 층 범위 — IsAvailableOnFloor(floor) 필터, OnValidate 가 잘못된 범위 자동 경고)
-│                                    #   (isElite + elitePatternSet: Elite 적 활성 — ElitePatternRunner 가 elitePatternSet.Patterns 순회 실행. OnValidate 가 둘 중 하나만 설정된 경우 경고)
+│                                    #   (patternSet: EnemyPatternRunner 가 weight 가중 추첨으로 패턴 실행 — isElite 와 무관. 프리팹에 러너가 없으면 Enemy Dashboard 가 경고)
 │
 ├── Generate/
 │   ├── DungeonGenerator.cs         # BSP + Prim MST 생성 알고리즘 (순수 C#) — IsEliteFloor(floor%10==5) → AssignEliteRoom (MST leaf 가장 깊은 방), EXTRA 통로는 elite room 제외
@@ -1663,6 +1669,13 @@ position  = enemy.transform.TransformPoint(new Vector3(0f, localY, 0f))
 
 ⚠️ **플레이스홀더를 다른 도메인 클립으로 때우지 말 것** — AOC 슬롯이 비면 Unity가 **원본 클립으로 폴백**하므로, 플레이스홀더가 남의 이펙트면 장판 자리에서 그 애니가 재생된다. 전용 빈 클립이면 같은 상황에서 "아무 일도 일어나지 않는다"가 된다.
 
+🔴 **클립이 스프라이트를 소유하지 않으면 프리팹 기본 스프라이트가 그대로 보인다(2026-08-14, 역장)** — `UpdateVisual`의 `animation != null` 분기는 **`spriteRenderer.sprite`를 대입하지 않는다**(클립의 PPtr 커브가 소유한다는 전제). 역장 클립은 스프라이트 스왑이 아니라 **transform 회전만** 애니메이트했고, 그 결과 렌더러에 남아 있던 프리팹 기본값 — Unity 2D 패키지 내장 `Circle.png` — 이 회전하며 **"흰 원이 도는"** 상태가 됐다. `zoneSprite` 결선은 정상이었지만 그 값은 애니 경로에서 **크기 계산에만** 쓰인다. 해결은 **클립에 Sprite 트랙 1키 추가**(PPtr는 상수 보간이라 1키로 전 구간 유지, 코드 변경 0).
+
+🔑 **단일 스프라이트 + 회전 커브는 프레임 시트의 대안이다** — 임의 프레임레이트에서 매끄럽고 텍스처가 1/8이며, 회전 대칭 형태(링·원형 장판)면 이미지 1장으로 끝난다. 저작 시 두 가지를 지킬 것.
+
+- ⚠️ **transform 커브는 회전(과 색)만.** `DamageZone`은 자식 없는 단일 GameObject라 코드가 **루트의 `localScale`에 반경 맞춤 값을 대입**한다 → scale·position 커브를 넣으면 Animator가 덮어써 판정 반경과 표시가 어긋난다.
+- ⚠️ **각도 커브의 마지막 키는 `0`이 아니라 `-360`.** Animator는 각도를 숫자로 보간하므로 `-315 → 0`은 최단 경로가 아니라 **+315°를 역방향으로 도는 한 바퀴**가 된다(루프마다 큰 회전이 보임). `0 → -360` 단조 감소 + 전 키 Linear로 두면 루프 이음새가 보이지 않는다(360°는 0°와 같은 자세라 재시작이 무변화).
+
 📌 **클립 저작 규격** — DamageZone 프리팹은 **자식 없는 단일 GameObject**라 SpriteRenderer가 루트에 있다. 클립 커브 경로도 루트(`path: `)여야 하므로 **프리팹 루트(또는 SpriteRenderer만 붙인 임시 오브젝트)에서 녹화**할 것. 프레임 셀 크기는 `zoneSprite`와 동일해야 하며(다르면 매 프레임 크기가 흔들린다), **시트의 0번 프레임을 `zoneSprite`로 등록**하면 기준값이 곧 애니의 한 프레임이라 불일치가 원천 차단된다. 현재 결선 = 혈무 `Blood_Swamp`(10프레임/1초 루프) · 독무 `Poison_Swamp`(동일 규격).
 
 ### 7-13. Proc 시전 — 파이프 밖 조용한 스킬 발동 (ExecuteSkillProc, 2026-07-17)
@@ -1883,35 +1896,52 @@ Kiting의 "적정 거리 도달", Random의 "다음 목적지까지 대기"처�
 >
 > Rush 경로 데미지 / Jump 착지 임팩트는 `ApplyEnemyImpactToTarget` → `PlayerCombatController.ApplyEnemyCombatImpact` 로 라우팅되어, EnemyAttackImpactData 의 knockback·slow·stun 이 한 번에 적용됩니다 (다른 IDamageable 타깃은 단순히 `TakeDamage(damage)`만 호출).
 
-### 8-4-4. Elite Pattern Set (Elite 전용 패턴 사이클)
+### 8-4-4. Enemy Pattern Set (패턴 사이클 — 엘리트·보스 공용, 2026-08-14 공통 승격)
 
-`EnemyData.isElite = true` 이고 `elitePatternSet` 이 부착된 적은 일반 행동(Contact 접촉 피해 / Ranged 사이클 / Contact Special) 와 별도로 `ElitePatternRunner` (MonoBehaviour) 가 추가 사이클을 실행합니다.
+`EnemyData.patternSet` 이 부착된 적은 일반 행동(Contact 접촉 피해 / Ranged 사이클 / Contact Special) 와 별도로 `EnemyPatternRunner` (MonoBehaviour) 가 추가 사이클을 실행합니다.
+
+🔑 **실행 조건은 `isElite` 가 아니라 패턴셋 보유 여부입니다.** 원래 게이트가 `Data.IsElite && ElitePatternSet != null` 이었으나, 보스가 전용 패턴을 기본으로 갖는 구조가 확정되면서 보스에게 `isElite: true` 를 강요하는 어휘 오염이 됐습니다. `isElite` 는 드랍 랭크·디자인 분류 표식으로만 존속합니다.
 
 ```
-ElitePatternRunner.Tick(dt):
-  ① _brain.Data.IsElite && elitePatternSet != null && Enemy.IsAlive 확인
+EnemyPatternRunner.Tick(dt):
+  ① ResolvePatternSet() != null && Enemy.IsAlive 확인
+     ResolvePatternSet = _overridePatternSet ?? Data.PatternSet   (override = 페이즈 교체분)
      (false 면 진행 중 패턴 Cancel 후 종료)
-  ② 활성화 시점에 RebuildPatterns — Weight > 0 인 패턴만 _patterns 리스트에 등록
-  ③ TickCooldowns(dt) — 각 패턴 _cooldowns Dictionary 감소
+  ② _active 전이 시 RebuildPatterns — Weight > 0 인 패턴만 _patterns 에 등록,
+     같은 인덱스로 _runtimes(캐시) 와 _cooldowns(float 리스트) 를 함께 구축
+  ③ TickCooldowns(dt) — 인덱스 순회 감소
   ④ 현재 _currentRuntime 진행 중이면 Tick 위임,
      IsFinished 시 FinishCurrent → 그 패턴의 Cooldown 적용
   ⑤ 진행 중인 패턴이 없을 때 TryStartNextPattern:
        distance = √(Target.SqrDistanceToTarget)
-       _patterns 순회: cooldown == 0 && IsInRange(distance) 인 첫 패턴 선정
-       pattern.CreateRuntime() → context.Initialize → runtime.Start(context)
+       적격 후보 전부 수집 (cooldown == 0 && IsInRange(distance))
+       → Weight 비례 누적 구간 추첨으로 1개 선택
+       → 캐시된 런타임 재사용 → context.Initialize → runtime.Start(context)
 ```
 
-`ElitePatternContext` 가 Brain/Enemy/Data/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 를 모두 노출해 런타임이 필요한 서비스에 접근할 수 있습니다.
+🔴 **`weight` 는 2026-08-14 이전까지 죽어 있었습니다.** 소비처가 `RebuildPatterns` 의 `Weight <= 0` 필터 하나뿐이었고 선택은 **리스트 순서상 첫 적격 패턴**이었습니다(실질 `bool enabled`). 그런데 `OnValidate` 는 *"weight must be greater than 0 to be selectable"* 이라 경고해 저작자가 가중치가 작동한다고 믿게 만들었습니다. Magma 실측 결과는 Jump → Dash → Projectile **고정 순환**이었습니다. 현재는 `EnemyDropRoller` 의 구간 추첨을 미러한 가중 추첨이며, RNG 는 `UnityEngine.Random`(적 AI 는 이미 비결정적이므로 `DeterministicSeedUtility` 대상 아님).
+
+📌 **런타임은 패턴당 1개를 캐시해 재사용합니다.** 시전마다 `CreateRuntime()` 으로 `new` 하던 것을 `RebuildPatterns` 1회 생성으로 옮겼습니다. 전제는 **`Start(context)` 가 모든 가변 필드를 초기화**하는 것이라, 3종 런타임 전부 `_phase`·타이머·방향·`_unlockFacing`·비주얼 기준 위치를 선두에서 명시 초기화하도록 보강했습니다. `Cancel()` 은 세 런타임 모두 `Cleanup()` 을 호출하고 Jump 는 `RestoreVisualOffset()` 까지 하므로 **패턴 도중 중단이 안전**합니다(페이즈 즉시 전환의 근거).
+
+📌 **`SetPatternSet(set)`** = 보스 페이즈용 교체 진입점. 진행 중 패턴을 취소하고 새 세트로 재구축하며 쿨다운은 0부터 시작합니다. `ResetRuntimeState()` 가 override 를 null 로 되돌리므로 풀 재사용 시 이전 보스의 페이즈 세트가 남지 않습니다.
+
+⚠️ **`EnemyBrain.CanAttack` 의 특례도 같은 조건으로 치환됐습니다** — `IsElite && Ranged → false` 가 `PatternSet != null && Ranged → false` 로 바뀌었습니다. 삭제가 아니라 치환인 이유는 Magma 가 `behaviorType: Ranged` + 패턴셋 보유라 **이 분기가 실제로 작동 중**이었기 때문입니다(지웠으면 없던 기본 원거리 공격이 생깁니다). 규칙은 "패턴을 가진 적은 공격을 패턴이 담당한다"로 일반화됐습니다.
+
+`EnemyPatternContext` 가 Brain/Enemy/Data/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 를 모두 노출해 런타임이 필요한 서비스에 접근할 수 있습니다. 갱신은 **패턴 시작 직전 `Initialize` 1회**이며 매 틱 갱신은 제거됐습니다(위치 전환 시 풀 해제 → `OnDisable` → `ResetRuntimeState` 로 진행 중 패턴이 취소되므로 stale 이 성립하지 않음).
 
 | 패턴 (ScriptableObject) | 핵심 파라미터 | 동작 |
 |---|---|---|
-| `EliteProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
-| `EliteDashPatternData` | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery. ~~dashDuration 제거~~ |
-| `EliteJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정 → 비행 보간 → 착지 임팩트(impactRadius OverlapCircle) → recovery |
+| `EnemyProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
+| `EnemyDashPatternData` | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery |
+| `EnemyJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정 → 비행 보간 → 착지 임팩트(impactRadius OverlapCircle) → recovery |
 
-공통 ElitePatternData 필드: `displayName` / `cooldown` / `minRange` / `maxRange` / `weight` / `recoveryDuration` + `OnValidate` 가 음수·역전 범위·weight 0 을 자동 경고.
+공통 `EnemyPatternData` 필드: `displayName` / `cooldown` / `minRange` / `maxRange` / `weight` / `recoveryDuration` + `OnValidate` 가 음수·역전 범위·weight 0 을 자동 경고. **쿨다운은 패턴이 `Finish` 한 시점부터** 흐릅니다(시전 시작 기준이 아님).
 
-> Contact Special (Rush/Jump) 과 차이점: Special 은 모든 Contact 적이 0~1개 고정 공격(`specialAttackType`)을 갖고 ActionHandler 내부 상태머신으로 처리. Elite Pattern 은 Elite 적만 다수 패턴을 ScriptableObject 풀로 갖고 ElitePatternRunner 가 외부 컴포넌트로 처리.
+⚠️ **`maxRange` 가 패턴의 유일한 거리 게이트입니다.** 패턴 시작 조건의 `Target.HasTarget` 은 `_brain.player != null`(참조 존재)일 뿐 탐지 여부가 아니므로 `detectRange` 는 관여하지 않습니다. Magma 의 Jump·Dash 가 `maxRange 50` 인 것은 아레나 크기에 가려 드러나지 않을 뿐이며, 넓은 공간에서는 "화면 밖에서 돌진해 오는" 형태가 됩니다.
+
+⚠️ **패턴 타입에 elite/boss 접근 제한은 없습니다.** 타입은 공통 풀이고 **어느 세트에 넣느냐가 구분**입니다.
+
+> Contact Special (Rush/Jump) 과 차이점: Special 은 모든 Contact 적이 0~1개 고정 공격(`specialAttackType`)을 갖고 ActionHandler 내부 상태머신으로 처리. Enemy Pattern 은 패턴셋을 가진 적이 다수 패턴을 ScriptableObject 풀로 갖고 `EnemyPatternRunner` 가 외부 컴포넌트로 처리.
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
 
