@@ -45,8 +45,8 @@ MonoBehaviour:
   slowPercentage: 0.3
   slowDuration: 1
   ailments: []
-  zoneSprite: {fileID: 0}
-  zoneAnimation: {fileID: 0}
+  zoneSprite: {fileID: 4060242029488309976, guid: bc5d2e68b505ced4ca1de6a2c94066ae, type: 3}
+  zoneAnimation: {fileID: 22100000, guid: b605531f048cfc94dbc34e4dd7268f01, type: 2}
   zoneRadius: 3
   zoneTickInterval: 0.8
   zoneDuration: 4
@@ -73,6 +73,8 @@ MonoBehaviour:
   markerDetonationDamage: 0
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
+  buffs: []
+  buffDuration: 5
   blinkBehindOffset: 0.75
   recoilDistance: 0
   recoilDuration: 0.12

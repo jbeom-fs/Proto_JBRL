@@ -33,7 +33,7 @@ MonoBehaviour:
   skills:
   - {fileID: 11400000, guid: 4c984bcd7073fb34dbbf4fc27bf68f3c, type: 2}
   - {fileID: 11400000, guid: 3a2c0a246a663354289d4c23a3e6acff, type: 2}
-  - {fileID: 11400000, guid: 2c9da84a61764fe7b091592d4c92e8c1, type: 2}
+  - {fileID: 11400000, guid: 74f7fb10d1a84c6c89e291243d05087d, type: 2}
   - {fileID: 11400000, guid: f394a6d69f87d174287fa3db763442d9, type: 2}
   defaultPassive: {fileID: 11400000, guid: 4e8a07a8e33a4883b20c80323350f207, type: 2}
   passiveEngravings:
