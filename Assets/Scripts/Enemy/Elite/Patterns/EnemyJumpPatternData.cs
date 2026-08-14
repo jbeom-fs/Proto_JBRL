@@ -1,7 +1,7 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEliteJumpPattern", menuName = "JBRogLike/Enemy/Elite Jump Pattern")]
-public sealed class EliteJumpPatternData : ElitePatternData
+[CreateAssetMenu(fileName = "NewEnemyJumpPattern", menuName = "JBRogLike/Enemy/Enemy Jump Pattern")]
+public sealed class EnemyJumpPatternData : EnemyPatternData
 {
     [Header("Timing")]
     [SerializeField] private float windup = 0.45f;
@@ -30,9 +30,9 @@ public sealed class EliteJumpPatternData : ElitePatternData
     public EnemyAnimationKey WindupAnimation => windupAnimation;
     public EnemyAnimationKey JumpAnimation => jumpAnimation;
 
-    public override ElitePatternRuntime CreateRuntime()
+    public override EnemyPatternRuntime CreateRuntime()
     {
-        return new EliteJumpPatternRuntime(this);
+        return new EnemyJumpPatternRuntime(this);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -41,17 +41,17 @@ public sealed class EliteJumpPatternData : ElitePatternData
         base.OnValidate();
 
         if (windup < 0f)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: windup is negative.", this);
+            Debug.LogWarning($"[EnemyJumpPatternData] {name}: windup is negative.", this);
         if (jumpSpeed <= 0f)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: jumpSpeed must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyJumpPatternData] {name}: jumpSpeed must be greater than 0.", this);
         if (maxDistance <= 0f)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: maxDistance must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyJumpPatternData] {name}: maxDistance must be greater than 0.", this);
         if (impactDamage < 0)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: impactDamage is negative.", this);
+            Debug.LogWarning($"[EnemyJumpPatternData] {name}: impactDamage is negative.", this);
         if (impactRadius <= 0f)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: impactRadius must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyJumpPatternData] {name}: impactRadius must be greater than 0.", this);
         if (jumpVisualHeight < 0f)
-            Debug.LogWarning($"[EliteJumpPatternData] {name}: jumpVisualHeight is negative.", this);
+            Debug.LogWarning($"[EnemyJumpPatternData] {name}: jumpVisualHeight is negative.", this);
     }
 #endif
 }

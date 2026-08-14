@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class ElitePatternContext
+public sealed class EnemyPatternContext
 {
     public EnemyBrain Brain { get; private set; }
     public EnemyController Enemy { get; private set; }
@@ -41,11 +41,4 @@ public sealed class ElitePatternContext
         CoroutineRunner = coroutineRunner;
     }
 
-    public void RefreshRuntimeRefs()
-    {
-        Enemy = Brain != null ? Brain.Enemy : null;
-        Data = Brain != null ? Brain.Data : null;
-        Target = Brain != null ? Brain.player : null;
-        DungeonManager = Brain != null ? Brain.dungeonManager : null;
-    }
 }

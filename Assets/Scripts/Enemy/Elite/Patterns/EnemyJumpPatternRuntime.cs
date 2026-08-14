@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
+public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
 {
     private enum Phase
     {
@@ -10,8 +10,8 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
         Recovery
     }
 
-    private readonly EliteJumpPatternData _data;
-    private ElitePatternContext _context;
+    private readonly EnemyJumpPatternData _data;
+    private EnemyPatternContext _context;
     private Phase _phase;
     private Vector3 _startPosition;
     private Vector3 _targetPosition;
@@ -24,17 +24,26 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
     private bool _hasVisualRoot;
     private bool _unlockFacing;
 
-    public EliteJumpPatternRuntime(EliteJumpPatternData data)
+    public EnemyJumpPatternRuntime(EnemyJumpPatternData data)
     {
         _data = data;
     }
 
-    public override void Start(ElitePatternContext context)
+    public override void Start(EnemyPatternContext context)
     {
         _context = context;
         IsFinished = false;
+        _phase = Phase.Windup;
+        _startPosition = default;
+        _targetPosition = default;
+        _totalJumpDistance = 0f;
+        _visualRoot = null;
+        _visualBaseLocalPosition = default;
+        _facingDirection = Vector2.down;
+        _timer = 0f;
         _appliedImpact = false;
         _hasVisualRoot = false;
+        _unlockFacing = false;
 
         if (!CanRun() || !TryResolveJumpTarget(out _targetPosition))
         {
@@ -53,7 +62,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
             _unlockFacing = true;
         }
 
-        _context.Animation?.PlayEliteAnimation(_data.WindupAnimation, _targetPosition);
+        _context.Animation?.PlayPatternAnimation(_data.WindupAnimation, _targetPosition);
         _timer = _data.Windup;
         _phase = Phase.Windup;
 
@@ -119,7 +128,7 @@ public sealed class EliteJumpPatternRuntime : ElitePatternRuntime
     {
         _startPosition = _context.SelfTransform.position;
         _totalJumpDistance = Vector3.Distance(_startPosition, _targetPosition);
-        _context.Animation?.PlayEliteAnimation(_data.JumpAnimation, _targetPosition);
+        _context.Animation?.PlayPatternAnimation(_data.JumpAnimation, _targetPosition);
         _timer = 0f;
         _phase = Phase.Jump;
         ApplyVisualOffset(0f);

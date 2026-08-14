@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
+public sealed class EnemyProjectilePatternRuntime : EnemyPatternRuntime
 {
     private enum Phase
     {
@@ -9,8 +9,8 @@ public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
         Recovery
     }
 
-    private readonly EliteProjectilePatternData _data;
-    private ElitePatternContext _context;
+    private readonly EnemyProjectilePatternData _data;
+    private EnemyPatternContext _context;
     private Phase _phase;
     private Vector2 _aimDirection = Vector2.down;
     private float _timer;
@@ -18,15 +18,21 @@ public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
     private bool _unlockFacing;
     private bool _warnedMissingProjectile;
 
-    public EliteProjectilePatternRuntime(EliteProjectilePatternData data)
+    public EnemyProjectilePatternRuntime(EnemyProjectilePatternData data)
     {
         _data = data;
     }
 
-    public override void Start(ElitePatternContext context)
+    public override void Start(EnemyPatternContext context)
     {
         _context = context;
         IsFinished = false;
+        _phase = Phase.Windup;
+        _aimDirection = Vector2.down;
+        _timer = 0f;
+        _remainingBurstShots = 0;
+        _unlockFacing = false;
+        _warnedMissingProjectile = false;
 
         if (!CanRun())
         {
@@ -38,7 +44,7 @@ public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
         _context.Brain.StopMoving();
         _context.Animation?.LockSpecialFacing(_aimDirection);
         _unlockFacing = true;
-        _context.Animation?.PlayEliteAnimation(_data.WindupAnimation, _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
+        _context.Animation?.PlayPatternAnimation(_data.WindupAnimation, _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
 
         _timer = _data.WindupDuration;
         _phase = Phase.Windup;
@@ -130,7 +136,7 @@ public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
     {
         _aimDirection = ResolveAimDirection();
         _context.Animation?.LockSpecialFacing(_aimDirection);
-        _context.Animation?.PlayEliteAnimation(_data.FireAnimation, _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
+        _context.Animation?.PlayPatternAnimation(_data.FireAnimation, _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
 
         if (_data.FirePattern == ProjectileFirePattern.Burst)
         {
@@ -153,7 +159,7 @@ public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
 
     private void StartRecovery()
     {
-        _context.Animation?.PlayEliteAnimation(_data.RecoveryAnimation, _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
+        _context.Animation?.PlayPatternAnimation(_data.RecoveryAnimation, _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
         _timer = _data.RecoveryDuration;
         _phase = Phase.Recovery;
 
@@ -172,7 +178,7 @@ public sealed class EliteProjectilePatternRuntime : ElitePatternRuntime
         {
             if (!_warnedMissingProjectile)
             {
-                Debug.LogWarning($"[EliteProjectilePattern] {_data.name}: projectilePrefab is missing.", _data);
+                Debug.LogWarning($"[EnemyProjectilePattern] {_data.name}: projectilePrefab is missing.", _data);
                 _warnedMissingProjectile = true;
             }
             return;

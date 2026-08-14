@@ -71,7 +71,7 @@ public abstract class EnemyBrain : MonoBehaviour
     private EnemyData _data;
     private SpriteRenderer _spriteRenderer;
     private EnemyAnimationController _animationController;
-    private ElitePatternRunner _elitePatternRunner;
+    private EnemyPatternRunner _patternRunner;
 
     private IEnemyState _idleState;
     private IEnemyState _chaseState;
@@ -84,7 +84,7 @@ public abstract class EnemyBrain : MonoBehaviour
     private bool _hasAttackParam;
     private bool _lastMovingAnimValue;
     private bool _hasSetMovingAnim;
-    private bool _warnedMissingElitePatternRunner;
+    private bool _warnedMissingPatternRunner;
 
     public EnemyController Enemy => _enemy;
     public EnemyData Data => _data;
@@ -106,7 +106,7 @@ public abstract class EnemyBrain : MonoBehaviour
         _enemy = GetComponent<EnemyController>();
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
-        _elitePatternRunner = GetComponent<ElitePatternRunner>();
+        _patternRunner = GetComponent<EnemyPatternRunner>();
 
         Movement = CreateMovementHandler();
         Target = CreateTargetHandler();
@@ -118,7 +118,7 @@ public abstract class EnemyBrain : MonoBehaviour
         TryCacheData();
         Movement.Initialize();
         Target.RefreshTarget();
-        _elitePatternRunner?.Initialize(this);
+        _patternRunner?.Initialize(this);
 
         _idleState = CreateState(EnemyAIStateId.Idle);
         _chaseState = CreateState(EnemyAIStateId.Chase);
@@ -133,12 +133,12 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         // 풀에서 다시 꺼낸 적은 현재 층의 DungeonManager.Instance 기준으로 이동/타겟 캐시를 새로 잡는다.
         _data = null;
-        _warnedMissingElitePatternRunner = false;
+        _warnedMissingPatternRunner = false;
         Movement?.Initialize();
         Movement?.ResetRuntimeState();
         Target?.RefreshTarget();
         Action?.ResetRuntimeState();
-        _elitePatternRunner?.ResetRuntimeState();
+        _patternRunner?.ResetRuntimeState();
         _animationController?.ResetAnimationState();
         _hasSetMovingAnim = false;
         _lastMovingAnimValue = false;
@@ -156,7 +156,7 @@ public abstract class EnemyBrain : MonoBehaviour
     {
         StopMoving();
         Action?.ResetRuntimeState();
-        _elitePatternRunner?.ResetRuntimeState();
+        _patternRunner?.ResetRuntimeState();
         UnlockSpecialFacing();
     }
 
@@ -188,8 +188,8 @@ public abstract class EnemyBrain : MonoBehaviour
         Action.TickCooldown(Time.deltaTime);
 
         float sqrDistance = Target.SqrDistanceToTarget;
-        _elitePatternRunner?.Tick(Time.deltaTime);
-        if (_elitePatternRunner != null && _elitePatternRunner.IsRunning)
+        _patternRunner?.Tick(Time.deltaTime);
+        if (_patternRunner != null && _patternRunner.IsRunning)
             return;
 
         Action.TickBehavior(sqrDistance);
@@ -213,10 +213,10 @@ public abstract class EnemyBrain : MonoBehaviour
             return false;
 
         if (Data != null &&
-            Data.IsElite &&
+            Data.PatternSet != null &&
             Data.behaviorType == EnemyBehaviorType.Ranged)
         {
-            WarnMissingElitePatternRunner();
+            WarnMissingPatternRunner();
             return false;
         }
 
@@ -330,27 +330,27 @@ public abstract class EnemyBrain : MonoBehaviour
         if (_enemy == null || _enemy.data == null) return false;
 
         _data = _enemy.data;
-        _warnedMissingElitePatternRunner = false;
+        _warnedMissingPatternRunner = false;
         Target.RecalculateRanges();
         Action.RecalculateRanges();
-        _elitePatternRunner?.Initialize(this);
-        WarnMissingElitePatternRunner();
+        _patternRunner?.Initialize(this);
+        WarnMissingPatternRunner();
         return true;
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
     [System.Diagnostics.Conditional("DEVELOPMENT_BUILD")]
-    private void WarnMissingElitePatternRunner()
+    private void WarnMissingPatternRunner()
     {
-        if (_data == null || !_data.IsElite || _data.ElitePatternSet == null || _elitePatternRunner != null)
+        if (_data == null || _data.PatternSet == null || _patternRunner != null)
             return;
-        if (_warnedMissingElitePatternRunner)
+        if (_warnedMissingPatternRunner)
             return;
 
-        _warnedMissingElitePatternRunner = true;
+        _warnedMissingPatternRunner = true;
 
         Debug.LogWarning(
-            $"[EnemyBrain] {_data.enemyName}: ElitePatternRunner is missing. Elite patterns will not run.",
+            $"[EnemyBrain] {_data.enemyName}: EnemyPatternRunner is missing. Enemy patterns will not run.",
             this);
     }
 

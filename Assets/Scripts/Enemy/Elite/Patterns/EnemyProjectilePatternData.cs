@@ -1,7 +1,7 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEliteProjectilePattern", menuName = "JBRogLike/Enemy/Elite Projectile Pattern")]
-public sealed class EliteProjectilePatternData : ElitePatternData
+[CreateAssetMenu(fileName = "NewEnemyProjectilePattern", menuName = "JBRogLike/Enemy/Enemy Projectile Pattern")]
+public sealed class EnemyProjectilePatternData : EnemyPatternData
 {
     [Header("Timing")]
     [SerializeField] private float windupDuration = 0.5f;
@@ -40,9 +40,9 @@ public sealed class EliteProjectilePatternData : ElitePatternData
     public EnemyAnimationKey FireAnimation => fireAnimation;
     public EnemyAnimationKey RecoveryAnimation => recoveryAnimation;
 
-    public override ElitePatternRuntime CreateRuntime()
+    public override EnemyPatternRuntime CreateRuntime()
     {
-        return new EliteProjectilePatternRuntime(this);
+        return new EnemyProjectilePatternRuntime(this);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -51,21 +51,21 @@ public sealed class EliteProjectilePatternData : ElitePatternData
         base.OnValidate();
 
         if (windupDuration < 0f)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: windupDuration is negative.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: windupDuration is negative.", this);
         if (damage < 0)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: damage is negative.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: damage is negative.", this);
         if (projectileSpeed <= 0f)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: projectileSpeed must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: projectileSpeed must be greater than 0.", this);
         if (projectileLifetime <= 0f)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: projectileLifetime must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: projectileLifetime must be greater than 0.", this);
         if (projectileCount <= 0)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: projectileCount must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: projectileCount must be greater than 0.", this);
         if (spreadAngle < 0f)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: spreadAngle is negative.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: spreadAngle is negative.", this);
         if (burstInterval < 0f)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: burstInterval is negative.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: burstInterval is negative.", this);
         if (maxBounceCount < 0)
-            Debug.LogWarning($"[EliteProjectilePatternData] {name}: maxBounceCount is negative.", this);
+            Debug.LogWarning($"[EnemyProjectilePatternData] {name}: maxBounceCount is negative.", this);
     }
 #endif
 }

@@ -183,12 +183,12 @@ public class EnemyAnimationController : MonoBehaviour
         SetTriggerOrAttack(LandTriggerHash, _hasLandTrigger);
     }
 
-    public void PlayEliteAnimation(EnemyAnimationKey key)
+    public void PlayPatternAnimation(EnemyAnimationKey key)
     {
-        PlayEliteAnimation(key, transform.position);
+        PlayPatternAnimation(key, transform.position);
     }
 
-    public void PlayEliteAnimation(EnemyAnimationKey key, Vector3 targetPosition)
+    public void PlayPatternAnimation(EnemyAnimationKey key, Vector3 targetPosition)
     {
         if (_isDead || key == EnemyAnimationKey.None)
             return;

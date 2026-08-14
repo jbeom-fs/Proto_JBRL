@@ -2405,13 +2405,20 @@ public sealed class EnemyDashboardWindow : EditorWindow
                     AddWarning(row, WarningSeverity.Error, "[Error] 풀 매핑 없음: " + row.DisplayName, enemy);
                 else if (row.Prefab == null)
                     AddWarning(row, WarningSeverity.Error, "[Error] 풀 프리팹 null: " + row.DisplayName, enemy);
+
+                if (enemy.PatternSet != null && row.Prefab != null &&
+                    row.Prefab.GetComponent<EnemyPatternRunner>() == null)
+                {
+                    AddWarning(
+                        row,
+                        WarningSeverity.Warning,
+                        "[Warn] PatternSet은 있는데 프리팹에 EnemyPatternRunner 없음: " + row.DisplayName,
+                        enemy);
+                }
             }
 
             if (enemy.HasInvalidFloorRange())
                 AddWarning(row, WarningSeverity.Error, "[Error] 층범위 오류: " + row.DisplayName + " (" + enemy.MinFloor + "~" + enemy.MaxFloor + ")", enemy);
-
-            if (enemy.IsElite && enemy.ElitePatternSet == null)
-                AddWarning(row, WarningSeverity.Warning, "[Warn] isElite인데 ElitePatternSet null: " + row.DisplayName, enemy);
 
             AddSpawnTableWarnings(row, spawnTableState);
 

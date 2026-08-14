@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public enum EnemyBehaviorType
 {
@@ -115,12 +116,13 @@ public class EnemyData : ScriptableObject
     [Tooltip("If true, this enemy blocks Player walking and dash movement. This does not affect AI movement or knockback by itself.")]
     public bool blocksMovement = false;
 
-    [Header("Elite")]
+    [Header("Pattern")]
     [SerializeField] private bool isElite = false;
-    [SerializeField] private ElitePatternSet elitePatternSet = null;
+    [FormerlySerializedAs("elitePatternSet")]
+    [SerializeField] private EnemyPatternSet patternSet = null;
 
     public bool IsElite => isElite;
-    public ElitePatternSet ElitePatternSet => elitePatternSet;
+    public EnemyPatternSet PatternSet => patternSet;
 
     [Header("Attack")]
     [Tooltip("Ranged behavior cooldown between attacks.")]
@@ -274,18 +276,6 @@ public class EnemyData : ScriptableObject
                 this);
         }
 
-        if (isElite && elitePatternSet == null)
-        {
-            Debug.LogWarning(
-                $"[EnemyData] {name}: isElite is true but ElitePatternSet is missing.",
-                this);
-        }
-        else if (!isElite && elitePatternSet != null)
-        {
-            Debug.LogWarning(
-                $"[EnemyData] {name}: ElitePatternSet is assigned but isElite is false. Elite patterns will be ignored.",
-                this);
-        }
     }
 #endif
 }

@@ -1,8 +1,8 @@
-public abstract class ElitePatternRuntime
+public abstract class EnemyPatternRuntime
 {
     public bool IsFinished { get; protected set; }
 
-    public abstract void Start(ElitePatternContext context);
+    public abstract void Start(EnemyPatternContext context);
     public abstract void Tick(float deltaTime);
 
     public virtual void Cancel()

@@ -1,7 +1,7 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "NewEliteDashPattern", menuName = "JBRogLike/Enemy/Elite Dash Pattern")]
-public sealed class EliteDashPatternData : ElitePatternData
+[CreateAssetMenu(fileName = "NewEnemyDashPattern", menuName = "JBRogLike/Enemy/Enemy Dash Pattern")]
+public sealed class EnemyDashPatternData : EnemyPatternData
 {
     [Header("Timing")]
     [SerializeField] private float windup = 0.35f;
@@ -26,9 +26,9 @@ public sealed class EliteDashPatternData : ElitePatternData
     public EnemyAnimationKey WindupAnimation => windupAnimation;
     public EnemyAnimationKey DashAnimation => dashAnimation;
 
-    public override ElitePatternRuntime CreateRuntime()
+    public override EnemyPatternRuntime CreateRuntime()
     {
-        return new EliteDashPatternRuntime(this);
+        return new EnemyDashPatternRuntime(this);
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -37,13 +37,13 @@ public sealed class EliteDashPatternData : ElitePatternData
         base.OnValidate();
 
         if (windup < 0f)
-            Debug.LogWarning($"[EliteDashPatternData] {name}: windup is negative.", this);
+            Debug.LogWarning($"[EnemyDashPatternData] {name}: windup is negative.", this);
         if (dashSpeed <= 0f)
-            Debug.LogWarning($"[EliteDashPatternData] {name}: dashSpeed must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyDashPatternData] {name}: dashSpeed must be greater than 0.", this);
         if (damage < 0)
-            Debug.LogWarning($"[EliteDashPatternData] {name}: damage is negative.", this);
+            Debug.LogWarning($"[EnemyDashPatternData] {name}: damage is negative.", this);
         if (hitRadius <= 0f)
-            Debug.LogWarning($"[EliteDashPatternData] {name}: hitRadius must be greater than 0.", this);
+            Debug.LogWarning($"[EnemyDashPatternData] {name}: hitRadius must be greater than 0.", this);
     }
 #endif
 }

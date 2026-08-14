@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public sealed class EliteDashPatternRuntime : ElitePatternRuntime
+public sealed class EnemyDashPatternRuntime : EnemyPatternRuntime
 {
     private enum Phase
     {
@@ -9,8 +9,8 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
         Recovery
     }
 
-    private readonly EliteDashPatternData _data;
-    private ElitePatternContext _context;
+    private readonly EnemyDashPatternData _data;
+    private EnemyPatternContext _context;
     private Phase _phase;
     private Vector2 _direction = Vector2.down;
     private Vector3 _targetPosition;
@@ -18,16 +18,21 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
     private bool _hasHitPlayer;
     private bool _unlockFacing;
 
-    public EliteDashPatternRuntime(EliteDashPatternData data)
+    public EnemyDashPatternRuntime(EnemyDashPatternData data)
     {
         _data = data;
     }
 
-    public override void Start(ElitePatternContext context)
+    public override void Start(EnemyPatternContext context)
     {
         _context = context;
         IsFinished = false;
+        _phase = Phase.Windup;
+        _direction = Vector2.down;
+        _targetPosition = default;
+        _timer = 0f;
         _hasHitPlayer = false;
+        _unlockFacing = false;
 
         if (!CanRun() || !TryResolveDashTarget(out _targetPosition))
         {
@@ -43,7 +48,7 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
             _unlockFacing = true;
         }
 
-        _context.Animation?.PlayEliteAnimation(_data.WindupAnimation, _context.Target.position);
+        _context.Animation?.PlayPatternAnimation(_data.WindupAnimation, _context.Target.position);
         _timer = _data.Windup;
         _phase = Phase.Windup;
 
@@ -103,7 +108,7 @@ public sealed class EliteDashPatternRuntime : ElitePatternRuntime
 
     private void StartDash()
     {
-        _context.Animation?.PlayEliteAnimation(_data.DashAnimation, _targetPosition);
+        _context.Animation?.PlayPatternAnimation(_data.DashAnimation, _targetPosition);
         _timer = 0f;
         _phase = Phase.Dash;
 

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class ElitePatternData : ScriptableObject
+public abstract class EnemyPatternData : ScriptableObject
 {
     [SerializeField] private string displayName;
     [SerializeField] private float cooldown = 3f;
@@ -22,21 +22,21 @@ public abstract class ElitePatternData : ScriptableObject
         return safeDistance >= MinRange && safeDistance <= MaxRange;
     }
 
-    public abstract ElitePatternRuntime CreateRuntime();
+    public abstract EnemyPatternRuntime CreateRuntime();
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     protected virtual void OnValidate()
     {
         if (cooldown < 0f)
-            Debug.LogWarning($"[ElitePatternData] {name}: cooldown is negative.", this);
+            Debug.LogWarning($"[EnemyPatternData] {name}: cooldown is negative.", this);
         if (minRange < 0f)
-            Debug.LogWarning($"[ElitePatternData] {name}: minRange is negative.", this);
+            Debug.LogWarning($"[EnemyPatternData] {name}: minRange is negative.", this);
         if (maxRange < minRange)
-            Debug.LogWarning($"[ElitePatternData] {name}: maxRange is smaller than minRange.", this);
+            Debug.LogWarning($"[EnemyPatternData] {name}: maxRange is smaller than minRange.", this);
         if (weight <= 0)
-            Debug.LogWarning($"[ElitePatternData] {name}: weight must be greater than 0 to be selectable.", this);
+            Debug.LogWarning($"[EnemyPatternData] {name}: weight must be greater than 0 to participate in weighted selection.", this);
         if (recoveryDuration < 0f)
-            Debug.LogWarning($"[ElitePatternData] {name}: recoveryDuration is negative.", this);
+            Debug.LogWarning($"[EnemyPatternData] {name}: recoveryDuration is negative.", this);
     }
 #endif
 }
