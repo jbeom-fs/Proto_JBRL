@@ -31,6 +31,8 @@ public class EnemyController : MonoBehaviour, IDamageable
     [SerializeField] private float knockbackWallSkin = 0.03f;
 
     private int             _currentHp;
+    private int             _damageFloor;
+    private int             _maxHpOverride;
     private EnemyHealthBar  _healthBar;
     private EnemyAilmentIndicator _ailmentIndicator;
     private Rigidbody2D     _rb;
@@ -61,7 +63,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     public bool IsAlive => _currentHp > 0 && !IsDead;
     public bool IsDead { get; private set; }
     public int CurrentHp => _currentHp;
-    public int MaxHp => data?.maxHp ?? 0;
+    public int MaxHp => _maxHpOverride > 0 ? _maxHpOverride : (data?.maxHp ?? 0);
     public string DisplayName => data?.enemyName ?? string.Empty;
     public bool HoldsEliteKey => _holdsEliteKey;
     public bool IsBoss => _isBoss;
@@ -91,8 +93,8 @@ public class EnemyController : MonoBehaviour, IDamageable
         ApplyStationaryPhysicsSettings();
         if (data != null)
         {
-            _currentHp = data.maxHp;
-            _healthBar?.SetHp(_currentHp, data.maxHp);
+            _currentHp = MaxHp;
+            _healthBar?.SetHp(_currentHp, MaxHp);
         }
         else
         {
@@ -109,7 +111,9 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (_inventory == null)
             _inventory = GetComponent<EnemyInventory>();
         _inventory?.Clear();
-        _currentHp = data.maxHp;
+        _damageFloor = 0;
+        _maxHpOverride = 0;
+        _currentHp = MaxHp;
         IsDead = false;
         _holdsEliteKey = false;
         _isBoss = false;
@@ -117,7 +121,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _deathTimer = 0f;
         _healthBar?.SetBarSuppressed(false);
         _ailmentIndicator?.SetSuppressed(false);
-        _healthBar?.SetHp(_currentHp, data.maxHp);
+        _healthBar?.SetHp(_currentHp, MaxHp);
         _lastSafePosition = transform.position;
         ResetStatusEffects();
         ApplyStationaryPhysicsSettings();
@@ -226,16 +230,18 @@ public class EnemyController : MonoBehaviour, IDamageable
         int actual = bypassDefense
             ? Mathf.Max(1, damage)
             : Mathf.Max(1, damage - (data?.defense ?? 0));
-        _currentHp = Mathf.Max(0, _currentHp - actual);
-        _healthBar?.SetHp(_currentHp, data.maxHp);
+        int before = _currentHp;
+        _currentHp = Mathf.Max(_damageFloor, _currentHp - actual);
+        int applied = before - _currentHp;
+        _healthBar?.SetHp(_currentHp, MaxHp);
 
 #if UNITY_EDITOR
         if (logDamageInEditor)
-            Debug.Log($"[Enemy:{data?.enemyName}] -{actual} HP → {_currentHp}/{data?.maxHp}");
+            Debug.Log($"[Enemy:{data?.enemyName}] -{applied} HP → {_currentHp}/{MaxHp}");
 #endif
 
         if (_currentHp == 0) Die();
-        return actual;
+        return applied;
     }
 
     private int ApplyExecuteThreshold(
@@ -246,7 +252,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (!settings.Enabled || !IsAlive || directActualDamage <= 0)
             return 0;
 
-        int maxHp = data != null ? data.maxHp : 0;
+        int maxHp = MaxHp;
         if (maxHp <= 0)
             return 0;
 
@@ -281,9 +287,12 @@ public class EnemyController : MonoBehaviour, IDamageable
             if (bonusDamage <= 0)
                 return 0;
 
-            return ApplyDamageReturningActual(
-                Mathf.Min(_currentHp, bonusDamage),
-                true);
+            int availableHp = _currentHp - _damageFloor;
+            int clampedBonusDamage = Mathf.Min(availableHp, bonusDamage);
+            if (clampedBonusDamage <= 0)
+                return 0;
+
+            return ApplyDamageReturningActual(clampedBonusDamage, true);
         }
 
         if (settings.HpThresholdRatio <= 0f ||
@@ -305,8 +314,8 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         FlashAilmentTickOnce();
 
-        int maxHp = data != null ? data.maxHp : 0;
-        _currentHp = Mathf.Max(0, _currentHp - damage);
+        int maxHp = MaxHp;
+        _currentHp = Mathf.Max(_damageFloor, _currentHp - damage);
         _healthBar?.SetHp(_currentHp, maxHp);
 
 #if UNITY_EDITOR
@@ -341,9 +350,25 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (IsDead || !IsAlive)
             return;
 
+        _damageFloor = 0;
         _currentHp = 0;
-        _healthBar?.SetHp(_currentHp, data != null ? data.maxHp : 0);
+        _healthBar?.SetHp(_currentHp, MaxHp);
         Die();
+    }
+
+    public void SetDamageFloor(int hp)
+    {
+        _damageFloor = Mathf.Clamp(hp, 0, MaxHp);
+    }
+
+    public void SetMaxHpOverride(int maxHp, bool refillToFull)
+    {
+        _maxHpOverride = Mathf.Max(0, maxHp);
+        if (refillToFull)
+            _currentHp = MaxHp;
+
+        _currentHp = Mathf.Clamp(_currentHp, 0, MaxHp);
+        _healthBar?.SetHp(_currentHp, MaxHp);
     }
 
     public void MarkAsEliteKeyHolder()

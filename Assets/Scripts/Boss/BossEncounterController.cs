@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public sealed class BossEncounterController : ArenaEncounterBase
@@ -22,6 +23,10 @@ public sealed class BossEncounterController : ArenaEncounterBase
     private bool _hasEncounter;
     private bool _bossDefeated;
     private bool _proceedRequested;
+    private int _phaseIndex;
+    private int _phaseDamageFloor;
+    private EnemyPatternRunner _bossPatternRunner;
+    private bool _warnedMissingRunner;
 
     public event Action<BossEncounterEntry, PlayerController> ProceedRequested;
 
@@ -48,6 +53,23 @@ public sealed class BossEncounterController : ArenaEncounterBase
     {
         if (ReferenceEquals(Active, this))
             Active = null;
+    }
+
+    private void LateUpdate()
+    {
+        IReadOnlyList<BossPhase> phases = _activeEntry?.Phases;
+        if (!_hasEncounter ||
+            _bossDefeated ||
+            _activeBoss == null ||
+            !_activeBoss.IsAlive ||
+            phases == null ||
+            _phaseIndex >= phases.Count - 1)
+        {
+            return;
+        }
+
+        if (_activeBoss.CurrentHp <= _phaseDamageFloor)
+            EnterPhase(_phaseIndex + 1);
     }
 
     public bool Begin(BossEncounterEntry entry, PlayerController player)
@@ -115,6 +137,8 @@ public sealed class BossEncounterController : ArenaEncounterBase
         if (_activeBoss != null)
         {
             _activeBoss.OnDied -= OnBossDied;
+            _activeBoss.SetDamageFloor(0);
+            _activeBoss.SetMaxHpOverride(0, false);
             _activeBoss = null;
         }
 
@@ -124,6 +148,10 @@ public sealed class BossEncounterController : ArenaEncounterBase
         _hasEncounter = false;
         _bossDefeated = false;
         _proceedRequested = false;
+        _phaseIndex = 0;
+        _phaseDamageFloor = 0;
+        _bossPatternRunner = null;
+        _warnedMissingRunner = false;
         HideExitPortal();
         CloseArenaDoor();
     }
@@ -158,8 +186,68 @@ public sealed class BossEncounterController : ArenaEncounterBase
 
         boss.MarkAsBossEncounterEnemy();
         _activeBoss = boss;
+        _bossPatternRunner = boss.GetComponent<EnemyPatternRunner>();
+
+        IReadOnlyList<BossPhase> phases = _activeEntry?.Phases;
+        if (phases != null && phases.Count > 0)
+        {
+            if (_bossPatternRunner == null && !_warnedMissingRunner)
+            {
+                _warnedMissingRunner = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                Debug.LogWarning(
+                    "[BossEncounterController] EnemyPatternRunner is missing; phase HP rules will continue without pattern swaps.",
+                    boss);
+#endif
+            }
+
+            EnterPhase(0);
+        }
+
         HealthBarPanel?.Attach(boss, true);
         return true;
+    }
+
+    private void EnterPhase(int index)
+    {
+        IReadOnlyList<BossPhase> phases = _activeEntry?.Phases;
+        if (_activeBoss == null || phases == null || index < 0 || index >= phases.Count)
+            return;
+
+        BossPhase phase = phases[index];
+        if (phase == null)
+            return;
+
+        bool refill = index > 0 &&
+            phases[index - 1] != null &&
+            phases[index - 1].Exit == BossPhaseExit.Depletion;
+
+        _bossPatternRunner?.SetPatternSet(phase.PatternSet);
+        _activeBoss.SetMaxHpOverride(
+            phase.MaxHpOverride,
+            refill || (index == 0 && phase.MaxHpOverride > 0));
+
+        if (refill)
+        {
+            _activeBoss.ResetStatusEffects();
+            DaggerMarkerRegistry.Instance.Clear(_activeBoss);
+        }
+
+        if (index >= phases.Count - 1)
+        {
+            _phaseDamageFloor = 0;
+        }
+        else if (phase.Exit == BossPhaseExit.HpRatio)
+        {
+            _phaseDamageFloor = Mathf.RoundToInt(_activeBoss.MaxHp * phase.ExitHpRatio);
+        }
+        else
+        {
+            _phaseDamageFloor = 1;
+        }
+
+        _activeBoss.SetDamageFloor(_phaseDamageFloor);
+        _phaseIndex = index;
     }
 
     private System.Random CreateBossDropRng()

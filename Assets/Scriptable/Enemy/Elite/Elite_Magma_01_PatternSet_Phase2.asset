@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd5f95ee97b40be409376a97966dd517, type: 3}
+  m_Name: Elite_Magma_01_PatternSet_Phase2
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyPatternSet
+  patterns:
+  - {fileID: 11400000, guid: 96584ada0ae440c4b67c2eb84a4cd614, type: 2}

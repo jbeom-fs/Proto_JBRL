@@ -18,13 +18,32 @@ MonoBehaviour:
     bossAreaDestinationId: boss_arena
     areaId: boss_arena
     isFinal: 0
+    phases:
+    - patternSet: {fileID: 11400000, guid: ac3e1c95f04c4b098fbea9c0e8b8d59a, type: 2}
+      exit: 0
+      exitHpRatio: 0.5
+      maxHpOverride: 0
+    - patternSet: {fileID: 11400000, guid: 7d1de856894f4e2ea7c028adcc1f8cf5, type: 2}
+      exit: 0
+      exitHpRatio: 0
+      maxHpOverride: 0
   - floor: 40
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
     areaId: boss_arena
     isFinal: 0
+    phases:
+    - patternSet: {fileID: 11400000, guid: ac3e1c95f04c4b098fbea9c0e8b8d59a, type: 2}
+      exit: 1
+      exitHpRatio: 0
+      maxHpOverride: 0
+    - patternSet: {fileID: 11400000, guid: 7d1de856894f4e2ea7c028adcc1f8cf5, type: 2}
+      exit: 0
+      exitHpRatio: 0
+      maxHpOverride: 1000
   - floor: 60
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
     areaId: boss_arena
     isFinal: 1
+    phases: []
