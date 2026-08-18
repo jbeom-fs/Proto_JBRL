@@ -28,6 +28,7 @@ public static class UiMessages
     public const string MaxHpEffect = "최대체력";
     public const string MoveSpeedEffect = "이동속도";
     public const string DiscardEngravingChangesConfirmation = "변경사항을 저장하지 않고 닫으시겠습니까?";
+    public const string SaveReusableEngravingChangesConfirmation = "변경사항을 저장하시겠습니까?";
     public const string SaveEngravingChangesConfirmation = "변경사항을 저장하시겠습니까?\n이 층의 각인대는 소멸합니다.";
     public const string SelectEngravingSlotFirst = "슬롯을 먼저 선택하세요";
     public const string EngravingEquippedUnsaved = "장착 완료 (미저장)";

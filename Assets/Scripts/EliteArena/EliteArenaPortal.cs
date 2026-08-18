@@ -1,33 +1,25 @@
 using UnityEngine;
 
-[RequireComponent(typeof(Collider2D))]
 [RequireComponent(typeof(SpriteRenderer))]
-public sealed class EliteArenaPortal : MonoBehaviour
+public sealed class EliteArenaPortal : Portal
 {
-    [Header("Visual")]
-    [SerializeField] private Sprite portalSprite;
-    [SerializeField] private string sortingLayerName = "FloorFX";
-    [SerializeField] private int sortingOrder = 0;
-    [SerializeField] private Color portalColor = new Color(0.25f, 0.9f, 1f, 1f);
     [SerializeField] private bool hideVisualWhenCompleted = true;
 
     private EliteArenaEncounterController _controller;
     private RoomInfo _room;
-    private Collider2D _collider;
-    private SpriteRenderer _spriteRenderer;
     private bool _bound;
-    private bool _locked;
     private bool _completed;
-    private bool _isTeleporting;
     private int _completedRoomKey;
-    private bool _warnedMissingVisual;
-    private bool _warnedFogVisibility;
 
-    private void Awake()
+    protected override string MissingVisualWarningMessage =>
+        "SpriteRenderer.sprite is missing. Assign Elite_portal sprite on the prefab.";
+
+    protected override string FogVisibilityWarningMessage =>
+        "FogVisibilityRenderer was disabled so portal remains visible in the current room.";
+
+    private void Reset()
     {
-        _collider = GetComponent<Collider2D>();
-        _collider.isTrigger = true;
-        EnsureVisual();
+        portalColor = new Color(0.25f, 0.9f, 1f, 1f);
     }
 
     public void Bind(EliteArenaEncounterController controller, RoomInfo room)
@@ -35,22 +27,12 @@ public sealed class EliteArenaPortal : MonoBehaviour
         _controller = controller;
         _room = room;
         _bound = true;
-        _locked = false;
-        _isTeleporting = false;
+        SetLocked(false);
 
-        if (_collider == null)
-            _collider = GetComponent<Collider2D>();
-
-        if (_collider != null)
-            _collider.enabled = !IsCompletedForRoom(room);
-
+        bool isCompleted = IsCompletedForRoom(room);
+        SetColliderOnly(!isCompleted);
         EnsureVisual();
-        SetVisualVisible(!IsCompletedForRoom(room) || !hideVisualWhenCompleted);
-    }
-
-    public void SetLocked(bool locked)
-    {
-        _locked = locked;
+        SetVisualVisible(!isCompleted || !hideVisualWhenCompleted);
     }
 
     public bool IsCompletedForRoom(RoomInfo room)
@@ -62,105 +44,30 @@ public sealed class EliteArenaPortal : MonoBehaviour
     {
         _completed = true;
         _completedRoomKey = room.StableRoomKey;
-        _locked = true;
-
-        if (_collider == null)
-            _collider = GetComponent<Collider2D>();
-
-        if (_collider != null)
-            _collider.enabled = false;
+        SetLocked(true);
+        SetColliderOnly(false);
 
         if (hideVisualWhenCompleted)
             SetVisualVisible(false);
     }
 
-    public void ResetRuntimeState()
+    public override void ResetRuntimeState()
     {
+        base.ResetRuntimeState();
         _bound = false;
-        _locked = false;
-        _isTeleporting = false;
         _completed = false;
         _completedRoomKey = 0;
         _controller = null;
-
-        if (_collider == null)
-            _collider = GetComponent<Collider2D>();
-
-        if (_collider != null)
-            _collider.enabled = false;
-
-        SetVisualVisible(false);
     }
 
-    public void EnsureVisual()
+    protected override bool CanTrigger()
     {
-        if (_spriteRenderer == null)
-            _spriteRenderer = GetComponent<SpriteRenderer>();
-
-        if (_spriteRenderer == null)
-            return;
-
-        if (_spriteRenderer.sprite == null && portalSprite != null)
-            _spriteRenderer.sprite = portalSprite;
-
-        _spriteRenderer.color = portalColor;
-        _spriteRenderer.sortingLayerName = sortingLayerName;
-        _spriteRenderer.sortingOrder = sortingOrder;
-        DisableFogVisibilityRendererIfPresent();
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (!_warnedMissingVisual && _spriteRenderer.sprite == null)
-        {
-            _warnedMissingVisual = true;
-            Debug.LogWarning("[EliteArenaPortal] SpriteRenderer.sprite is missing. Assign Elite_portal sprite on the prefab.", this);
-        }
-#endif
+        return _bound && !IsCompletedForRoom(_room);
     }
 
-    private void SetVisualVisible(bool visible)
+    protected override bool OnPlayerEntered(PlayerController player)
     {
-        EnsureVisual();
-        if (_spriteRenderer != null)
-            _spriteRenderer.enabled = visible;
-    }
-
-    private void DisableFogVisibilityRendererIfPresent()
-    {
-        if (!TryGetComponent(out FogVisibilityRenderer fogVisibility))
-            return;
-
-        if (!fogVisibility.enabled)
-            return;
-
-        fogVisibility.enabled = false;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (!_warnedFogVisibility)
-        {
-            _warnedFogVisibility = true;
-            Debug.LogWarning("[EliteArenaPortal] FogVisibilityRenderer was disabled so portal remains visible in the current room.", this);
-        }
-#endif
-    }
-
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (!_bound || _locked || _isTeleporting || IsCompletedForRoom(_room))
-            return;
-
-        PlayerController player = other.GetComponentInParent<PlayerController>();
-        if (player == null)
-            return;
-
-        if (_controller == null)
-            return;
-
-        _isTeleporting = true;
-        if (_controller.TryEnterArenaFromPortal(this, _room, player))
-        {
-            _locked = true;
-            return;
-        }
-
-        _isTeleporting = false;
+        return _controller != null &&
+            _controller.TryEnterArenaFromPortal(this, _room, player);
     }
 }

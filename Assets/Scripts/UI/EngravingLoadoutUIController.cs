@@ -425,7 +425,12 @@ public sealed class EngravingLoadoutUIController : MonoBehaviour
             return;
 
         if (IsDirty())
-            ShowDialog(UiMessages.SaveEngravingChangesConfirmation, CommitAndClose);
+        {
+            string confirmation = _owner != null
+                ? UiMessages.SaveEngravingChangesConfirmation
+                : UiMessages.SaveReusableEngravingChangesConfirmation;
+            ShowDialog(confirmation, CommitAndClose);
+        }
         else
             CloseWithoutSave();
     }

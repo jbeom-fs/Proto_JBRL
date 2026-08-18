@@ -123,6 +123,7 @@ public abstract class ArenaEncounterBase : MonoBehaviour
         BindReturnPortal(portal);
         portal.gameObject.SetActive(true);
         portal.SetColliderEnabled(true);
+        portal.SetLocked(false);
     }
 
     protected void HideReturnPortal()
