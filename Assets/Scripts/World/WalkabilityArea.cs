@@ -52,6 +52,8 @@ public sealed class WalkabilityArea : MonoBehaviour
     private float _lastDebugLogTime;
     private Bounds _cachedWorldBounds;
     private bool _hasCachedWorldBounds;
+    private const float DefaultMaxCornerInset = 0.49f;
+    private float _maxCornerInset = DefaultMaxCornerInset;
 
     public string Id => id;
     public Tilemap WalkTilemap => walkTilemap;
@@ -147,7 +149,9 @@ public sealed class WalkabilityArea : MonoBehaviour
             return false;
         }
 
-        float effective = Mathf.Max(0f, radius) * Mathf.Clamp(footprintInsetMultiplier, 0.1f, 1f);
+        float effective = Mathf.Min(
+            Mathf.Max(0f, radius) * Mathf.Clamp(footprintInsetMultiplier, 0.1f, 1f),
+            _maxCornerInset);
         if (effective <= 0f)
             return true;
 
@@ -287,7 +291,14 @@ public sealed class WalkabilityArea : MonoBehaviour
     private void RebuildBoundsCache()
     {
         _hasCachedWorldBounds = false;
+        _maxCornerInset = DefaultMaxCornerInset;
         if (walkTilemap == null) return;
+
+        Vector3 one = walkTilemap.CellToWorld(new Vector3Int(1, 1, 0));
+        Vector3 zero = walkTilemap.CellToWorld(Vector3Int.zero);
+        float cellW = Mathf.Abs(one.x - zero.x);
+        float cellH = Mathf.Abs(one.y - zero.y);
+        _maxCornerInset = Mathf.Max(0f, Mathf.Min(cellW, cellH) * 0.5f - 0.01f);
 
         BoundsInt cellBounds = walkTilemap.cellBounds;
         if (cellBounds.size.x <= 0 || cellBounds.size.y <= 0) return;

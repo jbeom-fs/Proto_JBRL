@@ -154044,7 +154044,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: elite_arena
   walkTilemap: {fileID: 1206688124}
-  wallTilemap: {fileID: 1309604883}
+  wallTilemap: {fileID: 1363907958}
   doorTilemap: {fileID: 1617150381}
   footprintInsetMultiplier: 0.85
   debugLogFootprintFailures: 0
@@ -154332,7 +154332,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: boss_arena
   walkTilemap: {fileID: 1206688124}
-  wallTilemap: {fileID: 1309604883}
+  wallTilemap: {fileID: 1363907958}
   doorTilemap: {fileID: 1617150381}
   footprintInsetMultiplier: 0.85
   debugLogFootprintFailures: 0

@@ -358,14 +358,19 @@ public static class WalkabilityQuery
 
     private static bool DungeonFootprintWalkable(DungeonManager dungeon, DungeonData data, Vector3 worldPosition, float radius)
     {
+        Vector3 zero = dungeon.GridToWorld(new Vector2Int(0, 0));
+        Vector3 one = dungeon.GridToWorld(new Vector2Int(1, 1));
+        float cell = Mathf.Min(Mathf.Abs(one.x - zero.x), Mathf.Abs(one.y - zero.y));
+        float inset = Mathf.Min(Mathf.Max(0f, radius), Mathf.Max(0f, cell * 0.5f - 0.01f));
+
         Vector2Int g;
-        g = dungeon.WorldToGrid(new Vector3(worldPosition.x - radius, worldPosition.y - radius, 0f));
+        g = dungeon.WorldToGrid(new Vector3(worldPosition.x - inset, worldPosition.y - inset, 0f));
         if (!data.IsWalkable(g.x, g.y)) return false;
-        g = dungeon.WorldToGrid(new Vector3(worldPosition.x + radius, worldPosition.y - radius, 0f));
+        g = dungeon.WorldToGrid(new Vector3(worldPosition.x + inset, worldPosition.y - inset, 0f));
         if (!data.IsWalkable(g.x, g.y)) return false;
-        g = dungeon.WorldToGrid(new Vector3(worldPosition.x - radius, worldPosition.y + radius, 0f));
+        g = dungeon.WorldToGrid(new Vector3(worldPosition.x - inset, worldPosition.y + inset, 0f));
         if (!data.IsWalkable(g.x, g.y)) return false;
-        g = dungeon.WorldToGrid(new Vector3(worldPosition.x + radius, worldPosition.y + radius, 0f));
+        g = dungeon.WorldToGrid(new Vector3(worldPosition.x + inset, worldPosition.y + inset, 0f));
         if (!data.IsWalkable(g.x, g.y)) return false;
         return true;
     }
