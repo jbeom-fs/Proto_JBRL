@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-14
+> 작성 기준일: 2026-08-18
+> 기준 커밋: master HEAD `0becea4e` — **보스 페이즈 시스템 · 포탈 공통 베이스 · 월드 판정 결함 2건**(§11e-8·§11e-9 신설, §2·§3·§11e-5 개정). ① **보스 페이즈**(`3c0496bb`) — `BossPhase{patternSet, exit, exitHpRatio, maxHpOverride}` 배열을 `BossEncounterEntry`가 소유하고, 이탈 방식 2종(`HpRatio` 임계 정지 / `Depletion` HP 소진 후 리필)을 **damage floor 하나**로 통합했다. 🔑 두 방식의 차이는 "전환 시 HP를 채우느냐"뿐이라 부품이 `floor` + `refill` 두 개로 끝난다. floor > 0이면 `_currentHp`가 0에 닿지 않아 **`Die()`·드랍·풀반환 경로를 전혀 건드리지 않는다.** 부수 효과로 한 프레임에 임계를 둘 넘는 일이 불가능해져 모든 페이즈를 반드시 한 번씩 밟는다. 폴링은 `LateUpdate`(콤보 게이트가 `damageDealt > 0`이라 floor 체류 프레임을 최소화해야 한다). 동승 = **`ApplyDamageReturningActual`이 실제 HP 감소량을 반환**하도록 정정(기존에는 클램프 전 원본을 반환해 오버킬·경계 초과분으로도 흡혈이 발생). ② **포탈 공통 베이스**(`60c5129b`) — 포탈 4종 522줄에 파일당 ~76줄씩 복제돼 있던 비주얼·콜라이더·잠금·포그 처리를 `Portal` 추상 클래스로 통합(순 -353줄). 🔑 **클래스명·경로·직렬화 필드명을 유지한 상속**이라 `.meta` GUID와 프리팹·씬 결선이 무손실이다. 🔴 `EliteArenaReturnPortal`에는 원래 잠금이 없어서 베이스로 올리면 첫 복귀 후 잠긴 채 남는다 → `ShowReturnPortal`에 `SetLocked(false)` 추가. ③ **아레나 벽 타일맵 오결선**(`0becea4e`) — elite/boss `WalkabilityArea.wallTilemap`이 아레나 벽이 아니라 **TownRoot의 벽**을 가리키고 있었다. 벽 차단 자체는 "walk 타일 부재"가 대신하고 있어 무증상이었고, 실제로 죽어 있던 건 **`CornerHitsBlocker` 하나뿐**이다(라우팅이 walk 타일 유무로 Area 소속을 정하는데 walk∩wall = 0셀). ④ **footprint 코너 상한**(`0becea4e` 동승) — ③을 고치자 코너 판정이 살아나면서 콜라이더가 큰 적이 벽 근처에서 멈췄다. 🔑 `effective = radius × 0.85`가 **셀 크기 1을 넘어서** 대형 적(Magma 2.7)은 벽에서 2칸 이내에 설 수 없었다. 코너 샘플을 **셀 반 칸 미만**으로 clamp(아레나·던전 양쪽). 큰 몸통의 벽 충돌은 그리드가 아니라 물리 콜라이더의 일이다. 이전: 적 패턴 시스템 공통 승격 + 역장 장판 회전 이펙트(`5c17fbcb`)
+>
+> <details><summary>이전 기준(2026-08-14, `5c17fbcb`)</summary>
+>
 > 기준 커밋: master HEAD `5c17fbcb` — **적 패턴 시스템 공통 승격 + 역장 장판 회전 이펙트**(§8-4-4 전면 개정, §7-12 보강). ① **역장 장판 회전 이펙트**(`b893170c`) — Parry `역장`(`Parry_Skill_11`, AreaOverTime)이 `zoneSprite`·`zoneAnimation` 미결선이라 완전 비가시였다. 🔴 결선 후 **흰 원이 회전하는** 현상 — `DamageZone.UpdateVisual`은 `animation != null` 분기에서 **`spriteRenderer.sprite`를 대입하지 않는다**(클립의 PPtr 커브가 스프라이트를 소유한다는 전제). 그런데 이번 클립은 스프라이트 스왑이 아니라 **transform 회전**만 애니메이트해서, 렌더러에 프리팹 기본값인 Unity 2D 패키지 내장 `Circle.png`가 그대로 남아 그것이 돌고 있었다. 해결 = **클립에 Sprite 트랙 1키 추가**(PPtr는 상수 보간이라 1키로 전 구간 유지, 코드 변경 0). 🔑 **단일 스프라이트 + 회전 커브는 프레임 시트의 대안이다** — 임의 프레임레이트에서 매끄럽고 텍스처가 1/8이며, 회전 대칭 형태면 이미지 1장으로 끝난다. ⚠️ `DamageZone`은 **자식 없는 단일 GameObject**라 루트 transform에 코드가 반경 맞춤 `localScale`을 대입한다 → 클립에 **scale·position 커브를 넣으면 반경이 틀어진다**(회전·색만 허용). 🔴 각도 커브의 마지막 키를 `0`으로 두면 `-315 → 0`을 **숫자 보간**해 루프마다 역방향 한 바퀴가 돈다 → 마지막 키는 `-360`(같은 방향·단조 감소, 루프 이음새 비가시), 전 키 Linear. ② **패턴 시스템 공통 승격**(`5c17fbcb`) — `ElitePattern*` 11개 파일을 `EnemyPattern*`으로 리네임하고 실행 게이트를 `Data.IsElite`에서 **패턴셋 보유 여부**로 분리했다(`isElite`는 드랍 랭크·디자인 표식으로 존속). 보스가 전용 패턴을 갖는 구조가 확정됐는데 기존 게이트는 보스에게 `isElite: true`를 강요했다. 🔴 **`weight`가 죽어 있었다** — 소비처가 `Weight <= 0` 필터 하나뿐이고 선택은 **리스트 순서상 첫 적격 패턴**이라 실질 `bool enabled`였는데, `OnValidate`는 "weight must be greater than 0 to be selectable"이라 경고해 저작자를 속이고 있었다(Magma 실측 = Jump→Dash→Projectile 고정 순환) → **가중 추첨 구현**(`EnemyDropRoller` 구간 추첨 미러). 동승 정리 = 런타임 인스턴스 캐시(시전마다 `new` 제거, `Start` 전량 리셋 감사 동반)·쿨다운 `Dictionary` → 인덱스 배열·페이즈용 `SetPatternSet` 진입점. 🔑 **`CanAttack`의 엘리트 특례는 삭제가 아니라 조건 치환**이었다 — Magma가 `behaviorType: Ranged` + 패턴셋 보유라 분기가 실제로 작동 중이었고, 지웠으면 없던 기본 원거리 공격이 생기는 동작 변경이 된다. 🔴 첫 구현이 Editor 어셈블리를 검증하지 않아 `EnemyDashboardWindow`가 삭제된 프로퍼티를 참조한 채 남았고(컴파일 차단), `EnemyDataEditor`의 `FindProperty("elitePatternSet")`도 함께 죽었다 — **`[FormerlySerializedAs]`는 역직렬화에만 작용하고 `FindProperty` 경로에는 영향이 없다.** ③ **보스 구조 설계 확정**(문서) — 보스 다종화 전제(테이블 풀화 + `BossArenaSpace` 번들), 폼 해금 2경로(최종=Soul 즉시 / 중간=조각 누적), 페이즈는 **옵션**(배열 원소 1개 = 페이즈 없음), 페이즈·공간은 `BossEncounterEntry` 소유. 이전: `Buff` 실행타입 범용화 + 소스별 스탯 버프 풀(`1b4ce36e`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-12, `1b4ce36e`)</summary>
 >
@@ -220,7 +226,7 @@
 - **인벤토리 데이터 드리븐**: `PlayerInventory`(MonoBehaviour) 가 `InventoryItemStack` 리스트를 보유, stackable/maxStack 정책을 자동 적용. `ItemData.removeOnFloorTransition`/`removeOnDungeonExit` 플래그로 층/던전 이탈 시 자동 정리. `OnInventoryChanged` 는 UI 갱신과 Relic 패시브 재계산의 단일 트리거이며, Elite Key 도 일반 ItemData 한 항목으로 통합 (과거의 `PlayerEliteKeyInventory` 는 제거됨). `OwnsSoulForm(formId)` 는 ItemType.Soul + soulFormId + count>0 조합으로 Form 소유 여부를 판정
 - **게임 일시정지 통합**: `GamePauseController` 가 `GamePauseSource`(DeveloperConsole / Inventory / PauseMenu / Cutscene / EngravingLoadout) 별 요청 카운트로 `Time.timeScale=0` 토글. 여러 출처가 동시에 정지를 요청해도 1회만 적용, 마지막 출처 해제 시 이전 timeScale 복원
 - **GC 최소화**: 이벤트 인자에 `struct` 사용, 코루틴 캐싱, NonAlloc 물리, A* 버퍼 재사용, 스킬 슬롯 / 투사체 / 시야 셀 버퍼 재사용
-- **공간 독립 walkability**: `WalkabilityQuery`(static) + `WalkabilityArea`(OnEnable/OnDisable 자동 등록) 로 Dungeon·Elite Arena·Boss Arena 등 모든 공간에서 단일 query API 사용. 전투 코드는 `WorldEnvironmentQuery` 파사드만 호출하며 공간 종류를 알지 못해도 됨 — 새 공간은 `WalkabilityArea` 컴포넌트 부착만으로 자동 등록
+- **공간 독립 walkability**: `WalkabilityQuery`(static) + `WalkabilityArea`(OnEnable/OnDisable 자동 등록) 로 Dungeon·Elite Arena·Boss Arena 등 모든 공간에서 단일 query API 사용. 전투 코드는 `WorldEnvironmentQuery` 파사드만 호출하며 공간 종류를 알지 못해도 됨 — 새 공간은 `WalkabilityArea` 컴포넌트 부착만으로 자동 등록. ⚠️ **라우팅 키는 id가 아니라 world 좌표**(`FindAreaContaining` = walk 타일 유무)라, `WalkabilityArea.id`는 디버그 라벨일 뿐이고 **wallTilemap 오결선은 컴파일·로그로 드러나지 않는다**(2026-08-18 실제 사고: elite/boss가 TownRoot 벽을 참조 중이었다)
 - **Elite Arena 포탈 lifecycle 관리**: `EliteArenaEncounterController.Active` 정적 참조 + `RoomSpawner.PrepareEliteRoomPortal` → `EliteArenaEncounterController.PrepareEntrancePortal` 에서 생성주기 시작, `MarkCompletedAndDisable` + `ClearRuntimeState` 로 층 이동·던전 이탈 시 일괄 정리
 - **개발자 콘솔 실행 분리**: `DeveloperConsoleService`(파싱·등록) + `DeveloperConsoleCommandExecutor`(MonoBehaviour, 게임 상태 변경) 로 책임 분리 — 서비스 레이어가 Unity 의존성 없이 테스트 가능, 새 명령은 Executor에 메서드 추가만으로 등록. 아이템 지급은 `/give <category> <code> [count]` 로 재편되어 category(ItemType) 검증과 category별 itemCode 자동완성을 수행
 
@@ -451,6 +457,7 @@ Assets/Scripts/
 │   ├── WalkabilityArea.cs    # 전투 공간 단위 컴포넌트 (Elite Arena 등) — walk/wall Tilemap 쌍, OnEnable/OnDisable → WalkabilityQuery 자동 등록
 │   │                         #   IsInsideWorld/IsWalkableWorld/IsFootprintWalkableWorld/HasLineOfSightWorld/TryGetNearestWalkableWorldPosition API
 │   │                         #   Inspector 튜닝: footprintInsetMultiplier(0.1~1.0, 기본 0.85) — 4-corner sample 거리를 radius 대비 인셋으로 완화,
+│   │                         #   단 최종 오프셋은 **셀 반 칸 미만으로 clamp**(2026-08-18) — 콜라이더가 셀보다 큰 적이 벽 근처에 아예 못 서던 문제,
 │   │                         #                   debugLogFootprintFailures(1초/회 throttle) — 어떤 cell 이 왜 막혔는지 로그,
 │   │                         #                   drawCellBoundsGizmo — Selected 시 walkTilemap.cellBounds 시각화
 │   │                         #   walk/wall Tilemap 이 서로 다른 transform/cellSize 여도 각 Tilemap 의 WorldToCell 로 안전 처리
@@ -3200,7 +3207,8 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 
 - 1차 구성: 20/40/60층 모두 `boss_arena` destination·area 공유, placeholder 보스 `Elite_Magma_01`, 60층 `isFinal=true`.
 - **통합 흐름 Play 검증 전부 통과(2026-06-09)**: 20/40/60층 진입 → 보스 스폰 → 처치 → 출구 포탈 → 다음 층 정상 진입, 60층 `isFinal` 엔딩 정지(다음 층 안 넘어감), 보스전 사망 = 기존 GameOver, Elite Arena 회귀 무손상, LocationRoot 갇힘/스폰 리스크 통과. **코드·흐름 완성.**
-- 남은 건 검증이 아니라 컨텐츠: 보스별 전용 맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프.
+- **페이즈 시스템 구현 완료(2026-08-18, §11e-8)** — `BossEncounterEntry.phases`. 기존 엔트리는 빈 배열이라 현행 동작 보존.
+- 남은 건 검증이 아니라 컨텐츠: 보스별 전용 맵(현재 elite tilemap 공유, **BossAreaRoot에 Grid가 없고 EliteArenaRoot와 좌표까지 동일**) / 정식 보스 EnemyData·수치 / 보스 테이블 풀화 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프.
 
 ### 11e-6. 정비실 (Rest Area) — 보스 진입 앞방 (S1, 2026-07-07)
 
@@ -3233,7 +3241,47 @@ QA 발견 픽스 2건. "보스/엘리트 클리어 직후 출구 포탈을 의�
 - **배선(보스·엘리트 공용, 같은 인스턴스)**: 입장 시 Close / 클리어(OnBossDied·OnEliteDied) 시 Open / CancelEncounter 시 Close(클리어 후 층을 떠나도 문 원상 복구). 출구 포탈 스폰포인트는 문 뒤 포켓 — 클리어 시 문이 열려야 포탈에 닿을 수 있어 즉시 이탈이 구조적으로 불가.
 - ⚠️ **씬 구조 핵심 2건**: ①elite_arena/boss_arena WalkabilityArea가 **같은 walkTilemap/wallTilemap을 공유**(같은 공간 시분할) — `FindAreaContaining`이 first-match라 doorTilemap을 **양쪽 Area+미니맵 소스까지 결선해야** 문이 무시되지 않음. ②**포탈 위치의 단일 진실 = spawnPoint Transform**(`exitPortalSpawnPoint`/`returnPortalSpawnPoint`) — Show*Portal이 포탈 오브젝트 위치를 매번 덮어쓰므로 포탈 오브젝트를 옮겨도 소용없음. elite는 spawnPoint가 미결선(fileID 0)이라 폴백으로 아레나 중앙에 생성되던 것이 원인이었음.
 - **TeleportFadeOverlay**: `LocationTransitionManager.TryTeleportPlayer` 성공 시 즉시 알파 1(컷 프레임부터 가림) → unscaledDeltaTime 0.4s 페이드아웃. rest_area/엘리트/보스/마을↔던전 텔레포트 공통, 층전환 로딩 경로 무수정. raycast 상시 차단 없음(순수 시각).
-- **후속(합의)**: 보스별 전용 공간이 생기면 공간 소속 참조(door/walk/spawnPoint/portal — 현재 컨트롤러 하드결선=단일 공간 전제)를 `BossArenaSpace` 번들 컴포넌트로 추출 — 두 번째 공간 실수요 시점 착수. ArenaDoor가 그 첫 조각.
+- **후속(합의, 2026-08-18 재검토)**: 공간 소속 참조를 번들로 추출한다는 방향은 유지하되, **새 레지스트리·새 id는 만들지 않는다** — `LocationRoot` + `LocationRootRegistry`가 이미 id→루트 조회를 하고 있고 `TeleportLocationData.locationRootId`가 그 키를 쥔다. 조회 경로는 `bossAreaDestinationId → locationRootId → LocationRoot → 부품 번들`. ⚠️ **`BossEncounterEntry.areaId`를 되살리면 안 된다**(진실 소스 2개). 다만 그 필드는 죽은 게 아니라 `EnemyDashboardWindow`가 `FindPropertyRelative("areaId")`로 읽고 쓰므로, 제거할 때 Editor 창을 같이 고쳐야 한다.
+
+### 11e-8. 보스 페이즈 시스템 (2026-08-18)
+
+페이즈의 실체는 **`EnemyPatternSet` 교체 + HP 통 관리**뿐이다. `BossEnemyBrain`은 만들지 않았고 FSM은 `NormalEnemyBrain` 그대로다.
+
+| 데이터 | 의미 |
+|---|---|
+| `BossPhase.patternSet` | 이 페이즈의 패턴셋. `EnemyPatternRunner.SetPatternSet`으로 주입 |
+| `BossPhase.exit` | 이 페이즈를 **어떻게 벗어나는가** — `HpRatio`(임계에서 정지) / `Depletion`(HP를 소진해야) |
+| `BossPhase.exitHpRatio` | `HpRatio` 전용. 이 비율 이하가 되면 다음 페이즈 |
+| `BossPhase.maxHpOverride` | 이 페이즈의 HP 통. 0이면 `EnemyData.maxHp` |
+
+**단일 기계 = damage floor + refill.** 두 이탈 방식의 차이는 전환 시 HP를 채우느냐뿐이다.
+
+```
+HpRatio   이탈 : floor = Round(MaxHp × exitHpRatio)   전환 시 HP 유지
+Depletion 이탈 : floor = 1                            전환 시 HP 리필 + 상태 초기화
+마지막 페이즈  : floor = 0                            (여기서만 죽는다)
+```
+
+- `EnemyController._damageFloor` / `_maxHpOverride` 2필드. `MaxHp`가 override를 인식하고, HP를 깎는 두 지점(직접 피해·상태이상 틱)의 하한이 0에서 floor로 바뀐다.
+- 🔑 **floor > 0이면 `_currentHp == 0`에 도달하지 않으므로 `Die()`·드랍·풀반환·`OnDied` 경로를 전혀 수정하지 않았다.**
+- 🔑 **초과 피해는 소멸한다**(경계에서 오버킬이 버려짐 = 보스 최소 교전 시간 보장). 부수 효과로 한 프레임에 임계를 둘 넘는 일이 불가능해져 **모든 페이즈를 반드시 한 번씩 밟는다** — "스킵이냐 순차냐" 논쟁이 발생 자체를 안 한다.
+- 🔴 **풀 오염 방지**: `_damageFloor`/`_maxHpOverride`는 `EnemyController.Initialize`의 `_isBoss = false` 옆에서 리셋한다. 없으면 같은 프리팹을 재사용하는 일반 몹이 보스 HP를 물고 스폰된다.
+- 🔴 **주입 시점**: `SpawnArenaEnemyAtPosition`이 반환한 **뒤**여야 한다. 그 안의 `EnemyController.Initialize` → `brain.ResetRuntimeState()` → `runner.ResetRuntimeState()`가 `_overridePatternSet`을 지우기 때문이다(`MarkAsBossEncounterEnemy`와 같은 자리).
+- 폴링은 `BossEncounterController.LateUpdate`. `Update`가 아닌 이유는 **콤보 적립 게이트가 `damageDealt > 0`**이라, 보스가 floor에 머무는 프레임에 들어간 타격이 콤보를 끊기 때문이다. `LateUpdate`면 그 프레임 안에서 반드시 페이즈가 전진한다.
+- 소모형 전환에서만 `ResetStatusEffects()` + `DaggerMarkerRegistry.Clear()`. 임계형은 HP가 이어지므로 **아무것도 지우지 않는다**(쌓아둔 DoT 몰수 방지 = Dagger 폼 정체성 보호).
+- 동승 정정: `ApplyDamageReturningActual`이 **실제 HP 감소량**을 반환한다. 기존에는 클램프 전 원본을 반환해 오버킬·경계 초과분으로도 흡혈이 발생했고 `[Combat]` 로그와 HP바가 어긋났다. 밸런스 변경(오버킬 흡혈 하향)이며 의도된 것이다.
+
+### 11e-9. 포탈 공통 베이스 `Portal` (2026-08-18)
+
+포탈 4종(`EliteArenaPortal` 166 / `EliteArenaReturnPortal` 100 / `BossEntryPortal` 128 / `BossExitPortal` 128)에 파일당 약 76줄씩 복제돼 있던 chrome을 `Assets/Scripts/World/Portal.cs` 추상 베이스로 통합했다. **522 → 169줄(-353).**
+
+- 베이스 소유: 비주얼 필드(`portalSprite`/`sortingLayerName`/`sortingOrder`/`portalColor`)·`EnsureVisual`·`SetColliderEnabled`(콜라이더+비주얼 동시)·`SetColliderOnly`·잠금(`IsLocked`/`_isProceeding`)·`OnTriggerEnter2D`·`FogVisibilityRenderer` 해제·미결선 경고(`GetType().Name` 사용).
+- 파생이 갖는 것은 `Bind(컨트롤러)` + **`OnPlayerEntered(player)` 하나**. `true` 반환 = 잠금, `false` = 재시도 허용.
+- 🔑 **클래스명·경로·직렬화 필드명을 유지한 상속**이라 `.meta` GUID가 그대로고 프리팹 2개·씬 인스턴스 2개의 결선·인스펙터 값이 무손실이다. 컴포지션(별도 action 컴포넌트)으로 갔다면 프리팹마다 컴포넌트 추가·재결선이 필요했다.
+- 🔴 `EliteArenaReturnPortal`은 원래 잠금 개념이 **없었다**. 베이스로 올리면 복귀 성공 시 `SetLocked(true)`가 걸리는데 `ShowReturnPortal`이 해제하지 않아 **두 번째 엘리트 아레나에서 복귀가 죽는다** → `ArenaEncounterBase.ShowReturnPortal`에 `SetLocked(false)` 추가(보스 `ShowExitPortal`과 동형).
+- 파생별 차이는 override로 보존: Boss 2종만 `Awake`에서 콜라이더 off + 초기 잠금, `ResetRuntimeState`에 `SetActive(false)`. Elite 진입 포탈만 `_bound` 게이트(`CanTrigger`)와 방 완료 표식.
+- `SpriteRenderer`는 베이스의 `RequireComponent`에 넣지 않았다 — 비주얼 없는 밟기 트리거도 포탈이 될 수 있게. 기존 4종은 자기 어트리뷰트를 유지한다.
+- 미편입: `TeleportService`(범용 트리거 텔레포트, 이미 별도로 동작 중). 상호작용 스테이션 4종(`EngravingStation`/`DungeonEntryStation`/`TownSoulAltar`/`RestAreaShop`)은 **밟기가 아니라 키 입력 대기**라 별개 축이다(같은 종류의 중복이 파일당 ~10회 존재).
 
 ---
 
@@ -3645,6 +3693,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 공간 추상화 | `WorldEnvironmentQuery` 파사드 + `WalkabilityQuery`(Area 우선/Dungeon 폴백) + `WalkabilityArea` — **전 전투 판정 일원화**(Dungeon/Arena 무관 단일 API) |
 | Elite Arena | `EliteArenaEncounterController` + 진입/복귀 포탈 + 미니맵 즉시 복원 + Elite Dash/Jump WalkabilityQuery 통합. 상세 §11d |
 | Boss Area | `BossEncounterTable`(floor→boss/isFinal) + `ArenaEncounterBase` 공통 추출 + `BossEncounterController` + `DungeonManager` 보스층 분기 — **흐름 완성·통합 검증 통과, 남은 건 콘텐츠**. 상세 §11e |
+| 보스 페이즈 | `BossPhase[]`(patternSet/exit/exitHpRatio/maxHpOverride) + damage floor 단일 기계(임계 정지 / HP 소진 후 리필) + `LateUpdate` 폴링 + 풀 오염 리셋. 초과 피해 소멸이 다중 임계 돌파를 원천 차단. 상세 §11e-8 (2026-08-18) |
+| 포탈 공통화 | `Portal` 추상 베이스(비주얼·콜라이더·잠금·트리거·포그) + 파생 4종은 `OnPlayerEntered` 하나. 522→169줄. 클래스명·필드명 유지 상속이라 결선 무손실. 상세 §11e-9 (2026-08-18) |
 | 아레나 문·전환 연출 | `ArenaDoor`(doorTilemap 캐시·개폐, 보스·엘리트 공용 — 클리어 시 개방→문 뒤 출구 포탈, 즉시 이탈 원천 차단) + `TeleportFadeOverlay`(전 텔레포트 공통 암전 페이드). 상세 §11e-7 |
 | 정비실 (Rest Area) | **S1~S3c 완결(2026-07-09)** — `RestAreaController`(pendingEntry 경유, 직행 폴백) + `BossEntryPortal`(포탈 1개로 전 보스층) + 정비실 각인대(비소멸) + Currency 아이템·드랍·HUD + **런 코어(클론)·일시강화 상점(`RestAreaShopTable`, 누진 비용)·아이템 툴팁**. 상세 §11b-11·§11e-6 |
 | 일시정지 | `GamePauseController` + `GamePauseSource` 출처별 카운터(콘솔/인벤/메뉴/컷씬/각인 모달/정비실 상점) — 씬 비활성 잠복 회귀 복구(2026-07-09, §11b-11) |
