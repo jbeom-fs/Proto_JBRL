@@ -221,6 +221,7 @@ GameObject:
   - component: {fileID: 50012721}
   - component: {fileID: 50012720}
   - component: {fileID: 50012722}
+  - component: {fileID: 50012723}
   m_Layer: 0
   m_Name: EliteArenaRoot
   m_TagString: Untagged
@@ -241,6 +242,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocationRoot
   locationRootId: elite_arena
+--- !u!114 &50012723
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50012719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42cad2b8db7b4c6c8c4052c2fe01eedf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaSpace
+  arenaDoor: {fileID: 3501000002}
+  walkTilemap: {fileID: 1206688124}
+  walkabilityArea: {fileID: 2201000003}
+  enemySpawnPoint: {fileID: 0}
+  clearedPortal: {fileID: 3901000002}
+  clearedPortalSpawnPoint: {fileID: 2401000021}
 --- !u!4 &50012721
 Transform:
   m_ObjectHideFlags: 0
@@ -256,6 +275,7 @@ Transform:
   m_Children:
   - {fileID: 1877801298}
   - {fileID: 3501000001}
+  - {fileID: 3901000001}
   m_Father: {fileID: 284404850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &50012722
@@ -281,6 +301,55 @@ MonoBehaviour:
   groundColor: {r: 0.75, g: 0.82, b: 0.95, a: 0.92}
   wallColor: {r: 0.35, g: 0.38, b: 0.45, a: 0.95}
   doorColor: {r: 0.95, g: 0.78, b: 0.36, a: 0.95}
+--- !u!1001 &3901000000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 50012721}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.75
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 12.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5800000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+--- !u!4 &3901000001 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+  m_PrefabInstance: {fileID: 3901000000}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &3901000002 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
+  m_PrefabInstance: {fileID: 3901000000}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ae2bf48307b94faeb5cf86e9c3583a62, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EliteArenaReturnPortal
 --- !u!1 &51986288
 GameObject:
   m_ObjectHideFlags: 0
@@ -153998,7 +154067,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 4001000001}
   m_Father: {fileID: 237796615}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2201000002
@@ -154014,22 +154084,56 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EliteArenaEncounterController
   transitionManager: {fileID: 920100002}
-  arenaDoor: {fileID: 3501000002}
-  arenaWalkTilemap: {fileID: 1206688124}
-  arenaWallTilemap: {fileID: 1309604883}
   dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
-  eliteSpawnPoint: {fileID: 0}
-  returnPortal: {fileID: 0}
-  returnPortalPrefab: {fileID: 11400000, guid: 5d48db893e724e94a5b5f05d02d234ae, type: 3}
-  returnPortalSpawnPoint: {fileID: 2401000021}
-  returnPortalParent: {fileID: 0}
-  walkabilityArea: {fileID: 2201000003}
   arenaDestinationId: elite_arena
-  entrancePortalInstance: {fileID: 0}
-  entrancePortalPrefab: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
-  entrancePortalParent: {fileID: 0}
+  entrancePortalInstance: {fileID: 4001000002}
   eliteRoomReturnPoint: {fileID: 0}
   healthBarPanel: {fileID: 324191796}
+--- !u!1001 &4001000000
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2201000001}
+    m_Modifications:
+    - target: {fileID: 100000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+--- !u!4 &4001000001 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+  m_PrefabInstance: {fileID: 4001000000}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &4001000002 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 11400000, guid: 98100b046e154110928bf295a5bc1b17, type: 3}
+  m_PrefabInstance: {fileID: 4001000000}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56857f8152294636b3cdeb099dc628b2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::EliteArenaPortal
 --- !u!114 &2201000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -154546,20 +154650,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossEncounterController
   transitionManager: {fileID: 920100002}
-  arenaDoor: {fileID: 3501000002}
-  arenaWalkTilemap: {fileID: 1206688124}
-  arenaWallTilemap: {fileID: 1309604883}
   dropDatabase: {fileID: 11400000, guid: 64bece59f89961e4e9e00ead9da34fa2, type: 2}
-  eliteSpawnPoint: {fileID: 2401000011}
-  returnPortal: {fileID: 0}
-  returnPortalPrefab: {fileID: 0}
-  returnPortalSpawnPoint: {fileID: 0}
-  returnPortalParent: {fileID: 0}
-  walkabilityArea: {fileID: 2401000032}
-  exitPortal: {fileID: 2401000044}
-  exitPortalPrefab: {fileID: 0}
-  exitPortalSpawnPoint: {fileID: 2401000021}
-  exitPortalParent: {fileID: 2401000001}
   healthBarPanel: {fileID: 324191796}
 --- !u!1 &2501000000
 GameObject:

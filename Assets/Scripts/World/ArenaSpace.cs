@@ -30,12 +30,8 @@ public sealed class ArenaSpace : MonoBehaviour
             missing.Add(nameof(walkTilemap));
         if (walkabilityArea == null)
             missing.Add(nameof(walkabilityArea));
-        if (enemySpawnPoint == null)
-            missing.Add(nameof(enemySpawnPoint));
         if (clearedPortal == null)
             missing.Add(nameof(clearedPortal));
-        if (clearedPortalSpawnPoint == null)
-            missing.Add(nameof(clearedPortalSpawnPoint));
 
         if (missing.Count > 0)
         {

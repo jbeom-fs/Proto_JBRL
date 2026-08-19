@@ -11,8 +11,6 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
 
     [Header("Elite Room Portal")]
     [SerializeField] private EliteArenaPortal entrancePortalInstance;
-    [SerializeField] private EliteArenaPortal entrancePortalPrefab;
-    [SerializeField] private Transform entrancePortalParent;
     [SerializeField] private Transform eliteRoomReturnPoint;
 
     [Header("Screen Health Bar")]
@@ -24,6 +22,8 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
     private EnemyController _activeElite;
     private bool _hasEncounter;
     private bool _eliteDefeated;
+    private bool _warnedInvalidSpaceReturnPortal;
+    private bool _warnedMissingEntrancePortal;
 
     public bool IsEncounterActiveInArena => _hasEncounter && !_eliteDefeated;
 
@@ -39,7 +39,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
         }
 
         Active = this;
-        HideReturnPortal();
+        // 초기 숨김 상태는 씬에 비활성으로 저장된 포탈 인스턴스가 보장한다.
     }
 
     private void OnDestroy()
@@ -109,6 +109,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             return false;
 
         _originRoom = room;
+        ResolveArenaSpace(arenaDestinationId);
         _hasEncounter = true;
         _eliteDefeated = false;
         CloseArenaDoor();
@@ -198,6 +199,7 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
 
         _originRoom = default;
         _originReturnPosition = default;
+        ClearArenaSpace();
     }
 
     // Developer Console only. Called through RoomSpawner.ForceKillCurrentEncounterEnemiesForDebug.
@@ -266,22 +268,84 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
         ShowReturnPortal();
     }
 
+    private void ShowReturnPortal()
+    {
+        EliteArenaReturnPortal portal = GetReturnPortal();
+        if (portal == null)
+            return;
+
+        if (TryResolveReturnPortalPosition(out Vector3 position))
+            portal.transform.position = position;
+
+        portal.Bind(this);
+        portal.gameObject.SetActive(true);
+        portal.SetColliderEnabled(true);
+        portal.SetLocked(false);
+    }
+
+    private void HideReturnPortal()
+    {
+        EliteArenaReturnPortal portal = ActiveClearedPortal as EliteArenaReturnPortal;
+        if (portal == null)
+            return;
+
+        portal.SetColliderEnabled(false);
+        portal.gameObject.SetActive(false);
+    }
+
+    private EliteArenaReturnPortal GetReturnPortal()
+    {
+        if (ActiveClearedPortal is EliteArenaReturnPortal portal)
+            return portal;
+
+        if (_warnedInvalidSpaceReturnPortal)
+            return null;
+
+        _warnedInvalidSpaceReturnPortal = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning(
+            "[EliteArenaEncounterController] ArenaSpace cleared portal is missing or not an EliteArenaReturnPortal.",
+            this);
+#endif
+        return null;
+    }
+
+    private bool TryResolveReturnPortalPosition(out Vector3 position)
+    {
+        if (ActiveClearedPortalSpawnPoint != null)
+        {
+            position = ActiveClearedPortalSpawnPoint.position;
+            return true;
+        }
+
+        if (TryGetCenterTileWorldPosition(ActiveWalkTilemap, out position))
+            return true;
+
+        if (ActiveWalkabilityArea != null &&
+            ActiveWalkabilityArea.TryGetNearestWalkableWorldPosition(transform.position, out position))
+        {
+            return true;
+        }
+
+        position = transform.position;
+        return false;
+    }
+
     private EliteArenaPortal GetEntrancePortal()
     {
         if (entrancePortalInstance != null)
             return entrancePortalInstance;
 
-        if (entrancePortalPrefab == null)
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.LogWarning("[EliteArenaEncounterController] Entrance portal prefab is missing. Assign Assets/Perfabs/EliteArena/EliteArenaPortal.prefab.", this);
-#endif
+        if (_warnedMissingEntrancePortal)
             return null;
-        }
 
-        Transform parent = entrancePortalParent != null ? entrancePortalParent : transform;
-        entrancePortalInstance = Instantiate(entrancePortalPrefab, parent);
-        return entrancePortalInstance;
+        _warnedMissingEntrancePortal = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning(
+            "[EliteArenaEncounterController] Entrance portal scene reference is missing.",
+            this);
+#endif
+        return null;
     }
 
     private bool TryResolveReturnPosition(
@@ -303,8 +367,4 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
         return player != null;
     }
 
-    protected override void BindReturnPortal(EliteArenaReturnPortal portal)
-    {
-        portal.Bind(this);
-    }
 }

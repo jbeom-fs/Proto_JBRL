@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public sealed class BossEncounterController : ArenaEncounterBase
 {
@@ -9,19 +8,12 @@ public sealed class BossEncounterController : ArenaEncounterBase
 
     protected override DropRank EncounterDropRank => DropRank.Boss;
 
-    [Header("Boss Exit")]
-    [SerializeField] private BossExitPortal exitPortal;
-    [SerializeField] private BossExitPortal exitPortalPrefab;
-    [SerializeField] private Transform exitPortalSpawnPoint;
-    [SerializeField] private Transform exitPortalParent;
-
     [Header("Screen Health Bar")]
     [SerializeField] private ArenaHealthBarPanel healthBarPanel;
 
     private BossEncounterEntry _activeEntry;
     private EnemyController _activeBoss;
     private BossExitPortal _activeExitPortal;
-    private ArenaSpace _activeSpace;
     private bool _hasEncounter;
     private bool _bossDefeated;
     private bool _proceedRequested;
@@ -29,7 +21,6 @@ public sealed class BossEncounterController : ArenaEncounterBase
     private int _phaseDamageFloor;
     private EnemyPatternRunner _bossPatternRunner;
     private bool _warnedMissingRunner;
-    private bool _warnedMissingArenaSpace;
     private bool _warnedInvalidSpaceExitPortal;
 
     public event Action<BossEncounterEntry, PlayerController> ProceedRequested;
@@ -41,26 +32,6 @@ public sealed class BossEncounterController : ArenaEncounterBase
     private ArenaHealthBarPanel HealthBarPanel =>
         healthBarPanel != null ? healthBarPanel : ArenaHealthBarPanel.Active;
 
-    protected override ArenaDoor ActiveArenaDoor =>
-        _activeSpace != null && _activeSpace.ArenaDoor != null
-            ? _activeSpace.ArenaDoor
-            : base.ActiveArenaDoor;
-
-    protected override Tilemap ActiveWalkTilemap =>
-        _activeSpace != null && _activeSpace.WalkTilemap != null
-            ? _activeSpace.WalkTilemap
-            : base.ActiveWalkTilemap;
-
-    protected override WalkabilityArea ActiveWalkabilityArea =>
-        _activeSpace != null && _activeSpace.WalkabilityArea != null
-            ? _activeSpace.WalkabilityArea
-            : base.ActiveWalkabilityArea;
-
-    protected override Transform ActiveEnemySpawnPoint =>
-        _activeSpace != null && _activeSpace.EnemySpawnPoint != null
-            ? _activeSpace.EnemySpawnPoint
-            : base.ActiveEnemySpawnPoint;
-
     private void Awake()
     {
         if (Active != null && Active != this)
@@ -70,7 +41,7 @@ public sealed class BossEncounterController : ArenaEncounterBase
         }
 
         Active = this;
-        HideExitPortal();
+        // 초기 숨김 상태는 씬에 비활성으로 저장된 포탈 인스턴스가 보장한다.
     }
 
     private void OnDestroy()
@@ -101,10 +72,10 @@ public sealed class BossEncounterController : ArenaEncounterBase
         if (_hasEncounter || entry == null || player == null)
             return false;
 
-        ArenaSpace resolvedSpace = ResolveArenaSpace(entry.BossAreaDestinationId);
-        if (_activeSpace != resolvedSpace)
+        ArenaSpace previousSpace = ActiveSpace;
+        ResolveArenaSpace(entry.BossAreaDestinationId);
+        if (ActiveSpace != previousSpace)
             _activeExitPortal = null;
-        _activeSpace = resolvedSpace;
 
         CloseArenaDoor();
         _activeEntry = entry;
@@ -194,7 +165,7 @@ public sealed class BossEncounterController : ArenaEncounterBase
 
         HideExitPortal();
         _activeExitPortal = null;
-        _activeSpace = null;
+        ClearArenaSpace();
     }
 
     private bool TrySpawnBoss(EnemyData bossData)
@@ -328,7 +299,9 @@ public sealed class BossEncounterController : ArenaEncounterBase
 
     private void HideExitPortal()
     {
-        BossExitPortal portal = _activeExitPortal != null ? _activeExitPortal : exitPortal;
+        BossExitPortal portal = _activeExitPortal != null
+            ? _activeExitPortal
+            : ActiveClearedPortal as BossExitPortal;
         if (portal == null)
             return;
 
@@ -342,56 +315,29 @@ public sealed class BossEncounterController : ArenaEncounterBase
         if (_activeExitPortal != null)
             return _activeExitPortal;
 
-        if (_activeSpace != null && _activeSpace.ClearedPortal != null)
+        if (ActiveClearedPortal is BossExitPortal portal)
         {
-            if (_activeSpace.ClearedPortal is BossExitPortal spacePortal)
-            {
-                _activeExitPortal = spacePortal;
-                return _activeExitPortal;
-            }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!_warnedInvalidSpaceExitPortal)
-            {
-                _warnedInvalidSpaceExitPortal = true;
-                Debug.LogWarning(
-                    "[BossEncounterController] ArenaSpace cleared portal is not a BossExitPortal; using fallback.",
-                    _activeSpace);
-            }
-#endif
-        }
-
-        if (exitPortal != null)
-        {
-            _activeExitPortal = exitPortal;
+            _activeExitPortal = portal;
             return _activeExitPortal;
         }
 
-        if (exitPortalPrefab == null)
-        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            Debug.LogWarning("[BossEncounterController] Boss exit portal prefab/scene reference is missing.", this);
-#endif
+        if (_warnedInvalidSpaceExitPortal)
             return null;
-        }
 
-        Transform parent = exitPortalParent != null ? exitPortalParent : transform;
-        _activeExitPortal = Instantiate(exitPortalPrefab, parent);
-        _activeExitPortal.gameObject.SetActive(false);
-        _activeExitPortal.SetColliderEnabled(false);
-        _activeExitPortal.SetLocked(true);
-        return _activeExitPortal;
+        _warnedInvalidSpaceExitPortal = true;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        Debug.LogWarning(
+            "[BossEncounterController] ArenaSpace cleared portal is missing or not a BossExitPortal.",
+            this);
+#endif
+        return null;
     }
 
     private bool TryResolveExitPortalPosition(out Vector3 position)
     {
-        Transform spawnPoint = _activeSpace != null && _activeSpace.ClearedPortalSpawnPoint != null
-            ? _activeSpace.ClearedPortalSpawnPoint
-            : exitPortalSpawnPoint;
-
-        if (spawnPoint != null)
+        if (ActiveClearedPortalSpawnPoint != null)
         {
-            position = spawnPoint.position;
+            position = ActiveClearedPortalSpawnPoint.position;
             return true;
         }
 
@@ -406,33 +352,6 @@ public sealed class BossEncounterController : ArenaEncounterBase
 
         position = transform.position;
         return false;
-    }
-
-    private ArenaSpace ResolveArenaSpace(string destinationId)
-    {
-        transitionManager = transitionManager != null
-            ? transitionManager
-            : LocationTransitionManager.Active;
-
-        if (transitionManager != null &&
-            transitionManager.TryResolveLocationRoot(destinationId, out LocationRoot root))
-        {
-            ArenaSpace space = root.GetComponent<ArenaSpace>();
-            if (space != null)
-                return space;
-        }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        if (!_warnedMissingArenaSpace)
-        {
-            _warnedMissingArenaSpace = true;
-            Debug.LogWarning(
-                "[BossEncounterController] ArenaSpace could not be resolved for destination '" +
-                destinationId + "'; using serialized fallback references.",
-                this);
-        }
-#endif
-        return null;
     }
 
     private void HandleFinalBossDefeated()
