@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-18
+> 작성 기준일: 2026-08-19
+> 기준 커밋: master HEAD `c8a8daa2` — **아레나 공간 부품 번들(`ArenaSpace`) + 보스방·엘리트 아레나 물리 분리 + 포탈 런타임 생성 전면 철거**(§11e-10 신설, §11d-1·§11d-2·§11e-5·§11e-7 개정). ① **`ArenaSpace` 신설**(`a69fcff0`) — 아레나 부품(문·walk 타일맵·워커빌리티·적 스폰지점·클리어 포탈·포탈 스폰지점) 6종을 컨트롤러의 `[SerializeField]`에서 **방 쪽 컴포넌트**로 옮겼다. 🔑 **새 레지스트리를 만들지 않았다** — `LocationRoot` + `LocationRootRegistry`가 이미 id→루트 조회를 하고 있어 조회 경로가 `bossAreaDestinationId → locationRootId → LocationRoot → GetComponent<ArenaSpace>()`로 성립한다. 🔑 **`LocationRoot`에 필드를 직접 넣지 않고 형제 컴포넌트로 분리**한 이유는 인스펙터 청결이 아니라 **누락 감지**다 — 필드를 공용 `LocationRoot`에 넣으면 마을·던전의 빈 슬롯과 결선을 깜빡한 보스방의 빈 슬롯이 인스펙터에서 **구분되지 않는다.** 별도 컴포넌트는 존재 자체가 "이 장소는 아레나다"라는 선언이고, `[RequireComponent(typeof(LocationRoot))]`로 "id 없는 아레나"가 에디터 차원에서 불가능해진다. ② **베이스 직렬화 필드 철거**(`a5292d9f`) — `ArenaEncounterBase`의 아레나 필드 9개 + `BossEncounterController`의 포탈 필드 4개를 삭제하고 seam 프로퍼티가 전부 `ArenaSpace`를 읽는다. Elite 전용 복귀 포탈 배관 4메서드는 베이스에서 Elite 컨트롤러로 내렸다(베이스는 두 컨트롤러의 공통분만 남는다). 🔑 **2단계로 끊어 커밋했다** — 1단계는 프로퍼티 seam + Boss만 override(Elite 코드·결선 무변경), 2단계에서 Elite 이설 + 필드 삭제. 두 공간이 아직 물리적으로 겹쳐 있는 상태에서 양쪽을 동시에 뜯으면 회귀 원인 분리가 안 된다. ③ **포탈 런타임 생성 전면 철거**(`a5292d9f`) — `Instantiate` 폴백 3곳(엘리트 복귀·보스 출구·엘리트 진입)을 씬 사전 배치로 교체. 프로젝트에 남은 포탈 `Instantiate`는 **0건**이다. ⚠️ 비활성 씬 인스턴스는 `Awake`가 **첫 `SetActive(true)`까지 미뤄진다** — `Portal.Awake`가 하는 일이 `collider.isTrigger` 설정과 `EnsureVisual`뿐이고 `enabled`·잠금을 건드리지 않아 `Bind()` 이후 활성화 순서와 충돌하지 않는다. ④ **공간 물리 분리**(`c8a8daa2`) — `EliteArenaRoot`와 `BossAreaRoot`가 좌표까지 `(390.7, -39)`로 동일하고 보스방에는 Grid조차 없어 **엘리트 방 기하를 빌려 쓰고 있었다.** Grid·타일맵 3종·`ArenaDoor`를 복제해 보스방에 주고 `(390.7, -99)`로 내렸다(방 높이 40셀, 간격 20셀). 🔑 **`TeleportLocationData.localSpawnPosition`이 루트 상대 좌표**라 방을 옮겨도 스폰 지점이 따라온다 — 이게 성립하지 않았으면 destination DB를 같이 고쳐야 했다. 🔴 엘리트 복귀 포탈의 스폰 기준점이 **`BossAreaRoot`의 자식**이었다 → 보스방을 내리면 엘리트 포탈이 따라간다. 이동 **전에** Elite 전용 스폰지점을 신설해 끊었다. 부수 효과로 두 `WalkabilityArea`가 같은 좌표를 주장하던 중첩이 해소됐다(`WalkabilityQuery`는 id가 아니라 좌표로 Area를 고른다). 이전: 보스 페이즈 시스템 · 포탈 공통 베이스 · 월드 판정 결함 2건(`0becea4e`)
+>
+> <details><summary>이전 기준(2026-08-18, `0becea4e`)</summary>
+>
 > 기준 커밋: master HEAD `0becea4e` — **보스 페이즈 시스템 · 포탈 공통 베이스 · 월드 판정 결함 2건**(§11e-8·§11e-9 신설, §2·§3·§11e-5 개정). ① **보스 페이즈**(`3c0496bb`) — `BossPhase{patternSet, exit, exitHpRatio, maxHpOverride}` 배열을 `BossEncounterEntry`가 소유하고, 이탈 방식 2종(`HpRatio` 임계 정지 / `Depletion` HP 소진 후 리필)을 **damage floor 하나**로 통합했다. 🔑 두 방식의 차이는 "전환 시 HP를 채우느냐"뿐이라 부품이 `floor` + `refill` 두 개로 끝난다. floor > 0이면 `_currentHp`가 0에 닿지 않아 **`Die()`·드랍·풀반환 경로를 전혀 건드리지 않는다.** 부수 효과로 한 프레임에 임계를 둘 넘는 일이 불가능해져 모든 페이즈를 반드시 한 번씩 밟는다. 폴링은 `LateUpdate`(콤보 게이트가 `damageDealt > 0`이라 floor 체류 프레임을 최소화해야 한다). 동승 = **`ApplyDamageReturningActual`이 실제 HP 감소량을 반환**하도록 정정(기존에는 클램프 전 원본을 반환해 오버킬·경계 초과분으로도 흡혈이 발생). ② **포탈 공통 베이스**(`60c5129b`) — 포탈 4종 522줄에 파일당 ~76줄씩 복제돼 있던 비주얼·콜라이더·잠금·포그 처리를 `Portal` 추상 클래스로 통합(순 -353줄). 🔑 **클래스명·경로·직렬화 필드명을 유지한 상속**이라 `.meta` GUID와 프리팹·씬 결선이 무손실이다. 🔴 `EliteArenaReturnPortal`에는 원래 잠금이 없어서 베이스로 올리면 첫 복귀 후 잠긴 채 남는다 → `ShowReturnPortal`에 `SetLocked(false)` 추가. ③ **아레나 벽 타일맵 오결선**(`0becea4e`) — elite/boss `WalkabilityArea.wallTilemap`이 아레나 벽이 아니라 **TownRoot의 벽**을 가리키고 있었다. 벽 차단 자체는 "walk 타일 부재"가 대신하고 있어 무증상이었고, 실제로 죽어 있던 건 **`CornerHitsBlocker` 하나뿐**이다(라우팅이 walk 타일 유무로 Area 소속을 정하는데 walk∩wall = 0셀). ④ **footprint 코너 상한**(`0becea4e` 동승) — ③을 고치자 코너 판정이 살아나면서 콜라이더가 큰 적이 벽 근처에서 멈췄다. 🔑 `effective = radius × 0.85`가 **셀 크기 1을 넘어서** 대형 적(Magma 2.7)은 벽에서 2칸 이내에 설 수 없었다. 코너 샘플을 **셀 반 칸 미만**으로 clamp(아레나·던전 양쪽). 큰 몸통의 벽 충돌은 그리드가 아니라 물리 콜라이더의 일이다. 이전: 적 패턴 시스템 공통 승격 + 역장 장판 회전 이펙트(`5c17fbcb`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-14, `5c17fbcb`)</summary>
 >
@@ -454,6 +460,11 @@ Assets/Scripts/
 │   └── BossEntryPortal.cs          # 정비실 → 보스전 진입 포탈 (BossExitPortal 미러) — 접촉 시 RequestEnterBoss
 │
 ├── World/
+│   ├── ArenaSpace.cs         # 아레나 방 하나가 소유한 부품 번들 (2026-08-19, §11e-10) — arenaDoor/walkTilemap/walkabilityArea/
+│   │                         #   enemySpawnPoint/clearedPortal/clearedPortalSpawnPoint. id는 갖지 않는다(같은 GameObject의 LocationRoot 소유)
+│   │                         #   [RequireComponent(typeof(LocationRoot))] — "id 없는 아레나"가 에디터 차원에서 불가능
+│   │                         #   OnValidate: 필수 4칸(door/walk/walkability/clearedPortal)만 한 줄 경고, 스폰지점 2칸은 폴백이 있어 선택
+│   ├── Portal.cs             # 포탈 4종 공통 베이스 (§11e-9)
 │   ├── WalkabilityArea.cs    # 전투 공간 단위 컴포넌트 (Elite Arena 등) — walk/wall Tilemap 쌍, OnEnable/OnDisable → WalkabilityQuery 자동 등록
 │   │                         #   IsInsideWorld/IsWalkableWorld/IsFootprintWalkableWorld/HasLineOfSightWorld/TryGetNearestWalkableWorldPosition API
 │   │                         #   Inspector 튜닝: footprintInsetMultiplier(0.1~1.0, 기본 0.85) — 4-corner sample 거리를 radius 대비 인셋으로 완화,
@@ -3074,7 +3085,7 @@ Elite Floor(`floor % 10 == 5`)의 Elite Room에 포탈이 배치되고, 플레�
 Elite Room 진입 시 RoomSpawner.SpawnRoom(room):
   room.IsElite → PrepareEliteRoomPortal(room, dungeonManager)
     → EliteArenaEncounterController.PrepareEntrancePortal(room, dungeonManager)
-      Elite Room 중앙 walkable 타일에 EliteArenaPortal Instantiate·배치
+      씬에 사전 배치된 EliteArenaPortal 인스턴스를 Elite Room 중앙 walkable 타일로 이동·활성 (2026-08-19 이전에는 prefab Instantiate)
 
 플레이어가 포탈 콜라이더에 접촉:
   EliteArenaPortal.OnTriggerEnter2D → TryEnterArenaFromPortal(portal, room, player)
@@ -3103,6 +3114,7 @@ Elite 적 사망 시:
 | `EliteArenaEncounterController` | 인카운터 전체 조율 (static `Active`), Elite spawn/defeat, portal lifecycle, `WalkabilityArea` passthrough |
 | `EliteArenaPortal` | Elite Room 내 진입 포탈 — `Bind(controller, room)` 후 접촉 감지, `IsCompletedForRoom` 으로 중복 진입 차단 |
 | `EliteArenaReturnPortal` | Arena 내 복귀 포탈 — Elite 사망 후 `ShowReturnPortal`로 활성화 |
+| `ArenaSpace` | **방 하나가 소유한 부품 번들**(2026-08-19, §11e-10) — 컨트롤러는 조우마다 `ArenaSpace`를 해석해 그 방 부품을 잡는다 |
 | `WalkabilityArea` | Arena walk/wall Tilemap 쌍 — OnEnable/OnDisable 자동 등록, walkability·LOS API 제공 |
 | `WalkabilityQuery` | 정적 라우팅 — `WalkabilityArea` 우선, 없으면 `DungeonData` fallback |
 | `WorldEnvironmentQuery` | 전투 코드용 퍼사드 — 어떤 공간인지 몰라도 `WorldEnvironmentQuery.IsFootprintWalkable(pos, r)` 1회 호출 |
@@ -3189,7 +3201,8 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 | 컴포넌트 | 역할 |
 |---------|------|
 | `BossEncounterTable` (SO) | `floor → BossEncounterEntry`(boss EnemyData / bossAreaDestinationId / areaId / isFinal). `TryGetBoss(floor)` 선형 조회, OnValidate 중복 floor 경고 |
-| `ArenaEncounterBase` | Elite·Boss 공통 lifecycle 헬퍼 — teleport, enemy spawn, return/exit portal show·hide, minimap restore, spawn position resolve. `EliteArenaEncounterController` 도 이를 상속 |
+| `ArenaSpace` | **방 하나가 소유한 부품 번들**(2026-08-19, §11e-10) — 문·walk 타일맵·워커빌리티·적 스폰지점·클리어 포탈·포탈 스폰지점 6종. id는 같은 GameObject의 `LocationRoot`가 소유 |
+| `ArenaEncounterBase` | Elite·Boss 공통 lifecycle 헬퍼 — teleport, enemy spawn, 문 개폐, minimap restore, **`ArenaSpace` 해석(`ResolveArenaSpace`)과 seam 프로퍼티**. 복귀 포탈 배관은 2026-08-19에 Elite 컨트롤러로 내려갔다(보스는 자기 출구 포탈 경로를 따로 갖는다) |
 | `BossEncounterController` | `:ArenaEncounterBase`, static `Active`(Elite 와 별도 타입). `Begin`/`OnBossDied`/`RequestProceed`/`CompleteProceedToNextFloor`/`CancelEncounter`. `ProceedRequested` 이벤트 발행 |
 | `BossExitPortal` | 보스 처치 후 활성화되는 출구 포탈 — 접촉 시 `RequestProceed`, 잠금·중복 진입 가드 |
 | `RestAreaController` | 정비실(§11e-6) — `Begin`(rest_area 텔레포트+pendingEntry 보관), `RequestEnterBoss`(BossEncounterController.Begin 위임). ArenaEncounterBase **비상속**(적 스폰 불필요) |
@@ -3208,7 +3221,8 @@ DungeonManager.HandleBossProceedRequested(entry, player):  (ProceedRequested 구
 - 1차 구성: 20/40/60층 모두 `boss_arena` destination·area 공유, placeholder 보스 `Elite_Magma_01`, 60층 `isFinal=true`.
 - **통합 흐름 Play 검증 전부 통과(2026-06-09)**: 20/40/60층 진입 → 보스 스폰 → 처치 → 출구 포탈 → 다음 층 정상 진입, 60층 `isFinal` 엔딩 정지(다음 층 안 넘어감), 보스전 사망 = 기존 GameOver, Elite Arena 회귀 무손상, LocationRoot 갇힘/스폰 리스크 통과. **코드·흐름 완성.**
 - **페이즈 시스템 구현 완료(2026-08-18, §11e-8)** — `BossEncounterEntry.phases`. 기존 엔트리는 빈 배열이라 현행 동작 보존.
-- 남은 건 검증이 아니라 컨텐츠: 보스별 전용 맵(현재 elite tilemap 공유, **BossAreaRoot에 Grid가 없고 EliteArenaRoot와 좌표까지 동일**) / 정식 보스 EnemyData·수치 / 보스 테이블 풀화 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프.
+- **공간 축 완료(2026-08-19, §11e-10)** — 부품 번들(`ArenaSpace`) 도입 + 보스방 전용 기하 부여 + 엘리트 아레나와 물리 분리. 보스방을 N개로 늘리는 데 필요한 **런타임 코드는 이미 0**이다(`BossEncounterEntry.bossAreaDestinationId`가 엔트리마다 다른 방을 가리킬 수 있고 컨트롤러가 조우마다 공간을 해석한다).
+- 남은 건 검증이 아니라 컨텐츠: 두 번째 보스방 실배치(씬 저작) / 정식 보스 EnemyData·수치 / 보스 테이블 풀화 / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프.
 
 ### 11e-6. 정비실 (Rest Area) — 보스 진입 앞방 (S1, 2026-07-07)
 
@@ -3239,9 +3253,9 @@ QA 발견 픽스 2건. "보스/엘리트 클리어 직후 출구 포탈을 의�
 
 - **ArenaDoor**(`EliteArena/ArenaDoor.cs`): doorTilemap의 씬 배치 타일이 곧 문 정의(좌표 하드코딩 없음) — Awake 1회 캐시(셀+TileBase), `Close()`=복원/`Open()`=제거(멱등). WalkabilityArea가 doorTilemap을 라이브 조회하므로 SetTile만으로 통행 판정 즉시 반영. **차단 주체는 walkability 타일이지 물리 콜라이더가 아님**(플레이어 이동=타일 판정). 문 제어 3메서드(`Close/OpenArenaDoor`/`WarnMissingArenaDoor`)+`arenaDoor` 필드는 `ArenaEncounterBase` 승격(2026-07-14, 보스·엘리트 복제 소멸 — 필드명 유지로 씬 결선 보존).
 - **배선(보스·엘리트 공용, 같은 인스턴스)**: 입장 시 Close / 클리어(OnBossDied·OnEliteDied) 시 Open / CancelEncounter 시 Close(클리어 후 층을 떠나도 문 원상 복구). 출구 포탈 스폰포인트는 문 뒤 포켓 — 클리어 시 문이 열려야 포탈에 닿을 수 있어 즉시 이탈이 구조적으로 불가.
-- ⚠️ **씬 구조 핵심 2건**: ①elite_arena/boss_arena WalkabilityArea가 **같은 walkTilemap/wallTilemap을 공유**(같은 공간 시분할) — `FindAreaContaining`이 first-match라 doorTilemap을 **양쪽 Area+미니맵 소스까지 결선해야** 문이 무시되지 않음. ②**포탈 위치의 단일 진실 = spawnPoint Transform**(`exitPortalSpawnPoint`/`returnPortalSpawnPoint`) — Show*Portal이 포탈 오브젝트 위치를 매번 덮어쓰므로 포탈 오브젝트를 옮겨도 소용없음. elite는 spawnPoint가 미결선(fileID 0)이라 폴백으로 아레나 중앙에 생성되던 것이 원인이었음.
+- ⚠️ **씬 구조 핵심 2건**: ①~~elite_arena/boss_arena WalkabilityArea가 같은 walkTilemap/wallTilemap을 공유(같은 공간 시분할)~~ → **2026-08-19 해소**(§11e-10). 두 Area가 각자 자기 방 타일맵을 갖고 좌표도 겹치지 않으므로 `FindAreaContaining`의 first-match 모호성이 사라졌다. `ArenaDoor`도 방마다 별도 인스턴스다(문 타일을 `Awake`에서 한 Tilemap 기준으로 캐시하므로 공유가 불가능하다). ②**포탈 위치의 단일 진실 = spawnPoint Transform**(`exitPortalSpawnPoint`/`returnPortalSpawnPoint`) — Show*Portal이 포탈 오브젝트 위치를 매번 덮어쓰므로 포탈 오브젝트를 옮겨도 소용없음. elite는 spawnPoint가 미결선(fileID 0)이라 폴백으로 아레나 중앙에 생성되던 것이 원인이었음.
 - **TeleportFadeOverlay**: `LocationTransitionManager.TryTeleportPlayer` 성공 시 즉시 알파 1(컷 프레임부터 가림) → unscaledDeltaTime 0.4s 페이드아웃. rest_area/엘리트/보스/마을↔던전 텔레포트 공통, 층전환 로딩 경로 무수정. raycast 상시 차단 없음(순수 시각).
-- **후속(합의, 2026-08-18 재검토)**: 공간 소속 참조를 번들로 추출한다는 방향은 유지하되, **새 레지스트리·새 id는 만들지 않는다** — `LocationRoot` + `LocationRootRegistry`가 이미 id→루트 조회를 하고 있고 `TeleportLocationData.locationRootId`가 그 키를 쥔다. 조회 경로는 `bossAreaDestinationId → locationRootId → LocationRoot → 부품 번들`. ⚠️ **`BossEncounterEntry.areaId`를 되살리면 안 된다**(진실 소스 2개). 다만 그 필드는 죽은 게 아니라 `EnemyDashboardWindow`가 `FindPropertyRelative("areaId")`로 읽고 쓰므로, 제거할 때 Editor 창을 같이 고쳐야 한다.
+- **후속 → 완료(2026-08-19, §11e-10)**: 아래 방향대로 `ArenaSpace`가 구현됐다. 공간 소속 참조를 번들로 추출하되, **새 레지스트리·새 id는 만들지 않는다** — `LocationRoot` + `LocationRootRegistry`가 이미 id→루트 조회를 하고 있고 `TeleportLocationData.locationRootId`가 그 키를 쥔다. 조회 경로는 `bossAreaDestinationId → locationRootId → LocationRoot → 부품 번들`. ⚠️ **`BossEncounterEntry.areaId`를 되살리면 안 된다**(진실 소스 2개). 다만 그 필드는 죽은 게 아니라 `EnemyDashboardWindow`가 `FindPropertyRelative("areaId")`로 읽고 쓰므로, 제거할 때 Editor 창을 같이 고쳐야 한다.
 
 ### 11e-8. 보스 페이즈 시스템 (2026-08-18)
 
@@ -3282,6 +3296,90 @@ Depletion 이탈 : floor = 1                            전환 시 HP 리필 + �
 - 파생별 차이는 override로 보존: Boss 2종만 `Awake`에서 콜라이더 off + 초기 잠금, `ResetRuntimeState`에 `SetActive(false)`. Elite 진입 포탈만 `_bound` 게이트(`CanTrigger`)와 방 완료 표식.
 - `SpriteRenderer`는 베이스의 `RequireComponent`에 넣지 않았다 — 비주얼 없는 밟기 트리거도 포탈이 될 수 있게. 기존 4종은 자기 어트리뷰트를 유지한다.
 - 미편입: `TeleportService`(범용 트리거 텔레포트, 이미 별도로 동작 중). 상호작용 스테이션 4종(`EngravingStation`/`DungeonEntryStation`/`TownSoulAltar`/`RestAreaShop`)은 **밟기가 아니라 키 입력 대기**라 별개 축이다(같은 종류의 중복이 파일당 ~10회 존재).
+
+
+### 11e-10. 아레나 공간 부품 번들 `ArenaSpace` + 공간 물리 분리 (2026-08-19)
+
+보스 공간이 **전역 1개**였던 원인은 `ArenaEncounterBase`/`BossEncounterController`가 문·타일맵·워커빌리티·스폰지점·출구포탈을 전부 `[SerializeField]`로 직결한 것이다. 슬롯이 한 벌뿐이니 방도 한 개뿐이었다.
+
+#### 부품 번들의 소유 위치
+
+```
+BossAreaRoot (GameObject)
+ ├ LocationRoot   id: "boss_arena"          ← 정체성. 17줄 sealed, 등록/해제만
+ └ ArenaSpace                               ← 부품 6종. id는 갖지 않는다
+     arenaDoor / walkTilemap / walkabilityArea
+     enemySpawnPoint / clearedPortal / clearedPortalSpawnPoint
+```
+
+조회 경로는 **기존 인프라를 그대로 탄다.** 새 레지스트리를 만들지 않았다.
+
+```
+BossEncounterEntry.bossAreaDestinationId
+  → LocationTransitionManager.TryResolveLocationRoot   (신설, TeleportDestinationDatabase는 매니저가 계속 소유)
+    → TeleportLocationData.locationRootId
+      → LocationRootRegistry.TryGet
+        → LocationRoot.GetComponent<ArenaSpace>()
+```
+
+- 🔑 **`LocationRoot`에 필드를 직접 넣지 않은 이유는 누락 감지다.** `LocationRoot`는 town/dungeon/rest_area에도 붙는 공용 클래스라, 거기에 아레나 슬롯을 넣으면 **"마을이라서 빈 칸"과 "결선을 깜빡해서 빈 칸"이 인스펙터에서 똑같이 보인다.** 별도 컴포넌트는 존재 자체가 "이 장소는 아레나다"라는 선언이라 두 상태가 갈라진다. 덤으로 `[RequireComponent(typeof(LocationRoot))]`를 걸 수 있어 **id 없는 아레나가 에디터 차원에서 불가능**해진다(공용 클래스에는 이 제약을 걸 대상이 없다).
+- 🔑 **클리어 포탈 슬롯은 `Portal` 타입 1개다.** 엘리트 복귀 포탈과 보스 출구 포탈은 "전투가 끝나면 열리는 포탈"이라는 **같은 역할**이고, §11e-9의 공통 베이스 덕에 한 슬롯으로 받는다. 타입별로 슬롯을 나누면 방마다 항상 절반이 비어 `OnValidate`의 누락 경고가 무의미해진다.
+- **prefab·parent는 번들에 넣지 않았다** — 방별 데이터가 아니고, 그 폴백 자체가 철거 대상이었다(아래).
+- `OnValidate`는 **필수 4칸**(`arenaDoor`/`walkTilemap`/`walkabilityArea`/`clearedPortal`)만 **한 줄**로 경고한다. `enemySpawnPoint`(중앙 타일 폴백)와 `clearedPortalSpawnPoint`(중앙 타일 → `WalkabilityArea` 폴백)는 비어 있는 것이 정상 상태다. 정상 씬에서 경고가 상시 뜨면 신호가 죽는다.
+
+#### 이전 절차 — seam을 먼저 깔고 방을 나중에 옮긴다
+
+`ArenaEncounterBase`는 Elite·Boss 공통 부모라 필드를 건드리면 Elite도 흔들린다. 그래서 **2커밋으로 끊었다.**
+
+| 단계 | 내용 | 커밋 |
+|---|---|---|
+| 1 | `protected virtual` 프로퍼티 seam 신설(기본 구현 = 기존 필드 반환) + **Boss만 override** | `a69fcff0` |
+| 2 | Elite 이설 + 베이스 직렬화 필드 전량 삭제 + seam을 `ArenaSpace` 기반으로 재구현 | `a5292d9f` |
+
+1단계에서 Elite는 override가 없어 **코드·씬 결선이 한 글자도 바뀌지 않는다.** 두 공간이 아직 물리적으로 겹쳐 있는 상태에서 양쪽을 동시에 뜯으면 회귀가 나도 어느 쪽 탓인지 분리가 안 된다.
+
+- **필드 접근자를 `protected` → `private`로 낮춘 것이 안전장치였다.** 파생에서 필드를 직접 읽는 경로가 남아 있으면 override를 우회해 조용히 옛 방을 본다. `private`로 내리면 그 경로가 전부 **컴파일 에러로 드러난다**(실제로 `BossEncounterController`의 2곳이 걸렸다).
+- 2단계에서 베이스가 `_activeSpace`를 소유하고 seam은 `virtual`을 뗐다(override가 0이 됐다). Elite 전용 복귀 포탈 배관 4메서드(`Show/Hide/GetReturnPortal`·`TryResolveReturnPortalPosition`)와 `BindReturnPortal` 훅은 **베이스에서 Elite 컨트롤러로 내렸다** — 보스는 자기 출구 포탈 경로를 따로 갖고 있어 베이스에 있을 이유가 없었다.
+
+#### 포탈 런타임 생성 전면 철거
+
+`Instantiate` 폴백 3곳을 씬 사전 배치로 교체했다. **프로젝트에 남은 포탈 `Instantiate`는 0건이다.**
+
+| 포탈 | 이전 | 이후 |
+|---|---|---|
+| 엘리트 복귀 | 씬 인스턴스 없음, prefab만 결선 → 조우마다 `Instantiate` | 씬 사전 배치(비활성), `ArenaSpace.clearedPortal` |
+| 보스 출구 | 씬 인스턴스 + prefab 폴백 | 씬 인스턴스만, `ArenaSpace.clearedPortal` |
+| 엘리트 진입 | 씬 인스턴스 없음, prefab만 결선 → `Instantiate` 후 캐시 재사용 | 씬 사전 배치(비활성), 컨트롤러가 계속 소유 |
+
+- **엘리트 진입 포탈은 `ArenaSpace`에 넣지 않는다.** 던전 방 안에 서고 위치도 `DungeonPlacementUtility.TryGetRoomCenterWalkablePosition`으로 방마다 계산되므로 아레나 소유물이 아니다.
+- ⚠️ **비활성 씬 인스턴스는 `Awake`가 첫 `SetActive(true)`까지 미뤄진다.** `Portal.Awake`가 하는 일은 `collider.isTrigger` 설정과 `EnsureVisual`뿐이고 `collider.enabled`·잠금·스프라이트 가시성을 건드리지 않아, `Bind()` → `SetActive(true)` 순서와 충돌하지 않는다. 반대로 말하면 **`Awake`에서 상태를 만지는 override를 포탈에 추가하면 이 순서에 걸린다.**
+- 두 컨트롤러 `Awake`의 초기 숨김 호출은 제거했다. 공간이 아직 해석되지 않아 무조건 no-op였고, **초기 숨김 보장은 씬 데이터(`m_IsActive: 0`)로 이동**했다.
+- 🔴 파생 부작용: `CloseArenaDoor()`가 조우 밖(층 이동 정리 경로)에서도 불리는데 그때는 공간이 없어 **`ArenaDoor reference is missing` 오탐 경고**가 떴다. 일회성 플래그라 오탐이 그걸 소진해 **진짜 누락을 영구히 가린다.** → `WarnMissingArenaDoor`의 조건을 `ActiveSpace != null && ActiveArenaDoor == null`로 좁혔다. 공간 해석 실패 자체는 `ResolveArenaSpace`가 따로 경고하므로 진단은 살아 있다.
+
+#### 공간 물리 분리
+
+`EliteArenaRoot`와 `BossAreaRoot`가 좌표까지 `(390.7, -39)`로 동일했고, **보스방에는 Grid조차 없어 엘리트 방의 Grid·타일맵·`ArenaDoor`를 그대로 빌려 쓰고 있었다.**
+
+```
+복제 대상 = EliteArenaRoot 밑의 Grid 서브트리 + ArenaDoor   (기하가 전부 거기 있다)
+  Grid / WalkTileMap / WallTileMap / DoorTileMap / ArenaDoor
+  = GameObject 5 · 컴포넌트 19
+
+EliteArenaRoot  (390.7,  -39)   월드 y ∈ [ -63,  -23]   원본 유지
+BossAreaRoot    (390.7,  -99)   월드 y ∈ [-123,  -83]   복제본 + 이동
+                                방 높이 40셀, 간격 20셀
+```
+
+- 🔑 **`TeleportLocationData.localSpawnPosition`이 루트 상대 좌표**다(`LocationTransitionManager.TryMovePlayerToDestination`이 `root.TransformPoint`로 해석). 그래서 방을 옮겨도 스폰 지점이 따라오고, **destination DB를 고칠 필요가 없었다.**
+- 🔴 **엘리트 복귀 포탈의 스폰 기준점이 `BossAreaRoot`의 자식이었다.** 보스방을 내리는 순간 엘리트 포탈이 보스방으로 따라간다 → 이동 **전에** `EliteArenaRoot` 밑에 Elite 전용 스폰지점을 신설해 끊었다(같은 로컬 좌표라 월드 위치 불변).
+- 복제로 `ArenaDoor` 공유가 자동 해소된다. `ArenaDoor`는 `Awake`에서 **한 Tilemap의 문 타일을 캐시**하므로 방마다 별도 인스턴스가 구조적 요구사항이다.
+- Wall/Door 타일맵의 콜라이더 계열(`TilemapCollider2D`+`Rigidbody2D`+`CompositeCollider2D`)도 함께 복제돼 보스방이 자기 물리 콜라이더를 갖는다.
+- 부수 효과: **두 `WalkabilityArea`가 같은 좌표를 주장하던 중첩이 사라졌다.** `WalkabilityQuery`는 id가 아니라 **좌표로** Area를 고르므로(`FindAreaContaining` first-match) 이전에는 같은 지점을 두 Area가 주장하는 모호한 상태였다. 두 타일맵이 실제로 같은 물건이라 증상이 없었을 뿐이다.
+- 검증 방법: 복제 문서 24개를 매핑표대로 역치환해 원본과 **바이트 단위로 대조**했다. 21개 완전 일치, 3개는 의도된 차이뿐(Grid·ArenaDoor의 `m_Father` 재지정 2건 + `m_Name` 후행 공백 1바이트). 타일 배열·GUID·레이어·정렬·콜라이더 설정이 한 바이트도 다르지 않다.
+
+#### 남은 것
+
+두 번째 보스방은 **씬 저작만 남았다** — 기하 복제 + `LocationRoot`(새 id)/`TilemapMinimapSource`/`WalkabilityArea`/`ArenaSpace` 부착 + 전용 스폰지점·출구 포탈 + `TeleportDestinationDatabase` 엔트리 + `BossEncounterTable` 엔트리 갱신. **런타임 코드 변경은 0이다.**
 
 ---
 
