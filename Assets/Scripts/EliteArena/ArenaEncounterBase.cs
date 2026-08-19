@@ -11,22 +11,28 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     [SerializeField] private ArenaDoor arenaDoor;
 
     [Header("Arena")]
-    [SerializeField] protected Tilemap arenaWalkTilemap;
+    [SerializeField] private Tilemap arenaWalkTilemap;
     [SerializeField] protected Tilemap arenaWallTilemap;
     [SerializeField] protected EnemyDropDatabase dropDatabase;
-    [SerializeField] protected Transform eliteSpawnPoint;
-    [SerializeField] protected EliteArenaReturnPortal returnPortal;
-    [SerializeField] protected EliteArenaReturnPortal returnPortalPrefab;
-    [SerializeField] protected Transform returnPortalSpawnPoint;
-    [SerializeField] protected Transform returnPortalParent;
+    [SerializeField] private Transform eliteSpawnPoint;
+    [SerializeField] private EliteArenaReturnPortal returnPortal;
+    [SerializeField] private EliteArenaReturnPortal returnPortalPrefab;
+    [SerializeField] private Transform returnPortalSpawnPoint;
+    [SerializeField] private Transform returnPortalParent;
 
     [Tooltip("Walkability query component for this arena. Assign from this GameObject or the arena root.")]
-    [SerializeField] protected WalkabilityArea walkabilityArea;
+    [SerializeField] private WalkabilityArea walkabilityArea;
 
     private EliteArenaReturnPortal _activeReturnPortal;
     private bool _warnedMissingArenaDoor;
 
     protected abstract DropRank EncounterDropRank { get; }
+    protected virtual ArenaDoor ActiveArenaDoor => arenaDoor;
+    protected virtual Tilemap ActiveWalkTilemap => arenaWalkTilemap;
+    protected virtual WalkabilityArea ActiveWalkabilityArea => walkabilityArea;
+    protected virtual Transform ActiveEnemySpawnPoint => eliteSpawnPoint;
+    protected virtual EliteArenaReturnPortal ActiveReturnPortal => returnPortal;
+    protected virtual Transform ActiveReturnPortalSpawnPoint => returnPortalSpawnPoint;
 
     protected bool TryTeleportPlayerToArena(PlayerController player, string destinationId)
     {
@@ -47,24 +53,24 @@ public abstract class ArenaEncounterBase : MonoBehaviour
 
     protected void CloseArenaDoor()
     {
-        if (arenaDoor == null)
+        if (ActiveArenaDoor == null)
         {
             WarnMissingArenaDoor();
             return;
         }
 
-        arenaDoor.Close();
+        ActiveArenaDoor.Close();
     }
 
     protected void OpenArenaDoor()
     {
-        if (arenaDoor == null)
+        if (ActiveArenaDoor == null)
         {
             WarnMissingArenaDoor();
             return;
         }
 
-        arenaDoor.Open();
+        ActiveArenaDoor.Open();
     }
 
     protected void WarnMissingArenaDoor()
@@ -128,7 +134,7 @@ public abstract class ArenaEncounterBase : MonoBehaviour
 
     protected void HideReturnPortal()
     {
-        EliteArenaReturnPortal portal = _activeReturnPortal != null ? _activeReturnPortal : returnPortal;
+        EliteArenaReturnPortal portal = _activeReturnPortal != null ? _activeReturnPortal : ActiveReturnPortal;
         if (portal == null)
             return;
 
@@ -141,9 +147,9 @@ public abstract class ArenaEncounterBase : MonoBehaviour
         if (_activeReturnPortal != null)
             return _activeReturnPortal;
 
-        if (returnPortal != null)
+        if (ActiveReturnPortal != null)
         {
-            _activeReturnPortal = returnPortal;
+            _activeReturnPortal = ActiveReturnPortal;
             return _activeReturnPortal;
         }
 
@@ -164,28 +170,28 @@ public abstract class ArenaEncounterBase : MonoBehaviour
 
     protected bool TryResolveArenaEnemySpawnPosition(out Vector3 position)
     {
-        if (eliteSpawnPoint != null)
+        if (ActiveEnemySpawnPoint != null)
         {
-            position = eliteSpawnPoint.position;
+            position = ActiveEnemySpawnPoint.position;
             return true;
         }
 
-        return TryGetCenterTileWorldPosition(arenaWalkTilemap, out position);
+        return TryGetCenterTileWorldPosition(ActiveWalkTilemap, out position);
     }
 
     private bool TryResolveReturnPortalPosition(out Vector3 position)
     {
-        if (returnPortalSpawnPoint != null)
+        if (ActiveReturnPortalSpawnPoint != null)
         {
-            position = returnPortalSpawnPoint.position;
+            position = ActiveReturnPortalSpawnPoint.position;
             return true;
         }
 
-        if (TryGetCenterTileWorldPosition(arenaWalkTilemap, out position))
+        if (TryGetCenterTileWorldPosition(ActiveWalkTilemap, out position))
             return true;
 
-        if (walkabilityArea != null &&
-            walkabilityArea.TryGetNearestWalkableWorldPosition(transform.position, out position))
+        if (ActiveWalkabilityArea != null &&
+            ActiveWalkabilityArea.TryGetNearestWalkableWorldPosition(transform.position, out position))
         {
             return true;
         }

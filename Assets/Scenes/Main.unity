@@ -154162,6 +154162,7 @@ GameObject:
   - component: {fileID: 2401000001}
   - component: {fileID: 2401000002}
   - component: {fileID: 2401000003}
+  - component: {fileID: 2401000004}
   m_Layer: 0
   m_Name: BossAreaRoot
   m_TagString: Untagged
@@ -154201,6 +154202,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LocationRoot
   locationRootId: boss_arena
+--- !u!114 &2401000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2401000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42cad2b8db7b4c6c8c4052c2fe01eedf, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::ArenaSpace
+  arenaDoor: {fileID: 3501000002}
+  walkTilemap: {fileID: 1206688124}
+  walkabilityArea: {fileID: 2401000032}
+  enemySpawnPoint: {fileID: 2401000011}
+  clearedPortal: {fileID: 2401000044}
+  clearedPortalSpawnPoint: {fileID: 2401000021}
 --- !u!114 &2401000003
 MonoBehaviour:
   m_ObjectHideFlags: 0

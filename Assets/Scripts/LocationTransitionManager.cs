@@ -122,6 +122,16 @@ public class LocationTransitionManager : MonoBehaviour
         return moved;
     }
 
+    public bool TryResolveLocationRoot(string destinationId, out LocationRoot root)
+    {
+        root = null;
+
+        if (!TryGetLocation(destinationId, out TeleportLocationData location))
+            return false;
+
+        return LocationRootRegistry.TryGet(location.LocationRootId, out root);
+    }
+
     public void RefreshMinimapForCurrentLocation()
     {
         if (_currentDestination != null)
