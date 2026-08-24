@@ -48,6 +48,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private bool _holdsEliteKey;
     private bool _isBoss;
     private Vector3 _lastSafePosition;
+    private bool _walkGuardSuppressed;
     private bool _warnedMissingHitFlash;
     private bool _warnedMissingAilmentProfiles;
     private int _lastAilmentFlashFrame = -1;
@@ -90,6 +91,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _hitFlash = ResolveHitFlashFeedback();
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
         _lastSafePosition = transform.position;
+        _walkGuardSuppressed = false;
         ApplyStationaryPhysicsSettings();
         if (data != null)
         {
@@ -123,6 +125,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _ailmentIndicator?.SetSuppressed(false);
         _healthBar?.SetHp(_currentHp, MaxHp);
         _lastSafePosition = transform.position;
+        _walkGuardSuppressed = false;
         ResetStatusEffects();
         ApplyStationaryPhysicsSettings();
         if (_circleCollider != null)
@@ -135,6 +138,11 @@ public class EnemyController : MonoBehaviour, IDamageable
 
         if (TryGetComponent<EnemyBrain>(out var brain))
             brain.ResetRuntimeState();
+    }
+
+    public void SetWalkGuardSuppressed(bool suppressed)
+    {
+        _walkGuardSuppressed = suppressed;
     }
 
     public void TakeDamage(int damage)
@@ -462,6 +470,7 @@ public class EnemyController : MonoBehaviour, IDamageable
     private void LateUpdate()
     {
         if (IsDead || !IsAlive) return;
+        if (_walkGuardSuppressed) return;
 
         // 이전 프레임에서 walkable로 검증된 위치 그대로면 4-corner 그리드 룩업을 건너뛴다.
         // _lastSafePosition은 walkable 분기에서만 갱신되므로 같은 좌표면 이미 안전이 보장돼 있다.
@@ -486,6 +495,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         if (IsDead) return;
 
         IsDead = true;
+        _walkGuardSuppressed = false;
         _deathFinished = false;
         _deathTimer = data != null ? Mathf.Max(0f, data.deathDelay) : 0.5f;
         ResetStatusEffects();

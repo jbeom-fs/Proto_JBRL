@@ -29,7 +29,7 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
         _data = data;
     }
 
-    public override void Start(EnemyPatternContext context)
+    public override bool Start(EnemyPatternContext context)
     {
         _context = context;
         IsFinished = false;
@@ -48,7 +48,7 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
         if (!CanRun() || !TryResolveJumpTarget(out _targetPosition))
         {
             Finish();
-            return;
+            return false;
         }
 
         CacheVisualRoot();
@@ -68,6 +68,8 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
 
         if (_timer <= 0f)
             StartJump();
+
+        return true;
     }
 
     public override void Tick(float deltaTime)
@@ -126,6 +128,7 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
 
     private void StartJump()
     {
+        SetWalkGuardSuppressed(true);
         _startPosition = _context.SelfTransform.position;
         _totalJumpDistance = Vector3.Distance(_startPosition, _targetPosition);
         _context.Animation?.PlayPatternAnimation(_data.JumpAnimation, _targetPosition);
@@ -134,11 +137,7 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
         ApplyVisualOffset(0f);
 
         if (_data.JumpSpeed <= 0f || _totalJumpDistance <= 0.001f)
-        {
-            _context.SelfTransform.position = _targetPosition;
-            RestoreVisualOffset();
-            _phase = Phase.Impact;
-        }
+            CompleteJumpMovement();
     }
 
     private void TickJump(float deltaTime)
@@ -378,6 +377,7 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
     private void CompleteJumpMovement()
     {
         _context.SelfTransform.position = _targetPosition;
+        SetWalkGuardSuppressed(false);
         RestoreVisualOffset();
         _phase = Phase.Impact;
     }
@@ -438,10 +438,21 @@ public sealed class EnemyJumpPatternRuntime : EnemyPatternRuntime
     private void Cleanup()
     {
         RestoreVisualOffset();
+        SetWalkGuardSuppressed(false);
 
         if (_unlockFacing)
             _context?.Animation?.UnlockSpecialFacing();
 
         _unlockFacing = false;
+    }
+
+    private void SetWalkGuardSuppressed(bool suppressed)
+    {
+        if (_context == null)
+            return;
+
+        EnemyController enemy = _context.Enemy;
+        if (enemy != null)
+            enemy.SetWalkGuardSuppressed(suppressed);
     }
 }

@@ -23,7 +23,7 @@ public sealed class EnemyProjectilePatternRuntime : EnemyPatternRuntime
         _data = data;
     }
 
-    public override void Start(EnemyPatternContext context)
+    public override bool Start(EnemyPatternContext context)
     {
         _context = context;
         IsFinished = false;
@@ -37,7 +37,7 @@ public sealed class EnemyProjectilePatternRuntime : EnemyPatternRuntime
         if (!CanRun())
         {
             Finish();
-            return;
+            return false;
         }
 
         _aimDirection = ResolveAimDirection();
@@ -51,6 +51,8 @@ public sealed class EnemyProjectilePatternRuntime : EnemyPatternRuntime
 
         if (_timer <= 0f)
             FireOrStartBurst();
+
+        return true;
     }
 
     public override void Tick(float deltaTime)

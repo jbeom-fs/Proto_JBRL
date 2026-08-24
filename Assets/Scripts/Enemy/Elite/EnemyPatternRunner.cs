@@ -156,7 +156,6 @@ public sealed class EnemyPatternRunner : MonoBehaviour
 
         _eligiblePatternIndices.Clear();
         float distance = Mathf.Sqrt(_brain.Target.SqrDistanceToTarget);
-        float totalWeight = 0f;
         for (int i = 0; i < _patterns.Count; i++)
         {
             EnemyPatternData pattern = _patterns[i];
@@ -164,42 +163,63 @@ public sealed class EnemyPatternRunner : MonoBehaviour
                 continue;
 
             _eligiblePatternIndices.Add(i);
-            totalWeight += pattern.Weight;
         }
 
-        if (totalWeight <= 0f)
+        if (_eligiblePatternIndices.Count == 0)
             return;
-
-        float roll = UnityEngine.Random.value * totalWeight;
-        float accumulated = 0f;
-        int selectedIndex = _eligiblePatternIndices[_eligiblePatternIndices.Count - 1];
-        for (int i = 0; i < _eligiblePatternIndices.Count; i++)
-        {
-            int candidateIndex = _eligiblePatternIndices[i];
-            accumulated += _patterns[candidateIndex].Weight;
-            if (roll < accumulated)
-            {
-                selectedIndex = candidateIndex;
-                break;
-            }
-        }
-
-        EnemyPatternData selectedPattern = _patterns[selectedIndex];
-        EnemyPatternRuntime runtime = _runtimes[selectedIndex];
-        if (runtime == null)
-        {
-            _cooldowns[selectedIndex] = selectedPattern.Cooldown;
-            return;
-        }
 
         _context.Initialize(_brain, _animation, _collider, _projectileFireService, this);
-        _currentPattern = selectedPattern;
-        _currentPatternIndex = selectedIndex;
-        _currentRuntime = runtime;
-        _currentRuntime.Start(_context);
+        while (_eligiblePatternIndices.Count > 0)
+        {
+            float totalWeight = 0f;
+            for (int i = 0; i < _eligiblePatternIndices.Count; i++)
+                totalWeight += _patterns[_eligiblePatternIndices[i]].Weight;
 
-        if (_currentRuntime.IsFinished)
-            FinishCurrent();
+            if (totalWeight <= 0f)
+                return;
+
+            float roll = UnityEngine.Random.value * totalWeight;
+            float accumulated = 0f;
+            int selectedListIndex = _eligiblePatternIndices.Count - 1;
+            int selectedIndex = _eligiblePatternIndices[selectedListIndex];
+            for (int i = 0; i < _eligiblePatternIndices.Count; i++)
+            {
+                int candidateIndex = _eligiblePatternIndices[i];
+                accumulated += _patterns[candidateIndex].Weight;
+                if (roll < accumulated)
+                {
+                    selectedListIndex = i;
+                    selectedIndex = candidateIndex;
+                    break;
+                }
+            }
+
+            int lastListIndex = _eligiblePatternIndices.Count - 1;
+            _eligiblePatternIndices[selectedListIndex] = _eligiblePatternIndices[lastListIndex];
+            _eligiblePatternIndices.RemoveAt(lastListIndex);
+
+            EnemyPatternData selectedPattern = _patterns[selectedIndex];
+            EnemyPatternRuntime runtime = _runtimes[selectedIndex];
+            if (runtime == null)
+            {
+                _cooldowns[selectedIndex] = selectedPattern.Cooldown;
+                continue;
+            }
+
+            _currentPattern = selectedPattern;
+            _currentPatternIndex = selectedIndex;
+            _currentRuntime = runtime;
+            if (_currentRuntime.Start(_context))
+            {
+                if (_currentRuntime.IsFinished)
+                    FinishCurrent();
+                return;
+            }
+
+            _currentPattern = null;
+            _currentPatternIndex = -1;
+            _currentRuntime = null;
+        }
     }
 
     private void FinishCurrent()

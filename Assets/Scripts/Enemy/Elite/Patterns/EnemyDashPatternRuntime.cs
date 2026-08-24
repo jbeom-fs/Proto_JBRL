@@ -23,7 +23,7 @@ public sealed class EnemyDashPatternRuntime : EnemyPatternRuntime
         _data = data;
     }
 
-    public override void Start(EnemyPatternContext context)
+    public override bool Start(EnemyPatternContext context)
     {
         _context = context;
         IsFinished = false;
@@ -37,7 +37,7 @@ public sealed class EnemyDashPatternRuntime : EnemyPatternRuntime
         if (!CanRun() || !TryResolveDashTarget(out _targetPosition))
         {
             Finish();
-            return;
+            return false;
         }
 
         _direction = ResolveDirection(_targetPosition);
@@ -54,6 +54,8 @@ public sealed class EnemyDashPatternRuntime : EnemyPatternRuntime
 
         if (_timer <= 0f)
             StartDash();
+
+        return true;
     }
 
     public override void Tick(float deltaTime)
