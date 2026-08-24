@@ -72,6 +72,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private int _newEnemyPrefabIndex;
     private bool _newEnemyCreateAsBoss;
     private int _newBossFloor = 1;
+    private float _newBossWeight = 1f;
     private string _newBossAreaDestinationId = string.Empty;
     private string _newBossAreaId = string.Empty;
     private bool _newBossIsFinal;
@@ -368,6 +369,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
     {
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         _newBossFloor = EditorGUILayout.IntField("floor", Mathf.Max(1, _newBossFloor));
+        _newBossWeight = Mathf.Max(0f, EditorGUILayout.FloatField("weight", _newBossWeight));
         _newBossAreaDestinationId = EditorGUILayout.TextField("bossAreaDestinationId", _newBossAreaDestinationId);
         _newBossAreaId = EditorGUILayout.TextField("areaId", _newBossAreaId);
         _newBossIsFinal = EditorGUILayout.Toggle("isFinal", _newBossIsFinal);
@@ -486,6 +488,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _newEnemyPrefabIndex = 0;
         _newEnemyCreateAsBoss = false;
         _newBossFloor = 1;
+        _newBossWeight = 1f;
         _newBossAreaDestinationId = string.Empty;
         _newBossAreaId = string.Empty;
         _newBossIsFinal = false;
@@ -532,8 +535,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
                 errors.Add("BossEncounterTable 에셋 없음.");
             if (_newBossFloor < 1)
                 errors.Add("boss floor는 1 이상 필요.");
-            else if (bossTable != null && HasBossFloor(bossTable, _newBossFloor))
-                errors.Add("BossEncounterTable floor 중복: " + _newBossFloor);
         }
 
         if (string.IsNullOrWhiteSpace(enemyName))
@@ -639,6 +640,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
 
         _newBossAreaDestinationId = entry.BossAreaDestinationId ?? string.Empty;
         _newBossAreaId = entry.AreaId ?? string.Empty;
+        _newBossWeight = Mathf.Max(0f, entry.Weight);
         if (_newBossFloor < 1)
             _newBossFloor = 1;
     }
@@ -836,17 +838,19 @@ public sealed class EnemyDashboardWindow : EditorWindow
         entries.InsertArrayElementAtIndex(index);
         SerializedProperty entry = entries.GetArrayElementAtIndex(index);
         SerializedProperty floor = entry.FindPropertyRelative("floor");
+        SerializedProperty weight = entry.FindPropertyRelative("weight");
         SerializedProperty bossProperty = entry.FindPropertyRelative("boss");
         SerializedProperty bossAreaDestinationId = entry.FindPropertyRelative("bossAreaDestinationId");
         SerializedProperty areaId = entry.FindPropertyRelative("areaId");
         SerializedProperty isFinal = entry.FindPropertyRelative("isFinal");
-        if (floor == null || bossProperty == null || bossAreaDestinationId == null || areaId == null || isFinal == null)
+        if (floor == null || weight == null || bossProperty == null || bossAreaDestinationId == null || areaId == null || isFinal == null)
         {
-            error = "BossEncounterTable entry 필드(floor/boss/bossAreaDestinationId/areaId/isFinal)를 찾을 수 없음.";
+            error = "BossEncounterTable entry 필드(floor/weight/boss/bossAreaDestinationId/areaId/isFinal)를 찾을 수 없음.";
             return false;
         }
 
         floor.intValue = Mathf.Max(1, _newBossFloor);
+        weight.floatValue = Mathf.Max(0f, _newBossWeight);
         bossProperty.objectReferenceValue = boss;
         bossAreaDestinationId.stringValue = _newBossAreaDestinationId ?? string.Empty;
         areaId.stringValue = _newBossAreaId ?? string.Empty;
@@ -2760,21 +2764,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private static string FormatWeight(float weight)
     {
         return weight.ToString("0.##", CultureInfo.InvariantCulture);
-    }
-
-    private static bool HasBossFloor(BossEncounterTable table, int floor)
-    {
-        if (table == null || table.Entries == null)
-            return false;
-
-        for (int i = 0; i < table.Entries.Count; i++)
-        {
-            BossEncounterEntry entry = table.Entries[i];
-            if (entry != null && entry.Floor == floor)
-                return true;
-        }
-
-        return false;
     }
 
     private bool IsKnownItemCode(string itemCode)

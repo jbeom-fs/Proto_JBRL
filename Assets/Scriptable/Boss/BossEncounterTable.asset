@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entries:
   - floor: 20
+    weight: 1
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
     areaId: boss_arena
@@ -27,7 +28,15 @@ MonoBehaviour:
       exit: 0
       exitHpRatio: 0
       maxHpOverride: 0
+  - floor: 20
+    weight: 1
+    boss: {fileID: 11400000, guid: c7f6ad12e05b4f53a8a0d31e768b9241, type: 2}
+    bossAreaDestinationId: boss_arena
+    areaId: boss_arena
+    isFinal: 0
+    phases: []
   - floor: 40
+    weight: 1
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
     areaId: boss_arena
@@ -42,6 +51,7 @@ MonoBehaviour:
       exitHpRatio: 0
       maxHpOverride: 1000
   - floor: 60
+    weight: 1
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
     areaId: boss_arena

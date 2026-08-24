@@ -13,25 +13,61 @@ public sealed class BossEncounterTable : ScriptableObject
 {
     [SerializeField] private List<BossEncounterEntry> entries = new();
 
+    private static readonly List<int> s_CandidateIndexBuffer = new(4);
+    private static float[] s_CandidateWeightBuffer = Array.Empty<float>();
+
     public IReadOnlyList<BossEncounterEntry> Entries => entries;
 
-    public bool TryGetBoss(int floor, out BossEncounterEntry entry)
+    public bool TryGetBoss(int floor, System.Random rng, out BossEncounterEntry entry)
     {
         entry = null;
+        if (rng == null)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            Debug.LogWarning("[BossEncounterTable] Boss selection RNG is null for floor " + floor + ".", this);
+#endif
+            return false;
+        }
+
         if (entries == null)
             return false;
 
+        s_CandidateIndexBuffer.Clear();
         for (int i = 0; i < entries.Count; i++)
         {
             BossEncounterEntry candidate = entries[i];
-            if (candidate == null || candidate.Floor != floor)
+            if (candidate == null || candidate.Floor != floor || !(candidate.Weight > 0f))
                 continue;
 
-            entry = candidate;
+            s_CandidateIndexBuffer.Add(i);
+        }
+
+        int candidateCount = s_CandidateIndexBuffer.Count;
+        if (candidateCount == 0)
+            return false;
+
+        if (candidateCount == 1)
+        {
+            entry = entries[s_CandidateIndexBuffer[0]];
             return true;
         }
 
-        return false;
+        if (s_CandidateWeightBuffer.Length < candidateCount)
+            Array.Resize(ref s_CandidateWeightBuffer, candidateCount);
+
+        for (int i = 0; i < candidateCount; i++)
+            s_CandidateWeightBuffer[i] = entries[s_CandidateIndexBuffer[i]].Weight;
+        if (candidateCount < s_CandidateWeightBuffer.Length)
+            Array.Clear(s_CandidateWeightBuffer, candidateCount, s_CandidateWeightBuffer.Length - candidateCount);
+
+        if (!DropQueryResolver.TryChooseWeightedIndex(s_CandidateWeightBuffer, rng, out int selectedIndex) ||
+            selectedIndex < 0 || selectedIndex >= candidateCount)
+        {
+            return false;
+        }
+
+        entry = entries[s_CandidateIndexBuffer[selectedIndex]];
+        return true;
     }
 
 #if UNITY_EDITOR
@@ -40,7 +76,6 @@ public sealed class BossEncounterTable : ScriptableObject
         if (entries == null)
             return;
 
-        var seenFloors = new HashSet<int>();
         for (int i = 0; i < entries.Count; i++)
         {
             BossEncounterEntry entry = entries[i];
@@ -50,10 +85,54 @@ public sealed class BossEncounterTable : ScriptableObject
                 continue;
             }
 
-            if (!seenFloors.Add(entry.Floor))
-                Debug.LogWarning("[BossEncounterTable] Duplicate floor: " + entry.Floor + ".", this);
-
             ValidatePhases(entry);
+        }
+
+        for (int i = 0; i < entries.Count; i++)
+        {
+            BossEncounterEntry first = entries[i];
+            if (first == null)
+                continue;
+
+            bool isFirstForFloor = true;
+            for (int j = 0; j < i; j++)
+            {
+                BossEncounterEntry previous = entries[j];
+                if (previous != null && previous.Floor == first.Floor)
+                {
+                    isFirstForFloor = false;
+                    break;
+                }
+            }
+
+            if (!isFirstForFloor)
+                continue;
+
+            bool hasPositiveWeight = first.Weight > 0f;
+            bool hasMismatchedFinalFlag = false;
+            for (int j = i + 1; j < entries.Count; j++)
+            {
+                BossEncounterEntry candidate = entries[j];
+                if (candidate == null || candidate.Floor != first.Floor)
+                    continue;
+
+                hasPositiveWeight |= candidate.Weight > 0f;
+                hasMismatchedFinalFlag |= candidate.IsFinal != first.IsFinal;
+            }
+
+            if (hasMismatchedFinalFlag)
+            {
+                Debug.LogWarning(
+                    "[BossEncounterTable] Floor " + first.Floor + " candidates have mismatched isFinal values.",
+                    this);
+            }
+
+            if (!hasPositiveWeight)
+            {
+                Debug.LogWarning(
+                    "[BossEncounterTable] Floor " + first.Floor + " has no positive-weight boss candidates.",
+                    this);
+            }
         }
     }
 
@@ -152,6 +231,7 @@ public sealed class BossPhase
 public sealed class BossEncounterEntry
 {
     [SerializeField] private int floor;
+    [SerializeField, Min(0f)] private float weight = 1f;
     [SerializeField] private EnemyData boss;
     [SerializeField, TeleportDestinationId] private string bossAreaDestinationId;
     [SerializeField, Tooltip("Matches WalkabilityArea.Id and TilemapMinimapSource.LocationId for fixed boss areas.")]
@@ -161,6 +241,7 @@ public sealed class BossEncounterEntry
     // TODO: Add shared map reference when boss area asset type is decided.
 
     public int Floor => floor;
+    public float Weight => weight;
     public EnemyData Boss => boss;
     public string BossAreaDestinationId => bossAreaDestinationId;
     public string AreaId => areaId;

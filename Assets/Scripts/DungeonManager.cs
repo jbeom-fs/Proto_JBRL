@@ -259,7 +259,14 @@ public class DungeonManager : MonoBehaviour
             return false;
         }
 
-        if (bossTable != null && bossTable.TryGetBoss(targetFloor, out BossEncounterEntry bossEntry))
+        int bossSelectSeed = DeterministicSeedUtility.CreateSeed(
+            seed,
+            _data != null ? (int)_data.currentStageRegion : 0,
+            targetFloor,
+            0,
+            DeterministicSeedUtility.BossSelectDomain);
+        var bossSelectRng = new System.Random(bossSelectSeed);
+        if (bossTable != null && bossTable.TryGetBoss(targetFloor, bossSelectRng, out BossEncounterEntry bossEntry))
             return TryEnterBossFloor(targetFloor, bossEntry, out message);
 
         StartCoroutine(FloorTransition(targetFloor));

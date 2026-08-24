@@ -90801,6 +90801,9 @@ MonoBehaviour:
   - data: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     prefab: {fileID: 3448492780483144301, guid: d8a2a9fc60d442fa9ea13b89890d648b, type: 3}
     preloadCount: 4
+  - data: {fileID: 11400000, guid: c7f6ad12e05b4f53a8a0d31e768b9241, type: 2}
+    prefab: {fileID: 3448492780483144301, guid: d8a2a9fc60d442fa9ea13b89890d648b, type: 3}
+    preloadCount: 0
 --- !u!4 &1736969808
 Transform:
   m_ObjectHideFlags: 0

@@ -64,6 +64,7 @@ public static class DeterministicSeedUtility
     public const string SoulSalvageDomain = "soul_salvage";
     public const string MonsterDenDomain = "monster_den_select";
     public const string StairSelectDomain = "stair_select";
+    public const string BossSelectDomain = "boss_select";
 
     public static int CreateStableRoomKey(DungeonGenerator.RoomRect rect)
     {
