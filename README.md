@@ -1,7 +1,13 @@
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-19
+> 작성 기준일: 2026-08-24
+> 기준 커밋: master HEAD `1bf1f875` + **워킹트리 미커밋 2건(R3a·R3b-1)** — **보스 조우 테이블 후보 풀화 + 보스 2종째 + 적 패턴 실행 결함 2건**(§11e-11 신설, §8-4-4 개정). ① **테이블 풀화 + 가중 추첨**(`1bf1f875`) — `BossEncounterTable.TryGetBoss(floor)`가 첫 일치를 반환하는 1:1 매핑이었고 `OnValidate`가 floor 중복을 경고로 막아 **후보가 여럿일 수 없는 구조**였다. `TryGetBoss(floor, rng, out entry)`로 바꾸고 같은 floor를 후보군으로 재해석했다. 🔑 **엔트리 자료구조를 바꾸지 않은 것이 핵심 판단이다** — flat 리스트 + `weight` 1필드로 끝냈고, 이유는 ⓐ기존 3엔트리 마이그레이션 0 ⓑ`EnemyDashboardWindow`가 `FindPropertyRelative`로 엔트리 필드를 직접 만져 중첩 구조면 Editor 창을 다시 짜야 함 ⓒ페이즈·`bossAreaDestinationId`가 이미 엔트리 소유라 **후보마다 다른 방·다른 페이즈가 추가 배관 0으로 성립**한다. 추첨 루프는 `DropQueryResolver.TryChooseWeightedIndex`(`System.Random` 수용) 재사용이고, 정적 버퍼는 후보 수가 줄면 **꼬리를 `Array.Clear`** 해야 한다(잔여 weight가 `totalWeight`에 합산되면 roll이 꼬리에 떨어져 보스 층이 조용히 일반 층이 된다). 🔴 시드는 `DeterministicSeedUtility.BossSelectDomain` 신설 + **`floor`가 아니라 `targetFloor`** 기반(그 시점의 `floor`는 아직 이전 층이라, `floor`를 쓰면 "18층에서 진입"과 "19층에서 진입"이 다른 보스를 뽑는다). 🔴 추첨은 `TryTransitionToFloor` **한 곳**에서만 — 뽑힌 엔트리가 `RestAreaController.Begin`에 먼저 넘어가므로 아래 경로에서 재추첨하면 휴식처와 보스방의 보스가 갈린다. 후보 1개면 rng를 소모하지 않는다(나중에 후보가 늘 때 기존 시드 결과가 보존된다). 🔴 `EnemyDashboardWindow`의 `HasBossFloor` 중복 차단을 함께 제거하지 않으면 **대시보드로 두 번째 보스를 저작할 수 없다**. ② **보스 2종째**(`1bf1f875`) — `Boss_Ash_Warden_01`(Contact / 800HP / Dash+Jump), 20층 50/50. 신규 에셋은 EnemyData + PatternSet 2개뿐이고 프리팹·패턴 데이터는 Magma 재활용. 🔴 **프로젝트 최초 `Contact` + 패턴셋 조합**이라 `EnemyBrain.CanAttack`의 평타 억제(`PatternSet != null && Ranged`)를 타지 않아 **평타와 패턴을 병행한다**. ③ **패턴 시작 실패 처리**(미커밋) — `EnemyPatternRuntime.Start`가 `void`라 **"착지점을 못 찾아 시작조차 못 함"과 "windup 0이라 정상적으로 즉시 끝남"이 구별되지 않았다.** 둘 다 `FinishCurrent()`로 쿨다운을 먹어 점프 실패가 3.5초를 태웠다 → `bool` 반환 + **실패 시 쿨다운 미부과 + 같은 프레임에 남은 후보로 재추첨**(swap-remove, 매 회 하나씩 줄어 자연 종료). 🔴 실패 시 `_currentRuntime` 등을 원복해야 `IsRunning`이 false로 남아 상태 머신이 계속 돈다. ④ **점프 비행 중 워크 가드 억제**(미커밋) — 🔴 공중 진동의 원인은 착지점 탐색이 아니라 **`EnemyController.LateUpdate`의 발판 가드**였다. 점프는 벽 위를 직선으로 지나며 `transform.position`을 직접 대입하는데 가드가 매 프레임 `_lastSafePosition`으로 되돌리고, 패턴 점프는 **현재 위치 기준 누적 전진**이라 되돌려지면 그 프레임 진행이 소멸한다(구형 `EnemyActionHandler` 점프는 시간 기반 `Lerp`라 진동해도 착지는 한다). `StartJump()`~착지 구간만 억제하며, 🔑 억제 중에는 되돌리기뿐 아니라 **`_lastSafePosition` 갱신도 건너뛴다**(비행 중 취소 시 이륙 지점으로 복귀시키기 위해). 이전: 아레나 공간 부품 번들 + 보스방 물리 분리(`c8a8daa2`)
+>
+> <details><summary>이전 기준(2026-08-19, `c8a8daa2`)</summary>
+>
 > 기준 커밋: master HEAD `c8a8daa2` — **아레나 공간 부품 번들(`ArenaSpace`) + 보스방·엘리트 아레나 물리 분리 + 포탈 런타임 생성 전면 철거**(§11e-10 신설, §11d-1·§11d-2·§11e-5·§11e-7 개정). ① **`ArenaSpace` 신설**(`a69fcff0`) — 아레나 부품(문·walk 타일맵·워커빌리티·적 스폰지점·클리어 포탈·포탈 스폰지점) 6종을 컨트롤러의 `[SerializeField]`에서 **방 쪽 컴포넌트**로 옮겼다. 🔑 **새 레지스트리를 만들지 않았다** — `LocationRoot` + `LocationRootRegistry`가 이미 id→루트 조회를 하고 있어 조회 경로가 `bossAreaDestinationId → locationRootId → LocationRoot → GetComponent<ArenaSpace>()`로 성립한다. 🔑 **`LocationRoot`에 필드를 직접 넣지 않고 형제 컴포넌트로 분리**한 이유는 인스펙터 청결이 아니라 **누락 감지**다 — 필드를 공용 `LocationRoot`에 넣으면 마을·던전의 빈 슬롯과 결선을 깜빡한 보스방의 빈 슬롯이 인스펙터에서 **구분되지 않는다.** 별도 컴포넌트는 존재 자체가 "이 장소는 아레나다"라는 선언이고, `[RequireComponent(typeof(LocationRoot))]`로 "id 없는 아레나"가 에디터 차원에서 불가능해진다. ② **베이스 직렬화 필드 철거**(`a5292d9f`) — `ArenaEncounterBase`의 아레나 필드 9개 + `BossEncounterController`의 포탈 필드 4개를 삭제하고 seam 프로퍼티가 전부 `ArenaSpace`를 읽는다. Elite 전용 복귀 포탈 배관 4메서드는 베이스에서 Elite 컨트롤러로 내렸다(베이스는 두 컨트롤러의 공통분만 남는다). 🔑 **2단계로 끊어 커밋했다** — 1단계는 프로퍼티 seam + Boss만 override(Elite 코드·결선 무변경), 2단계에서 Elite 이설 + 필드 삭제. 두 공간이 아직 물리적으로 겹쳐 있는 상태에서 양쪽을 동시에 뜯으면 회귀 원인 분리가 안 된다. ③ **포탈 런타임 생성 전면 철거**(`a5292d9f`) — `Instantiate` 폴백 3곳(엘리트 복귀·보스 출구·엘리트 진입)을 씬 사전 배치로 교체. 프로젝트에 남은 포탈 `Instantiate`는 **0건**이다. ⚠️ 비활성 씬 인스턴스는 `Awake`가 **첫 `SetActive(true)`까지 미뤄진다** — `Portal.Awake`가 하는 일이 `collider.isTrigger` 설정과 `EnsureVisual`뿐이고 `enabled`·잠금을 건드리지 않아 `Bind()` 이후 활성화 순서와 충돌하지 않는다. ④ **공간 물리 분리**(`c8a8daa2`) — `EliteArenaRoot`와 `BossAreaRoot`가 좌표까지 `(390.7, -39)`로 동일하고 보스방에는 Grid조차 없어 **엘리트 방 기하를 빌려 쓰고 있었다.** Grid·타일맵 3종·`ArenaDoor`를 복제해 보스방에 주고 `(390.7, -99)`로 내렸다(방 높이 40셀, 간격 20셀). 🔑 **`TeleportLocationData.localSpawnPosition`이 루트 상대 좌표**라 방을 옮겨도 스폰 지점이 따라온다 — 이게 성립하지 않았으면 destination DB를 같이 고쳐야 했다. 🔴 엘리트 복귀 포탈의 스폰 기준점이 **`BossAreaRoot`의 자식**이었다 → 보스방을 내리면 엘리트 포탈이 따라간다. 이동 **전에** Elite 전용 스폰지점을 신설해 끊었다. 부수 효과로 두 `WalkabilityArea`가 같은 좌표를 주장하던 중첩이 해소됐다(`WalkabilityQuery`는 id가 아니라 좌표로 Area를 고른다). 이전: 보스 페이즈 시스템 · 포탈 공통 베이스 · 월드 판정 결함 2건(`0becea4e`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-18, `0becea4e`)</summary>
 >
@@ -1935,6 +1941,7 @@ EnemyPatternRunner.Tick(dt):
        적격 후보 전부 수집 (cooldown == 0 && IsInRange(distance))
        → Weight 비례 누적 구간 추첨으로 1개 선택
        → 캐시된 런타임 재사용 → context.Initialize → runtime.Start(context)
+       → Start 가 false(시작 실패)면 쿨다운 없이 그 후보를 빼고 재추첨 (2026-08-24)
 ```
 
 🔴 **`weight` 는 2026-08-14 이전까지 죽어 있었습니다.** 소비처가 `RebuildPatterns` 의 `Weight <= 0` 필터 하나뿐이었고 선택은 **리스트 순서상 첫 적격 패턴**이었습니다(실질 `bool enabled`). 그런데 `OnValidate` 는 *"weight must be greater than 0 to be selectable"* 이라 경고해 저작자가 가중치가 작동한다고 믿게 만들었습니다. Magma 실측 결과는 Jump → Dash → Projectile **고정 순환**이었습니다. 현재는 `EnemyDropRoller` 의 구간 추첨을 미러한 가중 추첨이며, RNG 는 `UnityEngine.Random`(적 AI 는 이미 비결정적이므로 `DeterministicSeedUtility` 대상 아님).
@@ -1943,7 +1950,64 @@ EnemyPatternRunner.Tick(dt):
 
 📌 **`SetPatternSet(set)`** = 보스 페이즈용 교체 진입점. 진행 중 패턴을 취소하고 새 세트로 재구축하며 쿨다운은 0부터 시작합니다. `ResetRuntimeState()` 가 override 를 null 로 되돌리므로 풀 재사용 시 이전 보스의 페이즈 세트가 남지 않습니다.
 
-⚠️ **`EnemyBrain.CanAttack` 의 특례도 같은 조건으로 치환됐습니다** — `IsElite && Ranged → false` 가 `PatternSet != null && Ranged → false` 로 바뀌었습니다. 삭제가 아니라 치환인 이유는 Magma 가 `behaviorType: Ranged` + 패턴셋 보유라 **이 분기가 실제로 작동 중**이었기 때문입니다(지웠으면 없던 기본 원거리 공격이 생깁니다). 규칙은 "패턴을 가진 적은 공격을 패턴이 담당한다"로 일반화됐습니다.
+⚠️ **`EnemyBrain.CanAttack` 의 특례도 같은 조건으로 치환됐습니다** — `IsElite && Ranged → false` 가 `PatternSet != null && Ranged → false` 로 바뀌었습니다. 삭제가 아니라 치환인 이유는 Magma 가 `behaviorType: Ranged` + 패턴셋 보유라 **이 분기가 실제로 작동 중**이었기 때문입니다(지웠으면 없던 기본 원거리 공격이 생깁니다). 규칙은 "패턴을 가진 적은 공격을 패턴이 담당한다"로 일반화됐습니다. ⚠️ **다만 조건이 `Ranged` 로 한정돼 있어 `Contact` + 패턴셋 적에는 적용되지 않습니다** — 2026-08-24 `Boss_Ash_Warden_01`(Contact + Dash/Jump)이 프로젝트 최초의 그 조합이며, **평타와 패턴을 병행합니다.** 근접 보스로서는 자연스럽지만 설계로 정한 것이 아니라 조건의 부수 결과입니다.
+
+
+**패턴 "시작 실패" 처리 (2026-08-24)**
+
+`Start` 는 `bool` 을 반환합니다. `false` = "이번에 시작할 수 없다"이며, 반환 전에 런타임이 **자기 정리를 마친 상태**여야 합니다(세 런타임 모두 실패 경로에서 `Finish()` → `Cleanup()`).
+
+🔴 **이전에는 `Start` 가 `void` 라 "시작조차 못 함"과 "windup 0이라 정상적으로 즉시 끝남"이 구별되지 않았습니다.** 둘 다 `IsFinished` 만 보고 `FinishCurrent()` 로 쿨다운을 걸었기 때문에, 착지점을 못 찾은 점프가 **아무 일도 하지 않고 3.5초를 태우고** 그 프레임에는 어떤 패턴도 돌지 않았습니다. 밖에서 보면 "보스가 멍하니 서 있다"로 보입니다. 점프만의 문제가 아니라 Dash(목표 해결 실패)·Projectile(`CanRun()` 실패)도 같은 경로를 탑니다.
+
+```
+TryStartNextPattern:
+  적격 후보 수집 (cooldown == 0 && IsInRange) → 비면 종료
+  context.Initialize(...)                     ← 루프 밖 1회
+  while 후보 남음:
+      남은 후보로 totalWeight 재계산 → 누적 구간 추첨 → 선택
+      선택 후보를 swap-remove                  ← 매 회 정확히 1개 감소 = 자연 종료
+      runtime == null      → 그 패턴 쿨다운 부과 후 continue   (영구 조건, 매 프레임 재시도 차단)
+      Start(context) true  → IsFinished 면 FinishCurrent() 후 return  (정상 쿨다운)
+      Start(context) false → current 3개 원복, 쿨다운 미부과, continue
+  전부 실패 → 아무 쿨다운도 걸지 않고 반환
+```
+
+🔴 **실패 시 `_currentPattern` / `_currentPatternIndex` / `_currentRuntime` 을 반드시 원복해야 합니다.** `IsRunning` 이 true 로 남으면 `EnemyBrain.Update` 의 조기 return 에 걸려 **상태 머신이 통째로 멈춥니다** — 고치기 전보다 나쁜 증상이 됩니다.
+
+⚠️ **windup 0 경로는 실패가 아닙니다.** `StartJump()` / `FireOrStartBurst()` 가 `Start` 안에서 다음 단계로 넘어가는데 여기서 `false` 를 주면 정상 패턴이 쿨다운 없이 무한 재시도됩니다.
+
+전부 실패해도 문제가 없는 이유는 `IsRunning` 이 false 라 상태 머신이 정상 작동해 적이 추격·평타를 계속하기 때문입니다. 🟡 다만 실패에 쿨다운을 걸지 않으므로 **조건이 지속되면 매 프레임 같은 실패를 재계산**합니다(점프 실패 1회 = 나선 최대 49셀 × walkable+footprint 판정). 보스 1마리 기준으로는 무해하며, 착지점 폴백이 들어오면 실패 자체가 급감합니다.
+
+**점프 비행 중 워크 가드 억제 (2026-08-24)**
+
+`EnemyController.LateUpdate` 는 매 프레임 현재 위치가 `IsFootprintWalkable` 인지 검사해, 아니면 `_lastSafePosition` 으로 되돌립니다(몬스터·플레이어 물리 밀림으로 벽 안에 들어가는 것을 막는 최종 가드). 🔴 **이 가드는 점프 중인지 모릅니다.**
+
+```
+Update      → TickJump:  transform.position = 앞으로 한 발짝 (벽 위 지점)
+LateUpdate  → 워크 가드:  발판 아님 → transform.position = _lastSafePosition
+다음 프레임 → 같은 자리에서 같은 계산 → 같은 결과
+```
+
+증상은 **공중 진동 + 엉뚱한 착지**이며, 최악의 경우 `remaining` 이 줄지 않아 점프가 끝나지 않고 `IsRunning` 이 true 로 고정돼 **상태 머신까지 멈춥니다.**
+
+🔑 **왜 패턴 점프만 이러는가 — 이동 계산 방식의 차이입니다.**
+
+| | 이동 계산 | 가드에 되돌려지면 |
+|---|---|---|
+| 평상시 이동 | `MoveWithCollision` — 한 걸음마다 `CanMoveTo` | 애초에 벽으로 가지 않음 |
+| 대시 | 목표가 발판 검증을 통과한 지점 | 경로가 대체로 열려 있음 |
+| **패턴 점프** | **현재 위치 기준 누적 전진**(`step = JumpSpeed × dt`) | **그 프레임 진행이 통째로 소멸** |
+| 구형 점프(`EnemyActionHandler.TickJump`) | **시간 기반 `Lerp(start, target, t)`** | 진동은 하지만 시간이 되면 착지 |
+
+해법은 `EnemyController._walkGuardSuppressed` + `SetWalkGuardSuppressed(bool)` 이며, 점프 런타임이 **`StartJump()` 에서 켜고 `CompleteJumpMovement()`(착지) 와 `Cleanup()`(Finish/Cancel 공통) 에서 끕니다.** 억제는 `Start` 가 아니라 `StartJump()` 부터입니다 — 윈드업 동안은 유효한 자리에 서 있으므로 가드를 살려 둡니다.
+
+🔑 **억제 중에는 되돌리기뿐 아니라 `_lastSafePosition` 갱신도 건너뜁니다**(`LateUpdate` 통째 early-return). 갱신을 살려 두면 **벽 위 좌표가 "안전한 위치"로 기록됩니다.** 통째 return 이면 `_lastSafePosition` 이 이륙 지점에 머물러, 비행 중 취소·사망 시 이륙 지점으로 복귀합니다.
+
+착지점은 `Start` 에서 이미 발판 검증을 통과했고 가드와 **같은 반지름**(`CollisionFootprintRadius` = `GetWorldColliderRadius()`)을 쓰므로, 착지 후 가드를 되살리면 그대로 `_lastSafePosition` 이 됩니다. 안전망으로 `Awake` / `Initialize`(풀 재사용) / `Die` 에서도 플래그를 false 로 되돌립니다 — **억제가 새면 그 적은 남은 생애 동안 벽을 통과합니다.**
+
+⚠️ **비행 중 스턴·넉백이면 억제가 유지됩니다.** `EnemyBrain.Update` 가 `IsKnockbackLocked` / `IsStunned` 에서 `_patternRunner.Tick()` **앞에서** return 하므로 점프 런타임이 취소되지 않고 멈추고, `Cleanup()` 을 타지 않아 억제가 남습니다. 스턴이 풀리면 비행 재개 → 착지에서 해제되어 자가 회복되지만, 그 사이 가드가 꺼진 창이 존재합니다.
+
+⚠️ **착지점 탐색은 여전히 폴백 0단입니다.** 아레나 경로는 `TryFindNearestWalkable` 1회 실패 시 곧바로 `false` 를 반환합니다(대시는 3단). 또한 그 링 순회가 거리순이 아니라 `for dy → for dx` **배열 순서**라 반경 1칸 링의 첫 검사 칸이 `(-1,-1)` 이고, 결과적으로 **착지가 플레이어 아래쪽/좌하단으로 쏠립니다.** 둘 다 미해결이며 HANDOFF §7-B(R3b-2·R3b-3)에 있습니다.
 
 `EnemyPatternContext` 가 Brain/Enemy/Data/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 를 모두 노출해 런타임이 필요한 서비스에 접근할 수 있습니다. 갱신은 **패턴 시작 직전 `Initialize` 1회**이며 매 틱 갱신은 제거됐습니다(위치 전환 시 풀 해제 → `OnDisable` → `ResetRuntimeState` 로 진행 중 패턴이 취소되므로 stale 이 성립하지 않음).
 
@@ -1951,7 +2015,7 @@ EnemyPatternRunner.Tick(dt):
 |---|---|---|
 | `EnemyProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
 | `EnemyDashPatternData` | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery |
-| `EnemyJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정 → 비행 보간 → 착지 임팩트(impactRadius OverlapCircle) → recovery |
+| `EnemyJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정(**실패 시 Start 가 false — 폴백 0단**) → 비행 보간(**이 구간만 `EnemyController` 워크 가드 억제**) → 착지 임팩트(impactRadius OverlapCircle) → recovery |
 
 공통 `EnemyPatternData` 필드: `displayName` / `cooldown` / `minRange` / `maxRange` / `weight` / `recoveryDuration` + `OnValidate` 가 음수·역전 범위·weight 0 을 자동 경고. **쿨다운은 패턴이 `Finish` 한 시점부터** 흐릅니다(시전 시작 기준이 아님).
 
@@ -3383,6 +3447,52 @@ BossAreaRoot    (390.7,  -99)   월드 y ∈ [-123,  -83]   복제본 + 이동
 
 ---
 
+### 11e-11. 보스 조우 테이블 후보 풀화 + 가중 추첨 (2026-08-24)
+
+`BossEncounterTable.TryGetBoss(floor)` 가 `floor == entry.Floor` **첫 일치를 반환하는 1:1 매핑**이었고, `OnValidate` 가 floor 중복을 경고로 막고 있어 **애초에 후보가 여럿일 수 없는 구조**였습니다. 20/40/60층 엔트리 3개가 전부 같은 보스·같은 방을 가리키고 있었습니다.
+
+```
+entries: [ floor20/보스A/w1, floor20/보스B/w1, floor40/... ]
+                └────── 같은 floor = 후보군 ──────┘
+DungeonManager.TryTransitionToFloor
+  → rng = new System.Random(CreateSeed(seed, region, targetFloor, 0, BossSelectDomain))
+  → bossTable.TryGetBoss(targetFloor, rng, out entry)
+      후보 0개 → false          (그 층은 보스 층이 아니게 된다)
+      후보 1개 → 즉시 반환       (rng 미소모)
+      후보 N개 → DropQueryResolver.TryChooseWeightedIndex
+```
+
+🔑 **엔트리 자료구조를 바꾸지 않은 것이 이 작업의 핵심 판단입니다.** flat 리스트를 유지하고 `weight` 필드 하나만 추가했으며, floor 중복의 **의미만 "에러"에서 "후보군"으로 뒤집었습니다.**
+
+- 기존 3엔트리가 **마이그레이션 없이 유효**합니다(완료 조건이 "동작 변화 0"이었습니다)
+- `EnemyDashboardWindow` 가 `FindPropertyRelative("floor")` 식으로 엔트리 필드를 직접 만집니다. `BossFloorGroup{ floor, candidates[] }` 로 중첩했다면 **Editor 창을 통째로 다시 짜야 했습니다**
+- 페이즈와 `bossAreaDestinationId` 가 **이미 엔트리 소유**라, 후보마다 다른 페이즈·**다른 방**을 가리키는 것이 추가 배관 0으로 성립합니다. 보스방 기하를 나중에 갈라도 데이터만 바꾸면 됩니다
+
+**추첨 부품은 전부 기존 것입니다.** 구간 추첨은 `DropQueryResolver.TryChooseWeightedIndex(float[], System.Random, out int)` 재사용이고(이미 `System.Random` 을 받는 형태), 시드는 `DeterministicSeedUtility` 에 `BossSelectDomain = "boss_select"` 만 추가했습니다. `EnemyPatternRunner` 의 패턴 추첨은 `UnityEngine.Random` 을 쓰지만 **보스 선택은 런 시드에 묶여야 하므로 그쪽을 따라하면 안 됩니다.**
+
+🔴 **`floor` 가 아니라 `targetFloor` 를 시드에 넣습니다.** 이 시점의 `DungeonManager.floor` 는 아직 이전 층입니다. `floor` 를 쓰면 "18층에서 20층 진입"과 "19층에서 20층 진입"이 서로 다른 보스를 뽑습니다. `seed` 는 런 단위로 고정(층 이동에 안 바뀜)이라 같은 시드·같은 층이면 항상 같은 보스가 나옵니다.
+
+🔴 **추첨은 `TryTransitionToFloor` 한 곳에서만 일어나야 합니다.** `TryEnterBossFloor` 가 뽑힌 엔트리를 **`RestAreaController.Begin(entry, player)` 에 먼저 넘기고** 나중에 보스 컨트롤러가 같은 엔트리를 받습니다. 아래 경로에서 재추첨하면 휴식처와 보스방의 보스가 갈립니다(재호출 시에도 `floor = targetFloor` 가 이미 설정돼 `"Already on floor"` 조기 반환이 2차 추첨을 막습니다).
+
+⚠️ **정적 weight 버퍼는 후보 수가 줄면 꼬리를 `Array.Clear` 해야 합니다.** `TryChooseWeightedIndex` 가 `weights.Length` 전체를 순회하므로, 안 지우면 이전 호출의 잔여 weight 가 `totalWeight` 에 합산되고 roll 이 꼬리에 떨어져 `selectedIndex >= candidateCount` 가드에 걸립니다 → **보스 층이 조용히 일반 층이 됩니다.**
+
+⚠️ **후보가 1개일 때 rng 를 소모하지 않습니다.** 소모하면 나중에 후보를 늘렸을 때 기존 시드의 결과가 통째로 바뀝니다.
+
+**`OnValidate` 규칙 전환** — `"Duplicate floor"` 경고를 제거하고, 같은 floor 후보들의 **`isFinal` 불일치**(60층 후보 중 하나만 `isFinal: 0` 이면 최종 보스를 잡고도 엔딩 대신 다음 층으로 넘어갑니다)와 **전원 `Weight <= 0`** 을 경고합니다. `ValidatePhases` 는 그대로입니다.
+
+⚠️ `Weight <= 0` 후보는 추첨에서 제외되므로, **한 층의 유일한 엔트리 weight 가 0이면 그 층은 보스 층 자체가 사라지고 일반 층으로 생성됩니다.** 런타임 경고는 없습니다(`OnValidate` 는 에셋을 건드릴 때만 돕니다).
+
+🔴 **Editor 창 동반 수정이 필수였습니다** — `EnemyDashboardWindow` 의 `HasBossFloor` 기반 `"BossEncounterTable floor 중복"` 검증이 **저작 단계에서** 중복 floor 를 막고 있어, 이걸 풀지 않으면 대시보드로 두 번째 보스를 만들 수 없습니다. `weight` 입력·기본값 복사·직렬화도 함께 배관했습니다(2026-08-14 S1의 Editor 어셈블리 누락과 같은 계열입니다).
+
+**보스 2종째 데이터** — `Boss_Ash_Warden_01`(`Assets/Scriptable/Enemy/Boss/`). Contact / 800HP / attack 14 / defense 2 / moveSpeed 3.5, 패턴은 Dash + Jump 2종, 페이즈 없음(`phases: []` → `data.PatternSet` 을 그대로 사용). 프리팹과 패턴 데이터는 Magma 재활용이라 신규 에셋은 EnemyData + PatternSet 2개뿐입니다.
+
+- 🔴 **`EnemyPoolManager` 등록이 필수입니다.** `Request(data)` → `Create(data)` 가 풀 엔트리의 프리팹을 찾습니다. 빠뜨리면 `TrySpawnBoss` 가 false 를 반환하고 `Begin` 이 조우를 통째로 취소해 **"보스 층인데 보스가 없다"** 가 됩니다
+- 🔴 **`isElite: 1` 유지** — `RoomSpawner` 의 `IsElite` 필터가 일반 방 후보에서 걸러내는 유일한 장치입니다. 0이면 씬 `RoomSpawner.enemyTable` 경로로 **일반 잡몹으로 던전에 스폰됩니다**
+- 드랍은 `GetDropGroup` 이 null 을 반환해도 `EnemyDropRoller.Roll` 이 `bossRankDrops` 만으로 굴리므로 개별 그룹 저작 없이 보스 랭크 드랍이 적용됩니다
+- `enemyName` 을 확실히 다르게 지은 이유는 `ArenaHealthBarRowUI` 가 `enemy.DisplayName` 을 보스 HP바에 띄우는 것이 **추첨 결과를 화면에서 확인하는 유일한 수단**이기 때문입니다
+
+---
+
 ## 12. 성능 전략
 
 | 전략 | 적용 위치 | 효과 |
@@ -3790,7 +3900,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 위치 전환 | `LocationTransitionManager` + `TeleportService`/`TeleportDestinationDatabase` + `LocationRoot` 레지스트리 + id 드롭다운 drawer — 진입/이탈 시 런타임 정리·미니맵 소스 전환 |
 | 공간 추상화 | `WorldEnvironmentQuery` 파사드 + `WalkabilityQuery`(Area 우선/Dungeon 폴백) + `WalkabilityArea` — **전 전투 판정 일원화**(Dungeon/Arena 무관 단일 API) |
 | Elite Arena | `EliteArenaEncounterController` + 진입/복귀 포탈 + 미니맵 즉시 복원 + Elite Dash/Jump WalkabilityQuery 통합. 상세 §11d |
-| Boss Area | `BossEncounterTable`(floor→boss/isFinal) + `ArenaEncounterBase` 공통 추출 + `BossEncounterController` + `DungeonManager` 보스층 분기 — **흐름 완성·통합 검증 통과, 남은 건 콘텐츠**. 상세 §11e |
+| Boss Area | `BossEncounterTable`(**floor→후보 풀 + 런 시드 가중 추첨**, 2026-08-24) + `ArenaSpace` 공간 부품 번들 + `ArenaEncounterBase` 공통 추출 + `BossEncounterController`(페이즈 damage floor) + `DungeonManager` 보스층 분기 — **코드 축 완성. 남은 건 방 기하 저작과 보스 컨셉 저작뿐**. 상세 §11e·§11e-11 |
 | 보스 페이즈 | `BossPhase[]`(patternSet/exit/exitHpRatio/maxHpOverride) + damage floor 단일 기계(임계 정지 / HP 소진 후 리필) + `LateUpdate` 폴링 + 풀 오염 리셋. 초과 피해 소멸이 다중 임계 돌파를 원천 차단. 상세 §11e-8 (2026-08-18) |
 | 포탈 공통화 | `Portal` 추상 베이스(비주얼·콜라이더·잠금·트리거·포그) + 파생 4종은 `OnPlayerEntered` 하나. 522→169줄. 클래스명·필드명 유지 상속이라 결선 무손실. 상세 §11e-9 (2026-08-18) |
 | 아레나 문·전환 연출 | `ArenaDoor`(doorTilemap 캐시·개폐, 보스·엘리트 공용 — 클리어 시 개방→문 뒤 출구 포탈, 즉시 이탈 원천 차단) + `TeleportFadeOverlay`(전 텔레포트 공통 암전 페이드). 상세 §11e-7 |
@@ -3820,7 +3930,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 영혼각인 콘텐츠 | 중간 | **Slice A~E2 + CustomEditor + Validator 완료(§7-8)** — 토큰 로드아웃·보유풀·런리셋·EngravingData/등급/폼-락·드랍 통합(ItemType.Engraving 브릿지+수량1 검증)·모달 교체 UI·Stair방 각인대·ItemDatabase/DropDB 정합성 스캔. 남은 **E3 정식 콘텐츠 에셋**(현 Sword 3티어는 테스트에셋)과 고유 메커니즘 태초 각인별 execution 로직 |
 | 정비실 (Rest Area) | — | **완료(S1~S3c, 2026-07-09)** — S1 흐름 + S2 Currency + S3 런 코어·일시강화 상점·툴팁(§11b-11, §11e-6). 남은 데이터 작업: 아이템 description 수기 작성(빈 것은 "내용없음" 표시로 발견 가능) |
 | 아이템 장착·고유 효과 확장 | 중간 | Consumable `HealHp` 사용과 Relic 평면 스탯 패시브는 구현 완료. 남은 범위는 Equipment 장착/해제, Currency 소비처(→정비실 S2·S3로 흡수), 행동형 Relic 특수 효과(처치 시 회복·대시 불길 등) |
-| Boss Area 정식화 | 중간 | 1차 구현 + **통합 흐름 검증 전부 통과(2026-06-09, §11e)** — 코드·흐름 완성. 남은 건 **컨텐츠뿐**: 보스별 전용맵(현재 elite tilemap 공유) / 정식 보스 EnemyData·수치(현재 placeholder Elite_Magma_01) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
+| Boss Area 정식화 | 중간 | 코드 축 완성 — 공간이 엔트리 문자열로 갈리고(§11e-10), 보스가 후보 풀에서 추첨된다(§11e-11). 남은 건 **저작뿐**: 보스별 전용 기하(현재 보스방 1개, 엘리트 아레나에서 물리 분리는 완료) / 정식 보스 EnemyData·패턴(현재 `Elite_Magma_01` + 추첨 검증용 `Boss_Ash_Warden_01`) / 60층 엔딩 연출(현재 Debug.Log stub) / 처치 보상 연계 / 마을 메타루프 |
 | 보스 / 에픽 적 패턴 | 중간 | EnemyBrain 상속 + Phase2/Berserk 상태 enum 자리 마련됨. Boss Area(§11e) 는 인프라 완성 — 보스별 고유 패턴 SO 작성만 남음 |
 | Elite Arena 보상 컨텐츠 | 중간 | Arena 내 Elite 처치 후 보상(아이템 드랍·특수 패시브 등) 미구현 |
 | 적 스킬 발사기 통합 | 낮음 | ProjectileFireService를 적 EnemyBrain 액션 핸들러에서도 직접 호출하도록 통합 |
