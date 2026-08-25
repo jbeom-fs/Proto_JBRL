@@ -235,6 +235,7 @@ public static class WalkabilityQuery
             Vector3Int center = walk.WorldToCell(desired);
             for (int r = 0; r <= searchRadius; r++)
             {
+                NearestPick pick = default;
                 for (int dy = -r; dy <= r; dy++)
                 {
                     for (int dx = -r; dx <= r; dx++)
@@ -249,9 +250,13 @@ public static class WalkabilityQuery
                         if ((world - origin).sqrMagnitude > maxDistanceSqr) continue;
                         if (!IsFootprintWalkable(world, footprintRadius)) continue;
 
-                        position = world;
-                        return true;
+                        pick.Consider(world, desired);
                     }
+                }
+                if (pick.Has)
+                {
+                    position = pick.Best;
+                    return true;
                 }
             }
             return false;
@@ -265,6 +270,7 @@ public static class WalkabilityQuery
         Vector2Int centerGrid = dungeon.WorldToGrid(desired);
         for (int r = 0; r <= searchRadius; r++)
         {
+            NearestPick pick = default;
             for (int dy = -r; dy <= r; dy++)
             {
                 for (int dx = -r; dx <= r; dx++)
@@ -281,9 +287,13 @@ public static class WalkabilityQuery
                     if ((world - origin).sqrMagnitude > maxDistanceSqr) continue;
                     if (!IsFootprintWalkable(world, footprintRadius)) continue;
 
-                    position = world;
-                    return true;
+                    pick.Consider(world, desired);
                 }
+            }
+            if (pick.Has)
+            {
+                position = pick.Best;
+                return true;
             }
         }
 
@@ -303,37 +313,12 @@ public static class WalkabilityQuery
             out result);
     }
 
-    private static bool TrySpiralSearchInArea(WalkabilityArea area, Vector3 desired, int maxRadius, out Vector3 result)
-    {
-        Tilemap walk = area.WalkTilemap;
-        Vector3Int center = walk.WorldToCell(desired);
-        for (int r = 0; r <= maxRadius; r++)
-        {
-            for (int dy = -r; dy <= r; dy++)
-            {
-                for (int dx = -r; dx <= r; dx++)
-                {
-                    if (r > 0 && Mathf.Abs(dx) != r && Mathf.Abs(dy) != r)
-                        continue;
-
-                    Vector3Int cell = new Vector3Int(center.x + dx, center.y + dy, center.z);
-                    if (!area.IsWalkableCell(cell)) continue;
-
-                    result = walk.GetCellCenterWorld(cell);
-                    return true;
-                }
-            }
-        }
-
-        result = default;
-        return false;
-    }
-
     private static bool TrySpiralSearchInDungeon(DungeonManager dungeon, DungeonData data, Vector3 desired, int maxRadius, out Vector3 result)
     {
         Vector2Int center = dungeon.WorldToGrid(desired);
         for (int r = 0; r <= maxRadius; r++)
         {
+            NearestPick pick = default;
             for (int dy = -r; dy <= r; dy++)
             {
                 for (int dx = -r; dx <= r; dx++)
@@ -346,9 +331,14 @@ public static class WalkabilityQuery
                     if (!data.InBounds(col, row)) continue;
                     if (!data.IsWalkable(col, row)) continue;
 
-                    result = dungeon.GridToWorld(new Vector2Int(col, row));
-                    return true;
+                    Vector3 world = dungeon.GridToWorld(new Vector2Int(col, row));
+                    pick.Consider(world, desired);
                 }
+            }
+            if (pick.Has)
+            {
+                result = pick.Best;
+                return true;
             }
         }
 

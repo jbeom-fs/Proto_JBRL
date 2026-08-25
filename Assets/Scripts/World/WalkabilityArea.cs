@@ -218,6 +218,7 @@ public sealed class WalkabilityArea : MonoBehaviour
         const int MaxRadius = 8;
         for (int r = 0; r <= MaxRadius; r++)
         {
+            NearestPick pick = default;
             for (int dy = -r; dy <= r; dy++)
             {
                 for (int dx = -r; dx <= r; dx++)
@@ -229,9 +230,14 @@ public sealed class WalkabilityArea : MonoBehaviour
                     if (!IsWalkableCellSampledAsWorld(cell))
                         continue;
 
-                    result = walkTilemap.GetCellCenterWorld(cell);
-                    return true;
+                    Vector3 world = walkTilemap.GetCellCenterWorld(cell);
+                    pick.Consider(world, preferred);
                 }
+            }
+            if (pick.Has)
+            {
+                result = pick.Best;
+                return true;
             }
         }
         return false;
