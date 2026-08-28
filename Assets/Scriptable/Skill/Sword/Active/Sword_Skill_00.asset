@@ -56,6 +56,7 @@ MonoBehaviour:
   slowDuration: 0
   ailments: []
   zoneSprite: {fileID: 0}
+  zoneAnimation: {fileID: 0}
   zoneRadius: 1
   zoneTickInterval: 0.5
   zoneDuration: 3
@@ -82,6 +83,10 @@ MonoBehaviour:
   markerDetonationDamage: 0
   resetCooldownOnMarkerDetonate: 0
   markerDuration: 5
+  buffs: []
+  buffDuration: 5
   blinkBehindOffset: 0.75
+  recoilDistance: 0
+  recoilDuration: 0.12
   owningForm: 1
   grade: 0

@@ -21,6 +21,9 @@ public sealed class ItemDashboardWindow : EditorWindow
     private const float TypeSummaryWidth = 300f;
     private const float DropSourceWidth = 420f;
     private const float DeleteWidth = 52f;
+    private const float TotalColumnWidth =
+        FoldoutWidth + WarningWidth + IconColumnWidth + CodeWidth + NameWidth + TypeWidth +
+        StackWidth + ExpireWidth + DescWidth + TypeSummaryWidth + DropSourceWidth + DeleteWidth;
     private const float WarningPanelHeight = 180f;
     private const float DropEnemyWidth = 140f;
     private const float DropKindWidth = 42f;
@@ -39,6 +42,24 @@ public sealed class ItemDashboardWindow : EditorWindow
     private static readonly FieldInfo s_ItemDatabaseItemsField = typeof(ItemDatabase).GetField(
         "items",
         BindingFlags.Instance | BindingFlags.NonPublic);
+
+    private static float TotalHeaderWidth
+    {
+        get
+        {
+            RectOffset labelMargin = EditorStyles.boldLabel.margin;
+            float elementSpacing = Mathf.Max(labelMargin.left, labelMargin.right);
+            return TotalColumnWidth +
+                   (elementSpacing * 11f) +
+                   EditorStyles.helpBox.padding.horizontal +
+                   EditorStyles.helpBox.margin.horizontal;
+        }
+    }
+
+    private static float StickyHeaderHeight =>
+        EditorGUIUtility.singleLineHeight +
+        EditorStyles.helpBox.padding.vertical +
+        EditorStyles.helpBox.margin.vertical;
 
     private readonly List<ItemRow> _rows = new List<ItemRow>(64);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
@@ -421,15 +442,20 @@ public sealed class ItemDashboardWindow : EditorWindow
 
     private void DrawRowsPanel()
     {
-        _rowScrollPosition = EditorGUILayout.BeginScrollView(_rowScrollPosition, true, true, GUILayout.ExpandHeight(true));
         if (_rows.Count == 0)
         {
+            _rowScrollPosition = EditorGUILayout.BeginScrollView(
+                _rowScrollPosition,
+                true,
+                true,
+                GUILayout.ExpandHeight(true));
             EditorGUILayout.HelpBox("No ItemDatabase entries found.", MessageType.Info);
             EditorGUILayout.EndScrollView();
             return;
         }
 
-        DrawHeader();
+        DrawStickyHeader();
+        _rowScrollPosition = EditorGUILayout.BeginScrollView(_rowScrollPosition, true, true, GUILayout.ExpandHeight(true));
 
         bool drewAny = false;
         for (int i = 0; i < _rows.Count; i++)
@@ -446,6 +472,34 @@ public sealed class ItemDashboardWindow : EditorWindow
             EditorGUILayout.HelpBox("No items match current filters.", MessageType.Info);
 
         EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawStickyHeader()
+    {
+        float height = StickyHeaderHeight;
+        Rect area = GUILayoutUtility.GetRect(0f, height, GUILayout.ExpandWidth(true));
+        area.width = Mathf.Max(0f, area.width - GUI.skin.verticalScrollbar.fixedWidth);
+        float areaWidth = Mathf.Max(
+            TotalHeaderWidth,
+            EditorGUIUtility.currentViewWidth + _rowScrollPosition.x);
+
+        GUI.BeginClip(area);
+        try
+        {
+            GUILayout.BeginArea(new Rect(-_rowScrollPosition.x, 0f, areaWidth, height));
+            try
+            {
+                DrawHeader();
+            }
+            finally
+            {
+                GUILayout.EndArea();
+            }
+        }
+        finally
+        {
+            GUI.EndClip();
+        }
     }
 
     private void DrawHeader()

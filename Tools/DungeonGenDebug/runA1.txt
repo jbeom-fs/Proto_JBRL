@@ -1,0 +1,18 @@
+=== Rooms (16) ===
+  R 0: X= 3 Y= 5 W= 5 H= 6 Right= 8 Bottom=11 Cx= 5 Cy= 8  size=30
+  R 1: X= 6 Y=16 W= 8 H= 8 Right=14 Bottom=24 Cx=10 Cy=20  size=64
+  R 2: X=25 Y= 8 W= 8 H=10 Right=33 Bottom=18 Cx=29 Cy=13  size=80
+  R 3: X=29 Y=23 W=11 H= 5 Right=40 Bottom=28 Cx=34 Cy=25  size=55
+  R 4: X= 3 Y=41 W= 5 H= 6 Right= 8 Bottom=47 Cx= 5 Cy=44  size=30
+  R 5: X=16 Y=38 W= 5 H= 5 Right=21 Bottom=43 Cx=18 Cy=40  size=25
+  R 6: X=26 Y=34 W= 9 H=11 Right=35 Bottom=45 Cx=30 Cy=39  size=99
+  R 7: X=42 Y=32 W= 6 H=13 Right=48 Bottom=45 Cx=45 Cy=38  size=78
+  R 8: X=55 Y= 4 W=11 H= 6 Right=66 Bottom=10 Cx=60 Cy= 7  size=66
+  R 9: X=57 Y=15 W= 6 H= 6 Right=63 Bottom=21 Cx=60 Cy=18  size=36
+  R10: X=72 Y= 3 W= 5 H= 8 Right=77 Bottom=11 Cx=74 Cy= 7  size=40
+  R11: X=72 Y=15 W= 5 H= 6 Right=77 Bottom=21 Cx=74 Cy=18  size=30
+  R12: X=53 Y=25 W= 6 H=13 Right=59 Bottom=38 Cx=56 Cy=31  size=78
+  R13: X=54 Y=42 W= 5 H= 5 Right=59 Bottom=47 Cx=56 Cy=44  size=25
+  R14: X=64 Y=28 W=10 H= 7 Right=74 Bottom=35 Cx=69 Cy=31  size=70
+  R15: X=66 Y=40 W=11 H= 6 Right=77 Bottom=46 Cx=71 Cy=43  size=66
+

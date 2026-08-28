@@ -28,6 +28,10 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private const float BossWidth = 58f;
     private const float DropWidth = 440f;
     private const float DeleteWidth = 52f;
+    private const float TotalColumnWidth =
+        FoldoutWidth + WarningWidth + NameWidth + (StatWidth * 4f) + MoveWidth +
+        (FloorEditWidth * 2f) + CostWidth + TypeWidth + PrefabWidth + BossWidth +
+        DropWidth + DeleteWidth;
     private const float WarningPanelHeight = 180f;
     private const string WarningsPanelHeightKey = "JBRogLike.EnemyDashboard.WarningsPanelHeight";
     private const float MinWarningsPanelHeight = 60f;
@@ -44,6 +48,24 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private static readonly string[] s_FormScopeNames = Array.ConvertAll(s_FormScopeValues, value => value.ToString());
     private static readonly PlayerFormId[] s_FormValues = (PlayerFormId[])Enum.GetValues(typeof(PlayerFormId));
     private static readonly string[] s_FormNames = Array.ConvertAll(s_FormValues, value => value.ToString());
+
+    private static float TotalHeaderWidth
+    {
+        get
+        {
+            RectOffset labelMargin = EditorStyles.boldLabel.margin;
+            float elementSpacing = Mathf.Max(labelMargin.left, labelMargin.right);
+            return TotalColumnWidth +
+                   (elementSpacing * 15f) +
+                   EditorStyles.helpBox.padding.horizontal +
+                   EditorStyles.helpBox.margin.horizontal;
+        }
+    }
+
+    private static float StickyHeaderHeight =>
+        EditorGUIUtility.singleLineHeight +
+        EditorStyles.helpBox.padding.vertical +
+        EditorStyles.helpBox.margin.vertical;
 
     private readonly List<EnemyRow> _rows = new List<EnemyRow>(32);
     private readonly List<DashboardWarning> _warnings = new List<DashboardWarning>(64);
@@ -984,18 +1006,50 @@ public sealed class EnemyDashboardWindow : EditorWindow
 
     private void DrawRowsPanel()
     {
-        _rowScrollPosition = EditorGUILayout.BeginScrollView(_rowScrollPosition, true, true, GUILayout.ExpandHeight(true));
         if (_rows.Count == 0)
         {
+            _rowScrollPosition = EditorGUILayout.BeginScrollView(
+                _rowScrollPosition,
+                true,
+                true,
+                GUILayout.ExpandHeight(true));
             EditorGUILayout.HelpBox("No EnemyData assets found.", MessageType.Info);
             EditorGUILayout.EndScrollView();
             return;
         }
 
-        DrawHeader();
+        DrawStickyHeader();
+        _rowScrollPosition = EditorGUILayout.BeginScrollView(_rowScrollPosition, true, true, GUILayout.ExpandHeight(true));
         for (int i = 0; i < _rows.Count; i++)
             DrawRow(_rows[i]);
         EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawStickyHeader()
+    {
+        float height = StickyHeaderHeight;
+        Rect area = GUILayoutUtility.GetRect(0f, height, GUILayout.ExpandWidth(true));
+        area.width = Mathf.Max(0f, area.width - GUI.skin.verticalScrollbar.fixedWidth);
+        float viewWidth = EditorGUIUtility.currentViewWidth;
+        float areaWidth = Mathf.Max(TotalHeaderWidth, viewWidth + _rowScrollPosition.x);
+
+        GUI.BeginClip(area);
+        try
+        {
+            GUILayout.BeginArea(new Rect(-_rowScrollPosition.x, 0f, areaWidth, height));
+            try
+            {
+                DrawHeader();
+            }
+            finally
+            {
+                GUILayout.EndArea();
+            }
+        }
+        finally
+        {
+            GUI.EndClip();
+        }
     }
 
     private void DrawRankDropsPanel()

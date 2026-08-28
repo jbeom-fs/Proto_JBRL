@@ -1,0 +1,14 @@
+=== Rooms (12) ===
+  R 0: X= 4 Y= 4 W= 8 H= 8 Right=12 Bottom=12 Cx= 8 Cy= 8  size=64
+  R 1: X= 3 Y=16 W= 9 H= 5 Right=12 Bottom=21 Cx= 7 Cy=18  size=45
+  R 2: X= 4 Y=25 W= 6 H= 5 Right=10 Bottom=30 Cx= 7 Cy=27  size=30
+  R 3: X= 4 Y=40 W= 7 H= 7 Right=11 Bottom=47 Cx= 7 Cy=43  size=49
+  R 4: X=17 Y= 4 W= 6 H= 9 Right=23 Bottom=13 Cx=20 Cy= 8  size=54
+  R 5: X=16 Y=18 W= 6 H= 6 Right=22 Bottom=24 Cx=19 Cy=21  size=36
+  R 6: X=18 Y=30 W= 8 H= 6 Right=26 Bottom=36 Cx=22 Cy=33  size=48
+  R 7: X=17 Y=42 W=13 H= 5 Right=30 Bottom=47 Cx=23 Cy=44  size=65
+  R 8: X=38 Y= 4 W=11 H= 6 Right=49 Bottom=10 Cx=43 Cy= 7  size=66
+  R 9: X=62 Y= 3 W=10 H= 5 Right=72 Bottom= 8 Cx=67 Cy= 5  size=50
+  R10: X=42 Y=15 W=14 H=11 Right=56 Bottom=26 Cx=49 Cy=20  size=154
+  R11: X=51 Y=38 W=13 H= 5 Right=64 Bottom=43 Cx=57 Cy=40  size=65
+
