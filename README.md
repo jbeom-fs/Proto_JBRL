@@ -21,8 +21,6 @@ C# 스크립트 222개 / 약 44,500 LOC · ScriptableObject 974개
 ## 문서
 
 - **아키텍처 보고서** — 이 문서 아래 전문
-- **개발일지** — [HandOff/DevLog/](HandOff/DevLog/)
-- **핸드오프** — [HandOff/HANDOFF.md](HandOff/HANDOFF.md)
 - **던전 생성 시뮬레이터** — [DungeonGenrate_Simulator](https://github.com/jbeom-fs/DungeonGenrate_Simulator)
   Unity 생성 알고리즘을 Python으로 1:1 포팅한 단계별 시각화 뷰어
 
