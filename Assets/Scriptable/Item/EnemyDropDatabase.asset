@@ -14,7 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyDropDatabase
   groups:
   - enemy: {fileID: 11400000, guid: ef32dd674f8a45679749b77ff5fd672b, type: 2}
-    drops: []
+    drops:
+    - itemCode: Currency
+      minAmount: 1
+      maxAmount: 1
+      chance: 1
     choiceGroups: []
     queries: []
   - enemy: {fileID: 11400000, guid: 170651a335f6421897779031123f464f, type: 2}

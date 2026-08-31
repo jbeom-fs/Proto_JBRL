@@ -1,3 +1,33 @@
+# JBRogLike
+
+Unity 2D 절차 생성 로그라이크. 개인 개발.
+
+![게임 화면](Docs/gameplay.jpg)
+
+## 핵심 시스템
+
+- **절차적 던전 생성** — BSP 분할 + Prim MST, 도메인별 파생 시드로 같은 시드는 같은 던전을 재현
+- **데이터 주도 전투** — SkillData 단일 소스에서 미리보기와 히트 판정이 같은 해석기를 공유
+- **콘텐츠 저작 파이프라인** — ScriptableObject + 통합 대시보드 + 정합성 검증 툴
+- **적 AI** — FSM + A*, 이동 · 타겟 · 행동을 핸들러로 분리
+- **보스** — 패턴 가중 추첨 + damage floor 기반 페이즈 처리
+
+## 기술
+
+Unity 6 (6000.4.3f1) · URP 2D · C#
+
+C# 스크립트 222개 / 약 44,500 LOC · ScriptableObject 974개
+
+## 문서
+
+- **아키텍처 보고서** — 이 문서 아래 전문
+- **개발일지** — [HandOff/DevLog/](HandOff/DevLog/)
+- **핸드오프** — [HandOff/HANDOFF.md](HandOff/HANDOFF.md)
+- **던전 생성 시뮬레이터** — [DungeonGenrate_Simulator](https://github.com/jbeom-fs/DungeonGenrate_Simulator)
+  Unity 생성 알고리즘을 Python으로 1:1 포팅한 단계별 시각화 뷰어
+
+---
+
 # JBRogLike — 아키텍처 보고서
 
 > 작성 기준일: 2026-08-24
