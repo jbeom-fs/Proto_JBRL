@@ -47,11 +47,27 @@ MonoBehaviour:
     useTilemapMinimap: 0
   - id: boss_arena
     displayName: boss_arena
-    description: shared boss arena room
+    description: boss arena room 01
     locationType: 1
     locationRootId: boss_arena
     localSpawnPosition: {x: 0, y: 0, z: 0}
     minimapLocationId: boss_arena
+    useTilemapMinimap: 1
+  - id: boss_arena_02
+    displayName: boss_arena_02
+    description: boss arena room 02
+    locationType: 1
+    locationRootId: boss_arena_02
+    localSpawnPosition: {x: 0, y: 0, z: 0}
+    minimapLocationId: boss_arena_02
+    useTilemapMinimap: 1
+  - id: boss_arena_03
+    displayName: boss_arena_03
+    description: boss arena room 03
+    locationType: 1
+    locationRootId: boss_arena_03
+    localSpawnPosition: {x: 0, y: 0, z: 0}
+    minimapLocationId: boss_arena_03
     useTilemapMinimap: 1
   - id: rest_area
     displayName: rest_area

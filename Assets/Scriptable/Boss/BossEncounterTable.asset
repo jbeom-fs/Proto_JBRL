@@ -17,7 +17,6 @@ MonoBehaviour:
     weight: 1
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
-    areaId: boss_arena
     isFinal: 0
     phases:
     - patternSet: {fileID: 11400000, guid: ac3e1c95f04c4b098fbea9c0e8b8d59a, type: 2}
@@ -31,15 +30,13 @@ MonoBehaviour:
   - floor: 20
     weight: 1
     boss: {fileID: 11400000, guid: c7f6ad12e05b4f53a8a0d31e768b9241, type: 2}
-    bossAreaDestinationId: boss_arena
-    areaId: boss_arena
+    bossAreaDestinationId: boss_arena_02
     isFinal: 0
     phases: []
   - floor: 40
     weight: 1
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
     bossAreaDestinationId: boss_arena
-    areaId: boss_arena
     isFinal: 0
     phases:
     - patternSet: {fileID: 11400000, guid: ac3e1c95f04c4b098fbea9c0e8b8d59a, type: 2}
@@ -53,7 +50,6 @@ MonoBehaviour:
   - floor: 60
     weight: 1
     boss: {fileID: 11400000, guid: 642fe51b776f47f8a9ee94f847846fd8, type: 2}
-    bossAreaDestinationId: boss_arena
-    areaId: boss_arena
+    bossAreaDestinationId: boss_arena_03
     isFinal: 1
     phases: []

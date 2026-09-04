@@ -322,12 +322,12 @@ public sealed class EliteArenaEncounterController : ArenaEncounterBase
             return true;
 
         if (ActiveWalkabilityArea != null &&
-            ActiveWalkabilityArea.TryGetNearestWalkableWorldPosition(transform.position, out position))
+            ActiveWalkabilityArea.TryGetNearestWalkableWorldPosition(ActiveSpaceOrigin, out position))
         {
             return true;
         }
 
-        position = transform.position;
+        position = ActiveSpaceOrigin;
         return false;
     }
 

@@ -23,6 +23,9 @@ public abstract class ArenaEncounterBase : MonoBehaviour
     protected Portal ActiveClearedPortal => _activeSpace != null ? _activeSpace.ClearedPortal : null;
     protected Transform ActiveClearedPortalSpawnPoint =>
         _activeSpace != null ? _activeSpace.ClearedPortalSpawnPoint : null;
+    // 폴백 좌표 기준은 컨트롤러가 아니라 방 루트다. 컨트롤러는 방 밖의 별개 GameObject다.
+    protected Vector3 ActiveSpaceOrigin =>
+        _activeSpace != null ? _activeSpace.transform.position : transform.position;
 
     protected void ResolveArenaSpace(string destinationId)
     {

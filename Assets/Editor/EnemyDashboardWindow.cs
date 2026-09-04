@@ -96,7 +96,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private int _newBossFloor = 1;
     private float _newBossWeight = 1f;
     private string _newBossAreaDestinationId = string.Empty;
-    private string _newBossAreaId = string.Empty;
     private bool _newBossIsFinal;
     private string _newEnemyFeedback = string.Empty;
     private MessageType _newEnemyFeedbackType = MessageType.Info;
@@ -393,7 +392,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _newBossFloor = EditorGUILayout.IntField("floor", Mathf.Max(1, _newBossFloor));
         _newBossWeight = Mathf.Max(0f, EditorGUILayout.FloatField("weight", _newBossWeight));
         _newBossAreaDestinationId = EditorGUILayout.TextField("bossAreaDestinationId", _newBossAreaDestinationId);
-        _newBossAreaId = EditorGUILayout.TextField("areaId", _newBossAreaId);
         _newBossIsFinal = EditorGUILayout.Toggle("isFinal", _newBossIsFinal);
         EditorGUILayout.EndVertical();
     }
@@ -512,7 +510,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
         _newBossFloor = 1;
         _newBossWeight = 1f;
         _newBossAreaDestinationId = string.Empty;
-        _newBossAreaId = string.Empty;
         _newBossIsFinal = false;
         _newEnemyFeedback = "생성 완료: " + enemyName + ". Undo 대신 에셋 삭제+Rescan 권장. 씬 저장은 상단 Save Scene.";
         if (!string.IsNullOrWhiteSpace(spawnTableMessage))
@@ -661,7 +658,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
             return;
 
         _newBossAreaDestinationId = entry.BossAreaDestinationId ?? string.Empty;
-        _newBossAreaId = entry.AreaId ?? string.Empty;
         _newBossWeight = Mathf.Max(0f, entry.Weight);
         if (_newBossFloor < 1)
             _newBossFloor = 1;
@@ -863,11 +859,10 @@ public sealed class EnemyDashboardWindow : EditorWindow
         SerializedProperty weight = entry.FindPropertyRelative("weight");
         SerializedProperty bossProperty = entry.FindPropertyRelative("boss");
         SerializedProperty bossAreaDestinationId = entry.FindPropertyRelative("bossAreaDestinationId");
-        SerializedProperty areaId = entry.FindPropertyRelative("areaId");
         SerializedProperty isFinal = entry.FindPropertyRelative("isFinal");
-        if (floor == null || weight == null || bossProperty == null || bossAreaDestinationId == null || areaId == null || isFinal == null)
+        if (floor == null || weight == null || bossProperty == null || bossAreaDestinationId == null || isFinal == null)
         {
-            error = "BossEncounterTable entry 필드(floor/weight/boss/bossAreaDestinationId/areaId/isFinal)를 찾을 수 없음.";
+            error = "BossEncounterTable entry 필드(floor/weight/boss/bossAreaDestinationId/isFinal)를 찾을 수 없음.";
             return false;
         }
 
@@ -875,7 +870,6 @@ public sealed class EnemyDashboardWindow : EditorWindow
         weight.floatValue = Mathf.Max(0f, _newBossWeight);
         bossProperty.objectReferenceValue = boss;
         bossAreaDestinationId.stringValue = _newBossAreaDestinationId ?? string.Empty;
-        areaId.stringValue = _newBossAreaId ?? string.Empty;
         isFinal.boolValue = _newBossIsFinal;
 
         if (!tableObject.ApplyModifiedProperties())

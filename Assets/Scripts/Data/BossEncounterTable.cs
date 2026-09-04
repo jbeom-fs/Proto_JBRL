@@ -234,8 +234,6 @@ public sealed class BossEncounterEntry
     [SerializeField, Min(0f)] private float weight = 1f;
     [SerializeField] private EnemyData boss;
     [SerializeField, TeleportDestinationId] private string bossAreaDestinationId;
-    [SerializeField, Tooltip("Matches WalkabilityArea.Id and TilemapMinimapSource.LocationId for fixed boss areas.")]
-    private string areaId;
     [SerializeField] private bool isFinal;
     [SerializeField] private List<BossPhase> phases = new();
     // TODO: Add shared map reference when boss area asset type is decided.
@@ -244,7 +242,6 @@ public sealed class BossEncounterEntry
     public float Weight => weight;
     public EnemyData Boss => boss;
     public string BossAreaDestinationId => bossAreaDestinationId;
-    public string AreaId => areaId;
     public bool IsFinal => isFinal;
     public IReadOnlyList<BossPhase> Phases => phases;
 }
