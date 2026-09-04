@@ -28,8 +28,14 @@ C# 스크립트 222개 / 약 44,500 LOC · ScriptableObject 974개
 
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-08-24
+> 작성 기준일: 2026-09-04
+> 기준 커밋: master HEAD `39549816` — **오늘 커밋 6개. 워킹트리 클린.** **보스방 3종 분리 + 적 패턴을 적 스킬 데이터 구조로 개편**(§8-4-5 신설, §11e-12 신설). ① **보스방 3종 분리**(`cb62baff`) — Ctrl+D 복제로 `BossArea02Root`/`BossArea03Root` 배치. 🔑 서브트리 외부 참조가 0건이라 계획했던 13,000줄 YAML 수술 없이 자동 재매핑만으로 성립했다. 🔴 **방은 층이 아니라 보스에 전속한다**(방 개수 = 보스 종류 수). 동승 = 포탈 폴백 기준을 활성 방 루트로 교체(`ArenaEncounterBase.ActiveSpaceOrigin`), `BossEncounterEntry.areaId` 제거(소비처가 2026-06-08 이후 0건인데 방 분리로 값이 실제와 어긋나기 시작했다). ② **적 스킬 구조 개편**(`9a36638c`~`39549816`) — 패턴 종류마다 C# 클래스 2개가 필요하던 구조를 `EnemySkillData` + `executionType` 분기로 바꿔 **새 패턴 = 에셋 1개**가 됐다. Jump·Dash 이관 완료, Projectile만 남았다. 🟢 `EnemyPatternRunner`/`Brain`/`PatternSet`/`Context` **수정 0** — 세트가 `List<EnemyPatternData>`이고 타입 분기가 없어 신구 병존이 성립했고 그게 점진 이관의 유일한 조건이었다. 🔑 **facing 양자화 없음(자유 각도)** — `FillTargets`를 `Vector2Int` 오버로드 + 로컬 전방 고정으로 부르고 회전은 월드 변환에서 한 번만 한다(격자 스냅 경로는 `RoundToCell` 때문에 45°에서 모양이 뭉치고, 정수 격자를 보존하는 회전은 90° 배수뿐이라 원리상 못 피한다). 스프라이트는 `flipX` 좌/우뿐. 🔑 **거리를 `maxRange` 하나로 통합** — 선택 조건과 이동 거리를 한 값이 정한다. 옛 링 검색의 사거리 경계 탈락이 소멸했다. 🔴 **이동 중 `Kinematic` 전환**(`SetFlightModeEnabled`) — `isTrigger` 토글은 `useTriggers = false` 필터 때문에 이동 내내 피격 불가가 되어 거부했다. 복원 지점 4곳(풀 재사용 포함) 누락 시 유령 적이 된다. 🔴 **Dash 벽 정지를 물리 쿼리로**(`OverlapCircle` + `WallMask`) — footprint 코너 샘플이 0.49로 clamp돼 반경 2.7 Magma가 0.5로 취급되던 것이 벽 끼임의 원인이었다(→ `Known_Issue` Q24·Q25). 동승 = `Perfabs` 폴더명 오타를 `Prefabs`로 수정. 이전: 보스 조우 테이블 후보 풀화 + 보스 2종째(`1bf1f875`)
+>
+> <details><summary>이전 기준(2026-08-24, `1bf1f875`)</summary>
+>
 > 기준 커밋: master HEAD `1bf1f875` + **워킹트리 미커밋 2건(R3a·R3b-1)** — **보스 조우 테이블 후보 풀화 + 보스 2종째 + 적 패턴 실행 결함 2건**(§11e-11 신설, §8-4-4 개정). ① **테이블 풀화 + 가중 추첨**(`1bf1f875`) — `BossEncounterTable.TryGetBoss(floor)`가 첫 일치를 반환하는 1:1 매핑이었고 `OnValidate`가 floor 중복을 경고로 막아 **후보가 여럿일 수 없는 구조**였다. `TryGetBoss(floor, rng, out entry)`로 바꾸고 같은 floor를 후보군으로 재해석했다. 🔑 **엔트리 자료구조를 바꾸지 않은 것이 핵심 판단이다** — flat 리스트 + `weight` 1필드로 끝냈고, 이유는 ⓐ기존 3엔트리 마이그레이션 0 ⓑ`EnemyDashboardWindow`가 `FindPropertyRelative`로 엔트리 필드를 직접 만져 중첩 구조면 Editor 창을 다시 짜야 함 ⓒ페이즈·`bossAreaDestinationId`가 이미 엔트리 소유라 **후보마다 다른 방·다른 페이즈가 추가 배관 0으로 성립**한다. 추첨 루프는 `DropQueryResolver.TryChooseWeightedIndex`(`System.Random` 수용) 재사용이고, 정적 버퍼는 후보 수가 줄면 **꼬리를 `Array.Clear`** 해야 한다(잔여 weight가 `totalWeight`에 합산되면 roll이 꼬리에 떨어져 보스 층이 조용히 일반 층이 된다). 🔴 시드는 `DeterministicSeedUtility.BossSelectDomain` 신설 + **`floor`가 아니라 `targetFloor`** 기반(그 시점의 `floor`는 아직 이전 층이라, `floor`를 쓰면 "18층에서 진입"과 "19층에서 진입"이 다른 보스를 뽑는다). 🔴 추첨은 `TryTransitionToFloor` **한 곳**에서만 — 뽑힌 엔트리가 `RestAreaController.Begin`에 먼저 넘어가므로 아래 경로에서 재추첨하면 휴식처와 보스방의 보스가 갈린다. 후보 1개면 rng를 소모하지 않는다(나중에 후보가 늘 때 기존 시드 결과가 보존된다). 🔴 `EnemyDashboardWindow`의 `HasBossFloor` 중복 차단을 함께 제거하지 않으면 **대시보드로 두 번째 보스를 저작할 수 없다**. ② **보스 2종째**(`1bf1f875`) — `Boss_Ash_Warden_01`(Contact / 800HP / Dash+Jump), 20층 50/50. 신규 에셋은 EnemyData + PatternSet 2개뿐이고 프리팹·패턴 데이터는 Magma 재활용. 🔴 **프로젝트 최초 `Contact` + 패턴셋 조합**이라 `EnemyBrain.CanAttack`의 평타 억제(`PatternSet != null && Ranged`)를 타지 않아 **평타와 패턴을 병행한다**. ③ **패턴 시작 실패 처리**(미커밋) — `EnemyPatternRuntime.Start`가 `void`라 **"착지점을 못 찾아 시작조차 못 함"과 "windup 0이라 정상적으로 즉시 끝남"이 구별되지 않았다.** 둘 다 `FinishCurrent()`로 쿨다운을 먹어 점프 실패가 3.5초를 태웠다 → `bool` 반환 + **실패 시 쿨다운 미부과 + 같은 프레임에 남은 후보로 재추첨**(swap-remove, 매 회 하나씩 줄어 자연 종료). 🔴 실패 시 `_currentRuntime` 등을 원복해야 `IsRunning`이 false로 남아 상태 머신이 계속 돈다. ④ **점프 비행 중 워크 가드 억제**(미커밋) — 🔴 공중 진동의 원인은 착지점 탐색이 아니라 **`EnemyController.LateUpdate`의 발판 가드**였다. 점프는 벽 위를 직선으로 지나며 `transform.position`을 직접 대입하는데 가드가 매 프레임 `_lastSafePosition`으로 되돌리고, 패턴 점프는 **현재 위치 기준 누적 전진**이라 되돌려지면 그 프레임 진행이 소멸한다(구형 `EnemyActionHandler` 점프는 시간 기반 `Lerp`라 진동해도 착지는 한다). `StartJump()`~착지 구간만 억제하며, 🔑 억제 중에는 되돌리기뿐 아니라 **`_lastSafePosition` 갱신도 건너뛴다**(비행 중 취소 시 이륙 지점으로 복귀시키기 위해). 이전: 아레나 공간 부품 번들 + 보스방 물리 분리(`c8a8daa2`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-19, `c8a8daa2`)</summary>
 >
@@ -75,19 +81,19 @@ C# 스크립트 222개 / 약 44,500 LOC · ScriptableObject 974개
 >
 > <details><summary>이전 기준(2026-08-06, `b08eafa7`)</summary>
 >
-> 기준 커밋: master HEAD `b08eafa7` — **마탄 액티브 각인 12/12 완성 + 반동(Recoil) 배관 신설 + 고갈 램프 계산 개정**(§7-6b 신설·§7-8·§7-8b 개정). ① **구조 편입**(`7277a0f8`) — `FreischutzSkill/Test/`의 plain `SkillData` 4개를 `EngravingData`로 전환하고 `Freischutz/Active/`·`Freischutz_Skill_NN` 규약으로 통일. `m_Script` guid 교체만 하고 `.asset.meta`는 무수정이라 `FreischutzWeapon.skills` 결선이 그대로 보존된다(Dagger `e5b90065` 미러). 평타는 각인이 아니므로 plain `SkillData` 유지. ② **반동 배관**(`ba57832b`, §7-6b) — `SkillData.recoilDistance`/`recoilDuration` + `RecoilMotion`(순수 C#, `Tick(dt)` + 변위 콜백 주입). 🔑 **물리(`AddForce`)는 구조적으로 성립하지 않는다** — 플레이어는 transform 권위이고 `BlocksPlayerMovement` 동안 `linearVelocity`가 매 프레임 0으로 지워지는데 그게 정확히 반동 구간이며, 던전 벽은 물리 콜라이더가 아니라 타일 걷기 판정이라 물리력은 LateUpdate 안전망에 되돌려진다. 기존 넉백 경로(`TryApplyExternalDisplacement`)를 **프레임 분할로 재사용**해 해결했고, 틱은 `PlayerCombatController.Update`에 둔다(`PlayerController.Update`는 `BlocksPlayerMovement`에서 조기 반환한다). Projectile·InstantArea의 base·`hitSteps` 4지점에 적용 → 총 후퇴 = `recoilDistance × (1 + 스텝 수)`. ③ **고갈 램프 2건 개정**(§7-8b) — 배율 기준을 소모 **전**→**후** 잔탄으로, 계산을 발사마다→**시전당 1회 스냅샷**(`SkillExecutionContext.AmmoRampSnapshot`)으로 바꿨다. 전자는 "탄창 전량 소모 단발(흑탄)이 만탄을 요구하는데 만탄이 배율 최저"라는 모순을 없애고, 후자는 `Spend`가 `Execute` 뒤에 일어나 **base보다 지연 `hitStep`이 40% 세던** 결함을 없앤다(`KNOWN_QUIRKS` Q13 해소). ④ **액티브 8종 + 아이콘 12종**(`f338c6d7`·`b08eafa7`) — 밀쳐내기·도탄 / 반동사격·파상사격·속박탄 / 흑탄·전탄장전·회탄. 🔑 **수치 기준은 "램프 미보유"**로 확정 — 램프가 소모량에 비례하므로 고소모 각인일수록 램프 빌드 이득이 커지고(평타 +4% → 흑탄 +60%) 그 편차가 곧 축 분화다. 이전: 마탄 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 배지(`893c703c`)
+> 기준 커밋: master HEAD `b08eafa7` — **마탄 액티브 각인 12/12 완성 + 반동(Recoil) 배관 신설 + 고갈 램프 계산 개정**(§7-6b 신설·§7-8·§7-8b 개정). ① **구조 편입**(`7277a0f8`) — `FreischutzSkill/Test/`의 plain `SkillData` 4개를 `EngravingData`로 전환하고 `Freischutz/Active/`·`Freischutz_Skill_NN` 규약으로 통일. `m_Script` guid 교체만 하고 `.asset.meta`는 무수정이라 `FreischutzWeapon.skills` 결선이 그대로 보존된다(Dagger `e5b90065` 미러). 평타는 각인이 아니므로 plain `SkillData` 유지. ② **반동 배관**(`ba57832b`, §7-6b) — `SkillData.recoilDistance`/`recoilDuration` + `RecoilMotion`(순수 C#, `Tick(dt)` + 변위 콜백 주입). 🔑 **물리(`AddForce`)는 구조적으로 성립하지 않는다** — 플레이어는 transform 권위이고 `BlocksPlayerMovement` 동안 `linearVelocity`가 매 프레임 0으로 지워지는데 그게 정확히 반동 구간이며, 던전 벽은 물리 콜라이더가 아니라 타일 걷기 판정이라 물리력은 LateUpdate 안전망에 되돌려진다. 기존 넉백 경로(`TryApplyExternalDisplacement`)를 **프레임 분할로 재사용**해 해결했고, 틱은 `PlayerCombatController.Update`에 둔다(`PlayerController.Update`는 `BlocksPlayerMovement`에서 조기 반환한다). Projectile·InstantArea의 base·`hitSteps` 4지점에 적용 → 총 후퇴 = `recoilDistance × (1 + 스텝 수)`. ③ **고갈 램프 2건 개정**(§7-8b) — 배율 기준을 소모 **전**→**후** 잔탄으로, 계산을 발사마다→**시전당 1회 스냅샷**(`SkillExecutionContext.AmmoRampSnapshot`)으로 바꿨다. 전자는 "탄창 전량 소모 단발(흑탄)이 만탄을 요구하는데 만탄이 배율 최저"라는 모순을 없애고, 후자는 `Spend`가 `Execute` 뒤에 일어나 **base보다 지연 `hitStep`이 40% 세던** 결함을 없앤다(`Known_Issue` Q13 해소). ④ **액티브 8종 + 아이콘 12종**(`f338c6d7`·`b08eafa7`) — 밀쳐내기·도탄 / 반동사격·파상사격·속박탄 / 흑탄·전탄장전·회탄. 🔑 **수치 기준은 "램프 미보유"**로 확정 — 램프가 소모량에 비례하므로 고소모 각인일수록 램프 빌드 이득이 커지고(평타 +4% → 흑탄 +60%) 그 편차가 곧 축 분화다. 이전: 마탄 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 배지(`893c703c`)
 >
 > </details>
 >
 > <details><summary>이전 기준(2026-08-05, `893c703c`)</summary>
 >
-> 기준 커밋: master HEAD `893c703c` — **마탄 폼 축 대공사: 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 스택 배지**(§7-2·§7-8b·§7-10 개정). ① **평타 자원 소모 데이터 구동 전환**(`9c6748e7`) — `TryBulletBasicAttack`이 발수·소모를 상수 1로 하드코딩해 **탄창 자원의 규칙 소유자가 코드(평타)와 데이터(스킬) 둘로 갈라져 있던 것**을 데이터 한쪽으로 통일했다 — `ExecuteBasicProjectile` 삭제 → 평타도 표준 `Execute(context)` 경로 / `Has(resourceType, requiredAmount)` 게이트 / `Spend(resourceType, result.ResourceConsumed)`. 신규 `SkillExecutionContext.IsBasicAttack`으로 **평타만 `hitSteps`를 건너뛴다**(스텝이 시작되면 `IsMultiHitActive` → `IsSkillBusy`·`BlocksPlayerMovement`로 평타 중 이동이 봉쇄되기 때문) → `KNOWN_QUIRKS` Q1 해소. 🔴 **선행 버그 픽스 = `FreischutzWeapon.basicAttackSkillData` 미결선** — 폼별 결선은 처음부터 없었고 씬의 전역 폴백이 우연히 마탄 평타를 가리켰을 뿐인데, `f155383b`에서 씬이 기본값으로 정리되며 그 우연이 사라졌다. 폴백 `BasicAttackAnimation`은 `executionType 0`이라 Projectile 검사에서 조기 반환 → **마탄 평타가 발사·탄 소모·쿨다운 전부 없이 조용히 아무 일도 안 하고 있었다**(로그 0). ② **마탄 패시브 3축 완성**(`5c6b8659`·`05dc77c8`, §7-8b) — **고갈 램프**(잔탄이 적을수록 발당 피해↑, 무료 기본) / **집탄**(같은 적에 탄당 1스택, 3스택에서 단일 대상 폭발) / **분열탄**(명중한 탄이 ±30°로 2발 분열, 깊이·피해율 데이터). 🔑 **패시브 자격 2단 필터 도출** — "SkillData 저작으로 되는가 / 유물로 되는가" 중 하나라도 걸리면 패시브가 아니다. 이 기준으로 관통·벽 반사(이미 저작 가능)와 처치 시 폭발·무작위 포격(유물 `OnKill`+`CastSkill`로 가능)이 전부 탈락했다. ③ **집탄 스택 월드 배지**(`893c703c`) — 상태이상 아이콘 행에 편입하지 않고 적 머리 위 전용 배지. 앵커를 HP바와 같은 규칙(**피벗 X + `TopAnchorY`**)으로 통일해 콜라이더 오프셋이 있는 적의 X 치우침과 대형 적의 몸통 관통을 동시에 해소. ④ `Assembly-CSharp.csproj` 추적 해제(`.gitignore`가 선행 추적 때문에 안 먹고 있었음). 이전: Dagger 각인 12/12 완성 + 스킬 배관 3건 확장(`d1a23a88`+워킹트리)
+> 기준 커밋: master HEAD `893c703c` — **마탄 폼 축 대공사: 평타 자원 데이터 구동 전환 + 패시브 3축 완성 + 집탄 스택 배지**(§7-2·§7-8b·§7-10 개정). ① **평타 자원 소모 데이터 구동 전환**(`9c6748e7`) — `TryBulletBasicAttack`이 발수·소모를 상수 1로 하드코딩해 **탄창 자원의 규칙 소유자가 코드(평타)와 데이터(스킬) 둘로 갈라져 있던 것**을 데이터 한쪽으로 통일했다 — `ExecuteBasicProjectile` 삭제 → 평타도 표준 `Execute(context)` 경로 / `Has(resourceType, requiredAmount)` 게이트 / `Spend(resourceType, result.ResourceConsumed)`. 신규 `SkillExecutionContext.IsBasicAttack`으로 **평타만 `hitSteps`를 건너뛴다**(스텝이 시작되면 `IsMultiHitActive` → `IsSkillBusy`·`BlocksPlayerMovement`로 평타 중 이동이 봉쇄되기 때문) → `Known_Issue` Q1 해소. 🔴 **선행 버그 픽스 = `FreischutzWeapon.basicAttackSkillData` 미결선** — 폼별 결선은 처음부터 없었고 씬의 전역 폴백이 우연히 마탄 평타를 가리켰을 뿐인데, `f155383b`에서 씬이 기본값으로 정리되며 그 우연이 사라졌다. 폴백 `BasicAttackAnimation`은 `executionType 0`이라 Projectile 검사에서 조기 반환 → **마탄 평타가 발사·탄 소모·쿨다운 전부 없이 조용히 아무 일도 안 하고 있었다**(로그 0). ② **마탄 패시브 3축 완성**(`5c6b8659`·`05dc77c8`, §7-8b) — **고갈 램프**(잔탄이 적을수록 발당 피해↑, 무료 기본) / **집탄**(같은 적에 탄당 1스택, 3스택에서 단일 대상 폭발) / **분열탄**(명중한 탄이 ±30°로 2발 분열, 깊이·피해율 데이터). 🔑 **패시브 자격 2단 필터 도출** — "SkillData 저작으로 되는가 / 유물로 되는가" 중 하나라도 걸리면 패시브가 아니다. 이 기준으로 관통·벽 반사(이미 저작 가능)와 처치 시 폭발·무작위 포격(유물 `OnKill`+`CastSkill`로 가능)이 전부 탈락했다. ③ **집탄 스택 월드 배지**(`893c703c`) — 상태이상 아이콘 행에 편입하지 않고 적 머리 위 전용 배지. 앵커를 HP바와 같은 규칙(**피벗 X + `TopAnchorY`**)으로 통일해 콜라이더 오프셋이 있는 적의 X 치우침과 대형 적의 몸통 관통을 동시에 해소. ④ `Assembly-CSharp.csproj` 추적 해제(`.gitignore`가 선행 추적 때문에 안 먹고 있었음). 이전: Dagger 각인 12/12 완성 + 스킬 배관 3건 확장(`d1a23a88`+워킹트리)
 >
 > </details>
 >
 > <details><summary>이전 기준(2026-08-04, `d1a23a88`)</summary>
 >
-> 기준 커밋: master HEAD `d1a23a88`(+워킹트리) — **Dagger 각인 12/12 완성 + 스킬 배관 3건 확장**. ①**`hitSteps`가 Projectile로 확장**(§7-10 개정) — `MultiHitSkillRunner`는 원래 실행타입 무관이었고 결합은 생성자 콜백 고정 하나뿐이라, 디스패처 + `ExecuteProjectileHit` + `HitStep{projectileCount, spreadAngle}`(0=스킬 상속)로 열렸다. **스텝마다 발수·분산각이 다른 볼리**(3-4-3 cone)가 저작 가능해졌고, crit은 **스텝당 1회**(탄 단위 롤은 기존 마탄 회귀라 배제), 재조준 없음, 스텝 자원 추가 소모 없음. 🔑 **`Burst`는 다단의 대안이 아니다** — 1방향 연발일 뿐이라 스텝별 발수 변화를 표현 못 한다. ②**`InstantArea`가 표식을 부여·기폭**(§7-8·§11b-12) — 부여는 평타 마킹과 같은 적중 목록 순회, 기폭은 `TryDetonateDaggerMarker` 추출로 Dash와 결산 로직 공유. **호출 순서 = 기폭 → 부여**(자기가 심고 자기가 터뜨리는 저작 봉인), `IsProcCast` 게이트는 **5경로**로 확대. ⚠️동기 proc이 `AttackExecutor` 적중 목록·피해 카운터를 리셋하는 **재진입**이 있어 선캐시로 차단. ③**장판 애니메이션 지원**(§7-12) — `SkillData.zoneAnimation`(AnimatorOverrideController), null이면 기존 정적 표시 그대로. **sprite는 크기 기준 겸 폴백으로 존치**(애니 재생 중 렌더러 sprite는 직전 장판 프레임이라 스케일 기준으로 못 씀). ④**Dagger 각인 6종 저작 완료**(독무·연쇄투척·표식산포 / 참수·칼날비·폭쇄) + 아이콘 8종 + 혈흔→혈무 리네임 → **12/12**. 🆕 `HandOff/KNOWN_QUIRKS.md` 신설(알고도 방치하는 사항 대장). 이전: 상태이상 과부하 타입별 분화·Dagger 각인 축 착수(`d1a23a88`)
+> 기준 커밋: master HEAD `d1a23a88`(+워킹트리) — **Dagger 각인 12/12 완성 + 스킬 배관 3건 확장**. ①**`hitSteps`가 Projectile로 확장**(§7-10 개정) — `MultiHitSkillRunner`는 원래 실행타입 무관이었고 결합은 생성자 콜백 고정 하나뿐이라, 디스패처 + `ExecuteProjectileHit` + `HitStep{projectileCount, spreadAngle}`(0=스킬 상속)로 열렸다. **스텝마다 발수·분산각이 다른 볼리**(3-4-3 cone)가 저작 가능해졌고, crit은 **스텝당 1회**(탄 단위 롤은 기존 마탄 회귀라 배제), 재조준 없음, 스텝 자원 추가 소모 없음. 🔑 **`Burst`는 다단의 대안이 아니다** — 1방향 연발일 뿐이라 스텝별 발수 변화를 표현 못 한다. ②**`InstantArea`가 표식을 부여·기폭**(§7-8·§11b-12) — 부여는 평타 마킹과 같은 적중 목록 순회, 기폭은 `TryDetonateDaggerMarker` 추출로 Dash와 결산 로직 공유. **호출 순서 = 기폭 → 부여**(자기가 심고 자기가 터뜨리는 저작 봉인), `IsProcCast` 게이트는 **5경로**로 확대. ⚠️동기 proc이 `AttackExecutor` 적중 목록·피해 카운터를 리셋하는 **재진입**이 있어 선캐시로 차단. ③**장판 애니메이션 지원**(§7-12) — `SkillData.zoneAnimation`(AnimatorOverrideController), null이면 기존 정적 표시 그대로. **sprite는 크기 기준 겸 폴백으로 존치**(애니 재생 중 렌더러 sprite는 직전 장판 프레임이라 스케일 기준으로 못 씀). ④**Dagger 각인 6종 저작 완료**(독무·연쇄투척·표식산포 / 참수·칼날비·폭쇄) + 아이콘 8종 + 혈흔→혈무 리네임 → **12/12**. 🆕 `HandOff/KNOWN_QUIRKS.md`(현 `Known_Issue.md`) 신설(알고도 방치하는 사항 대장). 이전: 상태이상 과부하 타입별 분화·Dagger 각인 축 착수(`d1a23a88`)
 >
 > </details>
 >
@@ -427,20 +433,25 @@ Assets/Scripts/
 │   │                               #   + PlayEliteAnimation(EnemyAnimationKey) — Elite Pattern 런타임이 호출
 │   ├── EnemyPoolManager.cs         # 적 오브젝트 풀
 │   └── Elite/
-│       ├── ElitePatternSet.cs                 # ScriptableObject — `List<ElitePatternData>` 컨테이너 (`EnemyData.elitePatternSet` 에 연결)
-│       ├── ElitePatternData.cs                # 추상 ScriptableObject — DisplayName/Cooldown/MinRange/MaxRange/Weight/RecoveryDuration + CreateRuntime() 추상
-│       ├── ElitePatternRuntime.cs             # 추상 패턴 런타임 — Start/Tick/Cancel + IsFinished 플래그
-│       ├── ElitePatternContext.cs             # Brain·Enemy·Data·Movement·Action·Animation·Collider·DungeonManager·ProjectileFireService·CoroutineRunner 일괄 노출
-│       ├── ElitePatternRunner.cs              # MonoBehaviour — `Initialize(brain)` 후 매 Tick `EnemyData.IsElite` 확인 → 쿨다운/사거리 충족 패턴 1개 실행, Finish 시 cooldown 적용
+│       ├── EnemyPatternSet.cs                  # ScriptableObject — `List<EnemyPatternData>` 컨테이너 (`EnemyData.patternSet` 에 연결)
+│       ├── EnemyPatternData.cs                 # 추상 ScriptableObject — DisplayName/Cooldown/MinRange/MaxRange/Weight/RecoveryDuration + CreateRuntime() 추상
+│       ├── EnemyPatternRuntime.cs              # 추상 패턴 런타임 — Start(bool)/Tick/Cancel + IsFinished 플래그
+│       ├── EnemyPatternContext.cs              # Brain·Enemy·Data·Movement·Action·Animation·Collider·DungeonManager·ProjectileFireService·CoroutineRunner 일괄 노출
+│       ├── EnemyPatternRunner.cs               # MonoBehaviour — 패턴셋 보유 시 매 Tick 쿨다운/사거리 충족 패턴을 가중 추첨해 실행
+│       │                                       #   Start()가 false면 쿨다운 미부과 + 같은 프레임 재추첨 (2026-08-24)
+│       │                                       #   ⚠️ 패턴 타입별 분기 0건 — 이게 신구 타입 병존을 가능하게 한다
 │       └── Patterns/
-│           ├── EliteProjectilePatternData.cs  # 발사 패턴 (windup, prefab, speed, lifetime, firePattern, count, spread, burstInterval, wallHitMode, maxBounceCount, impact)
-│           ├── EliteProjectilePatternRuntime.cs # windup → Fire(ProjectileFireService) → recovery 순으로 진행, EnemyAnimationKey 분기로 Animator 트리거
-│           ├── EliteDashPatternData.cs        # 돌진 (windup, dashSpeed, damage, hitRadius, stopOnWall, lockFacingDuringDash, windupAnimation, dashAnimation)
-│           │                                  #   dashDuration 제거 → dashSpeed 기반 목표 위치 이동으로 변경
-│           ├── EliteDashPatternRuntime.cs     # windup → 목표 위치(플레이어 위치 기반) 결정 → dashSpeed×dt 이동 → 타겟 1회 데미지 → recovery
-│           │                                  #   WalkabilityQuery.TryFindNearestWalkable 로 목표 위치 보정 (Arena/Dungeon 공용)
-│           ├── EliteJumpPatternData.cs        # 도약 (windup, jumpDuration, maxDistance, impactDamage, impactRadius, jumpVisualHeight, stayInRoom, lockFacingDuringJump)
-│           └── EliteJumpPatternRuntime.cs     # windup → WalkabilityQuery 기반 착지점 결정 → 비행 → 착지 임팩트 → recovery
+│           ├── EnemyProjectilePatternData.cs   # 발사 패턴 (windup, prefab, speed, lifetime, firePattern, count, spread, burstInterval, wallHitMode, maxBounceCount, impact)
+│           └── EnemyProjectilePatternRuntime.cs # windup → Fire(ProjectileFireService) → recovery
+│                                               #   ⚠️ 이관 대기 중인 마지막 옛 패턴 쌍 (HANDOFF §7-B S5)
+│                                               #   Jump·Dash 쌍은 2026-09-04 EnemySkill 이관 후 삭제됨
+│
+├── Enemy/Skill/                                # 적 스킬 데이터 구조 (2026-09-04 신설) — §8-4-5
+│   ├── EnemySkillExecutionType.cs              # InstantArea / Projectile / Dash / Jump (적 전용 enum, 플레이어 SkillExecutionType 과 분리)
+│   ├── PatternShapeData.cs                     # [Serializable] 모양 타입 — patternType / coneHalfAngle / customCells (거리 없음)
+│   ├── EnemySkillData.cs                       # : EnemyPatternData — executionType/castDelay/searchShape/damageShape+damageRange/moveSpeed/stopOnWall/애니메이션 override
+│   └── EnemySkillRuntime.cs                    # : EnemyPatternRuntime — Windup→Move→(Impact)→Recovery, 자유 각도 셀 열거 + argmin,
+│                                               #   셀 피해(OverlapBox) · 이동 중 Kinematic 전환 · 이동 타임아웃 · Dash 벽 정지(OverlapCircle+WallMask)
 │
 ├── UI/
 │   ├── MinimapController.cs        # 이중 모드 미니맵 — Dungeon(DungeonData 기반) / Tilemap(TilemapMinimapSource 기반)
@@ -1444,12 +1455,12 @@ Freischutz 킷 실측 = 평타 `Single` 1발(탄 1 소모) / Q `Single` 1발 / W
 - **고갈 램프** — `BehaviorAction.AmmoRamp`(전용 필드 없이 `value` 재사용). 적용 지점은 **crit 롤 직전 2곳뿐**(기본 Projectile 요청 / `hitSteps` 스텝). 비탄창 폼은 배율 1.
   - **확정 규칙(2026-08-06 개정) = 소모 후 잔탄 기준 + 시전당 1회 스냅샷.** `GetAmmoRampMultiplier(int pendingConsume)`가 `_currentBullet − pendingConsume`(0 클램프)으로 계산하고, `ExecuteProjectile`이 `resourceConsumed` 확정 직후·`Fire` 직전에 `SkillExecutionContext.AmmoRampSnapshot`을 **한 번** 채운다. base와 전 `hitSteps`가 그 값을 읽으므로 **시전 1회 = 배율 1회**다.
   - **왜 소모 후인가** — `AllowsPartialBulletUse`는 **발수 == `consumeAmount`**일 때만 성립하고 `Single`은 발수가 항상 1이라, "단발 + 탄창 전량 소모"(흑탄)는 `RequireFullCost`로만 표현된다. 즉 **만탄에서만 시전 가능**한데 소모 전 기준이면 만탄이 배율 최저(×1.00)여서 **램프 축의 정점이 램프를 못 받는 모순**이 생겼다. 소모 후 기준이면 발사 직후 잔탄 0 → ×1.60 고정.
-  - **왜 스냅샷인가** — `Spend`가 `Execute` 반환 뒤라, base는 소모 전 값을 읽고 지연 `hitStep`은 소모 후 값을 읽어 **한 스킬 안에서 뒷발이 40% 셌다**(파상사격 소모 10 기준 base ×1.00 / 스텝 ×1.40). 코드상 스텝일 뿐 게임적으로는 한 스킬이므로 단일 값으로 고정했다(`KNOWN_QUIRKS` Q13 해소).
+  - **왜 스냅샷인가** — `Spend`가 `Execute` 반환 뒤라, base는 소모 전 값을 읽고 지연 `hitStep`은 소모 후 값을 읽어 **한 스킬 안에서 뒷발이 40% 셌다**(파상사격 소모 10 기준 base ×1.00 / 스텝 ×1.40). 코드상 스텝일 뿐 게임적으로는 한 스킬이므로 단일 값으로 고정했다(`Known_Issue` Q13 해소).
   - 부분 발사 스킬은 `resourceConsumed`가 이미 잔탄에 맞춰 깎인 값이라 **줄어든 소모량 기준**으로 자동 계산된다.
   - ⚠️ 스냅샷은 `ExecuteProjectile` 경로에서만 채워진다. 다른 실행 타입이 램프를 읽게 되면 기본값 `1f`가 나가므로 설정 지점을 함께 늘려야 한다.
   - 📌 램프가 소모량에 비례하므로 **고소모 각인일수록 램프 보유/미보유 격차가 커진다**(평타 +4% / 반동사격 +20% / 파상사격 +40% / 회탄 +48% / 흑탄 +60%). 각인 수치는 **램프 미보유 기준**으로 잡는다 — 이 편차가 곧 축 분화이기 때문이다(램프 빌드는 고소모, 집탄·분열 빌드는 저소모 다발).
 - **집탄** — `FreischutzFocusRegistry`(`DaggerMarkerRegistry` 미러 + `Count`). **적립 제한을 두지 않은 근거**: 발사당 1스택으로 제한하면 E(Burst 5발 연사)가 Q(1발)와 동일 취급이라 연사의 의미가 사라진다. 탄당 1스택으로 열면 **Spread의 부채꼴이 천연 게이트**가 되어(R은 45° 6발이라 원거리에서 1발만 맞는다) 다발로 몰아치려면 붙어야 하고, 히트박스가 큰 엘리트·보스에서 잘 작동해 "모든 패시브는 보스전에서 작동해야 한다" 규칙도 만족한다. 요구 3이라 E 한 번(5스택)이면 즉시 폭발하고 잔여가 남는다. **폭발 순서 = 스택 `Clear` → 피해**(폭발이 적을 죽여 `OnDied`가 레지스트리를 건드려도 안전). crit·흡혈 O, `AmmoRamp`·상태이상 증폭·쿨 리셋·마커 이벤트는 **없음**.
-- **분열탄** — 명중 콜백에서 `ProjectileFireService` 재발사. ⚠️**기준 피해는 crit 적용 전 값**(`ProjectileFireRequest.BaseDamage`)이다. 최종 피해를 기준으로 삼으면 원본 크리가 기저에 눌러앉은 채 분열탄이 자체 크리를 또 굴려 **crit이 두 번 곱해진다**. `AmmoRamp`는 기준값에 이미 포함돼 있으므로 분열 경로에서 재적용하지 않는다. 원본은 **명중 시 소멸**(관통으로 바꾸면 필터 ①을 스스로 위반). 📌 깊이를 올릴 때의 비대칭 — 탄 수는 `2ⁿ`, 피해는 `0.3ⁿ`이라 **총합은 원본의 1.5배에서 수렴**하는데 탄 수만 폭증한다(`KNOWN_QUIRKS` Q11).
+- **분열탄** — 명중 콜백에서 `ProjectileFireService` 재발사. ⚠️**기준 피해는 crit 적용 전 값**(`ProjectileFireRequest.BaseDamage`)이다. 최종 피해를 기준으로 삼으면 원본 크리가 기저에 눌러앉은 채 분열탄이 자체 크리를 또 굴려 **crit이 두 번 곱해진다**. `AmmoRamp`는 기준값에 이미 포함돼 있으므로 분열 경로에서 재적용하지 않는다. 원본은 **명중 시 소멸**(관통으로 바꾸면 필터 ①을 스스로 위반). 📌 깊이를 올릴 때의 비대칭 — 탄 수는 `2ⁿ`, 피해는 `0.3ⁿ`이라 **총합은 원본의 1.5배에서 수렴**하는데 탄 수만 폭증한다(`Known_Issue` Q11).
 - **적중 콜백 구조** — Dagger 표식 부여는 스킬 플래그(`appliesDaggerMarker`)로 결정되지만 집탄·분열은 **패시브 활성 여부**로 결정된다. `SkillExecutor`가 조건을 직접 보던 것을 `PlayerCombatController.ResolveProjectileHitCallback(skill, isProcCast)`로 **이관**하고, 패시브 구동 두 효과를 콜백 하나로 묶어 캐시 델리게이트를 **3개(Dagger / 패시브 / 합성)로 유지**한다. 셋을 각각 조합했다면 7개가 됐다. 발사당 할당 0.
 - **표시** — 집탄만 표시가 필요하다(램프는 탄창 UI가 잔탄을 이미 보여주고, 분열은 탄이 갈라지는 것이 곧 피드백). 상태이상 아이콘 행에 **편입하지 않는다** — 그 행은 압축 정렬되는 목록이라 매 발사마다 변하는 값을 읽기 나쁘고 Dagger 표식(몸 부착)과 정보가 뭉친다. 대신 `FreischutzFocusVisualPool`(§7-8c).
 - **Altar 결선** — Freischutz 해금 행 2개(집탄·분열탄)를 씬에 배치·결선했다. `defaultPassive`(고갈 램프)는 행이 필요 없다.
@@ -1485,7 +1496,7 @@ Freischutz 킷 실측 = 평타 `Single` 1발(탄 1 소모) / Q `Single` 1발 / W
 적 머리 위에 집탄 스택을 아이콘 점등으로 표시한다. `DaggerMarkerVisualPool` 미러 — 정적 `Active` + `RuntimeInitializeOnLoadMethod` 폴백 + 딕셔너리/재사용 풀 + `LateUpdate` 추적, **풀 오브젝트가 적 계층 밖**이라 적 프리팹 수정이 0이고 아레나의 HP바 억제 로직과도 무관하다.
 
 - **표시 = 아이콘 점등형**(숫자 없음). `stackSprites` 배열에서 **스택 N → `sprites[N-1]`**, `Mathf.Clamp`로 범위 밖 클램프. 요구 스택이 데이터라 **코드가 배열 길이를 가정하지 않는다**. 최대 스택은 도달 즉시 폭발하므로 **실제로 보이는 단계는 요구치 − 1까지**(현재 2장).
-- 미저작 스프라이트는 **로그 없이 표시만 생략** → 코드가 에셋보다 먼저 들어갈 수 있다(`KNOWN_QUIRKS` Q15).
+- 미저작 스프라이트는 **로그 없이 표시만 생략** → 코드가 에셋보다 먼저 들어갈 수 있다(`Known_Issue` Q15).
 - 수명은 `FreischutzFocusRegistry`가 소유한다. `AddStack → Show` / `Clear → Hide`이고 **만료·적 사망·`ClearAll`·폭발이 전부 `Clear`를 경유**하므로 별도 정리 배선이 없다.
 - 🔑 **앵커는 HP바와 같은 규칙을 써야 한다.** 처음엔 `MarkerAnchorWorld`(**콜라이더 중심**) + 고정 월드 오프셋으로 붙였다가 두 증상이 나왔다: ①`collider.offset.x ≠ 0`인 적(rush 계열)에서 `offset.x × lossyScale.x`만큼 **X가 치우침** — HP바는 `localPosition.x = 0`(**피벗**)이다 ②콜라이더 반경이 큰 엘리트·보스에서 **몸통 중앙에 박힘** — 월드 고정 상수가 적 크기를 무시한다. 최종 공식:
 
@@ -1498,7 +1509,7 @@ position  = enemy.transform.TransformPoint(new Vector3(0f, localY, 0f))
 `TopAnchorY`는 **콜라이더 상단 기반**이라 적 크기를 자동 추종하고, **HP바 억제 여부와 무관하게 계산**되므로 엘리트·보스에서도 그대로 머리 위가 된다. 따라서 "HP바가 억제됐는지로 오프셋을 가르는 2단 상수" 방식은 폐기됐다(그 판정을 위해 추가했던 `EnemyHealthBar.IsBarSuppressed`도 함께 제거).
 
 - 쌓이는 순서 = **HP바 → 상태이상 아이콘 행 → 집탄 배지(최상단)**. 상태이상이 없을 때 배지가 살짝 떠 보이는 것은 수용한다(위치가 항상 같아야 눈에 익는다).
-- ⚠️ `badgeGap`은 **배지 중심까지의 거리**라 배지 자신의 크기를 고려하지 않는다. 스프라이트를 교체하면 재조정이 필요하다(`KNOWN_QUIRKS` Q14).
+- ⚠️ `badgeGap`은 **배지 중심까지의 거리**라 배지 자신의 크기를 고려하지 않는다. 스프라이트를 교체하면 재조정이 필요하다(`Known_Issue` Q14).
 
 ### 7-9. 상태이상 DoT — 독/출혈 (EnemyAilments, AilmentDamage 축) — 2026-07-31 모델 전환
 
@@ -1585,7 +1596,7 @@ position  = enemy.transform.TransformPoint(new Vector3(0f, localY, 0f))
 
 🔑 **`Burst`는 다단 볼리의 대안이 될 수 없다** — `projectileCount`·`burstInterval`이 있어 다단처럼 보이지만, Burst는 **하나의 방향·하나의 발수를 코루틴으로 끊어 쏘는 것**이라 3-4-3 cone처럼 스텝마다 발수와 분산각이 다른 형태를 표현하지 못한다. 데이터 필드가 존재하는 것과 그 조합으로 목표 형태가 나오는 것은 별개다.
 
-✅ **평타 경로는 이 블록을 타지 않는다(2026-08-05 변경)** — `context.IsBasicAttack`이 true면 `hitSteps` 시작 블록을 건너뛴다. 근거는 이동 봉쇄다: 스텝이 시작되면 `IsMultiHitActive`가 `IsSkillBusy`·`BlocksPlayerMovement`에 물려 **평타 내내 이동이 잠긴다**. 같은 변경에서 `ExecuteBasicProjectile`(발수·소모를 상수 1로 강제하던 전용 진입점)이 삭제되고 평타가 표준 `Execute(context)` 경로로 합류했으므로, 평타의 발수·분산·자원은 이제 전부 SkillData 저작값이다(→ `KNOWN_QUIRKS` Q1 해소).
+✅ **평타 경로는 이 블록을 타지 않는다(2026-08-05 변경)** — `context.IsBasicAttack`이 true면 `hitSteps` 시작 블록을 건너뛴다. 근거는 이동 봉쇄다: 스텝이 시작되면 `IsMultiHitActive`가 `IsSkillBusy`·`BlocksPlayerMovement`에 물려 **평타 내내 이동이 잠긴다**. 같은 변경에서 `ExecuteBasicProjectile`(발수·소모를 상수 1로 강제하던 전용 진입점)이 삭제되고 평타가 표준 `Execute(context)` 경로로 합류했으므로, 평타의 발수·분산·자원은 이제 전부 SkillData 저작값이다(→ `Known_Issue` Q1 해소).
 
 **② cancelable 피캔슬 + 캔슬 이벤트 (`6a201b2e`)**
 
@@ -2035,23 +2046,105 @@ LateUpdate  → 워크 가드:  발판 아님 → transform.position = _lastSafe
 
 ⚠️ **비행 중 스턴·넉백이면 억제가 유지됩니다.** `EnemyBrain.Update` 가 `IsKnockbackLocked` / `IsStunned` 에서 `_patternRunner.Tick()` **앞에서** return 하므로 점프 런타임이 취소되지 않고 멈추고, `Cleanup()` 을 타지 않아 억제가 남습니다. 스턴이 풀리면 비행 재개 → 착지에서 해제되어 자가 회복되지만, 그 사이 가드가 꺼진 창이 존재합니다.
 
-⚠️ **착지점 탐색은 여전히 폴백 0단입니다.** 아레나 경로는 `TryFindNearestWalkable` 1회 실패 시 곧바로 `false` 를 반환합니다(대시는 3단). 또한 그 링 순회가 거리순이 아니라 `for dy → for dx` **배열 순서**라 반경 1칸 링의 첫 검사 칸이 `(-1,-1)` 이고, 결과적으로 **착지가 플레이어 아래쪽/좌하단으로 쏠립니다.** 둘 다 미해결이며 HANDOFF §7-B(R3b-2·R3b-3)에 있습니다.
+✅ **2026-09-04 해소 — Jump·Dash 는 `EnemySkillData` 로 이관됐습니다(§8-4-5).** 착지 후보를 셀 패턴으로 전수 열거하면서 링 검색과 사거리 경계 필터가 통째로 사라졌고, 링 순회의 좌하단 편향은 그보다 앞서 `e4471bc3`(최근접 선택)이 닫았습니다. 아래 표의 `EnemyDashPatternData`·`EnemyJumpPatternData` 행은 **삭제된 옛 구조의 기록**이며 현행은 §8-4-5 입니다.
 
 `EnemyPatternContext` 가 Brain/Enemy/Data/Movement/Action/Animation/Collider/DungeonManager/ProjectileFireService/CoroutineRunner 를 모두 노출해 런타임이 필요한 서비스에 접근할 수 있습니다. 갱신은 **패턴 시작 직전 `Initialize` 1회**이며 매 틱 갱신은 제거됐습니다(위치 전환 시 풀 해제 → `OnDisable` → `ResetRuntimeState` 로 진행 중 패턴이 취소되므로 stale 이 성립하지 않음).
 
 | 패턴 (ScriptableObject) | 핵심 파라미터 | 동작 |
 |---|---|---|
 | `EnemyProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
-| `EnemyDashPatternData` | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery |
-| `EnemyJumpPatternData` | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정(**실패 시 Start 가 false — 폴백 0단**) → 비행 보간(**이 구간만 `EnemyController` 워크 가드 억제**) → 착지 임팩트(impactRadius OverlapCircle) → recovery |
+| ~~`EnemyDashPatternData`~~ (삭제) | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery |
+| ~~`EnemyJumpPatternData`~~ (삭제) | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정(**실패 시 Start 가 false — 폴백 0단**) → 비행 보간(**이 구간만 `EnemyController` 워크 가드 억제**) → 착지 임팩트(impactRadius OverlapCircle) → recovery |
 
 공통 `EnemyPatternData` 필드: `displayName` / `cooldown` / `minRange` / `maxRange` / `weight` / `recoveryDuration` + `OnValidate` 가 음수·역전 범위·weight 0 을 자동 경고. **쿨다운은 패턴이 `Finish` 한 시점부터** 흐릅니다(시전 시작 기준이 아님).
 
-⚠️ **`maxRange` 가 패턴의 유일한 거리 게이트입니다.** 패턴 시작 조건의 `Target.HasTarget` 은 `_brain.player != null`(참조 존재)일 뿐 탐지 여부가 아니므로 `detectRange` 는 관여하지 않습니다. Magma 의 Jump·Dash 가 `maxRange 50` 인 것은 아레나 크기에 가려 드러나지 않을 뿐이며, 넓은 공간에서는 "화면 밖에서 돌진해 오는" 형태가 됩니다.
+⚠️ **`maxRange` 가 패턴의 유일한 거리 게이트입니다.** 패턴 시작 조건의 `Target.HasTarget` 은 `_brain.player != null`(참조 존재)일 뿐 탐지 여부가 아니므로 `detectRange` 는 관여하지 않습니다. 2026-09-04 개편 이후 `EnemySkillData` 에서는 `maxRange` 가 **선택 조건인 동시에 이동 거리**입니다(§8-4-5). 그래서 Magma 의 Jump·Dash 는 옛 `maxRange 50` 에서 각각 **12 / 15** 로 조정됐습니다.
 
 ⚠️ **패턴 타입에 elite/boss 접근 제한은 없습니다.** 타입은 공통 풀이고 **어느 세트에 넣느냐가 구분**입니다.
 
 > Contact Special (Rush/Jump) 과 차이점: Special 은 모든 Contact 적이 0~1개 고정 공격(`specialAttackType`)을 갖고 ActionHandler 내부 상태머신으로 처리. Enemy Pattern 은 패턴셋을 가진 적이 다수 패턴을 ScriptableObject 풀로 갖고 `EnemyPatternRunner` 가 외부 컴포넌트로 처리.
+
+### 8-4-5. 적 스킬 데이터 구조 (`EnemySkillData`, 2026-09-04 개편)
+
+패턴 종류마다 **C# 클래스 2개(Data + Runtime)**가 필요하던 구조를 **데이터 1종 + 실행타입 분기**로 바꿨습니다. 새 패턴이 **에셋 1개 생성**으로 끝납니다.
+
+```
+Assets/Scripts/Enemy/Skill/
+  EnemySkillExecutionType.cs   InstantArea / Projectile / Dash / Jump   ← 적 전용 enum
+  PatternShapeData.cs          patternType / coneHalfAngle / customCells  ← 거리 없는 "모양" 타입
+  EnemySkillData.cs            : EnemyPatternData
+  EnemySkillRuntime.cs         : EnemyPatternRuntime  (executionType 분기)
+```
+
+🟢 **`EnemyPatternRunner` / `EnemyBrain` / `EnemyPatternSet` / `EnemyPatternContext` 는 수정되지 않았습니다.** 세트가 `List<EnemyPatternData>` 이고 러너·브레인에 패턴 타입별 분기가 없어, 새 타입이 베이스를 상속하기만 하면 **신구 타입이 한 리스트에 섞여 돕니다.** 이 병존 덕분에 Jump → Dash 순으로 점진 이관이 가능했습니다.
+
+**필드 구성**
+
+| 그룹 | 필드 |
+|---|---|
+| 베이스 상속 | `displayName` / `cooldown` / `minRange` / **`maxRange`** / `weight` / `recoveryDuration`(후딜) |
+| 실행 | `executionType` |
+| 타이밍 | `castDelay`(선딜) |
+| 범위 | `searchShape`(PatternShapeData) — **거리는 `maxRange`** |
+| 피해 | `damageShape`(PatternShapeData) + `damageRange`(int) + `damage` |
+| 이동 | `moveSpeed` / `jumpVisualHeight` / `stayInRoom` / `lockFacingDuringExecute` / `stopOnWall` |
+| 애니메이션 | `castAnimation` + `castAnimationTrigger` / `executeAnimation` + `executeAnimationTrigger` |
+
+**목표 결정 — facing 양자화를 하지 않습니다(자유 각도)**
+
+```
+① facing   = (플레이어 − self).normalized                     ← 연속값, 스냅 없음
+② offsets  = AttackPattern.FillTargets(shape, (0,0), Vector2Int.up, N, cone, buf, cells)
+                                              ↑ Vector2Int 오버로드 · 로컬 전방 고정 (정수 연산)
+③ world_i  = self + rot(angle) × (offset × cellSize)          ← 회전은 여기서 한 번만
+④ filter   = IsFootprintWalkable (+ 던전이면 stayInRoom)
+⑤ pick     = 플레이어에 가장 가까운 후보 (argmin)
+⑥ 실패     = Start() 가 false → 러너가 쿨다운 없이 같은 프레임 재추첨
+```
+
+⚠️ **`FillTargets` 의 `Vector2 facing` 오버로드를 쓰면 안 됩니다.** 내부 `RoundToCell` 때문에 45°에서 서로 다른 셀이 같은 칸으로 뭉치고 `AddUnique` 가 버립니다(`Line range 3` 이 2칸이 됨). 정수 격자를 보존하는 회전은 90° 배수뿐이라 원리상 피할 수 없습니다. 플레이어 스킬의 `Custom` 경로(`CustomShapeMatcher`)가 이미 같은 방식으로 자유 각도를 처리합니다.
+
+스프라이트 방향은 `spriteRenderer.flipX` **좌/우뿐**이며(`Assets/Scripts/Enemy/` 에 transform 회전 코드 0건), `LockFacing` 이 `direction.x` 부호만 사용하므로 **패턴 facing 과 스프라이트 facing 은 이미 분리**돼 있습니다. 계산은 대각으로 정밀하게, 그림은 좌/우로 동작합니다.
+
+**거리는 `maxRange` 하나입니다.** 탐색 반경 = `Mathf.RoundToInt(MaxRange / cellSize)`. facing 이 플레이어를 향하므로 플레이어는 항상 로컬 `+Y` 위에 있고, `Circle` 의 최대 오프셋 `(0, N)` 이 정확히 N칸 지점입니다 → **플레이어 쪽 도달 거리가 정확히 `maxRange`**. 정사각의 대각 여유(`N√2`)는 argmin 이 선택하지 않습니다. 이 통합으로 옛 링 검색의 **사거리 경계 탈락이 소멸**했습니다.
+
+**피해는 셀 + `OverlapBox` 입니다.** `damageShape` 셀을 `CustomShapeMatcher` 로 월드 배치하고 셀마다 `Physics2D.OverlapBox(center, cellSize, angle, CombatLayers.PlayerFilter, buf)`. 대상당 1회는 `HashSet<IDamageable>` 가 보장합니다.
+
+⚠️ **원점 포함 규칙** — `AttackPattern` 내장 타입은 원점을 구조적으로 제외합니다(`Circle` 은 `dx != 0 || dy != 0`, `Line`/`Cone` 은 `i = 1` 부터). 착지 후보 열거에는 옳지만(제자리 점프 차단) 피해 범위에서는 **착지한 그 칸의 플레이어가 안 맞습니다.** 그래서 **내장 타입은 `(0,0)` 을 런타임에서 추가하고 `Custom` 은 저작한 그대로** 씁니다(중앙이 빈 링 저작을 막지 않기 위해). `AttackPattern.cs` 를 고치면 플레이어 스킬이 같이 바뀌므로 보정은 런타임 안에서만 합니다.
+
+**이동 중 물리 처리**
+
+| | 처리 |
+|---|---|
+| 되밀림 | `EnemyController.SetFlightModeEnabled(true)` → 이동 동안 `Rigidbody2D` 를 **Kinematic** 으로. 착지·정리 시 `Dynamic` + `ApplyStationaryPhysicsSettings()` 복원 |
+| 발판 가드 | `SetWalkGuardSuppressed(true)` (기존) |
+| 무한 이동 | 타임아웃 `(거리/속도) × 2 + 0.25` 초과 시 강제 착지 |
+| 벽 정지(Dash) | `Physics2D.OverlapCircle(next, CollisionFootprintRadius, CombatLayers.WallMask)` — **현재 위치에서** 정지 |
+
+⚠️ **`isTrigger` 토글은 채택하지 않았습니다.** `CombatLayers` 의 ContactFilter2D 가 `useTriggers = false` 라 트리거로 만들면 **이동 내내 피격 불가**가 됩니다. Kinematic 은 콜라이더가 논트리거로 남아 피격이 유지됩니다. Kinematic 은 Static(벽 타일맵)과 접촉하지 않아 비행 중 벽 통과가 함께 해결되고, Dynamic 인 플레이어는 밀어냅니다(의도).
+
+⚠️ 복원 지점이 **넷**입니다 — `CompleteMove` / `Cleanup` / `EnemyController` 초기화 / **풀 재사용**. `ApplyStationaryPhysicsSettings()` 가 `bodyType` 을 건드리지 않아 자동 복구되지 않습니다. 빠지면 재사용된 적이 영구 Kinematic(유령)이 됩니다.
+
+**Jump / Dash 대비표**
+
+| | Jump | Dash |
+|---|---|---|
+| 목표 결정 | `searchShape` 셀 열거 + argmin | **동일 로직** (`searchShape = Line`) |
+| 페이즈 | `Windup → Move → Impact → Recovery` | `Windup → Move → Recovery` |
+| 피해 | 착지 후 1회 | 이동 중 매 프레임, 돌진당 대상 1회 |
+| 시각 호 | `jumpVisualHeight` | `0` 저작 → 코드 분기 없이 직선 |
+
+**저작 예시**
+
+| 에셋 | 값 |
+|---|---|
+| `Elite_Magma_01_JumpSkill` | `maxRange 12` / `searchShape Circle` / `damageShape Circle` + `damageRange 3` / `moveSpeed 9` / `castDelay 0.45` |
+| `Elite_Magma_01_DashSkill` | `maxRange 15` / `searchShape Line` / `damageShape Circle` + `damageRange 1` / `moveSpeed 15` / `stopOnWall 1` / `jumpVisualHeight 0` |
+
+⚠️ **미이관 = `Projectile` 뿐입니다.** `EnemyProjectilePatternData`/`Runtime` 2파일이 남아 있고 `EnemySkillRuntime` 은 `Projectile`/`InstantArea` 를 만나면 개발 빌드 경고 후 `false` 를 반환합니다. HANDOFF §7-B S5.
+
+⚠️ **셀 피해는 적 덩치를 반영하지 않습니다.** Magma(콜라이더 반경 2.7)는 벽 정지 시 중심이 벽에서 2.7 떨어지는데, `damageRange 1`(반폭 1.5)은 벽에 붙은 플레이어에 닿지 않을 수 있습니다. → `HandOff/Known_Issue.md` Q24·Q25.
+
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
 
@@ -3512,12 +3605,59 @@ DungeonManager.TryTransitionToFloor
 
 🔴 **Editor 창 동반 수정이 필수였습니다** — `EnemyDashboardWindow` 의 `HasBossFloor` 기반 `"BossEncounterTable floor 중복"` 검증이 **저작 단계에서** 중복 floor 를 막고 있어, 이걸 풀지 않으면 대시보드로 두 번째 보스를 만들 수 없습니다. `weight` 입력·기본값 복사·직렬화도 함께 배관했습니다(2026-08-14 S1의 Editor 어셈블리 누락과 같은 계열입니다).
 
+**보스방 3종 분리 (2026-09-04)** — `BossAreaRoot`(390.7,-99) / `BossArea02Root`(457,-99) / `BossArea03Root`(518,-99). Ctrl+D 복제로 서브트리 내부 참조가 자동 재매핑돼 YAML 수술 없이 성립했습니다. **방은 층이 아니라 보스에 전속**하므로 방 개수 = 보스 종류 수입니다. `BossEncounterEntry.areaId` 는 이 시점에 제거됐습니다. 상세 §11e-12.
+
 **보스 2종째 데이터** — `Boss_Ash_Warden_01`(`Assets/Scriptable/Enemy/Boss/`). Contact / 800HP / attack 14 / defense 2 / moveSpeed 3.5, 패턴은 Dash + Jump 2종, 페이즈 없음(`phases: []` → `data.PatternSet` 을 그대로 사용). 프리팹과 패턴 데이터는 Magma 재활용이라 신규 에셋은 EnemyData + PatternSet 2개뿐입니다.
 
 - 🔴 **`EnemyPoolManager` 등록이 필수입니다.** `Request(data)` → `Create(data)` 가 풀 엔트리의 프리팹을 찾습니다. 빠뜨리면 `TrySpawnBoss` 가 false 를 반환하고 `Begin` 이 조우를 통째로 취소해 **"보스 층인데 보스가 없다"** 가 됩니다
 - 🔴 **`isElite: 1` 유지** — `RoomSpawner` 의 `IsElite` 필터가 일반 방 후보에서 걸러내는 유일한 장치입니다. 0이면 씬 `RoomSpawner.enemyTable` 경로로 **일반 잡몹으로 던전에 스폰됩니다**
 - 드랍은 `GetDropGroup` 이 null 을 반환해도 `EnemyDropRoller.Roll` 이 `bossRankDrops` 만으로 굴리므로 개별 그룹 저작 없이 보스 랭크 드랍이 적용됩니다
 - `enemyName` 을 확실히 다르게 지은 이유는 `ArenaHealthBarRowUI` 가 `enemy.DisplayName` 을 보스 HP바에 띄우는 것이 **추첨 결과를 화면에서 확인하는 유일한 수단**이기 때문입니다
+
+---
+
+### 11e-12. 보스방 3종 분리 — 방은 보스에 전속한다 (2026-09-04)
+
+보스방이 씬에 하나뿐이라 20/40/60층이 같은 방을 썼습니다. 배관은 `a69fcff0`~`c8a8daa2` 에서 이미 완성돼 있었고(`bossAreaDestinationId → destination → LocationRoot → ArenaSpace`), 막힌 이유는 **가리킬 두 번째 방이 씬에 없다**는 것뿐이었습니다.
+
+**Ctrl+D 복제로 끝났습니다.** 착수 전 참조를 전수 조사한 결과 **`BossAreaRoot` 서브트리 바깥에서 안을 가리키는 참조가 0건**이었습니다.
+
+```
+ArenaSpace 6필드 / TilemapMinimapSource 3필드 / WalkabilityArea 3필드
+  → 전부 서브트리 내부
+  → Unity Ctrl+D 가 내부 참조를 자동 재매핑
+  → 계획했던 13,000줄 YAML 수술이 불필요해짐
+```
+
+🔑 `BossEncounterController` 는 `BossAreaRoot` 의 자식이 **아닙니다**(부모가 별개). 자식이었다면 복제본이 싱글톤 가드(`Active != this → Destroy`)에 걸려 통째로 파괴됐습니다.
+
+실제 남은 작업은 **문자열 6개**(방 2개 × `locationRootId` / `TilemapMinimapSource.locationId` / `WalkabilityArea.id`)와 destination 2엔트리, 테이블 2줄이었습니다.
+
+| 방 | 좌표 | id |
+|---|---|---|
+| `BossAreaRoot` | `(390.7, -99)` | `boss_arena` |
+| `BossArea02Root` | `(457, -99)` | `boss_arena_02` |
+| `BossArea03Root` | `(518, -99)` | `boss_arena_03` |
+
+**🔴 방은 층이 아니라 보스에 전속합니다.**
+
+```
+20층 Magma      → boss_arena
+20층 Ash Warden → boss_arena_02
+40층 Magma      → boss_arena
+60층 (isFinal)  → boss_arena_03
+```
+
+구조상으로는 층 기준이 자연스럽지만 **"보스마다 특징적인 보스방을 가진다"는 컨셉**을 우선했습니다. 결과로 **방 개수 = 보스 종류 수**가 되므로 보스를 늘릴 때 방도 함께 늘려야 합니다.
+
+⚠️ **60층이 3번 방인 이유가 데이터에 없습니다.** 60층 `EnemyData` 는 20·40층과 같은 Magma 인데 방만 다릅니다. 의도는 **최종보스 슬롯의 무대 예약**이며 Magma 는 교체될 임시 데이터입니다. 결선 실수로 오인하지 마십시오.
+
+⚠️ **id 이름은 번호를 유지합니다.** 세 방이 아직 동일 기하 복제이고 `Boss_Ash_Warden_01` 이 임시 데이터라, 보스 이름 기반 id 는 교체 때마다 거짓이 됩니다.
+
+**동승 — 포탈 위치 폴백 기준.** `BossEncounterController.TryResolveExitPortalPosition` 과 Elite 의 `TryResolveReturnPortalPosition` 이 마지막 폴백에서 `transform.position`(= **컨트롤러 자신**, 방 루트와 다른 GameObject)을 썼습니다. `ArenaEncounterBase.ActiveSpaceOrigin` 을 신설해 4곳을 활성 방 루트 기준으로 교체했습니다. ⚠️ `ArenaSpace.OnValidate` 가 `enemySpawnPoint`·`clearedPortalSpawnPoint` 를 검사하지 않아 이 폴백은 조용히 타는 경로입니다.
+
+**동승 — `BossEncounterEntry.areaId` 제거.** 원래 미니맵 소스 키였으나 유일한 소비처 `PrepareBossAreaMinimap` 이 최초 구현(`529e22ec`)부터 `TODO` 만 있는 빈 스텁이었고 같은 날 삭제됐습니다. 역할은 `destination.minimapLocationId` 가 대체했습니다. 4엔트리가 전부 `boss_arena` 라 우연히 참이던 값이 **방을 가르는 순간 명시적으로 틀린 값**이 되어(툴팁은 "이 방의 `WalkabilityArea.Id` 와 일치한다"고 약속) 제거를 앞당겼습니다. `EnemyDashboardWindow` 8곳 동반 정리 — **Editor 어셈블리를 같이 고치지 않으면 컴파일이 막힙니다.**
+
 
 ---
 
@@ -3889,7 +4029,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | 묶음 | 핵심 구성 |
 |------|-----------|
 | FSM·이동 | `EnemyBrain`(Target/Movement/Action 핸들러) + A*(버퍼 재사용) + 군중 분리(throttle+Idle separation) + Ranged 이동 3종(Chase/Kiting 5단계 폴백/Random minR 보호). 상세 §8 |
-| 공격 패턴 | Contact(+Special Rush/Jump 상태머신, 페이싱 잠금, Animator 폴백) + Ranged(사거리·선딜·후딜) + **Elite Pattern Set**(SO Data+Runtime+Context — Projectile/Dash/Jump, 신규 패턴=클래스 2개). 상세 §8-4 |
+| 공격 패턴 | Contact(+Special Rush/Jump 상태머신, 페이싱 잠금, Animator 폴백) + Ranged(사거리·선딜·후딜) + **Enemy Pattern Set**(가중 추첨 + 쿨다운 배열 + 시작 실패 시 재추첨). 상세 §8-4 |
+| **적 스킬 데이터** | **`EnemySkillData` + `executionType` 분기 — 새 패턴 = 에셋 1개**(2026-09-04). 자유 각도 셀 열거 + argmin 목표 결정 / `maxRange` 단일 거리 / 셀 피해(`OverlapBox`) / 이동 중 Kinematic + 타임아웃 / Dash 벽 정지(물리 쿼리) / 애니메이션 문자열 override. Jump·Dash 이관 완료, **Projectile 잔여**. 상세 §8-4-5 |
 | 임팩트 데이터화 | `EnemyAttackImpactData`(knockback/slow/stun) — rush/jump/projectile 공유 단일 라우팅 + `isStationary`/`immuneToKnockback` 플래그 |
 | 스폰·클리어 | 방 진입 트리거 + 예산 스폰 + 결정론(방별 rng) + 층 범위 필터(min/maxFloor) + MonsterDen(예산 ×2.5) + 지연 전투 시작(`CanStartRoomEncounter`) + `EnemyPoolManager` + 사망 지연(`OnDeathFinished` 반납, Brain 즉시 정리). 상세 §9 |
 | 표시 | `EnemyHealthBar`(콜라이더 앵커·스케일 정규화·`TopAnchorY` 노출) + `EnemyAnimationController`(이동 감지·페이싱·트리거 폴백) |
