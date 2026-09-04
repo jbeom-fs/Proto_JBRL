@@ -28,7 +28,7 @@ MonoBehaviour:
       exitHpRatio: 0
       maxHpOverride: 0
   - floor: 20
-    weight: 1
+    weight: 0
     boss: {fileID: 11400000, guid: c7f6ad12e05b4f53a8a0d31e768b9241, type: 2}
     bossAreaDestinationId: boss_arena_02
     isFinal: 0
