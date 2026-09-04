@@ -15,21 +15,20 @@ MonoBehaviour:
   displayName: Elite Magma Jump
   cooldown: 3.5
   minRange: 0
-  maxRange: 50
+  maxRange: 12
   weight: 1
   recoveryDuration: 0.55
   executionType: 3
   castDelay: 0.45
-  searchRange:
+  searchShape:
     patternType: 3
-    patternRange: 12
     coneHalfAngle: 45
     customCells: []
-  damageRange:
+  damageShape:
     patternType: 3
-    patternRange: 3
     coneHalfAngle: 45
     customCells: []
+  damageRange: 3
   damage: 3
   moveSpeed: 9
   jumpVisualHeight: 2

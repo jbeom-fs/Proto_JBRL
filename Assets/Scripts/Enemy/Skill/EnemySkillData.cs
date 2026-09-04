@@ -10,10 +10,11 @@ public sealed class EnemySkillData : EnemyPatternData
     [SerializeField, Min(0f)] private float castDelay = 0.45f;
 
     [Header("Range")]
-    [SerializeField] private PatternRangeData searchRange = new();
-    [SerializeField] private PatternRangeData damageRange = new();
+    [SerializeField] private PatternShapeData searchShape = new();
 
     [Header("Impact")]
+    [SerializeField] private PatternShapeData damageShape = new();
+    [SerializeField, Min(0)] private int damageRange = 3;
     [SerializeField, Min(0)] private int damage = 3;
 
     [Header("Movement")]
@@ -30,8 +31,9 @@ public sealed class EnemySkillData : EnemyPatternData
 
     public EnemySkillExecutionType ExecutionType => executionType;
     public float CastDelay => Mathf.Max(0f, castDelay);
-    public PatternRangeData SearchRange => searchRange;
-    public PatternRangeData DamageRange => damageRange;
+    public PatternShapeData SearchShape => searchShape;
+    public PatternShapeData DamageShape => damageShape;
+    public int DamageRange => Mathf.Max(0, damageRange);
     public int Damage => Mathf.Max(0, damage);
     public float MoveSpeed => Mathf.Max(0f, moveSpeed);
     public float JumpVisualHeight => Mathf.Max(0f, jumpVisualHeight);
@@ -49,37 +51,25 @@ public sealed class EnemySkillData : EnemyPatternData
     {
         base.OnValidate();
 
-        if (searchRange != null &&
-            searchRange.PatternType == AttackPatternType.Custom &&
-            (searchRange.CustomCells == null || searchRange.CustomCells.Count == 0))
+        if (searchShape != null &&
+            searchShape.PatternType == AttackPatternType.Custom &&
+            (searchShape.CustomCells == null || searchShape.CustomCells.Count == 0))
         {
-            Debug.LogWarning($"[EnemySkillData] {name}: Custom searchRange requires at least one custom cell.", this);
+            Debug.LogWarning($"[EnemySkillData] {name}: Custom searchShape requires at least one custom cell.", this);
         }
 
-        if (damageRange != null &&
-            damageRange.PatternType == AttackPatternType.Custom &&
-            (damageRange.CustomCells == null || damageRange.CustomCells.Count == 0))
+        if (damageShape != null &&
+            damageShape.PatternType == AttackPatternType.Custom &&
+            (damageShape.CustomCells == null || damageShape.CustomCells.Count == 0))
         {
-            Debug.LogWarning($"[EnemySkillData] {name}: Custom damageRange requires at least one custom cell.", this);
+            Debug.LogWarning($"[EnemySkillData] {name}: Custom damageShape requires at least one custom cell.", this);
         }
 
         if (executionType == EnemySkillExecutionType.Jump && moveSpeed <= 0f)
             Debug.LogWarning($"[EnemySkillData] {name}: Jump moveSpeed must be greater than 0.", this);
 
-        if (searchRange != null &&
-            searchRange.PatternType != AttackPatternType.Custom &&
-            searchRange.PatternRange == 0)
-        {
-            Debug.LogWarning($"[EnemySkillData] {name}: Non-custom searchRange must be greater than 0.", this);
-        }
-
-        if (searchRange != null && MaxRange > searchRange.PatternRange)
-        {
-            Debug.LogWarning(
-                $"[EnemySkillData] {name}: maxRange({MaxRange})가 searchRange({searchRange.PatternRange})보다 큽니다. " +
-                "도달할 수 없는 거리에서 패턴이 선택됩니다.",
-                this);
-        }
+        if (executionType == EnemySkillExecutionType.Jump && MaxRange < 1f)
+            Debug.LogWarning($"[EnemySkillData] {name}: maxRange가 1보다 작아 착지 후보가 생기지 않습니다.", this);
     }
 #endif
 }

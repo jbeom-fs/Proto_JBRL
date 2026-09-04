@@ -241,20 +241,20 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         _damageCellBuffer.Clear();
         _hitThisImpact.Clear();
 
-        PatternRangeData damageRange = _data.DamageRange;
-        if (damageRange == null)
+        PatternShapeData damageShape = _data.DamageShape;
+        if (damageShape == null)
             return;
 
         AttackPattern.FillTargets(
-            damageRange.PatternType,
+            damageShape.PatternType,
             Vector2Int.zero,
             Vector2Int.up,
-            damageRange.PatternRange,
-            damageRange.ConeHalfAngle,
+            _data.DamageRange,
+            damageShape.ConeHalfAngle,
             _damageCellBuffer,
-            damageRange.CustomCells);
+            damageShape.CustomCells);
 
-        if (damageRange.PatternType != AttackPatternType.Custom &&
+        if (damageShape.PatternType != AttackPatternType.Custom &&
             !_damageCellBuffer.Contains(Vector2Int.zero))
         {
             _damageCellBuffer.Add(Vector2Int.zero);
@@ -314,19 +314,23 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         facing.Normalize();
         float angle = AimDirectionUtility.ToAuthoredFacingAngle(facing);
         float cellSize = WorldEnvironmentQuery.GetCellSize(selfPosition);
-        PatternRangeData range = _data.SearchRange;
-        if (range == null)
+        int searchCellRange = Mathf.RoundToInt(_data.MaxRange / cellSize);
+        if (searchCellRange <= 0)
+            return false;
+
+        PatternShapeData searchShape = _data.SearchShape;
+        if (searchShape == null)
             return false;
 
         _targetOffsetBuffer.Clear();
         AttackPattern.FillTargets(
-            range.PatternType,
+            searchShape.PatternType,
             Vector2Int.zero,
             Vector2Int.up,
-            range.PatternRange,
-            range.ConeHalfAngle,
+            searchCellRange,
+            searchShape.ConeHalfAngle,
             _targetOffsetBuffer,
-            range.CustomCells);
+            searchShape.CustomCells);
 
         if (_targetOffsetBuffer.Count == 0)
             return false;
