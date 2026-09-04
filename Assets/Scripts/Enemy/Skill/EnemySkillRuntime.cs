@@ -26,6 +26,8 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
     private Vector3 _visualBaseLocalPosition;
     private Vector2 _facingDirection = Vector2.down;
     private float _timer;
+    private float _moveElapsed;
+    private float _moveTimeout;
     private bool _appliedImpact;
     private bool _hasVisualRoot;
     private bool _unlockFacing;
@@ -110,6 +112,8 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         _visualBaseLocalPosition = default;
         _facingDirection = Vector2.down;
         _timer = 0f;
+        _moveElapsed = 0f;
+        _moveTimeout = 0f;
         _appliedImpact = false;
         _hasVisualRoot = false;
         _unlockFacing = false;
@@ -165,8 +169,13 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
     private void StartMove()
     {
         SetWalkGuardSuppressed(true);
+        SetFlightMode(true);
         _startPosition = _context.SelfTransform.position;
         _totalMoveDistance = Vector3.Distance(_startPosition, _targetPosition);
+        _moveElapsed = 0f;
+        _moveTimeout = _data.MoveSpeed > 0f
+            ? (_totalMoveDistance / _data.MoveSpeed) * 2f + 0.25f
+            : 0.25f;
         _context.Animation?.PlayPatternAnimation(
             _data.ExecuteAnimation,
             _data.ExecuteAnimationTrigger,
@@ -183,6 +192,13 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
     {
         if (_data.LockFacingDuringExecute)
             _context.Animation?.LockSpecialFacing(_facingDirection);
+
+        _moveElapsed += deltaTime;
+        if (_moveElapsed >= _moveTimeout)
+        {
+            CompleteMove();
+            return;
+        }
 
         float step = _data.MoveSpeed * deltaTime;
         if (step <= 0f)
@@ -426,6 +442,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
     {
         _context.SelfTransform.position = _targetPosition;
         SetWalkGuardSuppressed(false);
+        SetFlightMode(false);
         RestoreVisualOffset();
         _phase = Phase.Impact;
     }
@@ -487,6 +504,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
     {
         RestoreVisualOffset();
         SetWalkGuardSuppressed(false);
+        SetFlightMode(false);
 
         if (_unlockFacing)
             _context?.Animation?.UnlockSpecialFacing();
@@ -502,5 +520,15 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         EnemyController enemy = _context.Enemy;
         if (enemy != null)
             enemy.SetWalkGuardSuppressed(suppressed);
+    }
+
+    private void SetFlightMode(bool enabled)
+    {
+        if (_context == null)
+            return;
+
+        EnemyController enemy = _context.Enemy;
+        if (enemy != null)
+            enemy.SetFlightModeEnabled(enabled);
     }
 }

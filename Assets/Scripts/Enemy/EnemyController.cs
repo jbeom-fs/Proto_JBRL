@@ -92,6 +92,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _animationController = GetComponentInChildren<EnemyAnimationController>(true);
         _lastSafePosition = transform.position;
         _walkGuardSuppressed = false;
+        SetFlightModeEnabled(false);
         ApplyStationaryPhysicsSettings();
         if (data != null)
         {
@@ -126,6 +127,7 @@ public class EnemyController : MonoBehaviour, IDamageable
         _healthBar?.SetHp(_currentHp, MaxHp);
         _lastSafePosition = transform.position;
         _walkGuardSuppressed = false;
+        SetFlightModeEnabled(false);
         ResetStatusEffects();
         ApplyStationaryPhysicsSettings();
         if (_circleCollider != null)
@@ -143,6 +145,22 @@ public class EnemyController : MonoBehaviour, IDamageable
     public void SetWalkGuardSuppressed(bool suppressed)
     {
         _walkGuardSuppressed = suppressed;
+    }
+
+    public void SetFlightModeEnabled(bool enabled)
+    {
+        if (_rb == null)
+            return;
+
+        if (enabled)
+        {
+            _rb.linearVelocity = Vector2.zero;
+            _rb.bodyType = RigidbodyType2D.Kinematic;
+            return;
+        }
+
+        _rb.bodyType = RigidbodyType2D.Dynamic;
+        ApplyStationaryPhysicsSettings();
     }
 
     public void TakeDamage(int damage)

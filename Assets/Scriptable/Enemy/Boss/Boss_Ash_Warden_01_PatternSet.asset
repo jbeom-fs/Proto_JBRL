@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatternSet
   patterns:
   - {fileID: 11400000, guid: f7b86e3282744381a666d10789882193, type: 2}
-  - {fileID: 11400000, guid: bd476f49ebbc48b7bbfece62fbf4757b, type: 2}
+  - {fileID: 11400000, guid: a389baa121094ea1923da09e525e8604, type: 2}
