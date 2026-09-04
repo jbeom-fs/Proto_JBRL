@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyAnimationController : MonoBehaviour
@@ -30,19 +31,7 @@ public class EnemyAnimationController : MonoBehaviour
     private bool _targetFacingAppliedThisFrame;
     private bool _facingLocked;
     private bool _lockedFacingRight;
-    private bool _hasIsMoving;
-    private bool _hasAttackTrigger;
-    private bool _hasProjectileTrigger;
-    private bool _hasDashTrigger;
-    private bool _hasChargeTrigger;
-    private bool _hasRushTrigger;
-    private bool _hasJumpTrigger;
-    private bool _hasLandTrigger;
-    private bool _hasDeathTrigger;
-    private bool _hasMoveX;
-    private bool _hasMoveY;
-    private bool _hasLastMoveX;
-    private bool _hasLastMoveY;
+    private readonly HashSet<int> _presentParameters = new HashSet<int>();
 
     private void Awake()
     {
@@ -64,17 +53,17 @@ public class EnemyAnimationController : MonoBehaviour
         bool isMoving = delta.sqrMagnitude > movementThreshold * movementThreshold;
 
         if (animator != null)
-            SetBool(IsMovingHash, _hasIsMoving, isMoving);
+            SetBool(IsMovingHash, isMoving);
 
         if (isMoving)
         {
             Vector2 direction = delta.normalized;
             if (animator != null)
             {
-                SetFloat(MoveXHash, _hasMoveX, direction.x);
-                SetFloat(MoveYHash, _hasMoveY, direction.y);
-                SetFloat(LastMoveXHash, _hasLastMoveX, direction.x);
-                SetFloat(LastMoveYHash, _hasLastMoveY, direction.y);
+                SetFloat(MoveXHash, direction.x);
+                SetFloat(MoveYHash, direction.y);
+                SetFloat(LastMoveXHash, direction.x);
+                SetFloat(LastMoveYHash, direction.y);
             }
 
             if (!_isDead && !_facingLocked && faceMoveDirectionWhenMoving && !_targetFacingAppliedThisFrame)
@@ -113,18 +102,18 @@ public class EnemyAnimationController : MonoBehaviour
             return;
 
         animator.ResetTrigger(AttackTriggerHash);
-        ResetTrigger(ProjectileTriggerHash, _hasProjectileTrigger);
-        ResetTrigger(DashTriggerHash, _hasDashTrigger);
-        ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
-        ResetTrigger(RushTriggerHash, _hasRushTrigger);
-        ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
-        ResetTrigger(LandTriggerHash, _hasLandTrigger);
+        ResetTrigger(ProjectileTriggerHash);
+        ResetTrigger(DashTriggerHash);
+        ResetTrigger(ChargeTriggerHash);
+        ResetTrigger(RushTriggerHash);
+        ResetTrigger(JumpTriggerHash);
+        ResetTrigger(LandTriggerHash);
         animator.ResetTrigger(DeathTriggerHash);
-        SetBool(IsMovingHash, _hasIsMoving, false);
-        SetFloat(MoveXHash, _hasMoveX, 0f);
-        SetFloat(MoveYHash, _hasMoveY, 0f);
-        SetFloat(LastMoveXHash, _hasLastMoveX, 0f);
-        SetFloat(LastMoveYHash, _hasLastMoveY, -1f);
+        SetBool(IsMovingHash, false);
+        SetFloat(MoveXHash, 0f);
+        SetFloat(MoveYHash, 0f);
+        SetFloat(LastMoveXHash, 0f);
+        SetFloat(LastMoveYHash, -1f);
 
         if (!animator.gameObject.activeInHierarchy)
         {
@@ -145,7 +134,7 @@ public class EnemyAnimationController : MonoBehaviour
 
     public void PlayAttack()
     {
-        if (animator == null || !_hasAttackTrigger)
+        if (animator == null || !HasParameter(AttackTriggerHash))
             return;
 
         animator.ResetTrigger(AttackTriggerHash);
@@ -165,22 +154,22 @@ public class EnemyAnimationController : MonoBehaviour
         if (faceTargetOnAttack)
             FacePosition(targetPosition);
 
-        SetTriggerOrAttack(ChargeTriggerHash, _hasChargeTrigger);
+        SetTriggerOrAttack(ChargeTriggerHash);
     }
 
     public void PlayRush()
     {
-        SetTriggerOrAttack(RushTriggerHash, _hasRushTrigger);
+        SetTriggerOrAttack(RushTriggerHash);
     }
 
     public void PlayJump()
     {
-        SetTriggerOrAttack(JumpTriggerHash, _hasJumpTrigger);
+        SetTriggerOrAttack(JumpTriggerHash);
     }
 
     public void PlayLand()
     {
-        SetTriggerOrAttack(LandTriggerHash, _hasLandTrigger);
+        SetTriggerOrAttack(LandTriggerHash);
     }
 
     public void PlayPatternAnimation(EnemyAnimationKey key)
@@ -203,11 +192,11 @@ public class EnemyAnimationController : MonoBehaviour
                 if (faceTargetOnAttack)
                     FacePosition(targetPosition);
 
-                SetTriggerOrAttack(ProjectileTriggerHash, _hasProjectileTrigger);
+                SetTriggerOrAttack(ProjectileTriggerHash);
                 break;
 
             case EnemyAnimationKey.Dash:
-                SetTriggerOrAttack(DashTriggerHash, _hasDashTrigger);
+                SetTriggerOrAttack(DashTriggerHash);
                 break;
 
             case EnemyAnimationKey.Charge:
@@ -226,6 +215,20 @@ public class EnemyAnimationController : MonoBehaviour
                 PlayLand();
                 break;
         }
+    }
+
+    public void PlayPatternAnimation(EnemyAnimationKey key, string customTrigger, Vector3 targetPosition)
+    {
+        if (_isDead)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(customTrigger))
+        {
+            SetTriggerOrAttack(Animator.StringToHash(customTrigger));
+            return;
+        }
+
+        PlayPatternAnimation(key, targetPosition);
     }
 
     public void LockSpecialFacing(Vector2 direction)
@@ -272,16 +275,16 @@ public class EnemyAnimationController : MonoBehaviour
         _isDead = true;
         _facingLocked = false;
 
-        if (animator == null || !_hasDeathTrigger)
+        if (animator == null || !HasParameter(DeathTriggerHash))
             return;
 
-        ResetTrigger(AttackTriggerHash, _hasAttackTrigger);
-        ResetTrigger(ProjectileTriggerHash, _hasProjectileTrigger);
-        ResetTrigger(DashTriggerHash, _hasDashTrigger);
-        ResetTrigger(ChargeTriggerHash, _hasChargeTrigger);
-        ResetTrigger(RushTriggerHash, _hasRushTrigger);
-        ResetTrigger(JumpTriggerHash, _hasJumpTrigger);
-        ResetTrigger(LandTriggerHash, _hasLandTrigger);
+        ResetTrigger(AttackTriggerHash);
+        ResetTrigger(ProjectileTriggerHash);
+        ResetTrigger(DashTriggerHash);
+        ResetTrigger(ChargeTriggerHash);
+        ResetTrigger(RushTriggerHash);
+        ResetTrigger(JumpTriggerHash);
+        ResetTrigger(LandTriggerHash);
         animator.SetTrigger(DeathTriggerHash);
     }
 
@@ -325,59 +328,35 @@ public class EnemyAnimationController : MonoBehaviour
 
     private void CacheAnimatorParameters()
     {
-        _hasIsMoving = false;
-        _hasAttackTrigger = false;
-        _hasProjectileTrigger = false;
-        _hasDashTrigger = false;
-        _hasChargeTrigger = false;
-        _hasRushTrigger = false;
-        _hasJumpTrigger = false;
-        _hasLandTrigger = false;
-        _hasDeathTrigger = false;
-        _hasMoveX = false;
-        _hasMoveY = false;
-        _hasLastMoveX = false;
-        _hasLastMoveY = false;
+        _presentParameters.Clear();
 
         if (animator == null)
             return;
 
         foreach (AnimatorControllerParameter parameter in animator.parameters)
-        {
-            if (parameter.nameHash == IsMovingHash) _hasIsMoving = true;
-            if (parameter.nameHash == AttackTriggerHash) _hasAttackTrigger = true;
-            if (parameter.nameHash == ProjectileTriggerHash) _hasProjectileTrigger = true;
-            if (parameter.nameHash == DashTriggerHash) _hasDashTrigger = true;
-            if (parameter.nameHash == ChargeTriggerHash) _hasChargeTrigger = true;
-            if (parameter.nameHash == RushTriggerHash) _hasRushTrigger = true;
-            if (parameter.nameHash == JumpTriggerHash) _hasJumpTrigger = true;
-            if (parameter.nameHash == LandTriggerHash) _hasLandTrigger = true;
-            if (parameter.nameHash == DeathTriggerHash) _hasDeathTrigger = true;
-            if (parameter.nameHash == MoveXHash) _hasMoveX = true;
-            if (parameter.nameHash == MoveYHash) _hasMoveY = true;
-            if (parameter.nameHash == LastMoveXHash) _hasLastMoveX = true;
-            if (parameter.nameHash == LastMoveYHash) _hasLastMoveY = true;
-        }
+            _presentParameters.Add(parameter.nameHash);
     }
 
-    private void SetBool(int hash, bool hasParameter, bool value)
+    private bool HasParameter(int hash) => _presentParameters.Contains(hash);
+
+    private void SetBool(int hash, bool value)
     {
-        if (hasParameter)
+        if (HasParameter(hash))
             animator.SetBool(hash, value);
     }
 
-    private void SetFloat(int hash, bool hasParameter, float value)
+    private void SetFloat(int hash, float value)
     {
-        if (hasParameter)
+        if (HasParameter(hash))
             animator.SetFloat(hash, value);
     }
 
-    private void SetTriggerOrAttack(int hash, bool hasParameter)
+    private void SetTriggerOrAttack(int hash)
     {
         if (animator == null)
             return;
 
-        if (hasParameter)
+        if (HasParameter(hash))
         {
             animator.ResetTrigger(hash);
             animator.SetTrigger(hash);
@@ -387,9 +366,9 @@ public class EnemyAnimationController : MonoBehaviour
         PlayAttack();
     }
 
-    private void ResetTrigger(int hash, bool hasParameter)
+    private void ResetTrigger(int hash)
     {
-        if (animator != null && hasParameter)
+        if (animator != null && HasParameter(hash))
             animator.ResetTrigger(hash);
     }
 }
