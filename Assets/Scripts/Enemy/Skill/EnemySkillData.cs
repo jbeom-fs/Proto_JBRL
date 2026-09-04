@@ -22,6 +22,7 @@ public sealed class EnemySkillData : EnemyPatternData
     [SerializeField, Min(0f)] private float jumpVisualHeight = 1f;
     [SerializeField] private bool stayInRoom = true;
     [SerializeField] private bool lockFacingDuringExecute = true;
+    [SerializeField] private bool stopOnWall = true;
 
     [Header("Animation")]
     [SerializeField] private EnemyAnimationKey castAnimation = EnemyAnimationKey.Jump;
@@ -39,6 +40,7 @@ public sealed class EnemySkillData : EnemyPatternData
     public float JumpVisualHeight => Mathf.Max(0f, jumpVisualHeight);
     public bool StayInRoom => stayInRoom;
     public bool LockFacingDuringExecute => lockFacingDuringExecute;
+    public bool StopOnWall => stopOnWall;
     public EnemyAnimationKey CastAnimation => castAnimation;
     public string CastAnimationTrigger => castAnimationTrigger;
     public EnemyAnimationKey ExecuteAnimation => executeAnimation;

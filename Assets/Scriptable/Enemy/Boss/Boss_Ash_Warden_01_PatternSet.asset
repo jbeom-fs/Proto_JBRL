@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: Boss_Ash_Warden_01_PatternSet
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatternSet
   patterns:
-  - {fileID: 11400000, guid: f7b86e3282744381a666d10789882193, type: 2}
+  - {fileID: 11400000, guid: 0567f3c6d6fd4672a3ad9841bfc7c229, type: 2}
   - {fileID: 11400000, guid: a389baa121094ea1923da09e525e8604, type: 2}

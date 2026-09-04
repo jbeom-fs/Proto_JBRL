@@ -47,7 +47,8 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             return false;
         }
 
-        if (_data.ExecutionType != EnemySkillExecutionType.Jump)
+        if (_data.ExecutionType != EnemySkillExecutionType.Jump &&
+            _data.ExecutionType != EnemySkillExecutionType.Dash)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             Debug.LogWarning(
@@ -58,7 +59,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             return false;
         }
 
-        return StartJumpExecution();
+        return StartExecution();
     }
 
     public override void Tick(float deltaTime)
@@ -119,9 +120,9 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         _unlockFacing = false;
     }
 
-    private bool StartJumpExecution()
+    private bool StartExecution()
     {
-        if (!CanRun() || !TryResolveJumpTarget(out _targetPosition))
+        if (!CanRun() || !TryResolveMoveTarget(out _targetPosition))
         {
             Finish();
             return false;
@@ -184,8 +185,14 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         _phase = Phase.Move;
         ApplyVisualOffset(0f);
 
+        if (_data.ExecutionType == EnemySkillExecutionType.Dash)
+        {
+            BuildDamageCells();
+            _hitThisImpact.Clear();
+        }
+
         if (_data.MoveSpeed <= 0f || _totalMoveDistance <= 0.001f)
-            CompleteMove();
+            CompleteMove(true);
     }
 
     private void TickMove(float deltaTime)
@@ -196,7 +203,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         _moveElapsed += deltaTime;
         if (_moveElapsed >= _moveTimeout)
         {
-            CompleteMove();
+            CompleteMove(true);
             return;
         }
 
@@ -209,7 +216,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         float remaining = toTarget.magnitude;
         if (remaining <= 0.001f)
         {
-            CompleteMove();
+            CompleteMove(true);
             return;
         }
 
@@ -217,18 +224,34 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             ? _targetPosition
             : current + toTarget / remaining * step;
 
+        if (_data.ExecutionType == EnemySkillExecutionType.Dash &&
+            _data.StopOnWall &&
+            Physics2D.OverlapCircle(
+                next,
+                _context.Enemy.CollisionFootprintRadius,
+                CombatLayers.WallMask) != null)
+        {
+            CompleteMove(false);
+            return;
+        }
+
         _context.SelfTransform.position = next;
         ApplyVisualOffset(CalculateMoveProgress(next));
 
+        if (_data.ExecutionType == EnemySkillExecutionType.Dash)
+            ApplyDamageAt(_context.SelfTransform.position);
+
         if (step >= remaining || HasReachedTarget())
-            CompleteMove();
+            CompleteMove(true);
     }
 
     private void ApplyImpactAndRecover()
     {
         if (!_appliedImpact)
         {
-            TryApplyImpactDamage();
+            BuildDamageCells();
+            _hitThisImpact.Clear();
+            ApplyDamageAt(_context.SelfTransform.position);
             _appliedImpact = true;
         }
 
@@ -252,10 +275,9 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         Finish();
     }
 
-    private void TryApplyImpactDamage()
+    private void BuildDamageCells()
     {
         _damageCellBuffer.Clear();
-        _hitThisImpact.Clear();
 
         PatternShapeData damageShape = _data.DamageShape;
         if (damageShape == null)
@@ -276,6 +298,10 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             _damageCellBuffer.Add(Vector2Int.zero);
         }
 
+    }
+
+    private void ApplyDamageAt(Vector3 position)
+    {
         if (_damageCellBuffer.Count == 0)
             return;
 
@@ -283,11 +309,10 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             ? _data.Damage
             : (_context.Data != null ? _context.Data.attack : 1);
 
-        Vector3 landingPosition = _context.SelfTransform.position;
         float angleDeg = AimDirectionUtility.ToAuthoredFacingAngle(_facingDirection);
-        float cellSize = WorldEnvironmentQuery.GetCellSize(landingPosition);
+        float cellSize = WorldEnvironmentQuery.GetCellSize(position);
         CustomShapeMatcher matcher = new CustomShapeMatcher(
-            (Vector2)landingPosition,
+            (Vector2)position,
             angleDeg,
             cellSize,
             _damageCellBuffer);
@@ -318,7 +343,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         }
     }
 
-    private bool TryResolveJumpTarget(out Vector3 targetPosition)
+    private bool TryResolveMoveTarget(out Vector3 targetPosition)
     {
         Vector3 selfPosition = _context.SelfTransform.position;
         targetPosition = selfPosition;
@@ -438,13 +463,25 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         return (_targetPosition - _context.SelfTransform.position).sqrMagnitude <= 0.000001f;
     }
 
-    private void CompleteMove()
+    private void CompleteMove(bool snapToTarget)
     {
-        _context.SelfTransform.position = _targetPosition;
+        if (snapToTarget)
+            _context.SelfTransform.position = _targetPosition;
+
         SetWalkGuardSuppressed(false);
         SetFlightMode(false);
         RestoreVisualOffset();
-        _phase = Phase.Impact;
+
+        if (_data.ExecutionType == EnemySkillExecutionType.Jump)
+        {
+            _phase = Phase.Impact;
+            return;
+        }
+
+        _timer = _data.RecoveryDuration;
+        _phase = Phase.Recovery;
+        if (_timer <= 0f)
+            Finish();
     }
 
     private bool CanRun()
