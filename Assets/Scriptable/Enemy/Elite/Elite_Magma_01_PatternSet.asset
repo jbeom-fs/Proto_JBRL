@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ElitePatternSet
   patterns:
   - {fileID: 11400000, guid: 0567f3c6d6fd4672a3ad9841bfc7c229, type: 2}
-  - {fileID: 11400000, guid: 96584ada0ae440c4b67c2eb84a4cd614, type: 2}
+  - {fileID: 11400000, guid: 28542db2413641308f56658a609a3ce5, type: 2}
   - {fileID: 11400000, guid: a389baa121094ea1923da09e525e8604, type: 2}

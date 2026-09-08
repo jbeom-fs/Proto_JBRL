@@ -10,6 +10,7 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         Windup,
         Move,
         Impact,
+        Burst,
         Recovery
     }
 
@@ -31,6 +32,9 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
     private bool _appliedImpact;
     private bool _hasVisualRoot;
     private bool _unlockFacing;
+    private Vector2 _aimDirection = Vector2.down;
+    private int _remainingBurstShots;
+    private bool _warnedMissingProjectile;
 
     public EnemySkillRuntime(EnemySkillData data)
     {
@@ -46,6 +50,9 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             Finish();
             return false;
         }
+
+        if (_data.ExecutionType == EnemySkillExecutionType.Projectile)
+            return StartProjectileExecution();
 
         if (_data.ExecutionType != EnemySkillExecutionType.Jump &&
             _data.ExecutionType != EnemySkillExecutionType.Dash)
@@ -78,7 +85,10 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         switch (_phase)
         {
             case Phase.Windup:
-                TickWindup(deltaTime);
+                if (_data.ExecutionType == EnemySkillExecutionType.Projectile)
+                    TickProjectileWindup(deltaTime);
+                else
+                    TickWindup(deltaTime);
                 break;
 
             case Phase.Move:
@@ -87,6 +97,10 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
 
             case Phase.Impact:
                 ApplyImpactAndRecover();
+                break;
+
+            case Phase.Burst:
+                TickBurst(deltaTime);
                 break;
 
             case Phase.Recovery:
@@ -118,6 +132,9 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
         _appliedImpact = false;
         _hasVisualRoot = false;
         _unlockFacing = false;
+        _aimDirection = Vector2.down;
+        _remainingBurstShots = 0;
+        _warnedMissingProjectile = false;
     }
 
     private bool StartExecution()
@@ -150,6 +167,169 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
             StartMove();
 
         return true;
+    }
+
+    private bool StartProjectileExecution()
+    {
+        if (!CanRun())
+        {
+            Finish();
+            return false;
+        }
+
+        _aimDirection = ResolveAimDirection();
+        _context.Brain.StopMoving();
+        _context.Animation?.LockSpecialFacing(_aimDirection);
+        _unlockFacing = true;
+        _context.Animation?.PlayPatternAnimation(
+            _data.CastAnimation,
+            _data.CastAnimationTrigger,
+            _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
+
+        _timer = _data.CastDelay;
+        _phase = Phase.Windup;
+
+        if (_timer <= 0f)
+            FireOrStartBurst();
+
+        return true;
+    }
+
+    private void TickProjectileWindup(float deltaTime)
+    {
+        _aimDirection = ResolveAimDirection();
+        _context.Animation?.LockSpecialFacing(_aimDirection);
+
+        if (_timer > 0f)
+        {
+            _timer -= deltaTime;
+            if (_timer > 0f)
+                return;
+        }
+
+        FireOrStartBurst();
+    }
+
+    private void TickBurst(float deltaTime)
+    {
+        if (_remainingBurstShots <= 0)
+        {
+            StartRecovery();
+            return;
+        }
+
+        _timer -= deltaTime;
+        if (_timer > 0f)
+            return;
+
+        FireSingle(_aimDirection);
+        _remainingBurstShots--;
+        _timer = _data.Projectile.BurstInterval;
+    }
+
+    private void FireOrStartBurst()
+    {
+        _aimDirection = ResolveAimDirection();
+        _context.Animation?.LockSpecialFacing(_aimDirection);
+        _context.Animation?.PlayPatternAnimation(
+            _data.ExecuteAnimation,
+            _data.ExecuteAnimationTrigger,
+            _context.Target != null ? _context.Target.position : _context.SelfTransform.position);
+
+        if (_data.Projectile.FirePattern == ProjectileFirePattern.Burst)
+        {
+            FireSingle(_aimDirection);
+            _remainingBurstShots = Mathf.Max(1, _data.Projectile.ProjectileCount) - 1;
+            if (_remainingBurstShots > 0)
+            {
+                _timer = _data.Projectile.BurstInterval;
+                _phase = Phase.Burst;
+                return;
+            }
+        }
+        else
+        {
+            FirePattern(_aimDirection, _data.Projectile.FirePattern);
+        }
+
+        StartRecovery();
+    }
+
+    private void StartRecovery()
+    {
+        _timer = _data.RecoveryDuration;
+        _phase = Phase.Recovery;
+
+        if (_timer <= 0f)
+            Finish();
+    }
+
+    private void FireSingle(Vector2 direction)
+    {
+        FirePattern(direction, ProjectileFirePattern.Single);
+    }
+
+    private void FirePattern(Vector2 direction, ProjectileFirePattern pattern)
+    {
+        if (_data.Projectile.ProjectilePrefab == null)
+        {
+            if (!_warnedMissingProjectile)
+            {
+                Debug.LogWarning($"[EnemySkillRuntime] {_data.name}: projectilePrefab is missing.", _data);
+                _warnedMissingProjectile = true;
+            }
+            return;
+        }
+
+        ProjectileFireRequest request = CreateRequest(direction, pattern);
+        _context.ProjectileFireService?.Fire(request);
+    }
+
+    private ProjectileFireRequest CreateRequest(Vector2 direction, ProjectileFirePattern pattern)
+    {
+        EnemyAttackImpactData impact = _data.Projectile.Impact;
+        int damage = _data.Damage > 0
+            ? _data.Damage
+            : (_context.Data != null ? _context.Data.attack : 1);
+
+        return new ProjectileFireRequest
+        {
+            ProjectilePrefab = _data.Projectile.ProjectilePrefab,
+            OriginTransform = _context.SelfTransform,
+            CoroutineRunner = _context.CoroutineRunner,
+            Caster = _context.Enemy,
+            Owner = _context.Enemy,
+            Direction = direction,
+            Damage = damage,
+            Speed = _data.Projectile.ProjectileSpeed,
+            Lifetime = _data.Projectile.ProjectileLifetime,
+            ProjectileCount = _data.Projectile.ProjectileCount,
+            SpreadAngle = _data.Projectile.SpreadAngle,
+            FirePattern = pattern,
+            WallHitMode = _data.Projectile.WallHitMode,
+            TargetHitMode = ProjectileTargetHitMode.DestroyOnHit,
+            TargetMode = ProjectileController.TargetMode.Player,
+            MaxBounceCount = _data.Projectile.MaxBounceCount,
+            SpawnOffset = 0f,
+            BurstInterval = _data.Projectile.BurstInterval,
+            KnockbackForce = impact.knockbackForce,
+            KnockbackDuration = impact.knockbackDuration,
+            SlowPercentage = impact.EffectiveSlowMultiplier,
+            SlowDuration = impact.slowDuration,
+            StunDuration = impact.stunDuration
+        };
+    }
+
+    private Vector2 ResolveAimDirection()
+    {
+        if (_context == null || _context.SelfTransform == null || _context.Target == null)
+            return _aimDirection.sqrMagnitude > 0.0001f ? _aimDirection : Vector2.down;
+
+        Vector2 direction = _context.Target.position - _context.SelfTransform.position;
+        if (direction.sqrMagnitude <= 0.0001f)
+            return _aimDirection.sqrMagnitude > 0.0001f ? _aimDirection : Vector2.down;
+
+        return direction.normalized;
     }
 
     private void TickWindup(float deltaTime)
@@ -539,9 +719,12 @@ public sealed class EnemySkillRuntime : EnemyPatternRuntime
 
     private void Cleanup()
     {
-        RestoreVisualOffset();
-        SetWalkGuardSuppressed(false);
-        SetFlightMode(false);
+        if (_data == null || _data.ExecutionType != EnemySkillExecutionType.Projectile)
+        {
+            RestoreVisualOffset();
+            SetWalkGuardSuppressed(false);
+            SetFlightMode(false);
+        }
 
         if (_unlockFacing)
             _context?.Animation?.UnlockSpecialFacing();

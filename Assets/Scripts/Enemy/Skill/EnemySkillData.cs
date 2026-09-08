@@ -17,6 +17,9 @@ public sealed class EnemySkillData : EnemyPatternData
     [SerializeField, Min(0)] private int damageRange = 3;
     [SerializeField, Min(0)] private int damage = 3;
 
+    [Header("Projectile")]
+    [SerializeField] private ProjectileSettings projectile = new();
+
     [Header("Movement")]
     [SerializeField, Min(0f)] private float moveSpeed = 8f;
     [SerializeField, Min(0f)] private float jumpVisualHeight = 1f;
@@ -36,6 +39,7 @@ public sealed class EnemySkillData : EnemyPatternData
     public PatternShapeData DamageShape => damageShape;
     public int DamageRange => Mathf.Max(0, damageRange);
     public int Damage => Mathf.Max(0, damage);
+    public ProjectileSettings Projectile => projectile;
     public float MoveSpeed => Mathf.Max(0f, moveSpeed);
     public float JumpVisualHeight => Mathf.Max(0f, jumpVisualHeight);
     public bool StayInRoom => stayInRoom;
@@ -52,6 +56,12 @@ public sealed class EnemySkillData : EnemyPatternData
     protected override void OnValidate()
     {
         base.OnValidate();
+
+        if (executionType == EnemySkillExecutionType.Projectile &&
+            (projectile == null || projectile.ProjectilePrefab == null))
+        {
+            Debug.LogWarning($"[EnemySkillData] {name}: projectilePrefab is missing.", this);
+        }
 
         if (searchShape != null &&
             searchShape.PatternType == AttackPatternType.Custom &&

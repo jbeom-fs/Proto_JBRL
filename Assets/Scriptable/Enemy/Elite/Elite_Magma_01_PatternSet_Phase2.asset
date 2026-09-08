@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: Elite_Magma_01_PatternSet_Phase2
   m_EditorClassIdentifier: Assembly-CSharp::EnemyPatternSet
   patterns:
-  - {fileID: 11400000, guid: 96584ada0ae440c4b67c2eb84a4cd614, type: 2}
+  - {fileID: 11400000, guid: 28542db2413641308f56658a609a3ce5, type: 2}
