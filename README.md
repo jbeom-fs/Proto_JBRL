@@ -28,8 +28,14 @@ C# 스크립트 222개 / 약 44,500 LOC · ScriptableObject 974개
 
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-09-04
+> 작성 기준일: 2026-09-08
+> 기준 커밋: master HEAD `40d87f1b` + **워킹트리 미커밋 1건(S6 셀 페인팅 에디터)** — **적 스킬 개편 축 완결**(§8-4-5 개정, §3 파일 구조 갱신). ① **Projectile 이관**(`40d87f1b`) — 마지막 옛 패턴 쌍을 `EnemySkillData` 의 `Projectile` 실행타입으로 흡수했다. **`Assets/Scripts/Enemy/Elite/Patterns/` 폴더가 비어 삭제됐고 "새 패턴 = 에셋 1개 생성" 이 완성됐다.** 🔑 **Projectile 은 명중 판정을 하지 않는다** — `ProjectileFireRequest` 를 만들어 넘기는 게 전부고 판정은 투사체 프리팹이 한다. 따라서 모양·범위·이동 필드가 전부 미사용이고 필요한 건 **조준 방향 하나**뿐이다(`damage` 는 발사 요청에 실린다). 투사체 10필드는 `ProjectileSettings` 직렬화 클래스로 묶었다. 🔴 **선딜 조준 추적 → 발사 직전 확정 → Burst 중 고정** 이 Jump·Dash 와 다른 동작이며 그대로 보존했다. 🔴 `CanRun()` 의 `ProjectileFireService != null` 검사는 이식하지 않았다(러너가 인라인 `new` 라 null 불가, 발사도 `?.` 로 안전 — 공통 `CanRun()` 에 넣으면 Jump·Dash 까지 묶인다). ② **애니메이션 값 정정**(`40d87f1b`) — `castAnimation` 을 `Charge` 로 저작했다가 `Projectile` 로 되돌렸다. 🔴 Magma Animator 에 `ChargeTrigger` **파라미터는 있으나 그것을 쓰는 전이가 0건**이라 선딜 모션이 통째로 사라졌다. **강등 안전망(`SetTriggerOrAttack`)은 파라미터 존재만 보므로 이 유형을 못 잡는다** — 런타임에서 Animator 전이를 조회할 수 없어 에디터 검사(S7)의 범위가 넓어졌다. ③ **셀 페인팅 에디터**(미커밋) — `SkillDataEditor` 의 페인팅 구현을 `CustomCellGridDrawer` 로 추출(−414줄)하고 `EnemySkillDataEditor` 를 신설했다. 🔑 `PropertyDrawer` 가 아니라 **헬퍼 + CustomEditor** 를 택했다(드로어엔 `OnDisable` 이 없어 Undo 그룹이 새고, 인스턴스가 필드 간 재사용되며, `OnGUI(Rect)` 안에서 `EditorGUILayout` 을 못 쓴다). 편집용 `Draw` 와 **읽기 전용 `DrawPreview`** 를 분리했고(내장 타입은 `customCells` 를 런타임이 안 읽는다), `BeginPass`/`EndPass` + `try/finally` 로 미사용 그리드의 스트로크를 자동 종료한다. 동승 = `Docs/ENEMY_SKILL_DESIGN.md` 신설(설계 전문 + 이동 스킬 미결 2건). 이전: 보스방 3종 분리 + 적 패턴을 적 스킬 구조로 개편(`39549816`)
+>
+> <details><summary>이전 기준(2026-09-04, `39549816`)</summary>
+>
 > 기준 커밋: master HEAD `39549816` — **오늘 커밋 6개. 워킹트리 클린.** **보스방 3종 분리 + 적 패턴을 적 스킬 데이터 구조로 개편**(§8-4-5 신설, §11e-12 신설). ① **보스방 3종 분리**(`cb62baff`) — Ctrl+D 복제로 `BossArea02Root`/`BossArea03Root` 배치. 🔑 서브트리 외부 참조가 0건이라 계획했던 13,000줄 YAML 수술 없이 자동 재매핑만으로 성립했다. 🔴 **방은 층이 아니라 보스에 전속한다**(방 개수 = 보스 종류 수). 동승 = 포탈 폴백 기준을 활성 방 루트로 교체(`ArenaEncounterBase.ActiveSpaceOrigin`), `BossEncounterEntry.areaId` 제거(소비처가 2026-06-08 이후 0건인데 방 분리로 값이 실제와 어긋나기 시작했다). ② **적 스킬 구조 개편**(`9a36638c`~`39549816`) — 패턴 종류마다 C# 클래스 2개가 필요하던 구조를 `EnemySkillData` + `executionType` 분기로 바꿔 **새 패턴 = 에셋 1개**가 됐다. Jump·Dash 이관 완료, Projectile만 남았다. 🟢 `EnemyPatternRunner`/`Brain`/`PatternSet`/`Context` **수정 0** — 세트가 `List<EnemyPatternData>`이고 타입 분기가 없어 신구 병존이 성립했고 그게 점진 이관의 유일한 조건이었다. 🔑 **facing 양자화 없음(자유 각도)** — `FillTargets`를 `Vector2Int` 오버로드 + 로컬 전방 고정으로 부르고 회전은 월드 변환에서 한 번만 한다(격자 스냅 경로는 `RoundToCell` 때문에 45°에서 모양이 뭉치고, 정수 격자를 보존하는 회전은 90° 배수뿐이라 원리상 못 피한다). 스프라이트는 `flipX` 좌/우뿐. 🔑 **거리를 `maxRange` 하나로 통합** — 선택 조건과 이동 거리를 한 값이 정한다. 옛 링 검색의 사거리 경계 탈락이 소멸했다. 🔴 **이동 중 `Kinematic` 전환**(`SetFlightModeEnabled`) — `isTrigger` 토글은 `useTriggers = false` 필터 때문에 이동 내내 피격 불가가 되어 거부했다. 복원 지점 4곳(풀 재사용 포함) 누락 시 유령 적이 된다. 🔴 **Dash 벽 정지를 물리 쿼리로**(`OverlapCircle` + `WallMask`) — footprint 코너 샘플이 0.49로 clamp돼 반경 2.7 Magma가 0.5로 취급되던 것이 벽 끼임의 원인이었다(→ `Known_Issue` Q24·Q25). 동승 = `Perfabs` 폴더명 오타를 `Prefabs`로 수정. 이전: 보스 조우 테이블 후보 풀화 + 보스 2종째(`1bf1f875`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-08-24, `1bf1f875`)</summary>
 >
@@ -440,15 +446,14 @@ Assets/Scripts/
 │       ├── EnemyPatternRunner.cs               # MonoBehaviour — 패턴셋 보유 시 매 Tick 쿨다운/사거리 충족 패턴을 가중 추첨해 실행
 │       │                                       #   Start()가 false면 쿨다운 미부과 + 같은 프레임 재추첨 (2026-08-24)
 │       │                                       #   ⚠️ 패턴 타입별 분기 0건 — 이게 신구 타입 병존을 가능하게 한다
-│       └── Patterns/
-│           ├── EnemyProjectilePatternData.cs   # 발사 패턴 (windup, prefab, speed, lifetime, firePattern, count, spread, burstInterval, wallHitMode, maxBounceCount, impact)
-│           └── EnemyProjectilePatternRuntime.cs # windup → Fire(ProjectileFireService) → recovery
-│                                               #   ⚠️ 이관 대기 중인 마지막 옛 패턴 쌍 (HANDOFF §7-B S5)
-│                                               #   Jump·Dash 쌍은 2026-09-04 EnemySkill 이관 후 삭제됨
+│                                               #   ✅ Patterns/ 폴더는 2026-09-08 Projectile 이관으로 비어 삭제됨
+│                                               #      옛 패턴 클래스 0개 — 새 패턴 = 에셋 1개 생성
 │
 ├── Enemy/Skill/                                # 적 스킬 데이터 구조 (2026-09-04 신설) — §8-4-5
 │   ├── EnemySkillExecutionType.cs              # InstantArea / Projectile / Dash / Jump (적 전용 enum, 플레이어 SkillExecutionType 과 분리)
 │   ├── PatternShapeData.cs                     # [Serializable] 모양 타입 — patternType / coneHalfAngle / customCells (거리 없음)
+│   ├── ProjectileSettings.cs                   # [Serializable] 투사체 10필드 — prefab/speed/lifetime/firePattern/count/spread/burstInterval/wallHitMode/bounce/impact
+│   │                                           #   ⚠️ impact 기본값은 EnemyAttackImpactData.Default (slowMultiplier 무효값이 0 아니라 1)
 │   ├── EnemySkillData.cs                       # : EnemyPatternData — executionType/castDelay/searchShape/damageShape+damageRange/moveSpeed/stopOnWall/애니메이션 override
 │   └── EnemySkillRuntime.cs                    # : EnemyPatternRuntime — Windup→Move→(Impact)→Recovery, 자유 각도 셀 열거 + argmin,
 │                                               #   셀 피해(OverlapBox) · 이동 중 Kinematic 전환 · 이동 타임아웃 · Dash 벽 정지(OverlapCircle+WallMask)
@@ -2052,7 +2057,7 @@ LateUpdate  → 워크 가드:  발판 아님 → transform.position = _lastSafe
 
 | 패턴 (ScriptableObject) | 핵심 파라미터 | 동작 |
 |---|---|---|
-| `EnemyProjectilePatternData` | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
+| ~~`EnemyProjectilePatternData`~~ (삭제) | windupDuration / firePattern (Single/Burst/Spread/Circle) / projectileCount / spreadAngle / burstInterval / wallHitMode / maxBounceCount / impact (EnemyAttackImpactData) | windup (windupAnimation) → ProjectileFireService.Fire → recovery |
 | ~~`EnemyDashPatternData`~~ (삭제) | windup / dashSpeed / damage / hitRadius / stopOnWall / lockFacingDuringDash / windupAnimation / dashAnimation | windup → **목표 위치(플레이어 위치) 기반** WalkabilityQuery 로 보정 → dashSpeed×dt 이동(목표 도달 시 종료) → 타겟 1회 데미지 → recovery |
 | ~~`EnemyJumpPatternData`~~ (삭제) | windup / jumpDuration / maxDistance / impactDamage / impactRadius / jumpVisualHeight / stayInRoom / lockFacingDuringJump | windup → `WalkabilityQuery.TryFindNearestWalkable` 로 착지점 결정(**실패 시 Start 가 false — 폴백 0단**) → 비행 보간(**이 구간만 `EnemyController` 워크 가드 억제**) → 착지 임팩트(impactRadius OverlapCircle) → recovery |
 
@@ -2141,9 +2146,41 @@ Assets/Scripts/Enemy/Skill/
 | `Elite_Magma_01_JumpSkill` | `maxRange 12` / `searchShape Circle` / `damageShape Circle` + `damageRange 3` / `moveSpeed 9` / `castDelay 0.45` |
 | `Elite_Magma_01_DashSkill` | `maxRange 15` / `searchShape Line` / `damageShape Circle` + `damageRange 1` / `moveSpeed 15` / `stopOnWall 1` / `jumpVisualHeight 0` |
 
-⚠️ **미이관 = `Projectile` 뿐입니다.** `EnemyProjectilePatternData`/`Runtime` 2파일이 남아 있고 `EnemySkillRuntime` 은 `Projectile`/`InstantArea` 를 만나면 개발 빌드 경고 후 `false` 를 반환합니다. HANDOFF §7-B S5.
+✅ **Jump · Dash · Projectile 3종 이관 완료(2026-09-08).** `Assets/Scripts/Enemy/Elite/Patterns/` 폴더가 비어 삭제됐고, **새 패턴 추가가 에셋 1개 생성**으로 끝납니다. `InstantArea` 만 미구현이며 `Start()` 에서 개발 빌드 경고 후 `false` 를 반환합니다.
+
+**Projectile 실행타입** — 이동 스킬과 성격이 다릅니다.
+
+🔑 **Projectile 은 명중 판정을 하지 않습니다.** 런타임이 하는 일은 `ProjectileFireRequest` 를 만들어 `ProjectileFireService.Fire()` 에 넘기는 것이 전부이고, **명중 판정은 투사체 프리팹(`ProjectileController`)이 자체 콜라이더로** 합니다. 그래서 다음이 성립합니다.
+
+| 항목 | 처리 |
+|---|---|
+| `searchShape` / `damageShape` / `damageRange` | 미사용 (모양·범위는 투사체가 가진다) |
+| 목표 **위치** | 없음. 필요한 건 **조준 방향** 하나 |
+| `moveSpeed` / `stopOnWall` / `jumpVisualHeight` / `stayInRoom` | 미사용 |
+| Kinematic 전환 / 워크 가드 억제 / 이동 타임아웃 | **호출하지 않음** |
+| `damage` | 🔴 **사용.** 발사 요청에 실린다 |
+
+투사체 전용 10필드는 **`ProjectileSettings`** 직렬화 클래스로 묶었습니다(`PatternShapeData` 와 같은 방식). ⚠️ `impact` 기본값은 `EnemyAttackImpactData.Default` 입니다 — `slowMultiplier` 의 무효값이 **0이 아니라 1**이라 `default` 로 두면 의미가 바뀝니다.
+
+**페이즈** — `Windup → (Burst) → Recovery`. `Burst` 는 `firePattern == Burst` 일 때만 거치며 `Move`/`Impact` 는 타지 않습니다.
+
+🔴 **조준 규칙이 Jump·Dash 와 다릅니다.**
+
+| 시점 | 동작 |
+|---|---|
+| `Start()` | 조준 해석 → `LockSpecialFacing`. **옵션 검사 없이 항상 잠금** |
+| Windup 매 프레임 | 조준 **재해석** → 선딜 동안 추적 |
+| 발사 직전 | 재해석 → **방향 확정** |
+| Burst 진행 중 | **재해석하지 않음.** 확정 방향으로 연사 |
+| `Cleanup()` | `UnlockSpecialFacing` (종료·취소 공통) |
+
+Jump·Dash 는 `Start()` 에서 목표를 고정하므로 선딜 추적이 없습니다. `lockFacingDuringExecute` 는 Projectile 에서 **읽지 않습니다**(항상 잠금).
+
+🔴 옛 런타임의 `CanRun()` 은 `ProjectileFireService != null` 을 추가로 요구했으나 **이식하지 않았습니다.** `EnemyPatternRunner` 가 `readonly` + 인라인 `new` 로 생성해 null 이 불가능하고 발사도 `?.Fire(request)` 로 안전합니다. 공통 `CanRun()` 에 넣으면 **Jump·Dash 까지 이 조건에 묶입니다.**
 
 ⚠️ **셀 피해는 적 덩치를 반영하지 않습니다.** Magma(콜라이더 반경 2.7)는 벽 정지 시 중심이 벽에서 2.7 떨어지는데, `damageRange 1`(반폭 1.5)은 벽에 붙은 플레이어에 닿지 않을 수 있습니다. → `HandOff/Known_Issue.md` Q24·Q25.
+
+🔴 **"파라미터는 있으나 전이가 없는 트리거"는 강등 안전망이 잡지 못합니다.** `SetTriggerOrAttack` 은 파라미터 존재 여부만 보므로, Animator 에 파라미터가 선언돼 있고 그것을 쓰는 전이가 없으면 `hasParameter = true` 가 되어 **Attack 으로 강등되지 않고 죽은 트리거만 세팅**됩니다(결과: 모션이 아예 안 나옴). 2026-09-08 에 `castAnimation` 을 `Charge` 로 저작했다가 Magma Animator 에 `Charge` 상태가 없어 선딜 모션이 사라진 사례가 실측됐습니다. **런타임에서는 Animator 전이를 조회할 수 없어** 이 유형은 에디터 검사(HANDOFF §7-B S7)로만 잡을 수 있습니다.
 
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
@@ -4030,7 +4067,8 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 |------|-----------|
 | FSM·이동 | `EnemyBrain`(Target/Movement/Action 핸들러) + A*(버퍼 재사용) + 군중 분리(throttle+Idle separation) + Ranged 이동 3종(Chase/Kiting 5단계 폴백/Random minR 보호). 상세 §8 |
 | 공격 패턴 | Contact(+Special Rush/Jump 상태머신, 페이싱 잠금, Animator 폴백) + Ranged(사거리·선딜·후딜) + **Enemy Pattern Set**(가중 추첨 + 쿨다운 배열 + 시작 실패 시 재추첨). 상세 §8-4 |
-| **적 스킬 데이터** | **`EnemySkillData` + `executionType` 분기 — 새 패턴 = 에셋 1개**(2026-09-04). 자유 각도 셀 열거 + argmin 목표 결정 / `maxRange` 단일 거리 / 셀 피해(`OverlapBox`) / 이동 중 Kinematic + 타임아웃 / Dash 벽 정지(물리 쿼리) / 애니메이션 문자열 override. Jump·Dash 이관 완료, **Projectile 잔여**. 상세 §8-4-5 |
+| **적 스킬 데이터** | **`EnemySkillData` + `executionType` 분기 — 새 패턴 = 에셋 1개**(2026-09-08 완결). 자유 각도 셀 열거 + argmin 목표 결정 / `maxRange` 단일 거리 / 셀 피해(`OverlapBox`) / 이동 중 Kinematic + 타임아웃 / Dash 벽 정지(물리 쿼리) / 애니메이션 문자열 override / Projectile 은 발사 요청만(판정은 투사체). **Jump·Dash·Projectile 3종 이관 완료, `Patterns/` 폴더 소멸.** `InstantArea` 미구현. 상세 §8-4-5 |
+| **적 스킬 저작 도구** | `CustomCellGridDrawer`(공용 셀 페인팅) + `EnemySkillDataEditor`. `Custom` 은 그리드 편집, 내장 타입은 **읽기 전용 미리보기**(런타임 셀 산출을 그대로 재현). `BeginPass`/`EndPass` 로 미사용 그리드 스트로크 자동 종료 |
 | 임팩트 데이터화 | `EnemyAttackImpactData`(knockback/slow/stun) — rush/jump/projectile 공유 단일 라우팅 + `isStationary`/`immuneToKnockback` 플래그 |
 | 스폰·클리어 | 방 진입 트리거 + 예산 스폰 + 결정론(방별 rng) + 층 범위 필터(min/maxFloor) + MonsterDen(예산 ×2.5) + 지연 전투 시작(`CanStartRoomEncounter`) + `EnemyPoolManager` + 사망 지연(`OnDeathFinished` 반납, Brain 즉시 정리). 상세 §9 |
 | 표시 | `EnemyHealthBar`(콜라이더 앵커·스케일 정규화·`TopAnchorY` 노출) + `EnemyAnimationController`(이동 감지·페이싱·트리거 폴백) |
