@@ -1,9 +1,9 @@
 # 적 스킬 데이터 구조 설계
 
-> 작성 기준일: 2026-09-08
-> 기준 커밋: master HEAD `40d87f1b` + 워킹트리 미커밋(S6 셀 페인팅 에디터)
+> 작성 기준일: 2026-09-30
+> 기준 커밋: master HEAD `9492e20a` (S6 셀 페인팅 에디터 `53d91385` · S7 `[Anim]` 정합성 검사 `50d08591` · 실행타입별 필드 숨김 `adba4497` · Circle/Square 분리 `9492e20a`)
 > 범위: `Assets/Scripts/Enemy/Skill/` — 적 패턴을 데이터 주도로 저작하는 구조와 그 설계 근거
-> 상태: **Jump · Dash · Projectile 3종 이관 완료(§6)** / `InstantArea` 미구현 / 저작 도구(셀 페인팅) 완료
+> 상태: **Jump · Dash · Projectile 3종 이관 완료(§6)** / `InstantArea` 미구현 / 저작 도구(셀 페인팅 · 실행타입별 필드 숨김 · 대시보드 `[Anim]` 검사) 완료 / 이동 스킬 미결 ①(`maxRange` 근사) 정리됨, ②(터널링) 미결
 
 ---
 
@@ -117,11 +117,21 @@ PlayPatternAnimation(EnemyAnimationKey key, string customTrigger, Vector3 target
 
 `PatternRangeData` 에서 거리를 빼 **`PatternShapeData`(순수 모양)** 로 만들고, 거리는 쓰는 쪽이 제공한다.
 
-facing 이 플레이어를 향하도록 격자를 회전시키므로 플레이어는 항상 로컬 `+Y` 위에 있고, `Circle`/`Line` 의 전방 최대 오프셋 `(0, N)` 이 플레이어 쪽 최대 도달 지점이 된다.
+facing 이 플레이어를 향하도록 격자를 회전시키므로 플레이어는 항상 로컬 `+Y` 위에 있고, `Circle`/`Square`/`Line` 의 전방 최대 오프셋 `(0, N)` 이 플레이어 쪽 최대 도달 지점이 된다.
+
+> **모양 이름 주의(2026-09-30)** — `AttackPatternType` 의 옛 `Circle`(=3)은 체비쇼프 **정사각형**이었고 `Square` 로 개명됐다. 진짜 원은 신설된 `Circle`(=7, `dx²+dy² ≤ r²+r`, ≈ 반경 r+0.5)이다. 이 문서의 2026-09-30 이전 서술에서 "`Circle` 대각"은 현재의 `Square` 를 뜻한다. `PatternShapeData` 기본값과 `Elite_Magma_01_JumpSkill` 은 새 `Circle` 이다.
 
 부수 효과로 옛 링 검색의 **사거리 경계 탈락이 소멸**했다. 후보 필터에 거리 검사가 없다.
 
-#### 🔴 `maxRange` 는 상한 보장이 아니라 근사다 (이동 스킬 축 · 미결)
+#### 🔴 `maxRange` 는 상한 보장이 아니라 근사다 (이동 스킬 축 · 2026-09-30 정리)
+
+> **결론(2026-09-30)** — (가) **근사로 둔다**를 택했다. 코드에 거리 필터를 넣지 않는다.
+> - ① 반올림 → **`maxRange` 는 정수로 저작**(규칙)
+> - ② 대각 → 모서리가 `N√2` 까지 가는 건 `Square` 의 성질이다. 원형 `Circle`(=7) 신설로 초과가 **반 칸 이내**가 됐고 Jump 는 `Circle` 을 쓴다
+> - ③ `Custom` → 칠한 칸이 곧 거리(의도)
+> - "앞쪽 후보가 막히면 플레이어 뒤쪽 후보가 뽑힌다"는 거리 필터로도 사라지지 않는 성질이라 명시로 종결한다
+>
+> 아래는 결정 전 분석이다(표의 `Circle` = 현재 `Square`).
 
 후보 필터에 거리 검사가 없다는 것은 곧 **`maxRange` 를 넘는 착지·돌진이 가능하다**는 뜻이다. 세 경로가 있다.
 
@@ -157,11 +167,11 @@ Physics2D.OverlapBox(cellCenter, cellSize, matcher.AngleDeg, CombatLayers.Player
 
 대상당 1회는 `HashSet<IDamageable>` 가 보장한다.
 
-🔴 **원점 포함 규칙** — `AttackPattern` 내장 타입은 원점을 구조적으로 제외한다(`Circle` 은 `dx != 0 || dy != 0`, `Line`/`Cone` 은 `i = 1` 부터). 착지 후보 열거에는 옳지만(제자리 점프 차단) 피해 범위에서는 **착지한 그 칸의 플레이어가 안 맞는다.**
+🔴 **원점 포함 규칙** — `AttackPattern` 내장 타입은 원점을 구조적으로 제외한다(`Square`/`Circle` 은 `dx != 0 || dy != 0`, `Line`/`Cone` 은 `i = 1` 부터). 착지 후보 열거에는 옳지만(제자리 점프 차단) 피해 범위에서는 **착지한 그 칸의 플레이어가 안 맞는다.**
 
 | 타입 | 처리 |
 |---|---|
-| 내장 (`Circle`/`Line`/`Cone`/…) | 런타임에서 `(0,0)` **추가** |
+| 내장 (`Square`/`Circle`/`Line`/`Cone`/…) | 런타임에서 `(0,0)` **추가** |
 | `Custom` | 저작한 그대로 (중앙이 빈 링 저작을 막지 않기 위해) |
 
 🔴 `AttackPattern.cs` 를 고쳐 해결하면 **플레이어 스킬이 함께 바뀐다.** 보정은 `EnemySkillRuntime` 안에서만 한다.
@@ -186,6 +196,8 @@ Kinematic 은 Static(벽 타일맵)과 접촉하지 않아 비행 중 벽 통과
 > **원칙** — 전역 footprint 판정(`IsFootprintWalkable`)은 코너 샘플이 `cellSize × 0.5 − 0.01 = 0.49` 로 clamp 돼 있어 실제 반경을 반영하지 않는다. 이는 대형 적이 벽 근처에 못 서는 회귀를 막으려고 의도적으로 넣은 것이다. **정확한 덩치가 필요한 곳에만 물리 쿼리를 국소 추가한다.**
 
 #### 🔴 이동 구간을 검사하지 않는다 — 터널링 (이동 스킬 축 · 미결)
+
+> **2026-09-30 현재 미결.** 권장 = 아래 절충안(벽 = (나) `CircleCast` 구간 검사, 피해 = (가) 스텝 분할). 주로 Dash 문제다 — Jump 는 Kinematic 비행이라 벽 위를 넘는 게 정상이고 피해도 착지 1회뿐이다.
 
 현재 `TickMove` 는 **점 단위**로만 검사한다.
 
@@ -224,18 +236,21 @@ next = current + dir × (moveSpeed × deltaTime)
 |---|:---:|:---:|:---:|:---:|
 | `castDelay` / `recoveryDuration` | ✅ | ✅ | ✅ | ✅ |
 | `maxRange` (선택 + 거리 **근사**, §3-4) | ✅ | ✅ | 선택만 | 선택만 |
-| `searchShape` | ✅ `Circle` | ✅ `Line` | — | — |
+| `searchShape` | ✅ `Circle`(=7) | ✅ `Line` | — | — |
 | `damageShape` / `damageRange` (피해 **모양**) | ✅ | ✅ | — (투사체가 판정) | ✅ |
 | `damage` (피해 **량**) | ✅ | ✅ | ✅ 발사 요청에 전달 | ✅ |
 | `moveSpeed` | ✅ | ✅ | — | — |
 | `jumpVisualHeight` | ✅ | `0` | — | — |
 | `stopOnWall` | — | ✅ | — | — |
+| `projectile` (`ProjectileSettings` 10필드) | — | — | ✅ | — |
 | `stayInRoom` | ✅ | ✅ | — | — |
 | `lockFacingDuringExecute` | ✅ | ✅ | 읽지 않음 — **항상 잠금**(확정, §6-4) | — |
 | 애니메이션 2단 | ✅ | ✅ | ✅ | ✅ |
 | Kinematic / 워크 가드 / 타임아웃 | ✅ | ✅ | — | — |
 
 **"실행타입에 따라 무시되는 필드"는 허용된 패턴이다.** Dash 가 `jumpVisualHeight: 0` 으로 시각 호를 끄는 것이 그 예이며, 코드 분기 없이 저작값으로 처리된다.
+
+**인스펙터는 이 표대로 필드를 숨긴다(2026-09-30).** `EnemySkillDataEditor` 가 `propertyPath → 실행타입` 정적 표로 판정하며, 표에 없는 필드는 항상 표시한다(신규 필드 누락 방지). 실행타입 혼합 다중 선택은 전부 표시, `InstantArea` 는 미구현 경고. 🔴 **실행타입을 추가하면 이 표와 에디터의 플래그 enum 을 함께 갱신할 것.** 숨긴 필드의 값은 에셋에 남지만 런타임이 읽지 않는다.
 
 ### Jump / Dash 대비
 
@@ -254,10 +269,10 @@ next = current + dir × (moveSpeed × deltaTime)
 
 | 에셋 | 값 |
 |---|---|
-| `Elite_Magma_01_JumpSkill` | `maxRange 12` / `searchShape Circle` / `damageShape Circle` + `damageRange 3` / `moveSpeed 9` / `castDelay 0.45` |
+| `Elite_Magma_01_JumpSkill` | `maxRange 12` / `searchShape Circle(=7)` / `damageShape Circle(=7)` + `damageRange 3` / `moveSpeed 9` / `castDelay 0.45` |
 | `Elite_Magma_01_DashSkill` | `maxRange 15` / `searchShape Line` / `damageShape Circle` + `damageRange 1` / `moveSpeed 15` / `stopOnWall 1` / `jumpVisualHeight 0` |
 
-⚠️ **셀 피해는 적 덩치를 반영하지 않는다.** Magma(콜라이더 반경 2.7)는 벽 정지 시 중심이 벽에서 2.7 떨어지는데 `damageRange 1`(반폭 1.5)은 벽에 붙은 플레이어에 닿지 않을 수 있다. 큰 적의 스킬을 저작할 때는 **"몸통 반경 + 원하는 사거리"를 셀로 환산**해야 한다.
+⚠️ **셀 피해는 적 덩치를 반영하지 않는다.** Magma 콜라이더는 로컬 0.5 × scale 3 = **세계 반경 1.5**(2026-09-30 복구 — 9/4 폴더 개명 때 `m_Radius 0.0001` 로 오염돼 있었고, 그 전 0.9 = 2.7 은 스프라이트 폭의 약 2배였다). Dash `damageRange 1`(도달 ≈1.5)은 중심 간 ≈1.8 인 **구석 플레이어에 닿지 않는다**(수용, Known_Issue Q30). 큰 적의 스킬을 저작할 때는 **"몸통 반경 + 원하는 사거리"를 셀로 환산**해야 한다.
 
 ---
 
@@ -387,13 +402,15 @@ recoveryAnimation 0    → (버림)
 
 | # | 내용 |
 |---|---|
-| Q24 | 큰 적(반경 2.7)은 벽에 붙은 플레이어에게 도달하지 못한다 |
+| ~~Q24~~ | ✅ 2026-09-30 해소 — 큰 적 도달 거리(전제였던 반경 2.7 은 실제와 달랐다. Magma `m_Radius` 0.0001 → 0.5 복구) |
 | Q25 | footprint 판정이 실제 콜라이더 반경을 반영하지 않는다 (Q24 · 벽 끼임의 공통 뿌리) |
 | Q26 | 이동 중 스턴 · 넉백이면 Kinematic 과 억제 상태가 유지되고 넉백이 삼켜진다 (자가 회복됨) |
 | Q27 | 타임아웃 강제 착지는 목표 지점으로 텔레포트한다 |
-| — | **`maxRange` 는 상한 보장이 아니라 근사다** — 반올림 · `Circle` 대각 · `Custom` 세 경로로 초과 가능 (§3-4) |
+| Q29 | Contact 접촉 피해에는 공격 모션 호출이 없다(스킬 슬롯 아님 → `[Anim]` 검사 대상 밖) |
+| Q30 | Magma Dash(`damageRange 1`)는 구석에 몰린 플레이어에게 닿지 않는다 |
+| — | **`maxRange` 는 상한 보장이 아니라 근사다** — 반올림(→ 정수 저작) · `Square` 대각(→ `Circle` 사용) · `Custom`(의도). 근사로 확정 (§3-4) |
 | — | **이동 구간을 검사하지 않는다(터널링)** — 프레임 히칭 시 중간 벽 · 플레이어를 건너뛸 수 있다 (§3-6) |
 
 **미구현** — `InstantArea` 실행타입. `Start()` 에서 개발 빌드 경고 후 `false` 를 반환한다.
 
-**저작 도구 부재** — `Custom` 모양은 현재 인스펙터 기본 리스트에 좌표를 타이핑해야 한다. 셀 페인팅 드로어(`PatternShapeData` 의 `PropertyDrawer`)가 들어오면 해소되며, 내장 타입에도 미리보기가 생겨 `damageRange` 값 산정 실수를 막는다.
+**저작 도구** — ✅ 해소. `CustomCellGridDrawer` + `EnemySkillDataEditor`(2026-09-08, `Custom` 페인팅 · 내장 타입 읽기 전용 미리보기), 실행타입별 필드 숨김(2026-09-30), Enemy Dashboard `[Anim]` 애니메이션 정합성 검사(2026-09-30 — 적 × 패턴 스킬(보스 페이즈 포함) × Animator 파라미터 · 전이 대조, 강등 대상 `AttackTrigger` 재생 가능 여부까지).

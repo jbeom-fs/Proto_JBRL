@@ -28,8 +28,14 @@ C# 스크립트 222개 / 약 44,500 LOC · ScriptableObject 974개
 
 # JBRogLike — 아키텍처 보고서
 
-> 작성 기준일: 2026-09-08
-> 기준 커밋: master HEAD `40d87f1b` + **워킹트리 미커밋 1건(S6 셀 페인팅 에디터)** — **적 스킬 개편 축 완결**(§8-4-5 개정, §3 파일 구조 갱신). ① **Projectile 이관**(`40d87f1b`) — 마지막 옛 패턴 쌍을 `EnemySkillData` 의 `Projectile` 실행타입으로 흡수했다. **`Assets/Scripts/Enemy/Elite/Patterns/` 폴더가 비어 삭제됐고 "새 패턴 = 에셋 1개 생성" 이 완성됐다.** 🔑 **Projectile 은 명중 판정을 하지 않는다** — `ProjectileFireRequest` 를 만들어 넘기는 게 전부고 판정은 투사체 프리팹이 한다. 따라서 모양·범위·이동 필드가 전부 미사용이고 필요한 건 **조준 방향 하나**뿐이다(`damage` 는 발사 요청에 실린다). 투사체 10필드는 `ProjectileSettings` 직렬화 클래스로 묶었다. 🔴 **선딜 조준 추적 → 발사 직전 확정 → Burst 중 고정** 이 Jump·Dash 와 다른 동작이며 그대로 보존했다. 🔴 `CanRun()` 의 `ProjectileFireService != null` 검사는 이식하지 않았다(러너가 인라인 `new` 라 null 불가, 발사도 `?.` 로 안전 — 공통 `CanRun()` 에 넣으면 Jump·Dash 까지 묶인다). ② **애니메이션 값 정정**(`40d87f1b`) — `castAnimation` 을 `Charge` 로 저작했다가 `Projectile` 로 되돌렸다. 🔴 Magma Animator 에 `ChargeTrigger` **파라미터는 있으나 그것을 쓰는 전이가 0건**이라 선딜 모션이 통째로 사라졌다. **강등 안전망(`SetTriggerOrAttack`)은 파라미터 존재만 보므로 이 유형을 못 잡는다** — 런타임에서 Animator 전이를 조회할 수 없어 에디터 검사(S7)의 범위가 넓어졌다. ③ **셀 페인팅 에디터**(미커밋) — `SkillDataEditor` 의 페인팅 구현을 `CustomCellGridDrawer` 로 추출(−414줄)하고 `EnemySkillDataEditor` 를 신설했다. 🔑 `PropertyDrawer` 가 아니라 **헬퍼 + CustomEditor** 를 택했다(드로어엔 `OnDisable` 이 없어 Undo 그룹이 새고, 인스턴스가 필드 간 재사용되며, `OnGUI(Rect)` 안에서 `EditorGUILayout` 을 못 쓴다). 편집용 `Draw` 와 **읽기 전용 `DrawPreview`** 를 분리했고(내장 타입은 `customCells` 를 런타임이 안 읽는다), `BeginPass`/`EndPass` + `try/finally` 로 미사용 그리드의 스트로크를 자동 종료한다. 동승 = `Docs/ENEMY_SKILL_DESIGN.md` 신설(설계 전문 + 이동 스킬 미결 2건). 이전: 보스방 3종 분리 + 적 패턴을 적 스킬 구조로 개편(`39549816`)
+> 작성 기준일: 2026-09-30
+> 기준 커밋: master HEAD `9492e20a` — **오늘 커밋 4개. 워킹트리 클린.** **적 스킬 저작 안전장치 + 공격 패턴 Circle/Square 분리**(§7-5·§8-4-5·§10·§3 개정). ① **애니메이션 정합성 검사**(`50d08591`) — `EnemyDashboardWindow` 가 적 × 패턴 스킬(보스 페이즈 패턴셋 포함) × Animator Controller 를 전수 대조해 `[Anim]` 경고를 낸다. 🔑 검사 단위가 **조합**이라(스킬은 자기를 쓸 적을 모른다) `OnValidate` 로는 불가능하고, Animator **전이 조건은 런타임에서 조회할 수 없어** 에디터에서만 잡힌다. 판정 = 파라미터 없음(강등) / 파라미터는 있으나 **쓰는 전이 없음(모션 소실)** / **강등 대상 `AttackTrigger` 자체의 재생 가능 여부**까지 확인. ② **실행타입별 필드 숨김**(`adba4497`) — `EnemySkillDataEditor` 가 `executionType` 이 읽지 않는 필드를 그리지 않는다(정적 표, 표에 없는 필드는 항상 표시). `PatternShapeData` 를 직접 그려 `customCells` 이중 표시 제거, `coneHalfAngle` 은 Cone 일 때만. ③ **Magma 콜라이더 반경 복구**(`934ff2db`) — 9/4 폴더 개명 커밋에서 `m_Radius` 가 **0.9 → 0.0001** 로 오염돼 세계 반경 0.01(점)이 된 상태였다. 플레이어 판정 대부분(Custom `OverlapBox`·투사체·대시)이 적 콜라이더를 대상으로 해 "보이는데 안 맞는" 상태였음. **0.5(세계 1.5)** 로 복구 — 옛 0.9(세계 2.7)는 스프라이트 폭의 약 2배라 벽 추적 불가(Q24)의 원인이었다. ④ **Circle → Square 개명 + 진짜 원 Circle 신설**(`9492e20a`) — 기존 `Circle` 은 체비쇼프 **정사각형**이었다(대각 도달 `N√2`). 값 3 은 이름만 `Square` 로 바꿔 동작·에셋 불변, 새 `Circle = 7` 을 **enum 맨 뒤**에 추가(`dx²+dy² ≤ r²+r`, ≈ 반경 r+0.5). 🔴 식별자 `Circle` 을 재사용하므로 **기존 case 를 먼저 `Square` 로 바꾸지 않으면 컴파일 오류 없이 새 값에 정사각형 로직이 붙는다.** 적 스킬 기본 모양 = Circle, Magma Jump 탐색·피해 = Circle. 이전: 적 스킬 개편 축 완결 + 셀 페인팅 에디터(`53d91385`)
+>
+> <details><summary>이전 기준(2026-09-08, `53d91385`)</summary>
+>
+> 기준 커밋: master HEAD `40d87f1b` + **워킹트리 미커밋 1건(S6 셀 페인팅 에디터 — 이후 `53d91385` 로 커밋)** — **적 스킬 개편 축 완결**(§8-4-5 개정, §3 파일 구조 갱신). ① **Projectile 이관**(`40d87f1b`) — 마지막 옛 패턴 쌍을 `EnemySkillData` 의 `Projectile` 실행타입으로 흡수했다. **`Assets/Scripts/Enemy/Elite/Patterns/` 폴더가 비어 삭제됐고 "새 패턴 = 에셋 1개 생성" 이 완성됐다.** 🔑 **Projectile 은 명중 판정을 하지 않는다** — `ProjectileFireRequest` 를 만들어 넘기는 게 전부고 판정은 투사체 프리팹이 한다. 따라서 모양·범위·이동 필드가 전부 미사용이고 필요한 건 **조준 방향 하나**뿐이다(`damage` 는 발사 요청에 실린다). 투사체 10필드는 `ProjectileSettings` 직렬화 클래스로 묶었다. 🔴 **선딜 조준 추적 → 발사 직전 확정 → Burst 중 고정** 이 Jump·Dash 와 다른 동작이며 그대로 보존했다. 🔴 `CanRun()` 의 `ProjectileFireService != null` 검사는 이식하지 않았다(러너가 인라인 `new` 라 null 불가, 발사도 `?.` 로 안전 — 공통 `CanRun()` 에 넣으면 Jump·Dash 까지 묶인다). ② **애니메이션 값 정정**(`40d87f1b`) — `castAnimation` 을 `Charge` 로 저작했다가 `Projectile` 로 되돌렸다. 🔴 Magma Animator 에 `ChargeTrigger` **파라미터는 있으나 그것을 쓰는 전이가 0건**이라 선딜 모션이 통째로 사라졌다. **강등 안전망(`SetTriggerOrAttack`)은 파라미터 존재만 보므로 이 유형을 못 잡는다** — 런타임에서 Animator 전이를 조회할 수 없어 에디터 검사(S7)의 범위가 넓어졌다. ③ **셀 페인팅 에디터**(미커밋) — `SkillDataEditor` 의 페인팅 구현을 `CustomCellGridDrawer` 로 추출(−414줄)하고 `EnemySkillDataEditor` 를 신설했다. 🔑 `PropertyDrawer` 가 아니라 **헬퍼 + CustomEditor** 를 택했다(드로어엔 `OnDisable` 이 없어 Undo 그룹이 새고, 인스턴스가 필드 간 재사용되며, `OnGUI(Rect)` 안에서 `EditorGUILayout` 을 못 쓴다). 편집용 `Draw` 와 **읽기 전용 `DrawPreview`** 를 분리했고(내장 타입은 `customCells` 를 런타임이 안 읽는다), `BeginPass`/`EndPass` + `try/finally` 로 미사용 그리드의 스트로크를 자동 종료한다. 동승 = `Docs/ENEMY_SKILL_DESIGN.md` 신설(설계 전문 + 이동 스킬 미결 2건). 이전: 보스방 3종 분리 + 적 패턴을 적 스킬 구조로 개편(`39549816`)
+>
+> </details>
 >
 > <details><summary>이전 기준(2026-09-04, `39549816`)</summary>
 >
@@ -372,7 +378,7 @@ Assets/Scripts/
 │
 ├── Combat/
 │   ├── IDamageable.cs              # 피해 수신 인터페이스
-│   ├── AttackPattern.cs            # 공격 패턴 enum + 좌표 계산기 (FillTargets API). Custom은 저작 셀(Vector2Int) 기반 grid 소비자용 셀 계산 제공
+│   ├── AttackPattern.cs            # 공격 패턴 enum(값 명시 0~7, 신규는 맨 뒤 추가) + 좌표 계산기 (FillTargets API). Square=체비쇼프 정사각, Circle=격자 원(dx²+dy²≤r²+r). Custom은 저작 셀(Vector2Int) 기반 grid 소비자용 셀 계산 제공
 │   ├── AttackExecutor.cs           # 공격 판정·히트 감지·데미지 적용. CustomShapeMatcher 전달 시 셀별 회전 OverlapBox 물리 겹침 판정 + Linecast(WallMask) 벽차단 (비Custom은 기존 OverlapCircle+grid LoS)
 │   ├── AimDirectionUtility.cs      # 8방향 입력 양자화 + raw/정규화/카디널 변환 (Domain)
 │   ├── CombatLayers.cs             # Enemy/Player Layer 캐싱 + ContactFilter2D 공유
@@ -539,9 +545,11 @@ Assets/Scripts/
 ```
 Assets/Editor/                     # Editor-only (런타임 미포함)
 ├── SkillDataEditor.cs              # SkillData/EngravingData CustomEditor — Engraving(owningForm/grade/Linked ItemData) + Basic/Resource/InstantArea(Custom customCells **드래그 페인팅** 포함)/Projectile/Dash 섹션 + Reserved foldout + 설정 경고
+├── EnemySkillDataEditor.cs         # EnemySkillData CustomEditor — executionType 별 미사용 필드 숨김(정적 표, 미등재 필드는 항상 표시·실행타입 혼합 다중선택은 전체 표시) + PatternShapeData 직접 그리기(coneHalfAngle은 Cone만) + Custom 셀 편집 / 내장 타입 읽기 전용 미리보기
+├── CustomCellGridDrawer.cs         # 공용 셀 페인팅 그리드 헬퍼 — 편집용 Draw / 읽기 전용 DrawPreview, CustomCellGridPass(BeginPass/EndPass)로 미사용 그리드 스트로크 자동 종료 (SkillDataEditor·EnemySkillDataEditor 공용)
 ├── EnemyDataEditor.cs              # EnemyData CustomEditor — Basic / Contact + Contact-Special(Rush/Jump 전용 그룹) 또는 (Ranged-Timing + Ranged-Movement + Ranged-Projectile) / Separation-Collision / Reward-Misc / Unhandled 섹션 분기 + 미사용 필드 자동 분리
 ├── SkillDashboardWindow.cs         # JBRogLike/Skill Dashboard — plain SkillData + EngravingData 통합 조망(헤더 고정·zebra·검색/Kind/Info 필터)/평면 인라인 편집(공통 11필드+각인 owningForm·grade)/생성(executionType 프리셋+SaveFilePanelInProject)/삭제(라이브 역참조 5 site: 무기 슬롯·기본공격·engraving 브릿지·recastStages·BehaviorEffect.procSkill + 다이얼로그+Undo 그룹 정리) + 검증 전량(orphan 각인/패시브 Add to ItemDatabase Fix·참조 정합성·중복·죽은드랍·개인+등급 그룹 순회) + **아이콘 컬럼·편집·검증 3종**(썸네일 `AssetPreview`, 64px ObjectField, 미설정/`Skill_Null`/빌트인) + **폼별 그룹 접기·펴기(폼 귀속 4단계 추론)** + 검증 2종(폼 교차 오배선·에셋 참조 없음) + **스코프 한정 Save Assets**. EngravingValidatorWindow 흡수. 복잡 저작은 SkillDataEditor 인스펙터 위임
-├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + **queries[] 쿼리 편집(유효 기본값 생성·경고 4종·결번 enum 안전 Popup)** + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제). 쓰기 전부 SerializedObject 경유
+├── EnemyDashboardWindow.cs         # JBRogLike/Enemy Dashboard — EnemyData·풀·드랍·보스 통합 조망/편집(인라인 8필드·드랍 그룹) + **queries[] 쿼리 편집(유효 기본값 생성·경고 4종·결번 enum 안전 Popup)** + 신규 적 생성(에셋·풀·스폰테이블·드랍 원자 처리, 보스=BossEncounterTable) + 삭제(참조 5곳 정리, 프리팹 선택 삭제) + **[Anim] 애니메이션 정합성 검사**(적×패턴 스킬×Animator 파라미터·전이 대조, 2026-09-30). 쓰기 전부 SerializedObject 경유
 ├── ItemDashboardWindow.cs          # JBRogLike/Item Dashboard — ItemDatabase 인라인 엔트리 통합 조망/편집(행=items[i] SerializedProperty)·itemCode rename 참조 추적·드랍 양방향 편집 + **쿼리 역계산(매칭 쿼리 표시·[현재 폼 의존])**·생성(전필드 초기화+타입 프리셋)·삭제(역참조 분석+코드상수 차단, 전부 Undo 가능). 양 대시보드 공통: Undo 자동 Rescan + 행/경고 패널 드래그 스플리터
 ├── DropQueryEditorMatcher.cs       # 드랍 쿼리↔아이템 매칭 판정 (에디터 전용 static) — Enemy/Item Dashboard 공용. 등급은 DropQueryResolver.GetTier 직접 호출(단일 진실), formScope=CurrentForm은 currentFormDependent 플래그로 반환. AnyEngraving은 액티브·패시브 둘 다 매칭
 ├── DropQueryCategoryMirrorCheck.cs # [InitializeOnLoadMethod] — ItemType 전 값이 DropQueryCategory에 동일 int로 존재하는지 검사(누락 시 에러 로그). 미러 enum 전용, ②안(ItemType[]) 전환 시 삭제
@@ -1169,7 +1177,8 @@ ExecuteAttack(gridPositions, damage,
 | `Single` | 정면 1칸 | 1 |
 | `Cross` | 상하좌우 4방향 | 4 |
 | `Diagonal` | 대각선 4방향 | 4 |
-| `Circle` | 주변 8칸 전체 (체비쇼프 거리) | 8+ |
+| `Square` (=3) | 주변 정사각 전체 (체비쇼프 거리, 대각 도달 `N√2`). 2026-09-30 이전 이름 `Circle` | (2N+1)²−1 |
+| `Circle` (=7) | 격자 원 `dx²+dy² ≤ r²+r` (≈ 반경 r+0.5). 2026-09-30 신설 | r=1:8 / 2:20 / 3:36 |
 | `Line` | 정면 직선 N칸 | patternRange |
 | `Cone` | 정면 + 좌우 대각 부채꼴 | 3 |
 
@@ -2111,11 +2120,11 @@ Assets/Scripts/Enemy/Skill/
 
 스프라이트 방향은 `spriteRenderer.flipX` **좌/우뿐**이며(`Assets/Scripts/Enemy/` 에 transform 회전 코드 0건), `LockFacing` 이 `direction.x` 부호만 사용하므로 **패턴 facing 과 스프라이트 facing 은 이미 분리**돼 있습니다. 계산은 대각으로 정밀하게, 그림은 좌/우로 동작합니다.
 
-**거리는 `maxRange` 하나입니다.** 탐색 반경 = `Mathf.RoundToInt(MaxRange / cellSize)`. facing 이 플레이어를 향하므로 플레이어는 항상 로컬 `+Y` 위에 있고, `Circle` 의 최대 오프셋 `(0, N)` 이 정확히 N칸 지점입니다 → **플레이어 쪽 도달 거리가 정확히 `maxRange`**. 정사각의 대각 여유(`N√2`)는 argmin 이 선택하지 않습니다. 이 통합으로 옛 링 검색의 **사거리 경계 탈락이 소멸**했습니다.
+**거리는 `maxRange` 하나입니다.** 탐색 반경 = `Mathf.RoundToInt(MaxRange / cellSize)`. facing 이 플레이어를 향하므로 플레이어는 항상 로컬 `+Y` 위에 있고, `Circle`/`Line` 의 전방 최대 오프셋 `(0, N)` 이 N칸 지점입니다. ⚠️ 단 **`maxRange` 는 상한 보장이 아니라 근사**입니다(2026-09-30 정정) — 후보 필터에 거리 검사가 없어 ⓐ소수 `maxRange` 반올림(→ **정수로 저작**) ⓑ정사각(`Square`) 모서리 후보(`N√2`, 앞 후보가 막히면 argmin 이 고를 수 있음 → 2026-09-30 원형 `Circle` 신설로 초과가 반 칸 이내로 축소) ⓒ`Custom`(칠한 칸 = 거리, 의도) 로 넘을 수 있습니다. 또 앞쪽 후보가 전부 막히면 **플레이어 뒤쪽 후보**가 최근접으로 뽑힐 수 있으며, 이는 거리 필터로도 사라지지 않는 성질입니다. 이 통합으로 옛 링 검색의 **사거리 경계 탈락이 소멸**했습니다.
 
 **피해는 셀 + `OverlapBox` 입니다.** `damageShape` 셀을 `CustomShapeMatcher` 로 월드 배치하고 셀마다 `Physics2D.OverlapBox(center, cellSize, angle, CombatLayers.PlayerFilter, buf)`. 대상당 1회는 `HashSet<IDamageable>` 가 보장합니다.
 
-⚠️ **원점 포함 규칙** — `AttackPattern` 내장 타입은 원점을 구조적으로 제외합니다(`Circle` 은 `dx != 0 || dy != 0`, `Line`/`Cone` 은 `i = 1` 부터). 착지 후보 열거에는 옳지만(제자리 점프 차단) 피해 범위에서는 **착지한 그 칸의 플레이어가 안 맞습니다.** 그래서 **내장 타입은 `(0,0)` 을 런타임에서 추가하고 `Custom` 은 저작한 그대로** 씁니다(중앙이 빈 링 저작을 막지 않기 위해). `AttackPattern.cs` 를 고치면 플레이어 스킬이 같이 바뀌므로 보정은 런타임 안에서만 합니다.
+⚠️ **원점 포함 규칙** — `AttackPattern` 내장 타입은 원점을 구조적으로 제외합니다(`Square`/`Circle` 은 `dx != 0 || dy != 0`, `Line`/`Cone` 은 `i = 1` 부터). 착지 후보 열거에는 옳지만(제자리 점프 차단) 피해 범위에서는 **착지한 그 칸의 플레이어가 안 맞습니다.** 그래서 **내장 타입은 `(0,0)` 을 런타임에서 추가하고 `Custom` 은 저작한 그대로** 씁니다(중앙이 빈 링 저작을 막지 않기 위해). `AttackPattern.cs` 를 고치면 플레이어 스킬이 같이 바뀌므로 보정은 런타임 안에서만 합니다.
 
 **이동 중 물리 처리**
 
@@ -2178,9 +2187,9 @@ Jump·Dash 는 `Start()` 에서 목표를 고정하므로 선딜 추적이 없�
 
 🔴 옛 런타임의 `CanRun()` 은 `ProjectileFireService != null` 을 추가로 요구했으나 **이식하지 않았습니다.** `EnemyPatternRunner` 가 `readonly` + 인라인 `new` 로 생성해 null 이 불가능하고 발사도 `?.Fire(request)` 로 안전합니다. 공통 `CanRun()` 에 넣으면 **Jump·Dash 까지 이 조건에 묶입니다.**
 
-⚠️ **셀 피해는 적 덩치를 반영하지 않습니다.** Magma(콜라이더 반경 2.7)는 벽 정지 시 중심이 벽에서 2.7 떨어지는데, `damageRange 1`(반폭 1.5)은 벽에 붙은 플레이어에 닿지 않을 수 있습니다. → `HandOff/Known_Issue.md` Q24·Q25.
+⚠️ **셀 피해는 적 덩치를 반영하지 않습니다.** Magma 콜라이더는 로컬 0.5 × 스케일 3 = **세계 반경 1.5**(2026-09-30 복구 — 그 전엔 폴더 개명 커밋에서 0.0001 로 오염돼 있었고, 더 이전 0.9=세계 2.7 은 스프라이트 폭의 약 2배라 벽에 붙은 플레이어를 추적하지 못했다). 현재 Jump(`damageRange 3`)는 벽 근처에서도 명중하나, Dash(`damageRange 1`, 도달 ≈1.5)는 **구석에 몰린 플레이어에 닿지 않는다**(수용, 필요 시 2). 큰 적은 "몸통 반경 + 원하는 사거리"를 셀로 환산해 저작합니다. → `HandOff/Known_Issue.md` Q24·Q25.
 
-🔴 **"파라미터는 있으나 전이가 없는 트리거"는 강등 안전망이 잡지 못합니다.** `SetTriggerOrAttack` 은 파라미터 존재 여부만 보므로, Animator 에 파라미터가 선언돼 있고 그것을 쓰는 전이가 없으면 `hasParameter = true` 가 되어 **Attack 으로 강등되지 않고 죽은 트리거만 세팅**됩니다(결과: 모션이 아예 안 나옴). 2026-09-08 에 `castAnimation` 을 `Charge` 로 저작했다가 Magma Animator 에 `Charge` 상태가 없어 선딜 모션이 사라진 사례가 실측됐습니다. **런타임에서는 Animator 전이를 조회할 수 없어** 이 유형은 에디터 검사(HANDOFF §7-B S7)로만 잡을 수 있습니다.
+🔴 **"파라미터는 있으나 전이가 없는 트리거"는 강등 안전망이 잡지 못합니다.** `SetTriggerOrAttack` 은 파라미터 존재 여부만 보므로, Animator 에 파라미터가 선언돼 있고 그것을 쓰는 전이가 없으면 `hasParameter = true` 가 되어 **Attack 으로 강등되지 않고 죽은 트리거만 세팅**됩니다(결과: 모션이 아예 안 나옴). 2026-09-08 에 `castAnimation` 을 `Charge` 로 저작했다가 Magma Animator 에 `Charge` 상태가 없어 선딜 모션이 사라진 사례가 실측됐습니다. **런타임에서는 Animator 전이를 조회할 수 없어** 이 유형은 에디터 검사로만 잡을 수 있습니다. → **2026-09-30 구현**: `EnemyDashboardWindow` 가 적(`row.Prefab`) × 패턴 스킬(`EnemyData.PatternSet` + `BossEncounterTable` 페이즈 패턴셋) × `AnimatorController`(Override 원본까지 추적, 레이어·서브 상태머신 재귀로 전이 조건 수집, 컨트롤러별 캐시)를 대조해 `[Anim]` 경고를 냅니다. 슬롯당 최대 1건 — ⓐ요구 트리거가 `AttackTrigger` 이고 재생 불가 → Warning ⓑ파라미터 없음 + 강등 대상 `AttackTrigger` 도 재생 불가 → Warning(모션 없음) ⓒ파라미터 없음 + `AttackTrigger` 정상 → override Warning / enum Info(강등) ⓓ파라미터는 있으나 쓰는 전이 없음 → Warning. 평타·접촉 경로는 검사 대상이 아닙니다(Contact 접촉 피해는 애니메이션 호출 자체가 없음).
 
 
 ### 8-5. 원거리 공격 패턴 (ProjectileFirePattern)
@@ -2485,7 +2494,9 @@ SkillUIManager:
        각 라인은 wallHitMode 가 PassThrough 가 아니면 ClipToWall 적용
   executionType == Dash      → BuildDashPreview (직선 + 벽 클리핑)
   그 외 (InstantArea)         → BuildInstantAreaPreview
-       Circle / Cone / Line / Single / Cross / Diagonal 6종 다각형
+       Square / Circle / Cone / Line / Single / Cross / Diagonal 7종 다각형
+       (Square·Circle 은 판정 셀을 감싸는 원 외곽선 근사 — Square r√2+0.5, Circle √(r²+r)+0.5.
+        판정 자체는 전부 셀 단위이며 셀 채움 표시는 Custom·hitSteps override 만)
 
 벽 인식 (ClipToWall):
   wallLayer 설정 시 Physics2D.Raycast 우선
@@ -3868,7 +3879,7 @@ EnemyController.Die()
 
 ```csharp
 // AttackPattern.cs
-public enum AttackPatternType { ..., Ring, Custom }
+public enum AttackPatternType { ..., Custom = 6, Circle = 7, Ring = 8 }  // 🔴 반드시 맨 뒤에 명시값으로 추가
 
 case AttackPatternType.Ring:
     for (int r = 2; r <= range; r++)
@@ -4068,7 +4079,7 @@ public enum PlayerStatusEffectType { Slow, Stun, Burn /* 새 항목 */ }
 | FSM·이동 | `EnemyBrain`(Target/Movement/Action 핸들러) + A*(버퍼 재사용) + 군중 분리(throttle+Idle separation) + Ranged 이동 3종(Chase/Kiting 5단계 폴백/Random minR 보호). 상세 §8 |
 | 공격 패턴 | Contact(+Special Rush/Jump 상태머신, 페이싱 잠금, Animator 폴백) + Ranged(사거리·선딜·후딜) + **Enemy Pattern Set**(가중 추첨 + 쿨다운 배열 + 시작 실패 시 재추첨). 상세 §8-4 |
 | **적 스킬 데이터** | **`EnemySkillData` + `executionType` 분기 — 새 패턴 = 에셋 1개**(2026-09-08 완결). 자유 각도 셀 열거 + argmin 목표 결정 / `maxRange` 단일 거리 / 셀 피해(`OverlapBox`) / 이동 중 Kinematic + 타임아웃 / Dash 벽 정지(물리 쿼리) / 애니메이션 문자열 override / Projectile 은 발사 요청만(판정은 투사체). **Jump·Dash·Projectile 3종 이관 완료, `Patterns/` 폴더 소멸.** `InstantArea` 미구현. 상세 §8-4-5 |
-| **적 스킬 저작 도구** | `CustomCellGridDrawer`(공용 셀 페인팅) + `EnemySkillDataEditor`. `Custom` 은 그리드 편집, 내장 타입은 **읽기 전용 미리보기**(런타임 셀 산출을 그대로 재현). `BeginPass`/`EndPass` 로 미사용 그리드 스트로크 자동 종료 |
+| **적 스킬 저작 도구** | `CustomCellGridDrawer`(공용 셀 페인팅) + `EnemySkillDataEditor`. `Custom` 은 그리드 편집, 내장 타입은 **읽기 전용 미리보기**(런타임 셀 산출을 그대로 재현). `BeginPass`/`EndPass` 로 미사용 그리드 스트로크 자동 종료. **실행타입별 미사용 필드 숨김** + Enemy Dashboard **`[Anim]` 정합성 검사**(2026-09-30) |
 | 임팩트 데이터화 | `EnemyAttackImpactData`(knockback/slow/stun) — rush/jump/projectile 공유 단일 라우팅 + `isStationary`/`immuneToKnockback` 플래그 |
 | 스폰·클리어 | 방 진입 트리거 + 예산 스폰 + 결정론(방별 rng) + 층 범위 필터(min/maxFloor) + MonsterDen(예산 ×2.5) + 지연 전투 시작(`CanStartRoomEncounter`) + `EnemyPoolManager` + 사망 지연(`OnDeathFinished` 반납, Brain 즉시 정리). 상세 §9 |
 | 표시 | `EnemyHealthBar`(콜라이더 앵커·스케일 정규화·`TopAnchorY` 노출) + `EnemyAnimationController`(이동 감지·페이싱·트리거 폴백) |
