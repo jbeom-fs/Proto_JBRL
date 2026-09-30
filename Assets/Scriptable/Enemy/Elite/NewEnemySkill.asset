@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 23fe391af8c743c2883407dd1fa58a37, type: 3}
-  m_Name: Elite_Magma_01_JumpSkill
+  m_Name: NewEnemySkill
   m_EditorClassIdentifier: Assembly-CSharp::EnemySkillData
-  displayName: Elite Magma Jump
-  cooldown: 3.5
+  displayName: 
+  cooldown: 3
   minRange: 0
-  maxRange: 12
+  maxRange: 20
   weight: 1
-  recoveryDuration: 0.55
+  recoveryDuration: 0.5
   executionType: 3
   castDelay: 0.45
   searchShape:
@@ -46,8 +46,8 @@ MonoBehaviour:
       slowMultiplier: 1
       slowDuration: 0
       stunDuration: 0
-  moveSpeed: 9
-  jumpVisualHeight: 2
+  moveSpeed: 8
+  jumpVisualHeight: 1
   stayInRoom: 1
   lockFacingDuringExecute: 1
   stopOnWall: 1

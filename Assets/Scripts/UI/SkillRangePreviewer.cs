@@ -3,7 +3,8 @@
 //  책임: Q/W/E/R 키를 누르는 동안 스킬 범위를 LineRenderer 로 시각화
 //
 //  형상 매핑 (모든 패턴이 patternRange 사용):
-//    Circle   → 원  (반경: range*√2+0.5 타일, 코너 타일까지 포함)
+//    Square   → 원  (반경: range*√2+0.5 타일, 코너 타일까지 포함)
+//    Circle   → 원  (반경: √(range²+range)+0.5 타일)
 //    Cone     → 부채꼴 (반경: range*√2+0.5 타일, coneHalfAngle 각도)
 //    Line     → 직사각형 (range칸 길이, 1칸 너비)
 //    Single   → range칸 거리의 1×1 정사각형
@@ -341,10 +342,18 @@ public class SkillRangePreviewer : MonoBehaviour
 
         switch (skill.attackPattern)
         {
-            case AttackPatternType.Circle:
+            case AttackPatternType.Square:
                 // 체비쇼프 range 이내 — 코너 타일(±range,±range)까지 반경
                 BuildCircle(SkillTargetResolver.GetPreviewRadius(skill.patternRange) * tileSize);
                 break;
+
+            case AttackPatternType.Circle:
+            {
+                float range = Mathf.Max(0, skill.patternRange);
+                float radius = Mathf.Sqrt(range * range + range) + 0.5f;
+                BuildCircle(radius * tileSize);
+                break;
+            }
 
             case AttackPatternType.Cone:
                 // 정면+좌우45° 각 range칸 — 대각 방향이 가장 멀리 뻗음

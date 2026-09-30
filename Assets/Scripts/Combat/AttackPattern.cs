@@ -3,13 +3,14 @@ using UnityEngine;
 
 public enum AttackPatternType
 {
-    Single,
-    Cross,
-    Diagonal,
-    Circle,
-    Line,
-    Cone,
-    Custom,
+    Single = 0,
+    Cross = 1,
+    Diagonal = 2,
+    Square = 3,
+    Line = 4,
+    Cone = 5,
+    Custom = 6,
+    Circle = 7
 }
 
 public static class AttackPattern
@@ -74,7 +75,7 @@ public static class AttackPattern
                         targets.Add(origin + direction * i);
                 break;
 
-            case AttackPatternType.Circle:
+            case AttackPatternType.Square:
                 for (int dx = -range; dx <= range; dx++)
                     for (int dy = -range; dy <= range; dy++)
                         if (dx != 0 || dy != 0)
@@ -92,6 +93,10 @@ public static class AttackPattern
 
             case AttackPatternType.Custom:
                 AddCustomTargets(targets, origin, new Vector2(facing.x, facing.y), customCells);
+                break;
+
+            case AttackPatternType.Circle:
+                AddCircleTargets(targets, origin, range);
                 break;
         }
     }
@@ -128,7 +133,7 @@ public static class AttackPattern
                         targets.Add(origin + direction * i);
                 break;
 
-            case AttackPatternType.Circle:
+            case AttackPatternType.Square:
                 for (int dx = -range; dx <= range; dx++)
                     for (int dy = -range; dy <= range; dy++)
                         if (dx != 0 || dy != 0)
@@ -146,6 +151,10 @@ public static class AttackPattern
 
             case AttackPatternType.Custom:
                 AddCustomTargets(targets, origin, facing, customCells);
+                break;
+
+            case AttackPatternType.Circle:
+                AddCircleTargets(targets, origin, range);
                 break;
         }
     }
@@ -169,6 +178,22 @@ public static class AttackPattern
     {
         if (!targets.Contains(cell))
             targets.Add(cell);
+    }
+
+    private static void AddCircleTargets(List<Vector2Int> targets, Vector2Int origin, int range)
+    {
+        long radiusSqr = (long)range * range + range;
+        for (int dx = -range; dx <= range; dx++)
+        {
+            for (int dy = -range; dy <= range; dy++)
+            {
+                if ((dx != 0 || dy != 0) &&
+                    (long)dx * dx + (long)dy * dy <= radiusSqr)
+                {
+                    targets.Add(origin + new Vector2Int(dx, dy));
+                }
+            }
+        }
     }
 
     private static void AddConeTargets(
