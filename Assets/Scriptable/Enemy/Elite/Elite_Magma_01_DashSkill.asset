@@ -23,19 +23,47 @@ MonoBehaviour:
   searchShape:
     patternType: 4
     coneHalfAngle: 45
-    customCells: []
+    customCells:
+    - {x: 0, y: 1}
+    - {x: 0, y: 2}
+    - {x: 0, y: 3}
+    - {x: 0, y: 4}
+    - {x: 0, y: 5}
+    - {x: 0, y: 6}
+    - {x: 0, y: 7}
+    - {x: 0, y: 8}
+    - {x: 0, y: 9}
+    - {x: 0, y: 10}
+    - {x: 0, y: 11}
+    - {x: 0, y: 12}
   damageShape:
     patternType: 3
     coneHalfAngle: 45
     customCells: []
   damageRange: 1
   damage: 2
+  projectile:
+    projectilePrefab: {fileID: 0}
+    projectileSpeed: 6
+    projectileLifetime: 3
+    firePattern: 0
+    projectileCount: 1
+    spreadAngle: 30
+    burstInterval: 0.1
+    wallHitMode: 0
+    maxBounceCount: 1
+    impact:
+      knockbackForce: 0
+      knockbackDuration: 0
+      slowMultiplier: 1
+      slowDuration: 0
+      stunDuration: 0
   moveSpeed: 15
   jumpVisualHeight: 0
   stayInRoom: 1
   lockFacingDuringExecute: 1
   stopOnWall: 1
   castAnimation: 7
-  castAnimationTrigger:
+  castAnimationTrigger: 
   executeAnimation: 7
-  executeAnimationTrigger:
+  executeAnimationTrigger: 

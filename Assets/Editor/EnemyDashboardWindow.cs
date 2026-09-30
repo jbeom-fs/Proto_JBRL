@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using UnityEditor;
+using UnityEditor.Animations;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -38,6 +39,7 @@ public sealed class EnemyDashboardWindow : EditorWindow
     private const float WarningsPanelMaxPadding = 220f;
     private const string DefaultDropItemCode = "Currency";
     private const string NewEnemyAssetFolder = "Assets/Scriptable/Enemy";
+    private const string AttackTriggerName = "AttackTrigger";
 
     private static readonly DropQueryCategory[] s_QueryCategoryValues =
         (DropQueryCategory[])Enum.GetValues(typeof(DropQueryCategory));
@@ -2422,6 +2424,8 @@ public sealed class EnemyDashboardWindow : EditorWindow
         for (int i = 0; i < itemDatabases.Count; i++)
             itemDatabases[i]?.GetAllItems(_queryItems);
         HashSet<EnemyData> bossEnemies = BuildBossSet(bossTables);
+        Dictionary<AnimatorController, ControllerInfo> controllerCache =
+            new Dictionary<AnimatorController, ControllerInfo>();
 
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -2473,9 +2477,209 @@ public sealed class EnemyDashboardWindow : EditorWindow
                 AddWarning(row, WarningSeverity.Error, "[Error] 층범위 오류: " + row.DisplayName + " (" + enemy.MinFloor + "~" + enemy.MaxFloor + ")", enemy);
 
             AddSpawnTableWarnings(row, spawnTableState);
+            AddAnimatorWarnings(row, enemy, bossTables, controllerCache);
 
             _rows.Add(row);
         }
+    }
+
+    private void AddAnimatorWarnings(
+        EnemyRow row,
+        EnemyData enemy,
+        List<BossEncounterTable> bossTables,
+        Dictionary<AnimatorController, ControllerInfo> controllerCache)
+    {
+        List<EnemySkillData> skills = CollectEnemySkills(enemy, bossTables);
+        if (skills.Count == 0 || !_hasPoolScene || row.Prefab == null)
+            return;
+
+        EnemyAnimationController animation = row.Prefab.GetComponentInChildren<EnemyAnimationController>(true);
+        Animator animator = null;
+        if (animation != null)
+        {
+            SerializedProperty animatorProperty = new SerializedObject(animation).FindProperty("animator");
+            animator = animatorProperty != null ? animatorProperty.objectReferenceValue as Animator : null;
+            if (animator == null)
+                animator = animation.GetComponentInChildren<Animator>(true);
+        }
+
+        RuntimeAnimatorController runtimeController = animator != null ? animator.runtimeAnimatorController : null;
+        HashSet<RuntimeAnimatorController> visitedControllers = new HashSet<RuntimeAnimatorController>();
+        while (runtimeController is AnimatorOverrideController overrideController &&
+               visitedControllers.Add(runtimeController))
+        {
+            runtimeController = overrideController.runtimeAnimatorController;
+        }
+
+        AnimatorController controller = runtimeController as AnimatorController;
+        if (controller == null)
+        {
+            AddWarning(row, WarningSeverity.Warning,
+                "[Warn] [Anim] " + row.DisplayName + ": 패턴 스킬 " + skills.Count +
+                "개가 있으나 Animator Controller를 찾지 못함", row.Prefab);
+            return;
+        }
+
+        ControllerInfo info = GetControllerInfo(controller, controllerCache);
+        for (int i = 0; i < skills.Count; i++)
+        {
+            EnemySkillData skill = skills[i];
+            AddAnimatorSlotWarning(row, skill, "cast", skill.CastAnimation,
+                skill.CastAnimationTrigger, info);
+            AddAnimatorSlotWarning(row, skill, "execute", skill.ExecuteAnimation,
+                skill.ExecuteAnimationTrigger, info);
+        }
+    }
+
+    private static List<EnemySkillData> CollectEnemySkills(
+        EnemyData enemy, List<BossEncounterTable> bossTables)
+    {
+        List<EnemySkillData> skills = new List<EnemySkillData>();
+        HashSet<EnemySkillData> seen = new HashSet<EnemySkillData>();
+        AddSkillsFromSet(enemy.PatternSet, skills, seen);
+
+        for (int tableIndex = 0; tableIndex < bossTables.Count; tableIndex++)
+        {
+            BossEncounterTable table = bossTables[tableIndex];
+            if (table == null || table.Entries == null)
+                continue;
+
+            foreach (BossEncounterEntry entry in table.Entries)
+            {
+                if (entry == null || entry.Boss != enemy || entry.Phases == null)
+                    continue;
+
+                foreach (BossPhase phase in entry.Phases)
+                    if (phase != null)
+                        AddSkillsFromSet(phase.PatternSet, skills, seen);
+            }
+        }
+
+        return skills;
+    }
+
+    private static void AddSkillsFromSet(
+        EnemyPatternSet set, List<EnemySkillData> skills, HashSet<EnemySkillData> seen)
+    {
+        if (set == null || set.Patterns == null)
+            return;
+
+        foreach (EnemyPatternData pattern in set.Patterns)
+            if (pattern is EnemySkillData skill && seen.Add(skill))
+                skills.Add(skill);
+    }
+
+    private void AddAnimatorSlotWarning(
+        EnemyRow row, EnemySkillData skill, string slot, EnemyAnimationKey key,
+        string customTrigger, ControllerInfo info)
+    {
+        string trigger = ResolveRequiredTrigger(key, customTrigger);
+        if (trigger == null)
+            return;
+
+        string context = row.DisplayName + " / " + skill.name + " " + slot + ": ";
+        if (trigger == AttackTriggerName)
+        {
+            if (!IsPlayable(info, AttackTriggerName))
+                AddWarning(row, WarningSeverity.Warning,
+                    "[Warn] [Anim] " + context + "AttackTrigger 모션 없음 → 모션이 재생되지 않음", skill);
+            return;
+        }
+
+        if (!info.ParameterNames.Contains(trigger))
+        {
+            if (!IsPlayable(info, AttackTriggerName))
+            {
+                AddWarning(row, WarningSeverity.Warning,
+                    "[Warn] [Anim] " + context + "트리거 '" + trigger +
+                    "' 파라미터 없음 + 강등 대상 AttackTrigger도 모션 없음 → 모션이 재생되지 않음", skill);
+            }
+            else if (!string.IsNullOrWhiteSpace(customTrigger))
+            {
+                AddWarning(row, WarningSeverity.Warning,
+                    "[Warn] [Anim] " + context + "트리거 '" + trigger +
+                    "'가 Animator 파라미터에 없음 → Attack으로 강등", skill);
+            }
+            else
+            {
+                AddWarning(row, WarningSeverity.Info,
+                    "[Info] [Anim] " + context + key + " 트리거 '" + trigger +
+                    "' 없음 → Attack으로 강등(의도라면 무시)", skill);
+            }
+
+            return;
+        }
+
+        if (!info.TransitionConditionNames.Contains(trigger))
+            AddWarning(row, WarningSeverity.Warning,
+                "[Warn] [Anim] " + context + "트리거 '" + trigger +
+                "'를 쓰는 전이가 없음 → 모션이 재생되지 않음", skill);
+    }
+
+    private static bool IsPlayable(ControllerInfo info, string trigger) =>
+        info.ParameterNames.Contains(trigger) && info.TransitionConditionNames.Contains(trigger);
+
+    private static string ResolveRequiredTrigger(EnemyAnimationKey key, string customTrigger)
+    {
+        if (!string.IsNullOrWhiteSpace(customTrigger))
+            return customTrigger;
+
+        // EnemyAnimationController 상수와 동기화 필수.
+        switch (key)
+        {
+            case EnemyAnimationKey.Attack: return AttackTriggerName;
+            case EnemyAnimationKey.Projectile: return "ProjectileTrigger";
+            case EnemyAnimationKey.Charge: return "ChargeTrigger";
+            case EnemyAnimationKey.Rush: return "RushTrigger";
+            case EnemyAnimationKey.Jump: return "JumpTrigger";
+            case EnemyAnimationKey.Land: return "LandTrigger";
+            case EnemyAnimationKey.Dash: return "DashTrigger";
+            default: return null;
+        }
+    }
+
+    private static ControllerInfo GetControllerInfo(
+        AnimatorController controller, Dictionary<AnimatorController, ControllerInfo> cache)
+    {
+        if (cache.TryGetValue(controller, out ControllerInfo info))
+            return info;
+
+        info = new ControllerInfo();
+        foreach (AnimatorControllerParameter parameter in controller.parameters)
+            info.ParameterNames.Add(parameter.name);
+
+        foreach (AnimatorControllerLayer layer in controller.layers)
+            CollectTransitionConditions(layer.stateMachine, info.TransitionConditionNames);
+
+        cache.Add(controller, info);
+        return info;
+    }
+
+    private static void CollectTransitionConditions(
+        AnimatorStateMachine stateMachine, HashSet<string> conditionNames)
+    {
+        if (stateMachine == null)
+            return;
+
+        CollectTransitionConditions(stateMachine.anyStateTransitions, conditionNames);
+        CollectTransitionConditions(stateMachine.entryTransitions, conditionNames);
+
+        foreach (ChildAnimatorState child in stateMachine.states)
+            CollectTransitionConditions(child.state.transitions, conditionNames);
+
+        foreach (ChildAnimatorStateMachine child in stateMachine.stateMachines)
+        {
+            CollectTransitionConditions(stateMachine.GetStateMachineTransitions(child.stateMachine), conditionNames);
+            CollectTransitionConditions(child.stateMachine, conditionNames);
+        }
+    }
+
+    private static void CollectTransitionConditions(
+        AnimatorTransitionBase[] transitions, HashSet<string> conditionNames)
+    {
+        foreach (AnimatorTransitionBase transition in transitions)
+            foreach (AnimatorCondition condition in transition.conditions)
+                conditionNames.Add(condition.parameter);
     }
 
     private static SpawnTableState BuildSpawnTableState()
@@ -2870,6 +3074,12 @@ public sealed class EnemyDashboardWindow : EditorWindow
         Error,
         Warning,
         Info
+    }
+
+    private sealed class ControllerInfo
+    {
+        public readonly HashSet<string> ParameterNames = new HashSet<string>(StringComparer.Ordinal);
+        public readonly HashSet<string> TransitionConditionNames = new HashSet<string>(StringComparer.Ordinal);
     }
 
     private sealed class EnemyRow
